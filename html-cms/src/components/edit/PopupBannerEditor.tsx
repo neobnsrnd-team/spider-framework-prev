@@ -100,11 +100,26 @@ export default function PopupBannerEditor({ blockEl, onClose }: Props) {
             alt: img.alt.trim(),
         }));
 
-        // data 속성 업데이트 후 런타임 reinit — 플러그인 mount()를 다시 실행해 미리보기 갱신
-        blockEl.setAttribute('data-images', JSON.stringify(validated));
-        blockEl.setAttribute('data-hide-days', String(hideDays));
-        window.builderReinit?.();
+        // blockEl의 기존 속성(data-cb-type, class 등 ContentBuilder 메타 속성 포함)을 모두 복사하되
+        // data-images / data-hide-days만 갱신한 새 요소를 생성하여 교체한다.
+        //
+        // setAttribute + builderReinit 방식은 ContentBuilder의 MutationObserver / HTML 스냅샷 복원과
+        // 충돌하여 이미지 갱신이 누락되는 문제가 있다. (EventBannerEditor와 동일한 replaceWith 방식 적용)
+        //
+        // replaceWith 후 ContentBuilder가 MutationObserver로 교체를 감지 →
+        // onChange → debouncedReinit → reinitialize() → mount(newEl) 자동 실행되며,
+        // mount()가 data-images를 읽어 pb-sheet--editor를 새로 생성한다.
+        const newEl = document.createElement(blockEl.tagName.toLowerCase());
+        Array.from(blockEl.attributes).forEach((attr) => {
+            // data-images / data-hide-days는 아래에서 갱신된 값으로 설정
+            if (attr.name !== 'data-images' && attr.name !== 'data-hide-days') {
+                newEl.setAttribute(attr.name, attr.value);
+            }
+        });
+        newEl.setAttribute('data-images', JSON.stringify(validated));
+        newEl.setAttribute('data-hide-days', String(hideDays));
 
+        blockEl.replaceWith(newEl);
         onClose();
     }
 

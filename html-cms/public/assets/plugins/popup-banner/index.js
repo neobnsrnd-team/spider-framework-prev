@@ -101,8 +101,10 @@ export default {
         if (existingSheet) existingSheet.remove();
 
         // 뷰어 모드: 동일 페이지 첫 번째 팝업만 활성화
+        // ContentBuilderRuntime은 data-cb-type 속성으로 플러그인을 식별하며 data-component-id를 부여하지 않으므로
+        // data-cb-type 선택자를 사용해야 팝업 배너 요소를 올바르게 찾을 수 있다.
         if (!isEditor) {
-            const allBanners = document.querySelectorAll('[data-component-id^="popup-banner"]');
+            const allBanners = document.querySelectorAll('[data-cb-type="popup-banner"]');
             if (allBanners[0] !== element) return {};
             // "N일간 보지 않기" 기간 내이면 미표시 (미리보기 모드에서는 항상 표시)
             if (!isPreviewMode() && isHiddenUntil(pageId)) return {};
