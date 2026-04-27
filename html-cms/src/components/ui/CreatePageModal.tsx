@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { createCmsPage, type CmsPageViewMode } from '@/lib/cms-page-create';
 import { nextApi } from '@/lib/api-url';
+import { isTemplateCompatibleViewMode } from '@/lib/view-mode';
 
 import Modal from './Modal';
 
@@ -11,6 +12,7 @@ interface PageTemplateOption {
     id: string;
     label: string;
     description: string;
+    viewMode?: string;
 }
 
 const VIEW_MODE_OPTIONS: Array<{
@@ -60,10 +62,11 @@ export default function CreatePageModal({ onClose, canWrite }: CreatePageModalPr
                 if (cancelled) return;
 
                 const nextTemplates = Array.isArray(data.templates)
-                    ? data.templates.map((template: { pageId: string; pageName: string }) => ({
+                    ? data.templates.map((template: { pageId: string; pageName: string; viewMode: string }) => ({
                           id: template.pageId,
                           label: template.pageName,
                           description: '미리 구성된 템플릿으로 시작합니다.',
+                          viewMode: template.viewMode,
                       }))
                     : [];
 
@@ -85,7 +88,14 @@ export default function CreatePageModal({ onClose, canWrite }: CreatePageModalPr
         };
     }, []);
 
-    const selectedTemplate = templates.find((template) => template.id === templateId) ?? BLANK_TEMPLATE;
+    const filteredTemplates = templates.filter((template) => isTemplateCompatibleViewMode(viewMode, template.viewMode));
+    const selectedTemplate = filteredTemplates.find((template) => template.id === templateId) ?? BLANK_TEMPLATE;
+
+    useEffect(() => {
+        if (!filteredTemplates.some((template) => template.id === templateId)) {
+            setTemplateId('blank');
+        }
+    }, [filteredTemplates, templateId]);
 
     async function handleCreate() {
         const trimmedName = pageName.trim();
@@ -173,7 +183,7 @@ export default function CreatePageModal({ onClose, canWrite }: CreatePageModalPr
 
                 {templateOpen && (
                     <div className="mt-2 flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
-                        {templates.map((template) => {
+                        {filteredTemplates.map((template) => {
                             const selected = templateId === template.id;
                             return (
                                 <button

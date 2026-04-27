@@ -1,8 +1,8 @@
 package com.example.spiderbatch.job.db2db;
 
-import com.example.spiderbatch.job.common.BatchJobParametersValidator;
+import com.example.spiderbatch.job.AbstractDb2DbJob;
 import com.example.spiderbatch.job.common.CardUsage;
-import java.util.LinkedHashMap;
+import com.example.spiderbatch.job.common.CardUsageQuery;
 import java.util.Map;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
@@ -10,11 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.core.job.builder.JobBuilder;
-import org.springframework.batch.core.partition.PartitionHandler;
-import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler;
 import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.Order;
@@ -31,107 +27,79 @@ import org.springframework.transaction.PlatformTransactionManager;
 /**
  * DB2DBJob 설정.
  *
- * <p>Oracle → Oracle 복사(아카이브) 패턴을 시연한다. 대용량 처리를 위해:
- * <ul>
- *   <li>JdbcPagingItemReader: pageSize 단위로 페이징 조회</li>
- *   <li>ColumnRangePartitioner: 이용일자(YYYYMMDD) 범위로 분할하여 병렬 처리</li>
- *   <li>TaskExecutorPartitionHandler: 멀티스레드로 파티션 병렬 실행</li>
- * </ul>
- * </p>
- *
- * <p>POC_카드사용내역 → POC_카드사용내역_백업 으로 아카이브한다.</p>
+ * <p>Oracle → Oracle 복사(아카이브) 패턴을 시연한다.
+ * {@link AbstractDb2DbJob}이 제공하는 파티셔닝·병렬 처리 골격을 재사용하고,
+ * 이 클래스는 POC_카드사용내역 도메인에 특화된 SQL과 RowMapper만 제공한다.</p>
  *
  * <p>Job Bean 이름 "db2db"가 FWK_BATCH_APP.BATCH_APP_FILE_NAME과 일치해야 한다.</p>
  */
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class Db2DbJobConfig {
-
-    /** 페이지당 읽을 건수 */
-    private static final int PAGE_SIZE = 5;
-
-    /** 병렬 처리할 파티션(스레드) 수 */
-    private static final int GRID_SIZE = 4;
+public class Db2DbJobConfig extends AbstractDb2DbJob<CardUsage> {
 
     private final DataSource dataSource;
 
+    @Override
+    protected String getJobName() {
+        return "db2db";
+    }
+
+    /**
+     * 파티션 매니저 Step 이름을 원본 camelCase(db2DbPartitionStep)로 고정.
+     * 기본값 getJobName()+"PartitionStep" = "db2dbPartitionStep"(소문자)와 구분된다.
+     */
+    @Override
+    protected String getPartitionStepName() {
+        return "db2DbPartitionStep";
+    }
+
     /** 이용일자를 첫 번째로 고정한 compound sort key — 파티션 BETWEEN 범위와 일치 */
     private static Map<String, Order> buildSortKeys() {
-        Map<String, Order> keys = new LinkedHashMap<>();
-        keys.put("이용일자", Order.ASCENDING);
-        keys.put("이용자", Order.ASCENDING);
-        keys.put("카드번호", Order.ASCENDING);
-        keys.put("승인시각", Order.ASCENDING);
-        return keys;
+        return CardUsageQuery.buildSortKeys();
     }
 
     @Bean(name = "db2db")
     public Job db2DbJob(JobRepository jobRepository, Step db2DbPartitionStep) {
-        return new JobBuilder("db2db", jobRepository)
-                .validator(new BatchJobParametersValidator())
-                .start(db2DbPartitionStep)
-                .build();
+        return buildJob(jobRepository, db2DbPartitionStep);
     }
 
     /**
-     * 매니저 Step: Partitioner로 이용일자 범위를 분할하고 PartitionHandler로 병렬 실행.
+     * 매니저 Step: ColumnRangePartitioner로 이용일자 범위를 분할하고 병렬 실행.
+     * TaskExecutor를 @Bean으로 주입받아 Spring이 lifecycle(initialize/destroy)을 관리한다.
      */
     @Bean
     public Step db2DbPartitionStep(JobRepository jobRepository,
                                    Step db2DbWorkerStep,
-                                   JdbcTemplate jdbcTemplate) {
-        return new StepBuilder("db2DbPartitionStep", jobRepository)
-                .partitioner("db2DbWorkerStep", new ColumnRangePartitioner(jdbcTemplate))
-                .partitionHandler(db2DbPartitionHandler(db2DbWorkerStep))
-                // TODO: FWK_BATCH_APP.RETRYABLE_YN 값에 따라 JobBuilder.preventRestart() 연동 필요
-                .allowStartIfComplete(false)
-                .build();
+                                   JdbcTemplate jdbcTemplate,
+                                   TaskExecutor db2DbTaskExecutor) {
+        return buildPartitionStep(jobRepository, "db2DbWorkerStep",
+                new ColumnRangePartitioner(jdbcTemplate), db2DbWorkerStep, db2DbTaskExecutor);
     }
 
     /**
-     * TaskExecutorPartitionHandler: 각 파티션을 별도 스레드에서 병렬 실행.
+     * 파티션 병렬 실행용 스레드 풀 Bean.
+     * Spring이 afterPropertiesSet()(초기화)·destroy()(graceful shutdown)를 자동 호출한다.
      */
     @Bean
-    public PartitionHandler db2DbPartitionHandler(Step db2DbWorkerStep) {
-        TaskExecutorPartitionHandler handler = new TaskExecutorPartitionHandler();
-        handler.setStep(db2DbWorkerStep);
-        handler.setTaskExecutor(db2DbTaskExecutor());
-        handler.setGridSize(GRID_SIZE);
-        return handler;
-    }
-
-    /** 파티션 병렬 실행용 스레드 풀. */
-    @Bean
-    public TaskExecutor db2DbTaskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(GRID_SIZE);
-        executor.setMaxPoolSize(GRID_SIZE);
-        executor.setThreadNamePrefix("db2db-partition-");
-        executor.initialize();
-        return executor;
+    public ThreadPoolTaskExecutor db2DbTaskExecutor() {
+        return buildTaskExecutor();
     }
 
     /**
-     * 워커 Step: 파티션(이용일자 minValue~maxValue 범위)에서 페이징 읽기 → 백업 테이블에 쓰기.
+     * 워커 Step: 파티션(이용일자 범위)에서 페이징 읽기 → 백업 테이블에 쓰기.
      */
     @Bean
     public Step db2DbWorkerStep(JobRepository jobRepository,
                                 PlatformTransactionManager transactionManager) {
-        return new StepBuilder("db2DbWorkerStep", jobRepository)
-                .<CardUsage, CardUsage>chunk(PAGE_SIZE, transactionManager)
-                .reader(db2DbReader(null, null))   // @StepScope로 런타임 주입
-                .writer(db2DbWriter())
-                .faultTolerant()
-                .skip(Exception.class)
-                .skipLimit(10)
-                .allowStartIfComplete(false)
-                .build();
+        return buildWorkerStep(jobRepository, transactionManager,
+                "db2DbWorkerStep", db2DbReader(null, null), db2DbWriter());
     }
 
     /**
      * JdbcPagingItemReader: 파티션의 이용일자 범위에서 페이징 조회.
-     * 한글 컬럼명을 영문 alias로 매핑하여 CardUsage Bean과 연결.
+     * alias 없이 원본 한글 컬럼명 그대로 SELECT — JdbcPagingItemReader 내부 PagingRowMapper가
+     * sort key(이용일자)를 rs.getObject("이용일자")로 추출하므로 alias하면 ORA-17006 발생.
      *
      * @param minValue 파티션 시작 이용일자(숫자, ColumnRangePartitioner 주입)
      * @param maxValue 파티션 종료 이용일자(숫자)
@@ -147,9 +115,6 @@ public class Db2DbJobConfig {
         return new JdbcPagingItemReaderBuilder<CardUsage>()
                 .name("db2DbReader")
                 .dataSource(dataSource)
-                // alias 없이 원본 한글 컬럼명 그대로 SELECT —
-                // JdbcPagingItemReader 내부 PagingRowMapper가 sort key(이용일자)를
-                // rs.getObject("이용일자")로 추출하므로 alias하면 ORA-17006 발생
                 .selectClause("""
                         SELECT 이용자, 카드번호, 이용일자, 이용가맹점, 이용금액,
                                할부개월, 회차, 할부구분코드, 승인여부, 카드명, 승인시각, 결제예정일,
@@ -158,7 +123,7 @@ public class Db2DbJobConfig {
                 .fromClause("FROM POC_카드사용내역")
                 .whereClause("WHERE TO_NUMBER(이용일자) BETWEEN :minValue AND :maxValue")
                 // PK(이용일자+이용자+카드번호+승인시각) 순서로 compound sort key 설정 —
-                // Map.of()는 순서 비보장 → LinkedHashMap.put()으로 명시적 순서 지정
+                // Map.of()는 순서 비보장 → CardUsageQuery.buildSortKeys()로 명시적 순서 지정
                 // 이용일자를 첫 번째로 유지해야 partition BETWEEN 범위와 next-page 조건이 충돌하지 않음
                 .sortKeys(buildSortKeys())
                 .rowMapper((rs, rowNum) -> CardUsage.builder()
@@ -183,7 +148,7 @@ public class Db2DbJobConfig {
                 .parameterValues(Map.of(
                         "minValue", minValue != null ? minValue : 0L,
                         "maxValue", maxValue != null ? maxValue : 99991231L))
-                .pageSize(PAGE_SIZE)
+                .pageSize(getPageSize())
                 .build();
     }
 

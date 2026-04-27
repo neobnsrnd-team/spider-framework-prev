@@ -135,11 +135,22 @@
     -->
     <select id="findTemplateList" resultType="com.example.admin_demo.domain.cmsdashboard.dto.CmsTemplateResponse">
         SELECT PAGE_ID   AS pageId,
-               PAGE_NAME AS pageName
+               PAGE_NAME AS pageName,
+               VIEW_MODE AS viewMode
         FROM SPW_CMS_PAGE
         WHERE PAGE_TYPE = 'TEMPLATE'
           AND USE_YN    = 'Y'
         ORDER BY PAGE_NAME
+    </select>
+
+    <select id="findTemplateById" resultType="com.example.admin_demo.domain.cmsdashboard.dto.CmsTemplateResponse">
+        SELECT PAGE_ID   AS pageId,
+               PAGE_NAME AS pageName,
+               VIEW_MODE AS viewMode
+        FROM SPW_CMS_PAGE
+        WHERE PAGE_ID   = #{templateId}
+          AND PAGE_TYPE = 'TEMPLATE'
+          AND USE_YN    = 'Y'
     </select>
 
     <!--
