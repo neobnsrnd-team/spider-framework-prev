@@ -6,6 +6,7 @@ import com.example.admin_demo.domain.cmsdashboard.dto.CmsDashboardListRequest;
 import com.example.admin_demo.domain.cmsdashboard.dto.CmsDashboardPageResponse;
 import com.example.admin_demo.domain.cmsdashboard.dto.CmsTemplateResponse;
 import com.example.admin_demo.domain.cmsdashboard.mapper.CmsDashboardMapper;
+import com.example.admin_demo.domain.cmsdashboard.util.CmsViewModeUtil;
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.exception.InvalidInputException;
@@ -65,10 +66,7 @@ public class CmsDashboardService {
             if (template == null) {
                 throw new NotFoundException("유효하지 않은 템플릿입니다. templateId=" + templateId);
             }
-            boolean sameViewMode = req.getViewMode() == null
-                    || req.getViewMode().equals(template.getViewMode())
-                    || ("web".equals(req.getViewMode()) && "PC".equals(template.getViewMode()));
-            if (!sameViewMode) {
+            if (!CmsViewModeUtil.isTemplateCompatible(req.getViewMode(), template.getViewMode())) {
                 throw new InvalidInputException(
                         "선택한 레이아웃과 템플릿의 레이아웃이 일치하지 않습니다. templateId=" + templateId);
             }

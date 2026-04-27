@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { createCmsPage, type CmsPageViewMode } from '@/lib/cms-page-create';
 import { nextApi } from '@/lib/api-url';
+import { isTemplateCompatibleViewMode } from '@/lib/view-mode';
 
 import Modal from './Modal';
 
@@ -46,14 +47,6 @@ export default function CreatePageModal({ onClose, canWrite }: CreatePageModalPr
     const [templatesError, setTemplatesError] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
 
-    function matchesTemplateViewMode(templateViewMode: string | undefined, selectedViewMode: CmsPageViewMode) {
-        return (
-            !templateViewMode ||
-            templateViewMode === selectedViewMode ||
-            (selectedViewMode === 'web' && templateViewMode === 'PC')
-        );
-    }
-
     useEffect(() => {
         let cancelled = false;
 
@@ -95,7 +88,7 @@ export default function CreatePageModal({ onClose, canWrite }: CreatePageModalPr
         };
     }, []);
 
-    const filteredTemplates = templates.filter((template) => matchesTemplateViewMode(template.viewMode, viewMode));
+    const filteredTemplates = templates.filter((template) => isTemplateCompatibleViewMode(viewMode, template.viewMode));
     const selectedTemplate = filteredTemplates.find((template) => template.id === templateId) ?? BLANK_TEMPLATE;
 
     useEffect(() => {

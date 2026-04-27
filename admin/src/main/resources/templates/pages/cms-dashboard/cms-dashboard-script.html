@@ -20,6 +20,7 @@
         sortDirection: null,
         rowsByPageId: {},
         templateOptions: [],
+        LEGACY_WEB_VIEW_MODE: 'PC',
 
         APPROVE_STATE_BADGE: {
             WORK:     '<span class="badge bg-secondary">작업중</span>',
@@ -275,7 +276,7 @@
             const selectedViewMode = $('#createViewMode').val() || 'mobile';
             const currentTemplateId = $('#createTemplateId').val() || 'blank';
             const filteredTemplates = this.templateOptions.filter((template) =>
-                template.viewMode === selectedViewMode || (selectedViewMode === 'web' && template.viewMode === 'PC'));
+                this.isCreateTemplateCompatibleViewMode(selectedViewMode, template.viewMode));
 
             // 이전에 동적으로 추가된 항목 제거 (중복 방지)
             $list.find('.cms-create-template:not([data-template-id="blank"])').remove();
@@ -300,6 +301,12 @@
             }
 
             this.selectCreateTemplate(currentTemplateId);
+        },
+
+        isCreateTemplateCompatibleViewMode: function(selectedViewMode, templateViewMode) {
+            return !selectedViewMode
+                || templateViewMode === selectedViewMode
+                || (selectedViewMode === 'web' && templateViewMode === this.LEGACY_WEB_VIEW_MODE);
         },
 
         updateCreateButtonState: function(creating) {
