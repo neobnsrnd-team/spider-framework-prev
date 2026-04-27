@@ -16,6 +16,7 @@ function durationMs(start: number) {
 async function loadPage(bank: string): Promise<{
     html: string;
     updated: string | null;
+    pageMissing?: boolean;
     fileNotFound?: boolean;
     pageName?: string;
     viewMode?: string;
@@ -29,7 +30,7 @@ async function loadPage(bank: string): Promise<{
     const page = await getPageById(bank);
     const dbMs = durationMs(dbStart);
     if (!page) {
-        return { html: '', updated: null, createUserId: null, timing: { dbMs, fileMs: 0 } };
+        return { html: '', updated: null, pageMissing: true, createUserId: null, timing: { dbMs, fileMs: 0 } };
     }
 
     let html = '';
@@ -37,7 +38,7 @@ async function loadPage(bank: string): Promise<{
     let fileMs = 0;
 
     // DB PAGE_HTML 우선 (getPageById의 SELECT *에 이미 포함)
-    if (page.PAGE_HTML) {
+    if (page.PAGE_HTML != null) {
         html = page.PAGE_HTML;
     } else if (page.FILE_PATH) {
         // FILE_PATH 폴백 (기존 데이터 호환)
@@ -83,7 +84,8 @@ export async function POST(req: NextRequest) {
         const parseMs = durationMs(parseStart);
 
         const loadStart = performance.now();
-        const { html, updated, fileNotFound, pageName, viewMode, createUserId, timing } = await loadPage(bank);
+        const { html, updated, pageMissing, fileNotFound, pageName, viewMode, createUserId, timing } =
+            await loadPage(bank);
         const loadMs = durationMs(loadStart);
         const totalMs = durationMs(totalStart);
 
@@ -96,6 +98,7 @@ export async function POST(req: NextRequest) {
                 ok: true,
                 html,
                 updated,
+                pageMissing,
                 fileNotFound,
                 pageName,
                 viewMode,
