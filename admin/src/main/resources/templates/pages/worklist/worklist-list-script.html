@@ -1,343 +1,307 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-<script th:fragment="script">
-    /**
-     * @file worklist-list-script.html
-     * @description 나의 작업함(FWK_WORK_LIST) 목록 페이지 JavaScript.
-     *   - 그룹 탭 동적 로드 (GET /api/work-groups)
-     *   - 작업 목록 조회 및 클라이언트 정렬/페이징
-     *   - 그룹 이동·권한이양 팝업 호출 (placeholder)
-     */
-    window.WorkList = (function () {
-        let workItems = [];
-        let currentGroupId = '';
+<th:block th:fragment="script">
 
-        let sortBy = null;
-        let sortDir = 'ASC';
+    <!-- 쓰기 권한 플래그 -->
+    <script th:inline="javascript">
+        var worklist_write_access = /*[[${userAuthorities != null and userAuthorities.contains('WORK_TASK:W')}]]*/ false;
+    </script>
 
-        let currentPage = 1;
-        let itemsPerPage = 20;
-
-        function init() {
-            attachSortHandlers();
-            bindPageSizeSelector();
-            loadGroups();
-
-            $('[data-tab-page]').off('tab:activated.workList').on('tab:activated.workList', function () {
-                loadGroups();
-            });
+    <script>
+        /** HTML 이스케이프 유틸 */
+        function _wlEsc(str) {
+            const d = document.createElement('div');
+            d.appendChild(document.createTextNode(String(str == null ? '' : str)));
+            return d.innerHTML;
         }
 
-        // 3-상태 정렬 핸들러: ASC → DESC → 해제
-        function attachSortHandlers() {
-            document.querySelectorAll('#workListTable thead th[data-sort]').forEach(th => {
-                th.classList.add('sortable');
-                th.addEventListener('click', function () {
-                    const key = this.getAttribute('data-sort');
-                    if (sortBy === key) {
-                        if (sortDir === 'ASC') { sortDir = 'DESC'; }
-                        else { sortBy = null; sortDir = 'ASC'; }
-                    } else {
-                        sortBy = key;
-                        sortDir = 'ASC';
+        var WORKLIST_TABLE_CONFIG = {
+            id: 'workListTable',
+            columns: [
+                {
+                    key: '_check',
+                    label: '<input type="checkbox" id="checkAll" onchange="WorkListPage.toggleCheckAll(this)">',
+                    width: '40px',
+                    sortable: false,
+                    align: 'center',
+                    render: function(val, row) {
+                        return '<input type="checkbox" class="row-checkbox" data-work-seq="' + row.workSeq + '" onchange="WorkListPage.syncCheckAll()">';
                     }
-                    currentPage = 1;
-                    updateSortIndicators();
-                    renderTablePage();
-                });
-            });
-        }
-
-        function updateSortIndicators() {
-            document.querySelectorAll('#workListTable thead th.sortable').forEach(th => {
-                th.classList.remove('sort-asc', 'sort-desc');
-            });
-            if (!sortBy) return;
-            const th = document.querySelector(`#workListTable thead th[data-sort="${sortBy}"]`);
-            if (th) th.classList.add(sortDir === 'ASC' ? 'sort-asc' : 'sort-desc');
-        }
-
-        function bindPageSizeSelector() {
-            const sel = document.getElementById('limitRows');
-            if (sel) {
-                sel.value = itemsPerPage;
-                sel.addEventListener('change', function () {
-                    itemsPerPage = parseInt(this.value);
-                    currentPage = 1;
-                    renderTablePage();
-                });
-            }
-        }
-
-        // 그룹 탭 로드
-        function loadGroups() {
-            const userId = document.getElementById('currentUserId').value;
-            fetch(`${API_BASE_URL}/work-groups?userId=${encodeURIComponent(userId)}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        renderGroupTabs(data.data || []);
-                        loadWorkList(currentGroupId);
-                    } else {
-                        Toast.error(data.message || '그룹 조회 실패');
+                },
+                { key: 'workSeq', label: '번호', width: '60px', sortable: true, align: 'center' },
+                {
+                    key: 'workId',
+                    label: '항목',
+                    width: '120px',
+                    sortable: true,
+                    render: function(val) {
+                        return val ? '<span class="badge text-bg-primary">' + _wlEsc(val) + '</span>' : '';
                     }
-                })
-                .catch(e => Toast.error('그룹 조회 중 오류: ' + e.message));
-        }
-
-        function renderGroupTabs(groups) {
-            const tabList = document.getElementById('workGroupTabs');
-            tabList.querySelectorAll('li.nav-item[data-dynamic]').forEach(el => el.remove());
-            groups.forEach(group => {
-                const li = document.createElement('li');
-                li.className = 'nav-item';
-                li.setAttribute('role', 'presentation');
-                li.setAttribute('data-dynamic', 'true');
-                li.innerHTML = `
-                    <button class="nav-link" type="button" role="tab"
-                            data-group-id="${escapeHtml(group.groupId)}"
-                            onclick="window.WorkList.switchGroup('${escapeHtml(group.groupId)}')">
-                        ${escapeHtml(group.groupName)}
-                    </button>`;
-                tabList.appendChild(li);
-            });
-        }
-
-        function switchGroup(groupId) {
-            currentGroupId = groupId;
-            currentPage = 1;
-            document.querySelectorAll('#workGroupTabs .nav-link').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-group-id') === groupId);
-            });
-            loadWorkList(groupId);
-        }
-
-        // 작업함 목록 조회
-        function loadWorkList(groupId) {
-            const userId = document.getElementById('currentUserId').value;
-            const params = new URLSearchParams({ userId });
-            if (groupId) params.append('groupId', groupId);
-
-            fetch(`${API_BASE_URL}/work-list?${params.toString()}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        workItems = data.data || [];
-                        currentPage = 1;
-                        renderTablePage();
-                    } else {
-                        Toast.error(data.message || '목록 조회 실패');
+                },
+                { key: 'workDataPk', label: '식별자', sortable: true, cellClass: 'small text-break' },
+                { key: 'workName', label: '작업내용', sortable: true },
+                {
+                    key: 'approvalSeq',
+                    label: '결재일련번호',
+                    width: '130px',
+                    sortable: false,
+                    align: 'center',
+                    render: function(val) {
+                        return val === '결재미신청'
+                            ? '<span class="text-body-secondary small">미신청</span>'
+                            : '<span class="badge text-bg-info text-dark">' + _wlEsc(val) + '</span>';
                     }
-                })
-                .catch(e => Toast.error('목록 조회 중 오류: ' + e.message));
-        }
-
-        function renderTablePage() {
-            const sorted = getSortedItems();
-            const total = sorted.length;
-            const start = (currentPage - 1) * itemsPerPage;
-            const paged = sorted.slice(start, start + itemsPerPage);
-            renderTable(paged, start);
-            renderPagination(total);
-        }
-
-        function getSortedItems() {
-            if (!sortBy) return [...workItems];
-            return [...workItems].sort((a, b) => {
-                const va = a[sortBy] ?? '';
-                const vb = b[sortBy] ?? '';
-                const cmp = String(va).localeCompare(String(vb), 'ko');
-                return sortDir === 'ASC' ? cmp : -cmp;
-            });
-        }
-
-        function renderTable(items, startIndex) {
-            const checkAll = document.getElementById('checkAll');
-            if (checkAll) checkAll.checked = false;
-
-            const tbody = document.getElementById('workListTableBody');
-            tbody.innerHTML = '';
-
-            if (items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>`;
-                return;
-            }
-
-            items.forEach((item, i) => {
-                const idx = startIndex + i;
-                const tr = document.createElement('tr');
-                tr.setAttribute('data-index', idx);
-                tr.setAttribute('data-work-seq', item.workSeq);
-
-                // 운영반영여부 배지
-                const distBadge = item.distYn === 'Y'
-                    ? '<span class="badge bg-success">Y</span>'
-                    : '<span class="badge bg-secondary">N</span>';
-
-                // 결재일련번호 표시
-                const approvalBadge = item.approvalSeq === '결재미신청'
-                    ? '<span class="text-body-secondary small">미신청</span>'
-                    : `<span class="badge bg-info text-dark">${escapeHtml(item.approvalSeq)}</span>`;
-
-                // 이행스크립트 버튼 (FILE_NAME이 있으면 View 활성)
-                const scriptBtn = item.fileName
-                    ? `<button class="btn btn-outline-secondary btn-xs" title="${escapeHtml(item.fileName)}"
-                               onclick="window.WorkList.viewScript(${item.workSeq})">
-                           <i class="bi bi-file-earmark-text"></i> View
-                       </button>`
-                    : '<span class="text-body-secondary small">없음</span>';
-
-                tr.innerHTML = `
-                    <td class="text-center">
-                        <input type="checkbox" class="row-checkbox" data-index="${idx}"
-                               onchange="window.WorkList.syncCheckAll()">
-                    </td>
-                    <td class="text-center text-body-secondary small">${item.workSeq}</td>
-                    <td><span class="badge bg-primary-subtle text-primary-emphasis">${escapeHtml(item.workId || '')}</span></td>
-                    <td class="small text-break">${escapeHtml(item.workDataPk || '')}</td>
-                    <td>${escapeHtml(item.workName || '')}</td>
-                    <td class="text-center">${approvalBadge}</td>
-                    <td class="text-center">${distBadge}</td>
-                    <td class="text-center small">${escapeHtml(item.distDtime || '-')}</td>
-                    <td class="text-center small">${escapeHtml(item.lastUpdateUserId || '')}</td>
-                    <td class="text-center small">${escapeHtml(item.lastUpdateDtime || '')}</td>
-                    <td class="text-center">${scriptBtn}</td>`;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderPagination(total) {
-            const totalPages = Math.ceil(total / itemsPerPage);
-            const pagination = document.getElementById('pagination');
-            const pageInfo = document.getElementById('pageInfo');
-            if (!pagination) return;
-
-            let html = `
-                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="window.WorkList.changePage(1);return false;"><i class="bi bi-chevron-double-left"></i></a>
-                </li>
-                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="window.WorkList.changePage(${currentPage - 1});return false;"><i class="bi bi-chevron-left"></i></a>
-                </li>`;
-
-            const maxBtn = 5;
-            let sp = Math.max(1, currentPage - Math.floor(maxBtn / 2));
-            let ep = Math.min(totalPages, sp + maxBtn - 1);
-            if (ep - sp + 1 < maxBtn) sp = Math.max(1, ep - maxBtn + 1);
-
-            for (let i = sp; i <= ep; i++) {
-                html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="window.WorkList.changePage(${i});return false;">${i}</a></li>`;
-            }
-
-            html += `
-                <li class="page-item ${currentPage >= totalPages || totalPages === 0 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="window.WorkList.changePage(${currentPage + 1});return false;"><i class="bi bi-chevron-right"></i></a>
-                </li>
-                <li class="page-item ${currentPage >= totalPages || totalPages === 0 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="window.WorkList.changePage(${totalPages});return false;"><i class="bi bi-chevron-double-right"></i></a>
-                </li>`;
-
-            pagination.innerHTML = html;
-
-            if (pageInfo) {
-                const s = total === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
-                const e = Math.min(currentPage * itemsPerPage, total);
-                pageInfo.textContent = `${s} - ${e} of ${total} items`;
-            }
-        }
-
-        function changePage(page) {
-            const totalPages = Math.ceil(workItems.length / itemsPerPage);
-            if (page < 1 || page > totalPages) return;
-            currentPage = page;
-            renderTablePage();
-        }
-
-        function toggleCheckAll(checkbox) {
-            document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = checkbox.checked);
-        }
-
-        function syncCheckAll() {
-            const all = document.querySelectorAll('.row-checkbox');
-            const checked = document.querySelectorAll('.row-checkbox:checked');
-            const checkAll = document.getElementById('checkAll');
-            if (checkAll) checkAll.checked = all.length > 0 && all.length === checked.length;
-        }
-
-        function getCheckedWorkSeqs() {
-            const checked = document.querySelectorAll('.row-checkbox:checked');
-            if (checked.length === 0) { Toast.warning('항목을 선택해주세요.'); return null; }
-            return Array.from(checked).map(cb => parseInt(cb.closest('tr').getAttribute('data-work-seq')));
-        }
-
-        function openGroupMoveModal() {
-            const workSeqs = getCheckedWorkSeqs();
-            if (!workSeqs) return;
-            // Task #5에서 그룹 관리 팝업 구현 예정
-            Toast.info('그룹 이동 기능은 준비 중입니다.');
-        }
-
-        function openTransferModal() {
-            const workSeqs = getCheckedWorkSeqs();
-            if (!workSeqs) return;
-            // Task #6에서 권한이양 팝업 구현 예정
-            Toast.info('권한이양 기능은 준비 중입니다.');
-        }
-
-        function viewScript(workSeq) {
-            // Task #5/#6 이후 이행스크립트 View 기능 구현 예정
-            Toast.info('이행스크립트 보기 기능은 준비 중입니다. (seq: ' + workSeq + ')');
-        }
-
-        function moveGroup(workSeqs, groupId) {
-            fetch(`${API_BASE_URL}/work-list/group-move`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ workSeqs, groupId })
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) { Toast.success('그룹 이동이 완료되었습니다.'); loadGroups(); }
-                    else { Toast.error(data.message || '그룹 이동 실패'); }
-                })
-                .catch(e => Toast.error('그룹 이동 중 오류: ' + e.message));
-        }
-
-        function transferAuthority(workSeqs, toUserId) {
-            const fromUserId = document.getElementById('currentUserId').value;
-            fetch(`${API_BASE_URL}/work-list/transfer`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fromUserId, toUserId, workSeqs })
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) { Toast.success('권한이양이 완료되었습니다.'); loadGroups(); }
-                    else { Toast.error(data.message || '권한이양 실패'); }
-                })
-                .catch(e => Toast.error('권한이양 중 오류: ' + e.message));
-        }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.appendChild(document.createTextNode(String(str)));
-            return div.innerHTML;
-        }
-
-        return {
-            init, switchGroup, toggleCheckAll, syncCheckAll, changePage,
-            openGroupMoveModal, openTransferModal, viewScript,
-            moveGroup, transferAuthority
+                },
+                {
+                    key: 'distYn',
+                    label: '운영반영여부',
+                    width: '100px',
+                    sortable: true,
+                    align: 'center',
+                    render: function(val) {
+                        return val === 'Y'
+                            ? '<span class="badge text-bg-success">Y</span>'
+                            : '<span class="badge text-bg-secondary">N</span>';
+                    }
+                },
+                { key: 'distDtime',          label: '운영반영일시',  width: '150px', sortable: false, align: 'center', cellClass: 'small' },
+                { key: 'lastUpdateUserId',   label: '최종수정자',    width: '110px', sortable: false, align: 'center', cellClass: 'small' },
+                { key: 'lastUpdateDtime',    label: '최종수정일시',  width: '150px', sortable: true,  align: 'center', cellClass: 'small' },
+                {
+                    key: 'fileName',
+                    label: '이행스크립트',
+                    width: '100px',
+                    sortable: false,
+                    align: 'center',
+                    render: function(val, row) {
+                        return val
+                            ? '<button class="btn btn-outline-secondary btn-xs small" onclick="WorkListPage.viewScript(' + row.workSeq + ', event)"><i class="bi bi-file-earmark-text"></i> View</button>'
+                            : '<span class="text-body-secondary small">-</span>';
+                    }
+                }
+            ],
+            noDataMessage: '조회된 데이터가 없습니다.',
+            emptyMessage: '데이터를 불러오는 중...'
         };
-    })();
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () { window.WorkList.init(); });
-    } else {
-        window.WorkList.init();
-    }
-</script>
+        window.WorkListPage = {
+            allItems: [],
+            currentGroupId: '',
+            currentPage: 1,
+            totalItems: 0,
+            itemsPerPage: 20,
+            _sortBy: null,
+            _sortDir: null,
+
+            init: function() {
+                var self = this;
+
+                var tableConfig = Object.assign({}, WORKLIST_TABLE_CONFIG, {
+                    onSort: function(sortBy, sortDir) {
+                        self._sortBy = sortBy;
+                        self._sortDir = sortDir;
+                        self.currentPage = 1;
+                        self.renderPage();
+                    }
+                });
+
+                DataTable.render('#tableContainer', tableConfig, null);
+
+                Pagination.init('#pagination', '#pageInfo', function(page) {
+                    self.currentPage = page;
+                    self.renderPage();
+                });
+
+                $('#limitRows').on('change', function() {
+                    self.itemsPerPage = parseInt(this.value);
+                    self.currentPage = 1;
+                    self.renderPage();
+                });
+
+                $('#btnRefresh').on('click', function() {
+                    self.loadWorkList(self.currentGroupId);
+                });
+
+                if (worklist_write_access) {
+                    $('#btnGroupMove').on('click', function() { self.openGroupMoveModal(); });
+                    $('#btnTransfer').on('click', function() { self.openTransferModal(); });
+                }
+
+                this.loadGroups();
+            },
+
+            loadGroups: function() {
+                var self = this;
+                var userId = document.getElementById('currentUserId').value;
+                $.ajax({
+                    url: API_BASE_URL + '/work-groups',
+                    data: { userId: userId },
+                    success: function(res) {
+                        if (res.success) {
+                            self.renderGroupTabs(res.data || []);
+                            self.loadWorkList(self.currentGroupId);
+                        } else {
+                            Toast.error(res.message || '그룹 조회 실패');
+                        }
+                    },
+                    error: function() { Toast.error('그룹 조회 중 오류가 발생했습니다.'); }
+                });
+            },
+
+            renderGroupTabs: function(groups) {
+                var $tabs = $('#workGroupTabs');
+                $tabs.find('[data-dynamic]').remove();
+                groups.forEach(function(g) {
+                    $tabs.append(
+                        '<li class="nav-item" role="presentation" data-dynamic="true">' +
+                            '<button class="nav-link" type="button" role="tab"' +
+                            ' data-group-id="' + _wlEsc(g.groupId) + '"' +
+                            ' onclick="WorkListPage.switchGroup(\'' + _wlEsc(g.groupId) + '\')">' +
+                            _wlEsc(g.groupName) +
+                            '</button>' +
+                        '</li>'
+                    );
+                });
+            },
+
+            switchGroup: function(groupId) {
+                this.currentGroupId = groupId;
+                this.currentPage = 1;
+                $('#workGroupTabs .nav-link').each(function() {
+                    var btnGroupId = $(this).attr('data-group-id');
+                    $(this).toggleClass('active', btnGroupId === groupId);
+                });
+                this.loadWorkList(groupId);
+            },
+
+            loadWorkList: function(groupId) {
+                var self = this;
+                var userId = document.getElementById('currentUserId').value;
+                var params = { userId: userId };
+                if (groupId) params.groupId = groupId;
+
+                $.ajax({
+                    url: API_BASE_URL + '/work-list',
+                    data: params,
+                    success: function(res) {
+                        if (res.success) {
+                            self.allItems = res.data || [];
+                            self.totalItems = self.allItems.length;
+                            self.currentPage = 1;
+                            self.renderPage();
+                        } else {
+                            Toast.error(res.message || '목록 조회 실패');
+                            DataTable.setData('#tableContainer', []);
+                        }
+                    },
+                    error: function() {
+                        Toast.error('목록 조회 중 오류가 발생했습니다.');
+                        DataTable.setData('#tableContainer', []);
+                    }
+                });
+            },
+
+            renderPage: function() {
+                var sorted = this._getSorted();
+                var start = (this.currentPage - 1) * this.itemsPerPage;
+                var paged = sorted.slice(start, start + this.itemsPerPage);
+
+                // 페이지 이동 시 전체선택 해제
+                var checkAll = document.getElementById('checkAll');
+                if (checkAll) checkAll.checked = false;
+
+                DataTable.setData('#tableContainer', paged);
+
+                Pagination.update('#pagination', {
+                    currentPage: this.currentPage,
+                    totalItems: this.totalItems,
+                    itemsPerPage: this.itemsPerPage
+                });
+            },
+
+            _getSorted: function() {
+                if (!this._sortBy || !this._sortDir) return this.allItems.slice();
+                var key = this._sortBy;
+                var dir = this._sortDir;
+                return this.allItems.slice().sort(function(a, b) {
+                    var va = a[key] == null ? '' : String(a[key]);
+                    var vb = b[key] == null ? '' : String(b[key]);
+                    var cmp = va.localeCompare(vb, 'ko');
+                    return dir === 'ASC' ? cmp : -cmp;
+                });
+            },
+
+            toggleCheckAll: function(cb) {
+                document.querySelectorAll('.row-checkbox').forEach(function(c) { c.checked = cb.checked; });
+            },
+
+            syncCheckAll: function() {
+                var all     = document.querySelectorAll('.row-checkbox');
+                var checked = document.querySelectorAll('.row-checkbox:checked');
+                var checkAll = document.getElementById('checkAll');
+                if (checkAll) checkAll.checked = all.length > 0 && all.length === checked.length;
+            },
+
+            getCheckedWorkSeqs: function() {
+                var checked = Array.from(document.querySelectorAll('.row-checkbox:checked'));
+                if (!checked.length) { Toast.warning('항목을 선택해주세요.'); return null; }
+                return checked.map(function(cb) { return parseInt(cb.getAttribute('data-work-seq')); });
+            },
+
+            openGroupMoveModal: function() {
+                if (!this.getCheckedWorkSeqs()) return;
+                // Task #6에서 그룹 관리 팝업 구현 예정
+                Toast.info('그룹 이동 기능은 준비 중입니다.');
+            },
+
+            openTransferModal: function() {
+                if (!this.getCheckedWorkSeqs()) return;
+                // Task #7에서 권한이양 팝업 구현 예정
+                Toast.info('권한이양 기능은 준비 중입니다.');
+            },
+
+            viewScript: function(workSeq, e) {
+                if (e) e.stopPropagation();
+                Toast.info('이행스크립트 보기 기능은 준비 중입니다. (seq: ' + workSeq + ')');
+            },
+
+            moveGroup: function(workSeqs, groupId) {
+                var self = this;
+                $.ajax({
+                    url: API_BASE_URL + '/work-list/group-move',
+                    method: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ workSeqs: workSeqs, groupId: groupId }),
+                    success: function(res) {
+                        if (res.success) { Toast.success('그룹 이동이 완료되었습니다.'); self.loadGroups(); }
+                        else { Toast.error(res.message || '그룹 이동 실패'); }
+                    },
+                    error: function() { Toast.error('그룹 이동 중 오류가 발생했습니다.'); }
+                });
+            },
+
+            transferAuthority: function(workSeqs, toUserId) {
+                var self = this;
+                var fromUserId = document.getElementById('currentUserId').value;
+                $.ajax({
+                    url: API_BASE_URL + '/work-list/transfer',
+                    method: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ fromUserId: fromUserId, toUserId: toUserId, workSeqs: workSeqs }),
+                    success: function(res) {
+                        if (res.success) { Toast.success('권한이양이 완료되었습니다.'); self.loadGroups(); }
+                        else { Toast.error(res.message || '권한이양 실패'); }
+                    },
+                    error: function() { Toast.error('권한이양 중 오류가 발생했습니다.'); }
+                });
+            }
+        };
+
+        $(document).ready(function() {
+            WorkListPage.init();
+        });
+    </script>
+</th:block>
 </body>
 </html>
