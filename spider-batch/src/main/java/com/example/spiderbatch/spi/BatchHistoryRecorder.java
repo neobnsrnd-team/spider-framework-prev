@@ -19,6 +19,17 @@ package com.example.spiderbatch.spi;
 public interface BatchHistoryRecorder {
 
     /**
+     * 같은 날, 같은 배치, 같은 인스턴스의 다음 실행 회차를 계산한다.
+     * NVL(MAX(BATCH_EXECUTE_SEQ), 0) + 1 패턴.
+     *
+     * @param batchAppId 배치 APP ID
+     * @param instanceId WAS 인스턴스 ID
+     * @param batchDate  배치 기준일 (YYYYMMDD)
+     * @return 다음 실행 회차 (첫 실행이면 1)
+     */
+    int nextExecuteSeq(String batchAppId, String instanceId, String batchDate);
+
+    /**
      * 배치 실행 시작 이력을 INSERT한다 (RES_RT_CODE = '0').
      *
      * @param batchAppId       배치 APP ID

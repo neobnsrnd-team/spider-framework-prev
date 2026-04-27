@@ -2,7 +2,7 @@ package com.example.spiderbatch.job.db2foreign;
 
 import com.example.spiderbatch.job.AbstractDb2ForeignJob;
 import com.example.spiderbatch.job.common.CardUsage;
-import java.util.LinkedHashMap;
+import com.example.spiderbatch.job.common.CardUsageQuery;
 import java.util.Map;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
@@ -53,12 +53,7 @@ public class Db2ForeignJobConfig extends AbstractDb2ForeignJob<CardUsage> {
 
     /** PK 전체를 이용일자 우선으로 고정한 compound sort key */
     private static Map<String, Order> buildSortKeys() {
-        Map<String, Order> keys = new LinkedHashMap<>();
-        keys.put("이용일자", Order.ASCENDING);
-        keys.put("이용자", Order.ASCENDING);
-        keys.put("카드번호", Order.ASCENDING);
-        keys.put("승인시각", Order.ASCENDING);
-        return keys;
+        return CardUsageQuery.buildSortKeys();
     }
 
     @Bean(name = "db2foreign")

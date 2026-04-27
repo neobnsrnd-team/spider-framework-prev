@@ -4,7 +4,6 @@ import com.example.spiderbatch.constant.BatchConstants;
 import com.example.spiderbatch.domain.batch.dto.BatchExecuteRequest;
 import com.example.spiderbatch.domain.batch.dto.BatchExecuteResponse;
 import com.example.spiderbatch.domain.batch.mapper.BatchAppMapper;
-import com.example.spiderbatch.domain.batch.mapper.BatchHisMapper;
 import com.example.spiderbatch.config.BatchConfigurationProperties;
 import com.example.spiderbatch.spi.BatchHistoryRecorder;
 import com.example.spiderbatch.global.log.BatchAuditLogger;
@@ -44,8 +43,6 @@ public class BatchExecuteService {
     private final JobRegistry jobRegistry;
     private final JobLauncher jobLauncher;
     private final BatchAppMapper batchAppMapper;
-    /** 다음 실행 회차(selectNextExecuteSeq) 조회 전용 — insert/update는 BatchHistoryRecorder 경유 */
-    private final BatchHisMapper batchHisMapper;
     private final BatchHistoryRecorder batchHistoryRecorder;
     /** Micrometer MeterRegistry: batch.job.duration / batch.job.status / batch.step.write.count 기록 */
     private final MeterRegistry meterRegistry;
@@ -82,7 +79,7 @@ public class BatchExecuteService {
         }
 
         // 2. 다음 실행 회차 계산
-        int nextSeq = batchHisMapper.selectNextExecuteSeq(
+        int nextSeq = batchHistoryRecorder.nextExecuteSeq(
                 request.getBatchAppId(), batchProps.getWas().getInstanceId(), request.getBatchDate());
 
         // 3. FWK_BATCH_HIS INSERT (STARTED)

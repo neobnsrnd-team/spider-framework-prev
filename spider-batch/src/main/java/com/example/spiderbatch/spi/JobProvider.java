@@ -1,7 +1,6 @@
 package com.example.spiderbatch.spi;
 
 import java.util.List;
-import org.springframework.batch.core.Job;
 
 /**
  * @file JobProvider.java

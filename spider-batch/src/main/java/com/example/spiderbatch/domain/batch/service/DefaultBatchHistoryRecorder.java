@@ -17,6 +17,11 @@ public class DefaultBatchHistoryRecorder implements BatchHistoryRecorder {
     private final BatchHisMapper batchHisMapper;
 
     @Override
+    public int nextExecuteSeq(String batchAppId, String instanceId, String batchDate) {
+        return batchHisMapper.selectNextExecuteSeq(batchAppId, instanceId, batchDate);
+    }
+
+    @Override
     public void insertStarted(String batchAppId, String instanceId, String batchDate,
                               int batchExecuteSeq, String logDtime, String userId) {
         batchHisMapper.insertBatchHis(batchAppId, instanceId, batchDate, batchExecuteSeq, logDtime, userId);

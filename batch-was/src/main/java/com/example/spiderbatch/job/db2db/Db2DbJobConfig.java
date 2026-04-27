@@ -2,7 +2,7 @@ package com.example.spiderbatch.job.db2db;
 
 import com.example.spiderbatch.job.AbstractDb2DbJob;
 import com.example.spiderbatch.job.common.CardUsage;
-import java.util.LinkedHashMap;
+import com.example.spiderbatch.job.common.CardUsageQuery;
 import java.util.Map;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,9 @@ import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuild
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
@@ -43,14 +45,18 @@ public class Db2DbJobConfig extends AbstractDb2DbJob<CardUsage> {
         return "db2db";
     }
 
+    /**
+     * 파티션 매니저 Step 이름을 원본 camelCase(db2DbPartitionStep)로 고정.
+     * 기본값 getJobName()+"PartitionStep" = "db2dbPartitionStep"(소문자)와 구분된다.
+     */
+    @Override
+    protected String getPartitionStepName() {
+        return "db2DbPartitionStep";
+    }
+
     /** 이용일자를 첫 번째로 고정한 compound sort key — 파티션 BETWEEN 범위와 일치 */
     private static Map<String, Order> buildSortKeys() {
-        Map<String, Order> keys = new LinkedHashMap<>();
-        keys.put("이용일자", Order.ASCENDING);
-        keys.put("이용자", Order.ASCENDING);
-        keys.put("카드번호", Order.ASCENDING);
-        keys.put("승인시각", Order.ASCENDING);
-        return keys;
+        return CardUsageQuery.buildSortKeys();
     }
 
     @Bean(name = "db2db")
@@ -60,14 +66,24 @@ public class Db2DbJobConfig extends AbstractDb2DbJob<CardUsage> {
 
     /**
      * 매니저 Step: ColumnRangePartitioner로 이용일자 범위를 분할하고 병렬 실행.
-     * TODO: FWK_BATCH_APP.RETRYABLE_YN 값에 따라 JobBuilder.preventRestart() 연동 필요
+     * TaskExecutor를 @Bean으로 주입받아 Spring이 lifecycle(initialize/destroy)을 관리한다.
      */
     @Bean
     public Step db2DbPartitionStep(JobRepository jobRepository,
                                    Step db2DbWorkerStep,
-                                   JdbcTemplate jdbcTemplate) {
+                                   JdbcTemplate jdbcTemplate,
+                                   TaskExecutor db2DbTaskExecutor) {
         return buildPartitionStep(jobRepository, "db2DbWorkerStep",
-                new ColumnRangePartitioner(jdbcTemplate), db2DbWorkerStep);
+                new ColumnRangePartitioner(jdbcTemplate), db2DbWorkerStep, db2DbTaskExecutor);
+    }
+
+    /**
+     * 파티션 병렬 실행용 스레드 풀 Bean.
+     * Spring이 afterPropertiesSet()(초기화)·destroy()(graceful shutdown)를 자동 호출한다.
+     */
+    @Bean
+    public ThreadPoolTaskExecutor db2DbTaskExecutor() {
+        return buildTaskExecutor();
     }
 
     /**
@@ -107,7 +123,7 @@ public class Db2DbJobConfig extends AbstractDb2DbJob<CardUsage> {
                 .fromClause("FROM POC_카드사용내역")
                 .whereClause("WHERE TO_NUMBER(이용일자) BETWEEN :minValue AND :maxValue")
                 // PK(이용일자+이용자+카드번호+승인시각) 순서로 compound sort key 설정 —
-                // Map.of()는 순서 비보장 → LinkedHashMap.put()으로 명시적 순서 지정
+                // Map.of()는 순서 비보장 → CardUsageQuery.buildSortKeys()로 명시적 순서 지정
                 // 이용일자를 첫 번째로 유지해야 partition BETWEEN 범위와 next-page 조건이 충돌하지 않음
                 .sortKeys(buildSortKeys())
                 .rowMapper((rs, rowNum) -> CardUsage.builder()

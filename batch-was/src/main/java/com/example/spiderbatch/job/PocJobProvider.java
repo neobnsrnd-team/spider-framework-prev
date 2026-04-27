@@ -2,7 +2,7 @@ package com.example.spiderbatch.job;
 
 import com.example.spiderbatch.spi.JobProvider;
 import java.util.List;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 /**
  * @file PocJobProvider.java
@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
  * Spring Batch 5.x의 {@code JobRegistrySmartInitializingSingleton}이
  * 컨텍스트 내 모든 Job Bean을 {@code JobRegistry}에 자동 등록한다.</p>
  */
-@Configuration
+@Component
 public class PocJobProvider implements JobProvider {
 
     @Override

@@ -60,6 +60,14 @@ public abstract class AbstractDb2DbJob<T> {
         return 10;
     }
 
+    /**
+     * 파티션 매니저 Step 이름. 기본값은 {@code getJobName() + "PartitionStep"}.
+     * 소비자가 이름을 변경하고 싶을 때 재정의한다.
+     */
+    protected String getPartitionStepName() {
+        return getJobName() + "PartitionStep";
+    }
+
     /** {@link BatchJobParametersValidator}를 적용한 Job을 생성한다. */
     protected Job buildJob(JobRepository jobRepository, Step partitionStep) {
         return new JobBuilder(getJobName(), jobRepository)
@@ -74,34 +82,45 @@ public abstract class AbstractDb2DbJob<T> {
      * @param workerStepName 파티션 키 접두사로 사용할 워커 Step 이름
      * @param partitioner    범위 분할 전략 (ColumnRangePartitioner 등)
      * @param workerStep     병렬 실행될 워커 Step Bean
+     * @param taskExecutor   파티션 병렬 실행 스레드 풀 (Spring @Bean으로 관리해야 graceful shutdown 보장)
      */
     protected Step buildPartitionStep(JobRepository jobRepository,
                                       String workerStepName,
                                       Partitioner partitioner,
-                                      Step workerStep) {
-        return new StepBuilder(getJobName() + "PartitionStep", jobRepository)
+                                      Step workerStep,
+                                      TaskExecutor taskExecutor) {
+        return new StepBuilder(getPartitionStepName(), jobRepository)
                 .partitioner(workerStepName, partitioner)
-                .partitionHandler(buildPartitionHandler(workerStep))
+                .partitionHandler(buildPartitionHandler(workerStep, taskExecutor))
                 .allowStartIfComplete(false)
                 .build();
     }
 
-    /** TaskExecutorPartitionHandler를 gridSize 기준으로 생성한다. */
-    protected PartitionHandler buildPartitionHandler(Step workerStep) {
+    /**
+     * TaskExecutorPartitionHandler를 gridSize 기준으로 생성한다.
+     *
+     * @param taskExecutor Spring @Bean으로 관리되는 TaskExecutor — Spring이 destroy() 호출 보장
+     */
+    protected PartitionHandler buildPartitionHandler(Step workerStep, TaskExecutor taskExecutor) {
         TaskExecutorPartitionHandler handler = new TaskExecutorPartitionHandler();
         handler.setStep(workerStep);
-        handler.setTaskExecutor(buildTaskExecutor());
+        handler.setTaskExecutor(taskExecutor);
         handler.setGridSize(getGridSize());
         return handler;
     }
 
-    /** 파티션 병렬 실행용 스레드 풀을 생성한다. */
-    protected TaskExecutor buildTaskExecutor() {
+    /**
+     * 파티션 병렬 실행용 스레드 풀을 설정한다.
+     *
+     * <p>소비자 {@code @Configuration}에서 {@code @Bean} 메서드로 감싸 반환해야
+     * Spring이 {@code InitializingBean.afterPropertiesSet()}과 {@code DisposableBean.destroy()}를
+     * 통해 초기화·graceful shutdown을 관리한다. {@code initialize()}는 직접 호출하지 않는다.</p>
+     */
+    protected ThreadPoolTaskExecutor buildTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(getGridSize());
         executor.setMaxPoolSize(getGridSize());
         executor.setThreadNamePrefix(getJobName() + "-partition-");
-        executor.initialize();
         return executor;
     }
 
