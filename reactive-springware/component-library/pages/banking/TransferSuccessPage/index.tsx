@@ -13,7 +13,7 @@
  *
  * 실제 앱 구현 시 주의사항:
  *   - 모든 데이터와 핸들러는 useTransferSuccess 훅에서 주입한다.
- *   - Page에서 직접 useState 사용 금지 (CLAUDE.md 아키텍처 원칙).
+ *   - Page에서 직접 useState 사용 금지 (page-generation-rules.md 아키텍처 원칙).
  *
  * @param recipientName        - 받는 사람 이름
  * @param amount               - 이체 금액 (원화 단위 숫자)

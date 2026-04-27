@@ -13,6 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/** A/B 테스트 대시보드에 필요한 페이지 목록, 그룹 정보, 선택 후보를 함께 반환하는 응답 DTO. */
 public class CmsAbTestDashboardResponse {
 
     private PageResponse<CmsAbPageResponse> pages;

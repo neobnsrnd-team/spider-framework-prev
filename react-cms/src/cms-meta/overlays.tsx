@@ -18,9 +18,12 @@
  * <CMSApp blocks={blocks} overlays={overlays} layoutRenderer={layoutRenderer} />
  */
 import type { OverlayTemplate, OverlayRendererProps } from "@cms-core";
-import { 
+import {
   BottomSheet,
-  Modal
+  Modal,
+  UsageHistoryFilterSheet,
+  PinConfirmSheet,
+  ModalSlideOver,
 } from "@cl";
 // ─────────────────────────────────────────────────────────────────────────────
 // BottomSheet 렌더러
@@ -106,6 +109,81 @@ function ModalRenderer({ open, onClose, children, container, props }: OverlayRen
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// UsageHistoryFilterSheet 렌더러
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * CMS 미리보기용 UsageHistoryFilterSheet 렌더러.
+ * 카드 선택 목록은 CMS 빌더에서 편집할 수 없으므로 대표 샘플을 고정 주입한다.
+ */
+const DEFAULT_CARD_OPTIONS = [
+  { value: 'card1', label: '하나 머니 체크카드 (1234)' },
+  { value: 'card2', label: '하나 1Q 신용카드 (5678)' },
+];
+
+function UsageHistoryFilterSheetRenderer({ open, onClose, container }: OverlayRendererProps) {
+  if (!open) return null;
+  return (
+    <UsageHistoryFilterSheet
+      open={open}
+      onClose={onClose}
+      cardOptions={DEFAULT_CARD_OPTIONS}
+      onApply={() => { onClose(); }}
+      container={container ?? undefined}
+    />
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PinConfirmSheet 렌더러
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * CMS 미리보기용 PinConfirmSheet 렌더러.
+ * PIN 입력 완료 시 onClose를 호출해 시트를 닫는다.
+ *
+ * props 필드:
+ *   - title     : 시트 타이틀 (string)
+ *   - pinLength : PIN 자릿수 4 | 6
+ */
+function PinConfirmSheetRenderer({ open, onClose, container, props }: OverlayRendererProps) {
+  if (!open) return null;
+  const title     = typeof props?.title === 'string' ? props.title : '비밀번호 입력';
+  const pinLength = typeof props?.pinLength === 'number' ? props.pinLength : 4;
+  return (
+    <PinConfirmSheet
+      open={open}
+      onClose={onClose}
+      onConfirm={() => { onClose(); }}
+      title={title}
+      pinLength={pinLength}
+      container={container ?? undefined}
+    />
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ModalSlideOver 렌더러
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * CMS 미리보기용 ModalSlideOver 렌더러.
+ * children(내부 블록)을 슬라이드 오버 패널 안에 렌더링한다.
+ *
+ * props 필드:
+ *   - direction : 슬라이드 방향 'right' | 'bottom'
+ */
+function ModalSlideOverRenderer({ open, onClose, children, container, props }: OverlayRendererProps) {
+  if (!open) return null;
+  const direction = props?.direction === 'bottom' ? 'bottom' : 'right';
+  return (
+    <ModalSlideOver direction={direction} onClose={onClose} container={container ?? undefined}>
+      {children}
+    </ModalSlideOver>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // OverlayTemplate 목록
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -172,7 +250,7 @@ export const overlays: OverlayTemplate[] = [
     },
     renderer: BottomSheetRenderer,
   },
-
+  
   // ── 모달 ─────────────────────────────────────────────────
   {
     id:          "tpl_modal",
@@ -219,5 +297,57 @@ export const overlays: OverlayTemplate[] = [
       bottomBtn2Label: { type: "string",  label: "버튼2 텍스트",    default: "취소" },
     },
     renderer: ModalRenderer,
+  },
+  
+  // ── 이용내역 검색 필터 ────────────────────────────────────
+  {
+    id:            "tpl_usage_history_filter",
+    label:         "이용내역 검색 필터",
+    description:   "카드 이용내역 검색 조건(승인구분·카드구분·기간 등)을 편집하는 필터 시트",
+    type:          "UsageHistoryFilterSheet",
+    defaultId:   "usageHistoryFilterSheet",
+    componentName: "UsageHistoryFilterSheet",
+    blocks:        [],
+    props:         {},
+    propSchema:    {},
+    renderer:      UsageHistoryFilterSheetRenderer,
+  },
+
+  // ── PIN 입력 ──────────────────────────────────────────────
+  {
+    id:            "tpl_pin_confirm",
+    label:         "PIN 입력",
+    description:   "즉시결제·계좌 비밀번호 등 PIN 확인이 필요한 화면에서 사용하는 하단 시트",
+    type:          "PinConfirmSheet",
+    defaultId:   "pinConfirmSheet",
+    componentName: "PinConfirmSheet",
+    blocks:        [],
+    props: {
+      title:     "비밀번호 입력",
+      pinLength: 4,
+    },
+    propSchema: {
+      title:     { type: "string", label: "타이틀",    default: "비밀번호 입력" },
+      pinLength: { type: "select", label: "PIN 자릿수", options: ["4", "6"],         default: 4 },
+    },
+    renderer: PinConfirmSheetRenderer,
+  },
+
+  // ── 슬라이드 오버 ─────────────────────────────────────────
+  {
+    id:            "tpl_modal_slide_over",
+    label:         "슬라이드 오버",
+    description:   "라우트 기반 모달 패턴에서 사용하는 슬라이드 오버 패널",
+    type:          "ModalSlideOver",
+    defaultId:   "modalSlideOver",
+    componentName: "ModalSlideOver",
+    blocks:        [],
+    props: {
+      direction: "right",
+    },
+    propSchema: {
+      direction: { type: "select", label: "슬라이드 방향", options: ["right", "bottom"], default: "right" },
+    },
+    renderer: ModalSlideOverRenderer,
   },
 ];

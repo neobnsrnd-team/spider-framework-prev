@@ -5,9 +5,11 @@ import com.example.admin_demo.domain.sqlquery.dto.SqlQueryCreateRequest;
 import com.example.admin_demo.domain.sqlquery.dto.SqlQueryHistoryResponse;
 import com.example.admin_demo.domain.sqlquery.dto.SqlQueryResponse;
 import com.example.admin_demo.domain.sqlquery.dto.SqlQuerySearchRequest;
+import com.example.admin_demo.domain.sqlquery.dto.SqlQueryTestRequest;
 import com.example.admin_demo.domain.sqlquery.dto.SqlQueryTestResponse;
 import com.example.admin_demo.domain.sqlquery.dto.SqlQueryUpdateRequest;
 import com.example.admin_demo.domain.sqlquery.service.SqlQueryService;
+import com.example.admin_demo.global.client.SpiderLinkReloadClient;
 import com.example.admin_demo.global.dto.ApiResponse;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.util.ExcelExportUtil;
@@ -32,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 public class SqlQueryController {
 
     private final SqlQueryService sqlQueryService;
+    private final SpiderLinkReloadClient spiderLinkReloadClient;
 
     @GetMapping("/page")
     public ResponseEntity<ApiResponse<PageResponse<SqlQueryResponse>>> getSqlQueriesWithPagination(
@@ -72,7 +75,10 @@ public class SqlQueryController {
     @PreAuthorize("hasAuthority('SQL_QUERY:W')")
     public ResponseEntity<ApiResponse<SqlQueryResponse>> create(@Valid @RequestBody SqlQueryCreateRequest dto) {
         log.info("POST /api/sql-queries - queryId: {}", dto.getQueryId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(sqlQueryService.create(dto)));
+        SqlQueryResponse result = sqlQueryService.create(dto);
+        // 트랜잭션 커밋 후 spider-link에 실시간 반영
+        spiderLinkReloadClient.reload(result.getQueryId(), result.getUseYn());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(result));
     }
 
     @PutMapping("/{queryId}")
@@ -80,7 +86,10 @@ public class SqlQueryController {
     public ResponseEntity<ApiResponse<SqlQueryResponse>> update(
             @PathVariable String queryId, @Valid @RequestBody SqlQueryUpdateRequest dto) {
         log.info("PUT /api/sql-queries/{}", queryId);
-        return ResponseEntity.ok(ApiResponse.success(sqlQueryService.update(queryId, dto)));
+        SqlQueryResponse result = sqlQueryService.update(queryId, dto);
+        // USE_YN='N'이면 statement 제거, 그 외는 리로드
+        spiderLinkReloadClient.reload(result.getQueryId(), result.getUseYn());
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @DeleteMapping("/{queryId}")
@@ -93,9 +102,10 @@ public class SqlQueryController {
 
     @PostMapping("/{queryId}/test")
     @PreAuthorize("hasAuthority('SQL_QUERY:W')")
-    public ResponseEntity<ApiResponse<SqlQueryTestResponse>> testQuery(@PathVariable String queryId) {
+    public ResponseEntity<ApiResponse<SqlQueryTestResponse>> testQuery(
+            @PathVariable String queryId, @RequestBody(required = false) SqlQueryTestRequest request) {
         log.info("POST /api/sql-queries/{}/test", queryId);
-        return ResponseEntity.ok(ApiResponse.success(sqlQueryService.testQuery(queryId)));
+        return ResponseEntity.ok(ApiResponse.success(sqlQueryService.testQuery(queryId, request)));
     }
 
     @PostMapping("/{queryId}/backup")
@@ -110,7 +120,10 @@ public class SqlQueryController {
     @PreAuthorize("hasAuthority('SQL_QUERY:W')")
     public ResponseEntity<ApiResponse<SqlQueryResponse>> toggleUseYn(@PathVariable String queryId) {
         log.info("PATCH /api/sql-queries/{}/use-yn", queryId);
-        return ResponseEntity.ok(ApiResponse.success(sqlQueryService.toggleUseYn(queryId)));
+        SqlQueryResponse result = sqlQueryService.toggleUseYn(queryId);
+        // USE_YN='N'이면 statement 제거, 'Y'이면 리로드
+        spiderLinkReloadClient.reload(result.getQueryId(), result.getUseYn());
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/{queryId}/history")
@@ -131,7 +144,10 @@ public class SqlQueryController {
     public ResponseEntity<ApiResponse<SqlQueryResponse>> restoreFromHistory(
             @PathVariable String queryId, @PathVariable String versionId) {
         log.info("POST /api/sql-queries/{}/restore/{}", queryId, versionId);
-        return ResponseEntity.ok(ApiResponse.success(sqlQueryService.restoreFromHistory(queryId, versionId)));
+        SqlQueryResponse result = sqlQueryService.restoreFromHistory(queryId, versionId);
+        // 복원 후 변경된 SQL을 spider-link에 반영
+        spiderLinkReloadClient.reload(result.getQueryId(), result.getUseYn());
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/group-search")

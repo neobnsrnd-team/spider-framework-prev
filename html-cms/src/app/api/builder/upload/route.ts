@@ -1,4 +1,4 @@
-import crypto, { timingSafeEqual } from 'crypto';
+import crypto from 'crypto';
 import { mkdir, unlink, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 
@@ -8,23 +8,8 @@ import { createAsset } from '@/db/repository/asset.repository';
 import { contentBuilderErrorResponse, getErrorMessage, successResponse } from '@/lib/api-response';
 import { normalizeCmsAssetCategory } from '@/lib/codes';
 import { canAccessCmsEdit, getCurrentUser } from '@/lib/current-user';
-import { ASSET_BASE_URL, ASSET_UPLOAD_DIR, DEPLOY_SECRET, SERVER_MODE } from '@/lib/env';
-
-/**
- * Admin 백엔드 등 서버 간 호출 시 x-deploy-token 헤더로 인증한다.
- * 타이밍 공격 방지를 위해 timingSafeEqual로 비교한다.
- */
-function isValidToken(token: string | null): boolean {
-    if (!DEPLOY_SECRET || !token) return false;
-    try {
-        const expected = Buffer.from(DEPLOY_SECRET, 'utf8');
-        const received = Buffer.from(token, 'utf8');
-        if (expected.length !== received.length) return false;
-        return timingSafeEqual(expected, received);
-    } catch {
-        return false;
-    }
-}
+import { ASSET_BASE_URL, ASSET_UPLOAD_DIR, SERVER_MODE } from '@/lib/env';
+import { isValidDeployToken } from '@/lib/server-auth';
 
 export async function POST(req: NextRequest) {
     if (SERVER_MODE === 'operation') {
@@ -42,9 +27,11 @@ export async function POST(req: NextRequest) {
     const bodyUserName = formData.get('userName')?.toString() || null;
     const businessCategoryInput = formData.get('businessCategory')?.toString() || null;
     const assetDesc = formData.get('assetDesc')?.toString() || null;
+    // 사용자가 직접 입력한 표시명. Admin 서버에서 항상 채워서 전달하므로 없을 경우 원본 파일명 폴백
+    const assetNameInput = formData.get('assetName')?.toString().trim() || null;
 
     try {
-        const deployTokenValid = isValidToken(req.headers.get('x-deploy-token'));
+        const deployTokenValid = isValidDeployToken(req.headers.get('x-deploy-token'));
 
         let userId: string;
         let userName: string;
@@ -69,9 +56,13 @@ export async function POST(req: NextRequest) {
 
         const buffer = Buffer.from(await file.arrayBuffer());
         const assetId = crypto.randomUUID();
-        const assetName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-        const filename = `${assetId}_${assetName}`;
+        // 표시명(DB 저장): 사용자 입력명 우선, 없으면 원본 파일명 그대로 사용 (한글 허용)
+        const assetName = assetNameInput || file.name;
+
+        // 파일시스템 저장명: 영문·숫자·점·하이픈만 허용하여 OS 경로 안전성 확보
+        const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const filename = `${assetId}_${safeFilename}`;
         const filepath = join(ASSET_UPLOAD_DIR, filename);
         await mkdir(dirname(filepath), { recursive: true });
         await writeFile(filepath, buffer);

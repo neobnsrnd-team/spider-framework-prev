@@ -66,15 +66,27 @@ class CmsAssetServiceUploadTest {
     void uploadAsset_happyPath_returnsResponse() {
         givenCategoryExists("카테고리A");
         MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", new byte[] {1, 2, 3});
-        given(cmsBuilderClient.upload(eq(file), eq(USER_ID), eq(USER_NAME), eq("카테고리A"), eq("설명")))
+        given(cmsBuilderClient.upload(eq(file), eq("배너.png"), eq(USER_ID), eq(USER_NAME), eq("카테고리A"), eq("설명")))
                 .willReturn(buildCmsResponse("uuid-1", "/static/a.png"));
 
-        CmsAssetUploadResponse result = cmsAssetService.uploadAsset(file, "카테고리A", "설명", USER_ID, USER_NAME);
+        CmsAssetUploadResponse result = cmsAssetService.uploadAsset(file, "배너.png", "카테고리A", "설명", USER_ID, USER_NAME);
 
         assertThat(result.getAssetId()).isEqualTo("uuid-1");
         assertThat(result.getUrl()).isEqualTo("/static/a.png");
         then(assetUploadValidator).should().validate(file);
-        then(cmsBuilderClient).should().upload(file, USER_ID, USER_NAME, "카테고리A", "설명");
+        then(cmsBuilderClient).should().upload(file, "배너.png", USER_ID, USER_NAME, "카테고리A", "설명");
+    }
+
+    @Test
+    @DisplayName("[업로드] 이미지명이 200바이트 초과이면 CMS 호출하지 않고 400 예외 전파")
+    void uploadAsset_assetNameTooLong_throwsInvalidInputException() {
+        // 한글 1자 = 3바이트 → 68자 × 3 = 204바이트 > 200바이트
+        String longName = "가".repeat(68) + ".png";
+        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", new byte[] {1});
+
+        assertThatThrownBy(() -> cmsAssetService.uploadAsset(file, longName, null, null, USER_ID, USER_NAME))
+                .isInstanceOf(InvalidInputException.class);
+        then(cmsBuilderClient).should(never()).upload(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -85,9 +97,9 @@ class CmsAssetServiceUploadTest {
                 .given(assetUploadValidator)
                 .validate(any(MultipartFile.class));
 
-        assertThatThrownBy(() -> cmsAssetService.uploadAsset(file, null, null, USER_ID, USER_NAME))
+        assertThatThrownBy(() -> cmsAssetService.uploadAsset(file, "a.exe", null, null, USER_ID, USER_NAME))
                 .isInstanceOf(InvalidInputException.class);
-        then(cmsBuilderClient).should(never()).upload(any(), any(), any(), any(), any());
+        then(cmsBuilderClient).should(never()).upload(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -96,14 +108,16 @@ class CmsAssetServiceUploadTest {
         // 공백 카테고리 → DEFAULT_BUSINESS_CATEGORY("COMMON")로 폴백 → 검증 통과 stub
         givenCategoryExists(CmsAssetService.DEFAULT_BUSINESS_CATEGORY);
         MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", new byte[] {1});
-        given(cmsBuilderClient.upload(any(), any(), any(), any(), any()))
+        given(cmsBuilderClient.upload(any(), any(), any(), any(), any(), any()))
                 .willReturn(buildCmsResponse("uuid-2", "/static/b.png"));
 
-        cmsAssetService.uploadAsset(file, "   ", "", USER_ID, USER_NAME);
+        cmsAssetService.uploadAsset(file, "a.png", "   ", "", USER_ID, USER_NAME);
 
         // 공백 businessCategory 는 normalizeBusinessCategory() 에서 COMMON 으로 정규화된다.
         // 빈 문자열 assetDesc 는 null/blank 체크 없이 그대로 CMS 로 전달된다.
-        then(cmsBuilderClient).should().upload(file, USER_ID, USER_NAME, CmsAssetService.DEFAULT_BUSINESS_CATEGORY, "");
+        then(cmsBuilderClient)
+                .should()
+                .upload(file, "a.png", USER_ID, USER_NAME, CmsAssetService.DEFAULT_BUSINESS_CATEGORY, "");
     }
 
     private CmsBuilderUploadApiResponse buildCmsResponse(String assetId, String url) {

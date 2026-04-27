@@ -23,6 +23,8 @@
 
     <!-- 공통 HTML 이스케이프 유틸리티 (XSS 방지) — AJAX 로드 페이지 스크립트보다 먼저 로드 -->
     <script th:src="@{/js/utils/html-utils.js}"></script>
+    <!-- SQL 파라미터 감지 유틸리티 (? / #{} 개수 추출) -->
+    <script th:src="@{/js/utils/sql-param-utils.js}"></script>
     <!-- 전역 이벤트 버스 — 탭 간 상태 동기화 (html-utils 다음, AJAX 페이지 스크립트보다 먼저) -->
     <script th:src="@{/js/utils/event-bus.js}"></script>
 </head>

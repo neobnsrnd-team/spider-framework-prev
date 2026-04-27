@@ -29,5 +29,5 @@
       "@lib/*": ["./lib/*"]
     }
   },
-  "include": ["packages/**/*", "lib/**/*"]
+  "include": ["component-library/**/*", "lib/**/*", "vite-env.d.ts"]
 }

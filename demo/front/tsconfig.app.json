@@ -26,8 +26,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@cl/*": ["../../reactive-springware/component-library/*"],
-      "@neobnsrnd-team/reactive-springware": ["../../reactive-springware/component-library/index.ts"],
-      "@lib/*": ["../../reactive-springware/lib/*"]
+"@lib/*": ["../../reactive-springware/lib/*"]
     }
   },
   "include": ["src"],

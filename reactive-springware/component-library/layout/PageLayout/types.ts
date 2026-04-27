@@ -14,9 +14,9 @@ export interface PageLayoutProps extends React.HTMLAttributes<HTMLDivElement> {
   rightAction?:  React.ReactNode;
   /**
    * 화면 하단 고정 액션 바 슬롯 (iOS 스타일 하단 버튼 영역).
-   * 전달 시 화면 하단에 blur 배경 고정 바가 렌더링되며,
-   * 본문 스크롤 영역에 동일한 높이의 spacer가 추가되어
-   * 마지막 콘텐츠가 고정 바에 가려지지 않는다.
+   * 전달 시 화면 하단에 blur 배경 고정 바가 렌더링된다.
+   * flex 컨테이너(h-dvh) 구조상 main이 남은 높이를 차지하므로
+   * 별도 spacer 없이도 마지막 콘텐츠가 고정 바에 가려지지 않는다.
    */
   bottomBar?:    React.ReactNode;
   /**

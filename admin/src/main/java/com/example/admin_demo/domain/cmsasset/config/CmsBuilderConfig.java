@@ -21,10 +21,16 @@ public class CmsBuilderConfig {
 
     private final CmsBuilderProperties properties;
 
-    /** CMS Builder 전용 RestClient — 업로드·삭제 호출에 사용 (대용량 업로드를 고려한 long read-timeout) */
+    /**
+     * CMS Builder 전용 RestClient — 업로드·삭제 호출에 사용 (대용량 업로드를 고려한 long read-timeout).
+     * CMS 엔드포인트는 x-deploy-token 헤더 인증을 요구하므로 defaultHeader로 고정 주입한다.
+     */
     @Bean
     public RestClient cmsBuilderRestClient() {
-        return buildClient(properties.getConnectTimeoutSeconds(), properties.getReadTimeoutSeconds());
+        return buildClient(properties.getConnectTimeoutSeconds(), properties.getReadTimeoutSeconds())
+                .mutate()
+                .defaultHeader("x-deploy-token", properties.getDeploySecret())
+                .build();
     }
 
     /**

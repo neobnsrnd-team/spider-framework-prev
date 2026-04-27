@@ -39,7 +39,7 @@ const SNAP_CLASS: Record<BottomSheetSnap, string> = {
   auto: 'max-h-[90dvh]',
   /* half: 화면 절반 고정. 콘텐츠가 넘치면 본문 내부 스크롤 */
   half: 'max-h-[50dvh]',
-  /* full: 상단 안전 영역만 남기고 전체 화면 점유 */
+  /* full: auto와 동일한 90dvh 상한. 콘텐츠가 많은 시트에서 명시적으로 최대 높이 의도를 드러낼 때 사용 */
   full: 'max-h-[90dvh]',
 };
 

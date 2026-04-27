@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.spiderlink.domain.sqlquery.mapper.SqlQueryDynamicMapper">
+
+    <resultMap id="sqlQueryRecordMap" type="com.example.spiderlink.domain.sqlquery.dto.SqlQueryRecord">
+        <result column="QUERY_ID"     property="queryId"/>
+        <result column="SQL_GROUP_ID" property="sqlGroupId"/>
+        <result column="SQL_QUERY"    property="sqlQuery"/>
+        <result column="SQL_TYPE"     property="sqlType"/>
+    </resultMap>
+
+    <select id="findAllActive" resultMap="sqlQueryRecordMap">
+        SELECT QUERY_ID, SQL_GROUP_ID, SQL_QUERY, SQL_TYPE
+        FROM FWK_SQL_QUERY
+        WHERE USE_YN = 'Y'
+        ORDER BY SQL_GROUP_ID, QUERY_ID
+    </select>
+
+    <select id="findById" parameterType="string" resultMap="sqlQueryRecordMap">
+        SELECT QUERY_ID, SQL_GROUP_ID, SQL_QUERY, SQL_TYPE
+        FROM FWK_SQL_QUERY
+        WHERE QUERY_ID = #{queryId}
+    </select>
+
+</mapper>

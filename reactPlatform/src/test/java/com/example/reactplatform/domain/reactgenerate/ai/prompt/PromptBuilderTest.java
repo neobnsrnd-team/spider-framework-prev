@@ -50,7 +50,7 @@ class PromptBuilderTest {
         stubAllPrompts();
         String result = promptBuilder.buildSystemPrompt();
 
-        assertThat(result).contains("--- CLAUDE.md");
+        assertThat(result).contains("--- page-generation-rules.md");
         assertThat(result).contains("CLAUDE_MD_CONTENT");
         assertThat(result).contains("--- Component Library");
         assertThat(result).contains("COMPONENT_TYPES_CONTENT");
@@ -61,7 +61,7 @@ class PromptBuilderTest {
     @Test
     @DisplayName("빈 문자열 섹션은 system prompt에서 제외된다")
     void buildSystemPrompt_skipsBlankSection() {
-        when(promptLoader.loadClaudeMd()).thenReturn("CLAUDE_MD_CONTENT");
+        when(promptLoader.loadPageGenerationRules()).thenReturn("CLAUDE_MD_CONTENT");
         when(promptLoader.loadComponentTypes()).thenReturn("COMPONENT_TYPES_CONTENT");
         when(promptLoader.loadDesignTokens()).thenReturn("");
 
@@ -74,13 +74,13 @@ class PromptBuilderTest {
     @Test
     @DisplayName("null 섹션은 system prompt에서 제외된다")
     void buildSystemPrompt_skipsNullSection() {
-        when(promptLoader.loadClaudeMd()).thenReturn(null);
+        when(promptLoader.loadPageGenerationRules()).thenReturn(null);
         when(promptLoader.loadComponentTypes()).thenReturn("COMPONENT_TYPES_CONTENT");
         when(promptLoader.loadDesignTokens()).thenReturn("DESIGN_TOKENS_CONTENT");
 
         String result = promptBuilder.buildSystemPrompt();
 
-        assertThat(result).doesNotContain("CLAUDE.md");
+        assertThat(result).doesNotContain("page-generation-rules.md");
     }
 
     // ========== buildUserPrompt — 브랜드·도메인 ==========
@@ -641,7 +641,7 @@ class PromptBuilderTest {
 
     /** buildSystemPrompt 테스트에서 공통으로 사용하는 프롬프트 파일 스텁 */
     private void stubAllPrompts() {
-        when(promptLoader.loadClaudeMd()).thenReturn("CLAUDE_MD_CONTENT");
+        when(promptLoader.loadPageGenerationRules()).thenReturn("CLAUDE_MD_CONTENT");
         when(promptLoader.loadComponentTypes()).thenReturn("COMPONENT_TYPES_CONTENT");
         when(promptLoader.loadDesignTokens()).thenReturn("DESIGN_TOKENS_CONTENT");
     }

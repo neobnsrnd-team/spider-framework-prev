@@ -12,6 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/** A/B 테스트 대상 페이지 목록과 현재 실험 상태를 표현하는 응답 DTO. */
 public class CmsAbPageResponse {
 
     private String pageId;

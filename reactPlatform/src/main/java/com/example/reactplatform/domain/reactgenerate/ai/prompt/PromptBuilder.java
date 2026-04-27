@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * <p>PromptLoader에서 읽은 각 마크다운 섹션을 구분자(---)와 헤더로 연결하여
  * Claude가 컨텍스트를 명확히 구분할 수 있는 단일 문자열로 반환한다.
  *
- * <p>섹션 조립 순서: 역할 정의 → CLAUDE.md → component-types → design-tokens
+ * <p>섹션 조립 순서: 역할 정의 → page-generation-rules → component-types → design-tokens
  *
  * <p>user prompt에는 Figma URL 텍스트 대신 {@link FigmaDesignContext}에서 추출한
  * 구조화된 레이아웃·색상·텍스트 정보를 ASCII 트리 형태로 포함한다.
@@ -39,7 +39,7 @@ public class PromptBuilder {
         sb.append("반드시 아래에 제공된 컴포넌트 라이브러리만 사용하여 코드를 생성하세요.\n");
         sb.append("목록에 없는 컴포넌트를 임의로 만들거나 외부 라이브러리를 추가하지 마세요.\n");
 
-        appendSection(sb, "CLAUDE.md (코드 생성 규칙 + Figma → React 컴포넌트 매핑)", promptLoader.loadClaudeMd());
+        appendSection(sb, "page-generation-rules.md (코드 생성 규칙 + Figma → React 컴포넌트 매핑)", promptLoader.loadPageGenerationRules());
         appendSection(sb, "Component Library (사용 가능한 컴포넌트 인터페이스)", promptLoader.loadComponentTypes());
         appendSection(sb, "Design Tokens (CSS 변수 레퍼런스 — 하드코딩 금지)", promptLoader.loadDesignTokens());
 

@@ -16,7 +16,7 @@ import org.springframework.util.StreamUtils;
  *
  * <p>파일 배치 경로: src/main/resources/prompts/
  * <ul>
- *   <li>CLAUDE.md — 코드 생성 규칙 + Figma → React 컴포넌트 매핑 (generated/CLAUDE.md)</li>
+ *   <li>page-generation-rules.md — 코드 생성 규칙 + Figma → React 컴포넌트 매핑 (generated/page-generation-rules.md)</li>
  *   <li>component-types.md — 컴포넌트 TypeScript 인터페이스 레퍼런스</li>
  *   <li>design-tokens.md — CSS 변수 토큰 레퍼런스</li>
  * </ul>
@@ -25,7 +25,7 @@ import org.springframework.util.StreamUtils;
 @Component
 public class PromptLoader {
 
-    private String claudeMd = "";
+    private String pageGenerationRules = "";
     private String componentTypes = "";
     private String designTokens = "";
 
@@ -35,19 +35,19 @@ public class PromptLoader {
      */
     @PostConstruct
     public void load() {
-        claudeMd = readOrEmpty("prompts/CLAUDE.md");
+        pageGenerationRules = readOrEmpty("prompts/page-generation-rules.md");
         componentTypes = readOrEmpty("prompts/component-types.md");
         designTokens = readOrEmpty("prompts/design-tokens.md");
 
         log.info(
-                "PromptLoader 초기화 완료 — CLAUDE.md={}자, component-types={}자, design-tokens={}자",
-                claudeMd.length(),
+                "PromptLoader 초기화 완료 — page-generation-rules={}자, component-types={}자, design-tokens={}자",
+                pageGenerationRules.length(),
                 componentTypes.length(),
                 designTokens.length());
     }
 
-    public String loadClaudeMd() {
-        return claudeMd;
+    public String loadPageGenerationRules() {
+        return pageGenerationRules;
     }
 
     public String loadComponentTypes() {

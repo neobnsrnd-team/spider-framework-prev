@@ -15,6 +15,7 @@
  * @param onClose      - 닫기 핸들러
  * @param onConfirm    - PIN 완료 핸들러 (pinLength 자리 입력 시 자동 호출, async 가능)
  * @param title        - 시트 타이틀 (기본: '비밀번호 입력')
+ * @param subtitle     - 도트 위 안내 문구 (기본: '비밀번호를 입력하세요')
  * @param pinLength    - PIN 자릿수 (기본: 4)
  * @param errorMessage - 외부 에러 메시지 (설정 시 도트 아래 표시 + PIN 초기화)
  *
@@ -51,8 +52,10 @@ export function PinConfirmSheet({
   onClose,
   onConfirm,
   title = '비밀번호 입력',
+  subtitle = '비밀번호를 입력하세요',
   pinLength = 4,
   errorMessage,
+  container,
 }: PinConfirmSheetProps) {
   const [pin,    setPin]    = useState('');
   const [digits, setDigits] = useState<number[]>(INITIAL_DIGITS);
@@ -114,11 +117,12 @@ export function PinConfirmSheet({
       title={title}
       disableBackdropClose
       hideCloseButton={false}
+      container={container}
     >
       {/* PIN 도트 */}
       <div className="flex flex-col items-center gap-xl py-xl">
         <Typography variant="body" color="muted">
-          결제 비밀번호를 입력하세요
+          {subtitle}
         </Typography>
         <PinDotIndicator length={pinLength} filledCount={pin.length} />
         {/* 에러 메시지 — 외부에서 errorMessage가 전달될 때만 표시 */}

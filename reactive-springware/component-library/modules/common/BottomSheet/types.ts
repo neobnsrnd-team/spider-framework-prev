@@ -10,7 +10,7 @@ import React from 'react';
  * 시트 최대 높이 프리셋.
  * - 'auto': 콘텐츠 높이에 맞춤 (최대 90dvh)
  * - 'half': 화면 절반(50dvh)
- * - 'full': 전체 화면(90dvh)
+ * - 'full': 최대 높이 90dvh (auto와 동일 값. 콘텐츠가 많은 시트에서 의도를 명시할 때 사용)
  */
 export type BottomSheetSnap = 'auto' | 'half' | 'full';
 

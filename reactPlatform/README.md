@@ -101,7 +101,7 @@ npm run generate:prompts
 |----------|------|------|------|
 | `extract-components.ts` | `component-library/**/types.ts` | `generated/component-types.md` | 컴포넌트 TypeScript 인터페이스를 마크다운 레퍼런스로 변환 |
 | `extract-design-tokens.ts` | `design-tokens/globals.css` | `generated/design-tokens.md` | CSS 변수(`@theme`, 브랜드별, 도메인별 토큰)를 마크다운 테이블로 변환 |
-| `extract-claude.ts` | `docs/CLAUDE.md` | `generated/CLAUDE.md` | 코드 생성 규칙 문서를 `generated/`로 복사 |
+| `extract-page-generation-rules.ts` | `docs/page-generation-rules.md` | `generated/page-generation-rules.md` | 코드 생성 규칙 문서를 `generated/`로 복사 |
 
 ### 파일 배치 (reactPlatform)
 
@@ -109,7 +109,7 @@ npm run generate:prompts
 
 ```
 src/main/resources/prompts/
-├── CLAUDE.md           ← generated/CLAUDE.md
+├── page-generation-rules.md  ← generated/page-generation-rules.md
 ├── component-types.md  ← generated/component-types.md
 └── design-tokens.md    ← generated/design-tokens.md
 ```
@@ -124,7 +124,7 @@ src/main/resources/prompts/
 ```
 역할 정의 (하드코딩)
   ↓
---- CLAUDE.md (코드 생성 규칙 + Figma → React 컴포넌트 매핑) ---
+--- page-generation-rules.md (코드 생성 규칙 + Figma → React 컴포넌트 매핑) ---
   ↓
 --- Component Library (컴포넌트 인터페이스) ---
   ↓
@@ -232,7 +232,7 @@ reactPlatform/
 │   ├── application.yml          # 공통 설정 (포트 8082)
 │   ├── application-oracle.yml   # Oracle DB 설정
 │   ├── mapper/oracle/           # MyBatis XML 매퍼
-│   ├── prompts/                 # Claude 프롬프트 파일 (CLAUDE.md 등)
+│   ├── prompts/                 # Claude 프롬프트 파일 (page-generation-rules.md 등)
 │   ├── static/                  # JS·CSS 정적 자산
 │   └── templates/               # Thymeleaf 화면 템플릿
 ├── .env.example                 # 환경변수 예시 파일
