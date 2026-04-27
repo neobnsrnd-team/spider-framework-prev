@@ -334,7 +334,8 @@ export default function EditClient({
                 alert(message);
             }
 
-            window.location.href = remaining.length > 0 ? nextApi(`/edit?bank=${remaining[0].id}`) : nextApi('/dashboard');
+            window.location.href =
+                remaining.length > 0 ? nextApi(`/edit?bank=${remaining[0].id}`) : nextApi('/dashboard');
         },
         [getRemainingTabsWithoutCurrent],
     );

@@ -84,7 +84,8 @@ export async function POST(req: NextRequest) {
         const parseMs = durationMs(parseStart);
 
         const loadStart = performance.now();
-        const { html, updated, pageMissing, fileNotFound, pageName, viewMode, createUserId, timing } = await loadPage(bank);
+        const { html, updated, pageMissing, fileNotFound, pageName, viewMode, createUserId, timing } =
+            await loadPage(bank);
         const loadMs = durationMs(loadStart);
         const totalMs = durationMs(totalStart);
 
