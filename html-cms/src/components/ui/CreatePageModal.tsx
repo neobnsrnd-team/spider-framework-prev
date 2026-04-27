@@ -47,9 +47,11 @@ export default function CreatePageModal({ onClose, canWrite }: CreatePageModalPr
     const [creating, setCreating] = useState(false);
 
     function matchesTemplateViewMode(templateViewMode: string | undefined, selectedViewMode: CmsPageViewMode) {
-        return !templateViewMode
-            || templateViewMode === selectedViewMode
-            || (selectedViewMode === 'web' && templateViewMode === 'PC');
+        return (
+            !templateViewMode ||
+            templateViewMode === selectedViewMode ||
+            (selectedViewMode === 'web' && templateViewMode === 'PC')
+        );
     }
 
     useEffect(() => {
