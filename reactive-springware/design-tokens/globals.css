@@ -101,18 +101,6 @@
   --brand-bg: #f5f8f8;
   --brand-name: '하나은행';
   --shadow-primary: 0px 8px 20px -4px var(--brand-shadow);
-  /* @theme의 var() 체인이 @tailwindcss/vite에 의해 빌드 시 고정되는 문제 우회.
-     각 브랜드 스코프에서 --color-brand-*를 직접 선언해 런타임 교체를 보장한다. */
-  --color-brand: var(--brand-primary);
-  --color-brand-alt: var(--brand-alt);
-  --color-brand-fg: var(--brand-fg);
-  --color-brand-text: var(--brand-text);
-  --color-brand-dark: var(--brand-dark);
-  --color-brand-darker: var(--brand-darker);
-  --color-brand-5: var(--brand-5);
-  --color-brand-10: var(--brand-10);
-  --color-brand-20: var(--brand-20);
-  --color-brand-shadow: var(--brand-shadow);
 }
 
 /* ── 하나은행 ──────────────────────────────────────── */
@@ -130,16 +118,6 @@
   --brand-bg: #f5f8f8;
   --brand-name: '하나은행';
   --shadow-primary: 0px 8px 20px -4px var(--brand-shadow);
-  --color-brand: var(--brand-primary);
-  --color-brand-alt: var(--brand-alt);
-  --color-brand-fg: var(--brand-fg);
-  --color-brand-text: var(--brand-text);
-  --color-brand-dark: var(--brand-dark);
-  --color-brand-darker: var(--brand-darker);
-  --color-brand-5: var(--brand-5);
-  --color-brand-10: var(--brand-10);
-  --color-brand-20: var(--brand-20);
-  --color-brand-shadow: var(--brand-shadow);
 }
 
 /* ── IBK기업은행 ───────────────────────────────────── */
@@ -157,16 +135,6 @@
   --brand-bg: #f4f7fb;
   --brand-name: 'IBK기업은행';
   --shadow-primary: 0px 8px 20px -4px var(--brand-shadow);
-  --color-brand: var(--brand-primary);
-  --color-brand-alt: var(--brand-alt);
-  --color-brand-fg: var(--brand-fg);
-  --color-brand-text: var(--brand-text);
-  --color-brand-dark: var(--brand-dark);
-  --color-brand-darker: var(--brand-darker);
-  --color-brand-5: var(--brand-5);
-  --color-brand-10: var(--brand-10);
-  --color-brand-20: var(--brand-20);
-  --color-brand-shadow: var(--brand-shadow);
 }
 
 /* ── KB국민은행 ────────────────────────────────────── */
@@ -184,16 +152,6 @@
   --brand-bg: #fffdf0;
   --brand-name: 'KB국민은행';
   --shadow-primary: 0px 8px 20px -4px var(--brand-shadow);
-  --color-brand: var(--brand-primary);
-  --color-brand-alt: var(--brand-alt);
-  --color-brand-fg: var(--brand-fg);
-  --color-brand-text: var(--brand-text);
-  --color-brand-dark: var(--brand-dark);
-  --color-brand-darker: var(--brand-darker);
-  --color-brand-5: var(--brand-5);
-  --color-brand-10: var(--brand-10);
-  --color-brand-20: var(--brand-20);
-  --color-brand-shadow: var(--brand-shadow);
 }
 
 /* ── NH농협은행 ────────────────────────────────────── */
@@ -211,16 +169,6 @@
   --brand-bg: #f4fbf7;
   --brand-name: 'NH농협은행';
   --shadow-primary: 0px 8px 20px -4px var(--brand-shadow);
-  --color-brand: var(--brand-primary);
-  --color-brand-alt: var(--brand-alt);
-  --color-brand-fg: var(--brand-fg);
-  --color-brand-text: var(--brand-text);
-  --color-brand-dark: var(--brand-dark);
-  --color-brand-darker: var(--brand-darker);
-  --color-brand-5: var(--brand-5);
-  --color-brand-10: var(--brand-10);
-  --color-brand-20: var(--brand-20);
-  --color-brand-shadow: var(--brand-shadow);
 }
 
 /* ── 신한은행 ──────────────────────────────────────── */
@@ -238,16 +186,6 @@
   --brand-bg: #f4f6ff;
   --brand-name: '신한은행';
   --shadow-primary: 0px 8px 20px -4px var(--brand-shadow);
-  --color-brand: var(--brand-primary);
-  --color-brand-alt: var(--brand-alt);
-  --color-brand-fg: var(--brand-fg);
-  --color-brand-text: var(--brand-text);
-  --color-brand-dark: var(--brand-dark);
-  --color-brand-darker: var(--brand-darker);
-  --color-brand-5: var(--brand-5);
-  --color-brand-10: var(--brand-10);
-  --color-brand-20: var(--brand-20);
-  --color-brand-shadow: var(--brand-shadow);
 }
 
 /* ── 우리은행 ──────────────────────────────────────── */
@@ -265,6 +203,13 @@
   --brand-bg: #f4f8fc;
   --brand-name: '우리은행';
   --shadow-primary: 0px 8px 20px -4px var(--brand-shadow);
+}
+
+/* ── 공통 브랜드 색상 매핑 ─────────────────────────────────────
+   [data-brand] 선택자는 @layer theme보다 명시도가 높아,
+   @theme의 --color-brand-* 가 빌드 시 고정되더라도 런타임 교체를 보장한다.
+─────────────────────────────────────────────────────────────── */
+[data-brand] {
   --color-brand: var(--brand-primary);
   --color-brand-alt: var(--brand-alt);
   --color-brand-fg: var(--brand-fg);
