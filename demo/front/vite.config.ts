@@ -18,8 +18,6 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
       /* 컴포넌트 라이브러리 루트 alias (pages 내 상대경로 '../../../' 대체) */
       '@cl': resolve(__dirname, '../../reactive-springware/component-library'),
-      /* 컴포넌트 라이브러리 소스를 직접 참조 (별도 빌드 불필요) */
-      '@neobnsrnd-team/reactive-springware': resolve(__dirname, '../../reactive-springware/component-library/index.ts'),
       /* 컴포넌트 라이브러리 내부 유틸 경로 */
       '@lib': resolve(__dirname, '../../reactive-springware/lib'),
     },

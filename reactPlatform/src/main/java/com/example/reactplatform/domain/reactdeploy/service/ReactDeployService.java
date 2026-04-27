@@ -132,14 +132,15 @@ public class ReactDeployService {
      * @param page   페이지 번호 (1-based)
      * @param size   페이지당 건수
      * @param search 코드 ID 또는 실행자 ID 검색 키워드
+     * @param userId 실행자 ID 일치 필터 — null이면 전체 조회
      * @return list, totalCount, page, size
      */
-    public Map<String, Object> findAllHistoryList(int page, int size, String search) {
+    public Map<String, Object> findAllHistoryList(int page, int size, String search, String userId) {
         int offset = (page - 1) * size;
         int endRow = offset + size;
         String escaped = SqlUtils.escapeLike(nullIfBlank(search));
-        List<ReactDeployHistoryResponse> list = reactDeployMapper.selectAllHistoryList(offset, endRow, escaped);
-        int totalCount = reactDeployMapper.selectAllHistoryCount(escaped);
+        List<ReactDeployHistoryResponse> list = reactDeployMapper.selectAllHistoryList(offset, endRow, escaped, userId);
+        int totalCount = reactDeployMapper.selectAllHistoryCount(escaped, userId);
         return Map.of("list", list, "totalCount", totalCount, "page", page, "size", size);
     }
 

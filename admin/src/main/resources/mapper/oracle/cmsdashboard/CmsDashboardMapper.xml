@@ -32,6 +32,8 @@
         <where>
             p.USE_YN = 'Y'
             AND p.CREATE_USER_ID = #{userId}
+            <!-- 타 프로젝트의 TEMPLATE / REACT 등 다른 PAGE_TYPE 제외 — 제작자 dashboard는 일반 페이지(PAGE)만 노출 -->
+            AND p.PAGE_TYPE = 'PAGE'
             <if test="req.approveState != null and req.approveState != ''">
                 AND p.APPROVE_STATE = #{req.approveState}
             </if>

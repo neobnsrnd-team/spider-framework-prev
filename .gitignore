@@ -6,6 +6,8 @@ admin/.mvn/wrapper/maven-wrapper.jar
 !**/src/test/**/target/
 docs/dev
 docs/TOBE
+*.pptx
+*.py
 
 ### STS ###
 .apt_generated

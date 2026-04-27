@@ -56,15 +56,17 @@ public interface ReactDeployMapper {
      * @param offset  시작 행 오프셋 (0-based)
      * @param endRow  종료 행 번호
      * @param search  코드 ID 또는 실행자 ID 키워드 (null·빈 문자열이면 전체)
+     * @param userId  실행자 ID 일치 필터 (null이면 전체)
      */
     List<ReactDeployHistoryResponse> selectAllHistoryList(
             @Param("offset") int offset,
             @Param("endRow") int endRow,
-            @Param("search") String search
+            @Param("search") String search,
+            @Param("userId") String userId
     );
 
     /** 전체 배포 이력 건수 */
-    int selectAllHistoryCount(@Param("search") String search);
+    int selectAllHistoryCount(@Param("search") String search, @Param("userId") String userId);
 
     /**
      * 특정 코드의 배포 이력 목록을 최근 순으로 반환한다 (모달용).

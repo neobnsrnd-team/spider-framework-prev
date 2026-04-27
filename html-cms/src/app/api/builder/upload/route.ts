@@ -1,4 +1,4 @@
-import crypto, { timingSafeEqual } from 'crypto';
+import crypto from 'crypto';
 import { mkdir, unlink, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 
@@ -8,23 +8,8 @@ import { createAsset } from '@/db/repository/asset.repository';
 import { contentBuilderErrorResponse, getErrorMessage, successResponse } from '@/lib/api-response';
 import { normalizeCmsAssetCategory } from '@/lib/codes';
 import { canAccessCmsEdit, getCurrentUser } from '@/lib/current-user';
-import { ASSET_BASE_URL, ASSET_UPLOAD_DIR, DEPLOY_SECRET, SERVER_MODE } from '@/lib/env';
-
-/**
- * Admin 백엔드 등 서버 간 호출 시 x-deploy-token 헤더로 인증한다.
- * 타이밍 공격 방지를 위해 timingSafeEqual로 비교한다.
- */
-function isValidToken(token: string | null): boolean {
-    if (!DEPLOY_SECRET || !token) return false;
-    try {
-        const expected = Buffer.from(DEPLOY_SECRET, 'utf8');
-        const received = Buffer.from(token, 'utf8');
-        if (expected.length !== received.length) return false;
-        return timingSafeEqual(expected, received);
-    } catch {
-        return false;
-    }
-}
+import { ASSET_BASE_URL, ASSET_UPLOAD_DIR, SERVER_MODE } from '@/lib/env';
+import { isValidDeployToken } from '@/lib/server-auth';
 
 export async function POST(req: NextRequest) {
     if (SERVER_MODE === 'operation') {
@@ -44,7 +29,7 @@ export async function POST(req: NextRequest) {
     const assetDesc = formData.get('assetDesc')?.toString() || null;
 
     try {
-        const deployTokenValid = isValidToken(req.headers.get('x-deploy-token'));
+        const deployTokenValid = isValidDeployToken(req.headers.get('x-deploy-token'));
 
         let userId: string;
         let userName: string;

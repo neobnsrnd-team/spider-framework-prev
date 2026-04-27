@@ -7,7 +7,7 @@
  * 실제 앱 구현 시 주의사항:
  * - 입력 상태(id, password)와 핸들러는 useLoginForm 훅으로 분리한다.
  * - 로그인 API 호출은 loginRepository 를 통해 처리한다.
- * - Page에서 직접 useState 사용은 금지 (CLAUDE.md 아키텍처 원칙).
+ * - Page에서 직접 useState 사용은 금지 (page-generation-rules.md 아키텍처 원칙).
  *
  * @param hasError - true 시 비밀번호 에러 상태(빨간 테두리 + 안내 문구) 표시
  */

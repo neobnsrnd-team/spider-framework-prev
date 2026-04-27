@@ -78,11 +78,10 @@ public class CmsBuilderClient {
         try {
             // cmsBuilderRestClient 사용 — 대용량 업로드를 위해 60초 read-timeout 유지 (#177)
             // deploy 클라이언트(10초)는 파일 이동 전용이므로 업로드에 사용하면 타임아웃 위험이 있다.
-            // x-deploy-token은 header()로 직접 주입하여 서버 간 인증을 통과시킨다.
+            // x-deploy-token은 빈 설정의 defaultHeader로 주입되므로 여기서 별도 지정하지 않는다.
             CmsBuilderUploadApiResponse response = cmsBuilderRestClient
                     .post()
                     .uri(properties.getUploadPath())
-                    .header("x-deploy-token", properties.getDeploySecret())
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(form)
                     .retrieve()
@@ -124,6 +123,7 @@ public class CmsBuilderClient {
      */
     public void delete(String assetId, String userId) {
         try {
+            // x-deploy-token은 빈 설정의 defaultHeader로 주입되므로 여기서 별도 지정하지 않는다.
             cmsBuilderRestClient
                     .delete()
                     .uri(DELETE_PATH_TEMPLATE, assetId)

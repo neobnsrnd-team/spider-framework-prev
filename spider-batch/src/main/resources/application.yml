@@ -29,6 +29,11 @@ batch:
     handler-pool-size: 20
     # 핸들러 풀이 가득 찼을 때 대기시킬 최대 요청 수 — 초과 시 소켓을 즉시 닫아 OOM 방지
     queue-capacity: 100
+  file:
+    # 고정 길이 파일 처리 디렉터리 (환경변수로 재정의 가능)
+    input-dir: ${BATCH_FILE_INPUT_DIR:./batch-files/input}
+    archive-dir: ${BATCH_FILE_ARCHIVE_DIR:./batch-files/archive}
+    error-dir: ${BATCH_FILE_ERROR_DIR:./batch-files/error}
 
 management:
   endpoints:

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { nextApi } from '@/lib/api-url';
-import { CMS_ASSET_CATEGORY_LABELS } from '@/lib/cms-asset-category';
 
 interface AssetItem {
     assetId: string;
@@ -97,15 +96,14 @@ export default function AssetBrowser({ assetOrigin = '' }: AssetBrowserProps) {
         return assets.filter((asset) => extractFolderName(asset.path) === folder);
     }, [assets, folder]);
 
+    // 카테고리 코드 → codeName 매핑. FWK_CODE 응답만을 단일 출처로 사용 (하드코딩 폴백 없음).
+    // codeName 이 비어 있는 코드는 의도적으로 매핑하지 않아, 카드 뱃지에서 '-' 로 표시되도록 한다.
     const categoryMap = useMemo(
         () =>
-            categories.reduce<Record<string, string>>(
-                (acc, item) => {
-                    acc[item.code] = item.codeName;
-                    return acc;
-                },
-                { ...CMS_ASSET_CATEGORY_LABELS },
-            ),
+            categories.reduce<Record<string, string>>((acc, item) => {
+                if (item.codeName) acc[item.code] = item.codeName;
+                return acc;
+            }, {}),
         [categories],
     );
 
@@ -125,33 +123,15 @@ export default function AssetBrowser({ assetOrigin = '' }: AssetBrowserProps) {
 
         async function loadCategories() {
             try {
-                // /cms-admin/asset-approvals 화면과 동일한 출처(spider-admin) 사용
-                const res = await fetch(nextApi('/api/cms-admin/asset-categories'));
+                // FWK_CODE(CMS00001) 단일 출처. cache:no-store + 서버 force-dynamic 으로 항상 최신 조회.
+                const res = await fetch(nextApi('/api/cms-admin/asset-categories'), { cache: 'no-store' });
                 const json = await res.json();
                 const list: CodeItem[] = Array.isArray(json.categories) ? json.categories : [];
                 if (cancelled) return;
-
-                if (list.length > 0) {
-                    setCategories(list);
-                } else {
-                    setCategories(
-                        Object.entries(CMS_ASSET_CATEGORY_LABELS).map(([code, codeName], index) => ({
-                            code,
-                            codeName,
-                            sortOrder: index + 1,
-                        })),
-                    );
-                }
+                setCategories(list);
             } catch {
-                if (!cancelled) {
-                    setCategories(
-                        Object.entries(CMS_ASSET_CATEGORY_LABELS).map(([code, codeName], index) => ({
-                            code,
-                            codeName,
-                            sortOrder: index + 1,
-                        })),
-                    );
-                }
+                // DB 호출 실패 시 빈 목록으로 — 하드코딩 폴백을 두지 않아 운영 변경이 즉시 반영된다.
+                if (!cancelled) setCategories([]);
             }
         }
 
@@ -473,11 +453,8 @@ export default function AssetBrowser({ assetOrigin = '' }: AssetBrowserProps) {
                         <div className="grid grid-cols-[repeat(auto-fill,180px)] justify-start gap-4">
                             {visibleAssets.map((asset) => {
                                 const isSelected = asset.url ? selectedUrl === asset.url : false;
-                                // 허용 코드 매칭이 없으면 원본 코드값으로 폴백, 그래도 없으면 '-' 표시
-                                const label =
-                                    (asset.businessCategory && categoryMap[asset.businessCategory]) ||
-                                    asset.businessCategory ||
-                                    '-';
+                                // 카테고리 라벨은 FWK_CODE codeName 만 사용. 매핑이 없으면 '-' (코드값 노출 금지).
+                                const label = (asset.businessCategory && categoryMap[asset.businessCategory]) || '-';
 
                                 return (
                                     <button

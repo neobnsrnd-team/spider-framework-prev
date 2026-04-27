@@ -1,5 +1,6 @@
 package com.example.spiderbatch.job.db2foreign;
 
+import com.example.spiderbatch.job.common.BatchJobParametersValidator;
 import com.example.spiderbatch.job.common.CardUsage;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -56,6 +57,7 @@ public class Db2ForeignJobConfig {
     @Bean(name = "db2foreign")
     public Job db2ForeignJob(JobRepository jobRepository, Step db2ForeignStep) {
         return new JobBuilder("db2foreign", jobRepository)
+                .validator(new BatchJobParametersValidator())
                 .start(db2ForeignStep)
                 .build();
     }
@@ -73,6 +75,9 @@ public class Db2ForeignJobConfig {
                 .skip(ExternalTransferException.class)
                 .noSkip(RuntimeException.class)
                 .skipLimit(5)
+                // 완료된 Step은 재시작 시 skip — RETRYABLE_YN='N'이면 Job에 preventRestart() 추가 권장
+                // TODO: FWK_BATCH_APP.RETRYABLE_YN 값에 따라 JobBuilder.preventRestart() 연동 필요
+                .allowStartIfComplete(false)
                 .build();
     }
 

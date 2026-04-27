@@ -125,6 +125,7 @@ export function UsageHistoryFilterSheet({
   onClose,
   cardOptions,
   onApply,
+  container,
 }: UsageHistoryFilterSheetProps) {
   const [filterDraft, setFilterDraft] = useState<SearchFilter>(DEFAULT_FILTER);
   const [cardPickerOpen, setCardPickerOpen] = useState(false);
@@ -169,6 +170,7 @@ export function UsageHistoryFilterSheet({
         onClose={onClose}
         title="검색"
         snap="full"
+        container={container}
         footer={
           <div className="flex gap-sm">
             <Button variant="outline" size="lg" onClick={handleReset} className="w-24 shrink-0">
@@ -278,6 +280,7 @@ export function UsageHistoryFilterSheet({
         onClose={() => setCardPickerOpen(false)}
         title="카드 선택"
         snap="auto"
+        container={container}
       >
         <ul className="flex flex-col">
           {allCardOptions.map((opt) => {
@@ -310,6 +313,7 @@ export function UsageHistoryFilterSheet({
         onClose={() => setMonthPickerOpen(false)}
         title="조회 기간 선택"
         snap="auto"
+        container={container}
       >
         <ul className="flex flex-col">
           {monthOptions.map((opt) => {

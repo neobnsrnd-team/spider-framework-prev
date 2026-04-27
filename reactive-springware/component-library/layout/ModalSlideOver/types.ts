@@ -9,4 +9,11 @@ export interface ModalSlideOverProps {
   direction?: 'right' | 'bottom';
   /** z-index 레벨 (기본: 50) */
   zIndex?: number;
+  /**
+   * Portal 렌더링 대상 요소. 기본값: document.body.
+   * CMS 캔버스처럼 특정 컨테이너 안에 오버레이를 가두고 싶을 때 전달한다.
+   * 전달 시 백드롭 포지션이 fixed → absolute로 전환되므로
+   * 컨테이너 요소에 `position: relative`와 `overflow: hidden`이 필요하다.
+   */
+  container?: HTMLElement;
 }

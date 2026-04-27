@@ -52,7 +52,8 @@ public class BatchExecCommandHandler implements CommandHandler<ManagementContext
                     .parameters(ctx.getParameters())
                     .build();
 
-            BatchExecuteResponse response = batchExecuteService.execute(request);
+            // TCP 채널은 내부망 신뢰 기반 — 소켓 원격 주소 대신 "TCP_INTERNAL"로 감사 로그 기록
+            BatchExecuteResponse response = batchExecuteService.execute(request, "TCP_INTERNAL");
 
             return ManagementContext.builder()
                     .command(ctx.getCommand())

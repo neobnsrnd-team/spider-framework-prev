@@ -71,7 +71,7 @@ const ReactDeployList = window.ReactDeployList = {
     load: function (page) {
         this.currentPage = page || 1;
         const search = $('#deployListSearch').val().trim();
-        $.get(API_BASE_URL + '/react-admin/deployments', {
+        $.get(API_BASE_URL + '/react-deploy', {
             page: this.currentPage, size: this.pageSize, search
         })
         .done(res => {
@@ -172,7 +172,7 @@ const ReactDeployList = window.ReactDeployList = {
 
     redeploy: function (codeId) {
         if (!confirm('해당 코드를 배포하시겠습니까?')) return;
-        $.ajax({ url: API_BASE_URL + '/react-admin/deployments/' + codeId + '/redeploy', type: 'POST' })
+        $.ajax({ url: API_BASE_URL + '/react-deploy/' + codeId + '/redeploy', type: 'POST' })
             .done(res => {
                 if (res.success) {
                     let msg = '배포가 완료됐습니다.';
@@ -201,7 +201,8 @@ const ReactDeployHis = window.ReactDeployHis = {
 
     search: function () {
         this.appliedSearch = {
-            search: $('#hisSearchKeyword').val().trim(),
+            search:   $('#hisSearchKeyword').val().trim(),
+            onlyMine: $('#hisSearchOnlyMine').is(':checked'),
         };
         this.currentPage = 1;
         this.load();
@@ -213,7 +214,7 @@ const ReactDeployHis = window.ReactDeployHis = {
             size: this.itemsPerPage,
         });
         $.ajax({
-            url: API_BASE_URL + '/react-admin/deployments/history',
+            url: API_BASE_URL + '/react-deploy/history',
             method: 'GET',
             data: params,
             success: (res) => {
@@ -323,7 +324,7 @@ const ReactDeployHisModal = window.ReactDeployHisModal = {
 
     load: function () {
         if (!this.currentCodeId) return;
-        $.get(API_BASE_URL + '/react-admin/deployments/' + this.currentCodeId + '/history', {
+        $.get(API_BASE_URL + '/react-deploy/' + this.currentCodeId + '/history', {
             page: this.currentPage, size: this.pageSize,
         })
         .done(res => {
@@ -433,6 +434,7 @@ $(document).ready(function () {
         $('#hisSearchStatus').val('');
         $('#hisSearchMode').val('');
         $('#hisSearchKeyword').val('');
+        $('#hisSearchOnlyMine').prop('checked', false);
         ReactDeployHis.search();
     });
 

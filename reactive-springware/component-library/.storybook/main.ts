@@ -28,7 +28,7 @@ const config: StorybookConfig = {
       ...(config.resolve.alias as Record<string, string>),
       /* component-library 전체에서 사용하는 @lib/cn 경로 별칭
        * __dirname = .storybook/ → ../../../ = figma-react-generator/ */
-      '@lib': resolve(__dirname, '../../../lib'),
+      '@lib': resolve(__dirname, '../../lib'),
     };
     return config;
   },

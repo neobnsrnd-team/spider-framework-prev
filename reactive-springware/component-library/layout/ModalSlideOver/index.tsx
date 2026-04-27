@@ -13,6 +13,7 @@
  * ]
  */
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@lib/cn';
 import type { ModalSlideOverProps } from './types';
 
@@ -23,13 +24,17 @@ export function ModalSlideOver({
   onClose,
   direction = 'right',
   zIndex = 50,
+  container,
 }: ModalSlideOverProps) {
   const isRight  = direction === 'right';
   const isBottom = direction === 'bottom';
 
-  return (
+  // container 제공 시 absolute(캔버스 기준), 미제공 시 fixed(뷰포트 기준)
+  const positionClass = container ? 'absolute' : 'fixed';
+
+  return createPortal(
     <div
-      className="fixed inset-0 flex"
+      className={`${positionClass} inset-0 flex`}
       style={{ zIndex }}
       role="dialog"
       aria-modal="true"
@@ -56,6 +61,7 @@ export function ModalSlideOver({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    container ?? document.body,
   );
 }

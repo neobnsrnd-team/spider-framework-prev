@@ -1,5 +1,6 @@
 package com.example.spiderbatch.job.file2db;
 
+import com.example.spiderbatch.job.common.BatchJobParametersValidator;
 import com.example.spiderbatch.job.common.PocUser;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,7 @@ public class File2DbJobConfig {
     @Bean(name = "file2db")
     public Job file2DbJob(JobRepository jobRepository, Step file2DbStep) {
         return new JobBuilder("file2db", jobRepository)
+                .validator(new BatchJobParametersValidator())
                 .start(file2DbStep)
                 .build();
     }
@@ -71,6 +73,9 @@ public class File2DbJobConfig {
                 .faultTolerant()
                 .skip(Exception.class)
                 .skipLimit(10)
+                // 완료된 Step은 재시작 시 skip — RETRYABLE_YN='N'이면 Job에 preventRestart() 추가 권장
+                // TODO: FWK_BATCH_APP.RETRYABLE_YN 값에 따라 JobBuilder.preventRestart() 연동 필요
+                .allowStartIfComplete(false)
                 .build();
     }
 

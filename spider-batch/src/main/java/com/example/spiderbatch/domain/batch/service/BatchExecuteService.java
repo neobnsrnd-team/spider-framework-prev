@@ -5,6 +5,7 @@ import com.example.spiderbatch.domain.batch.dto.BatchExecuteRequest;
 import com.example.spiderbatch.domain.batch.dto.BatchExecuteResponse;
 import com.example.spiderbatch.domain.batch.mapper.BatchAppMapper;
 import com.example.spiderbatch.domain.batch.mapper.BatchHisMapper;
+import com.example.spiderbatch.global.log.BatchAuditLogger;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -48,6 +49,7 @@ public class BatchExecuteService {
     private final BatchHisMapper batchHisMapper;
     /** Micrometer MeterRegistry: batch.job.duration / batch.job.status / batch.step.write.count 기록 */
     private final MeterRegistry meterRegistry;
+    private final BatchAuditLogger auditLogger;
 
     /**
      * 배치 Job을 동기 실행하고 FWK_BATCH_HIS에 이력을 기록한다.
@@ -63,11 +65,15 @@ public class BatchExecuteService {
      * </ol>
      * </p>
      *
-     * @param request Admin에서 전달된 실행 요청
+     * @param request   Admin에서 전달된 실행 요청
+     * @param requestIp 요청 클라이언트 IP (감사 로그용)
      * @return 실행 결과 (seq, 결과 코드, 처리 건수 등)
      */
-    public BatchExecuteResponse execute(BatchExecuteRequest request) {
+    public BatchExecuteResponse execute(BatchExecuteRequest request, String requestIp) {
         String userId = resolveUserId(request.getUserId());
+
+        // 실행 요청 감사 로그 — 누가 어느 배치를 어디서 요청했는지 기록
+        auditLogger.logRequest(request.getBatchAppId(), userId, requestIp);
 
         // 1. FWK_BATCH_APP에서 Job Bean 이름 조회
         String batchAppFileName = batchAppMapper.selectBatchAppFileName(request.getBatchAppId());
@@ -105,6 +111,7 @@ public class BatchExecuteService {
                     updateAsError(request.getBatchAppId(), request.getBatchDate(), nextSeq, userId, errorReason);
             // Job 조회 실패도 비정상 종료로 기록 — 처리 건수 없음
             recordMetrics(request.getBatchAppId(), response.getResRtCode(), startNanos, 0L, 0L);
+            auditLogger.logFailure(request.getBatchAppId(), nextSeq, errorReason);
             return response;
         } catch (Exception e) {
             String errorReason = "Job 실행 오류: " + e.getMessage();
@@ -113,6 +120,7 @@ public class BatchExecuteService {
                     updateAsError(request.getBatchAppId(), request.getBatchDate(), nextSeq, userId, errorReason);
             // 예외 발생 시도 비정상 종료로 기록 — 처리 건수 없음
             recordMetrics(request.getBatchAppId(), response.getResRtCode(), startNanos, 0L, 0L);
+            auditLogger.logFailure(request.getBatchAppId(), nextSeq, errorReason);
             return response;
         }
 
@@ -126,7 +134,16 @@ public class BatchExecuteService {
         long sc = jobExecution.getStepExecutions().stream()
                 .mapToLong(s -> s.getReadSkipCount() + s.getProcessSkipCount() + s.getWriteSkipCount())
                 .sum();
+        long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
         recordMetrics(request.getBatchAppId(), response.getResRtCode(), startNanos, wc, sc);
+
+        // 성공/실패 여부에 따라 감사 로그 분기
+        if (BatchConstants.RES_RT_SUCCESS.equals(response.getResRtCode())) {
+            auditLogger.logSuccess(request.getBatchAppId(), nextSeq, durationMs, wc);
+        } else {
+            // ABNORMAL: updateResult가 비정상 종료로 판단한 경우
+            auditLogger.logFailure(request.getBatchAppId(), nextSeq, response.getErrorReason());
+        }
 
         return response;
     }

@@ -20,7 +20,7 @@ const config: StorybookConfig = {
    * 컴포넌트 파일과 같은 디렉토리에 *.stories.tsx 파일을 위치시킨다.
    *   예) core/Button/Button.stories.tsx
    */
-  stories: ['../packages/component-library/**/*.stories.@(ts|tsx)'],
+  stories: ['../component-library/**/*.stories.@(ts|tsx)'],
 
   /* Storybook 10: essentials이 코어 내장이므로 addons 불필요 */
   addons: [],

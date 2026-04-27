@@ -97,6 +97,10 @@
                 OR h.LAST_UPDATE_USER_ID LIKE '%' || #{search} || '%' ESCAPE '\'
             )
         </if>
+        <!-- onlyMine 체크박스 선택 시 로그인 사용자의 이력만 조회 -->
+        <if test="userId != null and userId != ''">
+            AND h.LAST_UPDATE_USER_ID = #{userId,jdbcType=VARCHAR}
+        </if>
     </sql>
 
     <select id="selectAllHistoryList"

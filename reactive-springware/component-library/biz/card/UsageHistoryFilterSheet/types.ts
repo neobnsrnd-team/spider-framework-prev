@@ -32,4 +32,10 @@ export interface UsageHistoryFilterSheetProps {
   cardOptions: CardOption[];
   /** 필터 확정 시 호출. filter.customMonth에 선택 월이 담긴다. */
   onApply: (filter: SearchFilter) => void;
+  /**
+   * Portal 렌더링 대상 요소. 기본값: document.body.
+   * CMS 캔버스처럼 특정 컨테이너 안에 오버레이를 가두고 싶을 때 전달한다.
+   * 전달 시 내부 BottomSheet 백드롭 포지션이 fixed → absolute로 전환된다.
+   */
+  container?: HTMLElement;
 }

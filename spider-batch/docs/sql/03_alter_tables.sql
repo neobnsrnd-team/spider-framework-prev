@@ -84,3 +84,18 @@ ALTER TABLE POC_카드사용내역_백업 ADD (
     회차          NUMBER(3),      -- 현재 할부 회차 (전체 할부개월 중 몇 번째)
     할부구분코드   VARCHAR2(2)     -- 할부 구분 코드 (예: 00=일시불, 01=할부)
 );
+
+
+-- ============================================================
+-- #63: 고정 길이 파일 처리 Job 대상 테이블
+-- 개발자가 직접 DB에서 실행해야 함
+-- ============================================================
+CREATE TABLE POC_고정길이거래 (
+    ACCOUNT_NO      VARCHAR2(10)   NOT NULL,  -- 거래계좌번호
+    TRX_DT          VARCHAR2(8)    NOT NULL,  -- 거래일자 (YYYYMMDD)
+    TRX_TM          VARCHAR2(6)    NOT NULL,  -- 거래시각 (HHMMSS)
+    AMOUNT          VARCHAR2(15),             -- 거래금액 (문자열, 우측정렬)
+    TRX_TYPE_CODE   VARCHAR2(2),              -- 거래구분코드 (01=입금, 02=출금)
+    MEMO            VARCHAR2(20),             -- 적요
+    CONSTRAINT PK_POC_고정길이거래 PRIMARY KEY (ACCOUNT_NO, TRX_DT, TRX_TM)
+);

@@ -17,7 +17,7 @@
  *
  * 실제 앱 구현 시 주의사항:
  *   - 모든 상태와 핸들러는 useTransactionHistory 훅에서 주입한다.
- *   - Page에서 직접 useState 사용 금지 (CLAUDE.md 아키텍처 원칙).
+ *   - Page에서 직접 useState 사용 금지 (page-generation-rules.md 아키텍처 원칙).
  *   - 여기서는 Storybook 시각 확인 목적으로만 예외 적용한다.
  *
  * @param initialState   - 초기 렌더링 상태 (Storybook args 제어용)

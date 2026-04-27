@@ -12,6 +12,7 @@ import com.example.reactplatform.global.dto.ApiResponse;
 import com.example.reactplatform.global.util.SecurityUtil;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,17 +68,25 @@ public class ReactDeployController {
     /**
      * 전체 배포 이력을 조회한다 (하단 이력 테이블용).
      *
-     * @param page   페이지 번호 (기본값 1)
-     * @param size   페이지당 건수 (기본값 20)
-     * @param search 코드 ID 또는 실행자 ID 검색 키워드
+     * @param page     페이지 번호 (기본값 1)
+     * @param size     페이지당 건수 (기본값 20)
+     * @param search   코드 ID 또는 실행자 ID 검색 키워드
+     * @param onlyMine true이면 로그인 사용자의 이력만 조회
      */
     @GetMapping("/history")
     @PreAuthorize("hasAuthority('REACT_DEPLOY:R')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAllHistory(
             @RequestParam(defaultValue = "1")  @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
-            @RequestParam(defaultValue = "") String search) {
-        return ResponseEntity.ok(ApiResponse.success(reactDeployService.findAllHistoryList(page, size, search)));
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "false") boolean onlyMine) {
+        String userId = onlyMine ? SecurityUtil.getCurrentUserId() : null;
+        // onlyMine 요청인데 사용자 ID를 확인할 수 없으면 전체 이력 노출을 방지하고 빈 결과를 반환한다
+        if (onlyMine && userId == null) {
+            return ResponseEntity.ok(ApiResponse.success(
+                    Map.of("list", List.of(), "totalCount", 0, "page", page, "size", size)));
+        }
+        return ResponseEntity.ok(ApiResponse.success(reactDeployService.findAllHistoryList(page, size, search, userId)));
     }
 
     /**

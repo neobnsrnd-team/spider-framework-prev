@@ -1,5 +1,6 @@
 package com.example.spiderbatch.job.db2db;
 
+import com.example.spiderbatch.job.common.BatchJobParametersValidator;
 import com.example.spiderbatch.job.common.CardUsage;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -68,6 +69,7 @@ public class Db2DbJobConfig {
     @Bean(name = "db2db")
     public Job db2DbJob(JobRepository jobRepository, Step db2DbPartitionStep) {
         return new JobBuilder("db2db", jobRepository)
+                .validator(new BatchJobParametersValidator())
                 .start(db2DbPartitionStep)
                 .build();
     }
@@ -82,6 +84,8 @@ public class Db2DbJobConfig {
         return new StepBuilder("db2DbPartitionStep", jobRepository)
                 .partitioner("db2DbWorkerStep", new ColumnRangePartitioner(jdbcTemplate))
                 .partitionHandler(db2DbPartitionHandler(db2DbWorkerStep))
+                // TODO: FWK_BATCH_APP.RETRYABLE_YN 값에 따라 JobBuilder.preventRestart() 연동 필요
+                .allowStartIfComplete(false)
                 .build();
     }
 
@@ -121,6 +125,7 @@ public class Db2DbJobConfig {
                 .faultTolerant()
                 .skip(Exception.class)
                 .skipLimit(10)
+                .allowStartIfComplete(false)
                 .build();
     }
 

@@ -144,6 +144,8 @@ v3_cms_admin_deployments / v3_cms_admin_statistics / v3_cms_admin_ab_tests / v3_
 | POST | `/api/cms-admin/asset-uploads` | `CMS:W` | 현업 관리자 업로드 (WORK 상태로 CMS 포워딩, `CmsAssetUploadController`) |
 
 > **이미지 업로드 인증**: Admin 백엔드 → CMS(`/cms/api/builder/upload`)로 포워딩 시 `x-deploy-token` 헤더 사용 (Issue #177). `cms.builder.deploy-secret`과 CMS의 `DEPLOY_SECRET`이 일치해야 한다.
+>
+> **주의**: Admin `.env`의 `CMS_USER_URL`이 `:8080`(운영 서버, `SERVER_MODE=operation`)으로 설정된 경우 업로드가 차단된다. `CmsBuilderClient`의 업로드 대상 URL은 반드시 CMS 관리자 서버(포트 80, `basePath=/cms`)를 가리켜야 한다.
 
 ### 배포 관리 (`domain.cmsdeployment`)
 
@@ -190,7 +192,7 @@ v3_cms_admin_deployments / v3_cms_admin_statistics / v3_cms_admin_ab_tests / v3_
 | 테이블 | Write Owner | 비고 |
 | --- | --- | --- |
 | `SPW_CMS_PAGE` | 기능별 분리 | 생성/편집/승인 요청: CMS. 승인/반려/공개상태/노출기간/롤백: spider-admin |
-| `SPW_CMS_PAGE_HISTORY` | spider-admin | 승인 이력·롤백 이력 |
+| `SPW_CMS_PAGE_HISTORY` | 기능별 분리 | 승인 처리(APPROVED 전환 시 이력 생성): CMS. 승인 이력 조회·롤백: spider-admin |
 | `SPW_CMS_ASSET` | 기능별 분리 | 파일 저장 + INSERT: CMS Builder. 승인/반려/노출상태 변경: spider-admin |
 | `SPW_CMS_PAGE_VIEW_LOG` | tracker/runtime (write), spider-admin (read) | 통계 조회는 spider-admin |
 | `FWK_CMS_FILE_SEND_HIS` | spider-admin | 배포 이력 |

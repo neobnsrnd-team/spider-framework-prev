@@ -1,9 +1,14 @@
 ---
 name: Feature Request
 about: 신규 기능 구현을 위한 템플릿입니다.
-title: "[FEATURE]: "
+title: "✨ FEATURE: "
 labels: ✨ Feature
 ---
+
+<!-- 작업 유형에 맞는 이모지와 TYPE으로 제목을 수정해 주세요.
+  ✨ FEATURE | 🐛 FIX | ⚡️ PERFORMANCE | ♻️ REFACTOR
+  📝 DOCS | 🎨 STYLE | 🧪 TEST | 🔐 SECURITY | 🚀 DEPLOY
+-->
 
 ## 📌 개요 (Overview)
 > 이번 작업의 핵심 내용을 요약해 주세요.

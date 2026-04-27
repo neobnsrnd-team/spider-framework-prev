@@ -19,7 +19,7 @@ services:
 
   # ── CMS 관리자 컨테이너 ────────────────────────────────────────────────────
   cms:
-    image: ${DOCKER_IMAGE:-neobns/springware-cms:latest}
+    image: ${DOCKER_IMAGE:-neobnsrnd/springware-cms:latest}
     pull_policy: never
     container_name: springware-cms
     restart: unless-stopped
@@ -48,7 +48,7 @@ services:
 
   # ── 운영 배포 컨테이너 ─────────────────────────────────────────────────────
   operation:
-    image: ${DOCKER_IMAGE:-neobns/springware-cms:latest}
+    image: ${DOCKER_IMAGE:-neobnsrnd/springware-cms:latest}
     pull_policy: never
     container_name: springware-operation
     restart: unless-stopped
