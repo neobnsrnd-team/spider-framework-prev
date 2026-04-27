@@ -39,12 +39,26 @@ public class CmsAssetUploadController {
     @PreAuthorize("hasAuthority('CMS:W')")
     public ResponseEntity<ApiResponse<CmsAssetUploadResponse>> upload(
             @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "assetName", required = false) String assetName,
             @RequestParam(value = "businessCategory", required = false) String businessCategory,
             @RequestParam(value = "assetDesc", required = false) String assetDesc,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
+        // assetName이 blank이면 원본 파일명으로 폴백하여 CMS에 항상 non-null 값을 전달
+        String resolvedAssetName = (assetName != null && !assetName.isBlank()) ? assetName : file.getOriginalFilename();
+        log.info(
+                "[upload] received assetName='{}', originalFilename='{}', resolved='{}'",
+                assetName,
+                file.getOriginalFilename(),
+                resolvedAssetName);
+
         CmsAssetUploadResponse response = cmsAssetService.uploadAsset(
-                file, businessCategory, assetDesc, userDetails.getUserId(), userDetails.getDisplayName());
+                file,
+                resolvedAssetName,
+                businessCategory,
+                assetDesc,
+                userDetails.getUserId(),
+                userDetails.getDisplayName());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("이미지 업로드가 완료되었습니다.", response));
     }

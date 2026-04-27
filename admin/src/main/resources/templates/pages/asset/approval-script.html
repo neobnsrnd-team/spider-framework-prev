@@ -487,6 +487,7 @@
 
         open: function() {
             this._clearFile();
+            $('#assetUploadName').val('');
             $('#assetUploadCategory').val('COMMON');
             $('#assetUploadDesc').val('');
             new bootstrap.Modal('#assetUploadModal').show();
@@ -508,6 +509,9 @@
             $('#assetUploadPreviewSize').text(this._formatSize(file.size));
             $('#assetUploadPreviewType').text(file.type);
 
+            // 파일 선택 시 이미지명 input에 원본 파일명 자동 채우기 (사용자가 직접 수정 가능)
+            $('#assetUploadName').val(file.name);
+
             const reader = new FileReader();
             reader.onload = (ev) => $('#assetUploadPreview').attr('src', ev.target.result);
             reader.readAsDataURL(file);
@@ -520,6 +524,8 @@
             $('#assetUploadFileInput').val('');
             $('#assetUploadPreviewWrap').addClass('d-none');
             $('#assetUploadPreview').attr('src', '');
+            // 파일 초기화 시 이미지명도 함께 초기화
+            $('#assetUploadName').val('');
             $('#btnAssetUploadSubmit').prop('disabled', true);
         },
 
@@ -529,8 +535,18 @@
                 return;
             }
 
+            // 이미지명: 사용자 입력값 우선, 비어 있으면 원본 파일명 사용
+            const inputName = $('#assetUploadName').val().trim();
+            const assetName = inputName || this.selectedFile.name;
+
             const fd = new FormData();
             fd.append('file', this.selectedFile);
+            // 원본 파일의 확장자를 보존하여 확장자 위장 방지
+            const ext = this.selectedFile.name.includes('.')
+                ? '.' + this.selectedFile.name.split('.').pop()
+                : '';
+            const nameWithoutExt = assetName.endsWith(ext) ? assetName : assetName.replace(/\.[^.]+$/, '') + ext;
+            fd.append('assetName', nameWithoutExt || this.selectedFile.name);
             fd.append('businessCategory', (($('#assetUploadCategory').val() || 'COMMON').trim() || 'COMMON'));
 
             const desc = $('#assetUploadDesc').val().trim();
