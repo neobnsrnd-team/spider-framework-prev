@@ -263,4 +263,9 @@ export const LABEL = {
     MSG_TEST_SAVE_TESTCASE: '테스트 케이스 저장',
     MSG_TEST_LOAD_TESTCASE: '테스트 케이스 선택',
     MSG_TEST_SIMULATION: '시뮬레이션',
+
+    // Log level manage page
+    LOG_LEVEL_SAVE: '저장',
+    LOG_LEVEL_REFRESH: '새로고침',
+    LOG_LEVEL_NO_DATA: '조회된 데이터가 없습니다',
 } as const;
