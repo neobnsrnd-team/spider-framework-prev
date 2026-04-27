@@ -72,9 +72,10 @@ public class MessageInstanceRecorder {
      * @param uri       요청 URI (예: /api/auth/login)
      * @param data      요청 바디 JSON 문자열
      * @param port      서버 포트
+     * @param userId    요청 사용자 ID (JWT 미인증 구간은 "GUEST")
      */
-    public void recordHttpRequest(String requestId, String uri, String data, int port) {
-        insertHttp(requestId, "I", "REQ", uri, data, true, port);
+    public void recordHttpRequest(String requestId, String uri, String data, int port, String userId) {
+        insertHttp(requestId, "I", "REQ", uri, data, true, port, userId);
     }
 
     /**
@@ -87,14 +88,15 @@ public class MessageInstanceRecorder {
      * @param data       응답 바디 JSON 문자열
      * @param success    HTTP 응답 성공 여부 (2xx → true)
      * @param port       서버 포트
+     * @param userId     요청 사용자 ID (JWT 미인증 구간은 "GUEST", 로그인 성공 시 실제 userId)
      */
-    public void recordHttpResponse(String requestId, String uri, String data, boolean success, int port) {
-        insertHttp(requestId, "O", "RES", uri, data, success, port);
+    public void recordHttpResponse(String requestId, String uri, String data, boolean success, int port, String userId) {
+        insertHttp(requestId, "O", "RES", uri, data, success, port, userId);
     }
 
-    /** HTTP 로그 전용 insert — CHANNEL_TYPE=HTTP, MESSAGE_ID=URI, USER_ID=SYSTEM (HTTP 구간은 userId 컨텍스트 없음) */
+    /** HTTP 로그 전용 insert — CHANNEL_TYPE=HTTP, MESSAGE_ID=URI */
     private void insertHttp(String requestId, String ioType, String reqResType,
-                            String uri, String data, boolean success, int port) {
+                            String uri, String data, boolean success, int port, String userId) {
         try {
             String dtime = LocalDateTime.now().format(DTIME_FMT);
             String instanceId = appName + ":" + port;
@@ -111,7 +113,7 @@ public class MessageInstanceRecorder {
                     success ? "SUCCESS" : "FAIL",
                     instanceId, "N",
                     data, dtime, "HTTP", uri,
-                    success ? "Y" : "N", "SYSTEM"
+                    success ? "Y" : "N", userId
             );
         } catch (Exception e) {
             log.warn("[MessageInstanceRecorder] HTTP 로그 기록 실패 — uri={}: {}", uri, e.getMessage());
