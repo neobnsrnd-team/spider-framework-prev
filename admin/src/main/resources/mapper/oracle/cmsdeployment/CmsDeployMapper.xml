@@ -27,6 +27,30 @@
         </where>
     </sql>
 
+    <sql id="approvedPageOrderBy">
+        <bind name="orderDir" value="req.sortDirection == 'ASC' ? 'ASC' : 'DESC'"/>
+        <choose>
+            <when test="req.sortBy == 'pageId'">
+                ORDER BY p.PAGE_ID ${orderDir} NULLS LAST, p.LAST_MODIFIED_DTIME DESC NULLS LAST
+            </when>
+            <when test="req.sortBy == 'pageName'">
+                ORDER BY p.PAGE_NAME ${orderDir} NULLS LAST, p.LAST_MODIFIED_DTIME DESC NULLS LAST
+            </when>
+            <when test="req.sortBy == 'createUserName'">
+                ORDER BY p.CREATE_USER_NAME ${orderDir} NULLS LAST, p.LAST_MODIFIED_DTIME DESC NULLS LAST
+            </when>
+            <when test="req.sortBy == 'beginningDate'">
+                ORDER BY p.BEGINNING_DATE ${orderDir} NULLS LAST, p.LAST_MODIFIED_DTIME DESC NULLS LAST
+            </when>
+            <when test="req.sortBy == 'expiredDate'">
+                ORDER BY p.EXPIRED_DATE ${orderDir} NULLS LAST, p.LAST_MODIFIED_DTIME DESC NULLS LAST
+            </when>
+            <otherwise>
+                ORDER BY p.LAST_MODIFIED_DTIME DESC NULLS LAST
+            </otherwise>
+        </choose>
+    </sql>
+
     <select id="findApprovedPageList" resultType="com.example.admin_demo.domain.cmsdeployment.dto.CmsDeployPageResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
@@ -64,7 +88,7 @@
                 ) lh ON lh.PAGE_ID = p.PAGE_ID AND lh.RN = 1
                 LEFT JOIN FWK_CMS_SERVER_INSTANCE si ON lh.INSTANCE_ID = si.INSTANCE_ID
                 <include refid="approvedPageConditions"/>
-                ORDER BY p.LAST_MODIFIED_DTIME DESC NULLS LAST
+                <include refid="approvedPageOrderBy"/>
             ) INNER_QRY
             WHERE ROWNUM <![CDATA[<=]]> #{endRow}
         ) WHERE RNUM > #{offset}

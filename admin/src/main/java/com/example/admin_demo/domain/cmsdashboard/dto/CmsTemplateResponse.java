@@ -22,4 +22,7 @@ public class CmsTemplateResponse {
 
     /** 템플릿 이름 (선택 목록에 표시) */
     private String pageName;
+
+    /** 템플릿 레이아웃 (mobile / web / responsive) */
+    private String viewMode;
 }

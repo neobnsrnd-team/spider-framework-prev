@@ -37,6 +37,7 @@ import ko from '@/data/ko';
 import useToast from '@/hooks/useToast';
 import { nextApi } from '@/lib/api-url';
 import { attachResizeHandles, centerInitialBox } from '@/lib/resizable-box';
+import { normalizeCmsViewMode } from '@/lib/view-mode';
 
 // 기본 블록 타입 — DB SPW_CMS_COMPONENT에서 로드
 export interface BasicBlock {
@@ -194,9 +195,7 @@ function logEditPerf(label: string, metrics: Record<string, unknown>) {
 }
 
 function normalizeViewMode(value: unknown): ViewMode {
-    if (value === 'web' || value === 'PC') return 'web';
-    if (value === 'responsive') return 'responsive';
-    return 'mobile';
+    return normalizeCmsViewMode(value);
 }
 
 /** hex 색상(#RRGGBB)을 "R,G,B" 문자열로 변환 — rgba() 치환용 */

@@ -54,6 +54,7 @@ const OBJ = { outFormat: oracledb.OUT_FORMAT_OBJECT };
 export interface CmsPageTemplateSummary {
     pageId: string;
     pageName: string;
+    viewMode: string;
 }
 
 // ═══════════════════════════════════════════════
@@ -148,10 +149,15 @@ export async function getPageHtml(pageId: string): Promise<string | null> {
 export async function getPageTemplateList(): Promise<CmsPageTemplateSummary[]> {
     const conn = await getConnection();
     try {
-        const result = await conn.execute<{ PAGE_ID: string; PAGE_NAME: string }>(PAGE_SELECT_TEMPLATE_LIST, {}, OBJ);
+        const result = await conn.execute<{ PAGE_ID: string; PAGE_NAME: string; VIEW_MODE: string }>(
+            PAGE_SELECT_TEMPLATE_LIST,
+            {},
+            OBJ,
+        );
         return (result.rows ?? []).map((row) => ({
             pageId: row.PAGE_ID,
             pageName: row.PAGE_NAME,
+            viewMode: row.VIEW_MODE,
         }));
     } finally {
         await conn.close();
