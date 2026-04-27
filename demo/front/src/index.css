@@ -1,10 +1,11 @@
-/* Tailwind Preflight: 브라우저 기본 스타일 초기화.
-   globals.css는 라이브러리 배포용으로 preflight를 제외하고 있으므로
-   데모 앱에서 직접 추가한다. */
+/* Tailwind v4 — demo/front 유틸리티 클래스 생성.
+   @tailwindcss/vite 플러그인이 Vite 모듈 그래프(@cl 포함)를 자동 스캔하므로
+   컴포넌트에 사용된 클래스가 자동으로 포함된다. */
 @import "tailwindcss";
 
-/* 컴포넌트 라이브러리의 디자인 토큰 및 Tailwind v4 설정 가져오기 */
-@import "../../../reactive-springware/design-tokens/globals.css";
+/* 디자인 토큰 + Tailwind 유틸리티 (dist/styles.css는 컴파일된 순수 CSS라
+   @tailwindcss/vite가 이중 처리하는 간섭 없이 CSS 변수만 안전하게 주입된다) */
+@import "@cl/dist/styles.css";
 
 /* ModalSlideOver 애니메이션 */
 @keyframes slideInRight {
@@ -17,80 +18,3 @@
 }
 .animate-slide-in-right  { animation: slideInRight  0.25s ease-out; }
 .animate-slide-in-bottom { animation: slideInBottom 0.25s ease-out; }
-
-/*
- * Tailwind v4 @theme은 var() 참조를 빌드 시 정적으로 처리한다.
- * 따라서 [data-brand]가 --brand-primary를 오버라이드해도
- * --color-brand-* 토큰에 자동 전파되지 않는다.
- * 각 브랜드별로 --color-brand-* 를 명시적으로 재정의한다.
- */
-
-/* ── KB국민은행 ────────────────────────────────────── */
-[data-brand="kb"] {
-  --color-brand: #ffbc00;
-  --color-brand-alt: #ffd740;
-  --color-brand-fg: #1a1200;
-  --color-brand-text: #7a4400;
-  --color-brand-dark: #e6aa00;
-  --color-brand-darker: #cc9600;
-  --color-brand-5: rgba(255, 188, 0, 0.05);
-  --color-brand-10: rgba(255, 188, 0, 0.12);
-  --color-brand-20: rgba(255, 188, 0, 0.22);
-  --color-brand-shadow: rgba(255, 188, 0, 0.35);
-}
-
-/* ── IBK기업은행 ───────────────────────────────────── */
-[data-brand="ibk"] {
-  --color-brand: #0068b7;
-  --color-brand-alt: #3b9ad9;
-  --color-brand-fg: #ffffff;
-  --color-brand-text: #0057a0;
-  --color-brand-dark: #0057a0;
-  --color-brand-darker: #004580;
-  --color-brand-5: rgba(0, 104, 183, 0.05);
-  --color-brand-10: rgba(0, 104, 183, 0.1);
-  --color-brand-20: rgba(0, 104, 183, 0.2);
-  --color-brand-shadow: rgba(0, 104, 183, 0.25);
-}
-
-/* ── NH농협은행 ────────────────────────────────────── */
-[data-brand="nh"] {
-  --color-brand: #00a859;
-  --color-brand-alt: #00c96b;
-  --color-brand-fg: #ffffff;
-  --color-brand-text: #007a40;
-  --color-brand-dark: #008f4d;
-  --color-brand-darker: #007540;
-  --color-brand-5: rgba(0, 168, 89, 0.05);
-  --color-brand-10: rgba(0, 168, 89, 0.1);
-  --color-brand-20: rgba(0, 168, 89, 0.2);
-  --color-brand-shadow: rgba(0, 168, 89, 0.25);
-}
-
-/* ── 신한은행 ──────────────────────────────────────── */
-[data-brand="shinhan"] {
-  --color-brand: #0046ff;
-  --color-brand-alt: #4d7fff;
-  --color-brand-fg: #ffffff;
-  --color-brand-text: #0033cc;
-  --color-brand-dark: #0038cc;
-  --color-brand-darker: #002b99;
-  --color-brand-5: rgba(0, 70, 255, 0.05);
-  --color-brand-10: rgba(0, 70, 255, 0.1);
-  --color-brand-20: rgba(0, 70, 255, 0.2);
-  --color-brand-shadow: rgba(0, 70, 255, 0.25);
-}
-
-/* ── 우리은행 ──────────────────────────────────────── */
-[data-brand="woori"] {
-  --color-brand: #0067ac;
-  --color-brand-alt: #3395d4;
-  --color-brand-fg: #ffffff;
-  --color-brand-text: #005490;
-  --color-brand-dark: #005490;
-  --color-brand-darker: #00416e;
-  --color-brand-5: rgba(0, 103, 172, 0.05);
-  --color-brand-10: rgba(0, 103, 172, 0.1);
-  --color-brand-20: rgba(0, 103, 172, 0.2);
-  --color-brand-shadow: rgba(0, 103, 172, 0.25);
-}

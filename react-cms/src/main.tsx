@@ -16,6 +16,14 @@ import { StrictMode, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useSearchParams } from "react-router-dom";
 import "./index.css";
+
+// .env의 VITE_CMS_BRAND 값을 data-theme으로 설정해 index.css의 브랜드 토큰을 활성화한다.
+// hana가 기본값(:root)이므로 미설정 시에도 하나은행 테마가 적용된다.
+document.documentElement.setAttribute(
+  "data-theme",
+  import.meta.env.VITE_CMS_BRAND ?? "hana",
+);
+
 import { CMSApp } from "@cms-core";
 import type { CMSPage } from "@cms-core/types";
 import { CMSBuilder } from "@cms-core/CMSBuilder";

@@ -2,12 +2,10 @@
  * user-scope.css
  * 외부 프로젝트(컴포넌트 라이브러리) 스타일 파일.
  * CMSApp의 stylesheetContent prop으로 ?inline import해 캔버스·썸네일 영역에만 스코프 적용됩니다.
- * globals.css를 포함하고, 컴포넌트 라이브러리 소스를 @source로 지정해 Tailwind 클래스를 생성합니다.
+ * component-library의 dist/styles.css에 Tailwind 유틸리티 + 디자인 토큰이 모두 포함되어 있습니다.
  *
  * 사용법 (main.tsx):
  *   import userScopeCSS from "./user-scope.css?inline";
  *   <CMSApp stylesheetContent={userScopeCSS} />
  */
-@import "./globals.css";
-/* @import "@neobnsrnd-team/reactive-springware/design-tokens/globals.css"; */
-@source "../../reactive-springware/component-library/**/*.{ts,tsx}";
+@import "@cl/dist/styles.css";
