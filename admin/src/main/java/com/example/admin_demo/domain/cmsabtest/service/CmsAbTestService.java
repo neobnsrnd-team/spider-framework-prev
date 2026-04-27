@@ -25,6 +25,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * CMS A/B 테스트의 비즈니스 규칙을 검증하고 그룹 상태를 변경하는 서비스.
+ *
+ * <p>A/B 테스트는 승인 상태, 공개 가능 여부, 그룹 중복, 가중치 유효성 같은 제약을 함께 확인해야 하므로
+ * 단순 매퍼 호출로 처리하기 어렵다. 이 서비스는 화면 요청을 실험 가능한 데이터 구조로 조합하고,
+ * 실험군 저장과 승격 시 데이터 일관성을 보장하기 위해 필요하다.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -34,6 +41,7 @@ public class CmsAbTestService {
 
     private final CmsAbTestMapper cmsAbTestMapper;
 
+    /** 대시보드 화면에 필요한 페이지 목록, 그룹 목록, 선택 후보 목록을 한 번에 조합한다. */
     public CmsAbTestDashboardResponse findDashboard(CmsAbTestListRequest req, PageRequest pageRequest) {
         req.setSearch(normalize(req.getSearch()));
         long total = cmsAbTestMapper.countApprovedPages(req);
@@ -71,6 +79,7 @@ public class CmsAbTestService {
                 .build();
     }
 
+    /** 특정 그룹의 구성 페이지와 현재 가중치를 조회한다. */
     public CmsAbGroupResponse findGroup(String groupId) {
         validateGroupId(groupId);
         return CmsAbGroupResponse.builder()
@@ -79,6 +88,11 @@ public class CmsAbTestService {
                 .build();
     }
 
+    /**
+     * 그룹 전체 구성을 저장한다.
+     *
+     * <p>기존 그룹이 있더라도 먼저 연결을 비운 뒤 다시 채워 요청 시점의 구성을 최종 상태로 맞춘다.
+     */
     @Transactional
     public void saveGroup(CmsAbGroupSaveRequest req, String modifierId) {
         validateGroupId(req.getGroupId());
@@ -97,6 +111,7 @@ public class CmsAbTestService {
         }
     }
 
+    /** 기존 그룹 구성원들의 노출 가중치만 수정한다. */
     @Transactional
     public void updateWeights(String groupId, CmsAbWeightUpdateRequest req, String modifierId) {
         validateGroupExists(groupId);
@@ -108,12 +123,14 @@ public class CmsAbTestService {
         }
     }
 
+    /** 그룹에 속한 모든 페이지의 A/B 연결을 해제한다. */
     @Transactional
     public void clearGroup(String groupId, String modifierId) {
         validateGroupExists(groupId);
         cmsAbTestMapper.clearAbGroup(groupId, modifierId);
     }
 
+    /** 특정 페이지 하나만 A/B 그룹에서 제거한다. */
     @Transactional
     public void clearPage(String pageId, String modifierId) {
         validateText(pageId, "pageId is required.");
@@ -123,6 +140,11 @@ public class CmsAbTestService {
         }
     }
 
+    /**
+     * 지정한 우승 페이지를 최종안으로 승격한다.
+     *
+     * <p>우승 페이지가 실제 그룹 구성원인지 검증한 뒤 나머지 후보를 정리하고 우승안 상태를 반영한다.
+     */
     @Transactional
     public void promote(String groupId, String winnerPageId, String modifierId) {
         validateGroupExists(groupId);
