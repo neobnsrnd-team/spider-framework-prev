@@ -16,11 +16,19 @@ spring:
       maximum-pool-size: 2
       minimum-idle: 1
 
+mybatis:
+  # classpath*: 로 spider-link JAR 내부 XML까지 탐색
+  mapper-locations: classpath*:mapper/oracle/**/*.xml
+
 tcp:
   server:
     port: ${TCP_SERVER_PORT}
     handler-pool-size: ${TCP_SERVER_HANDLER_POOL_SIZE}
     queue-capacity: ${TCP_SERVER_QUEUE_CAPACITY}
+  ext:
+    # MetaDrivenCommandHandler B-type TcpCallBiz 가 호출할 외부시스템 (mock-core)
+    host: ${TCP_EXT_HOST:localhost}
+    port: ${TCP_EXT_PORT:19300}
 
 mock:
   core:
@@ -30,3 +38,4 @@ mock:
 logging:
   level:
     com.example.bizauth: DEBUG
+    com.example.spiderlink: DEBUG
