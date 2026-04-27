@@ -45,7 +45,8 @@ public class SpiderLinkReloadClient {
                 body.put("useYn", "N");
             }
 
-            restClient.post()
+            restClient
+                    .post()
                     .uri(reloadUrl)
                     .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                     .body(body)
@@ -67,7 +68,8 @@ public class SpiderLinkReloadClient {
      */
     public void reloadAll() {
         try {
-            restClient.post()
+            restClient
+                    .post()
                     .uri(reloadUrl)
                     .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                     .body(Map.of())

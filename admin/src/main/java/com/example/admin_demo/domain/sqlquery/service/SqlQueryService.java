@@ -357,10 +357,8 @@ public class SqlQueryService {
      * <p><b>한계</b>: 중첩 함수 {@code UPPER(NVL(col,''))} 또는 산술 표현식 {@code col + 1}은
      * 매칭되지 않는다. 미매칭 시 플레이스홀더를 NULL로 치환하여 잘못된 SQL 생성을 방지한다.
      */
-    private static final Pattern CONDITION_LHS =
-            Pattern.compile(
-                    "(?i)(?:\\w+\\s*\\([^)]*\\)|[\\w.`\"\\[\\]]+)\\s*"
-                    + "(?:NOT\\s+LIKE|NOT\\s+IN|LIKE|IN|<>|!=|<=|>=|=|<|>)\\s*$");
+    private static final Pattern CONDITION_LHS = Pattern.compile("(?i)(?:\\w+\\s*\\([^)]*\\)|[\\w.`\"\\[\\]]+)\\s*"
+            + "(?:NOT\\s+LIKE|NOT\\s+IN|LIKE|IN|<>|!=|<=|>=|=|<|>)\\s*$");
 
     /**
      * {@link #CONDITION_LHS}로 LHS를 제거하고, 매칭 실패 시 {@code null}을 반환한다.
