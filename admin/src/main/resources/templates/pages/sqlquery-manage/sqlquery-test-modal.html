@@ -29,8 +29,17 @@
                         </div>
                     </div>
 
+                    <!-- 파라미터 입력 영역 (파라미터가 있을 때만 표시) -->
+                    <div id="testParamSection" class="d-none mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-list-ul"></i> 바인딩 파라미터
+                            <small class="text-muted fw-normal" id="testParamTypeLabel"></small>
+                        </label>
+                        <div id="testParamList" class="border rounded p-2 bg-light"></div>
+                    </div>
+
                     <!-- 안내 메시지 -->
-                    <div class="alert alert-info py-2 mb-3">
+                    <div class="alert alert-info py-2 mb-3" id="testInfoMessage">
                         <i class="bi bi-info-circle"></i>
                         <small>
                             SELECT 쿼리만 테스트 가능합니다. MyBatis <code>#&#123;변수&#125;</code> 바인딩은 <strong>NULL</strong>로 치환되어 실행되며, 최대 <strong>50행</strong>까지 표시됩니다.
@@ -100,29 +109,156 @@
         (function () {
             window.SqlQueryTestModal = {
                 currentQueryId: null,
+                currentSql: null,
+                detectedParams: null,
 
-                open: function (queryId, sqlGroupId, dbId) {
+                /**
+                 * @param {string} queryId
+                 * @param {string} sqlGroupId
+                 * @param {string} dbId
+                 * @param {string} [sql] - SQL 원문 (파라미터 감지에 사용)
+                 */
+                open: function (queryId, sqlGroupId, dbId, sql) {
                     this.currentQueryId = queryId;
+                    this.currentSql     = sql || '';
+
+                    // SqlParamUtils가 로드된 경우 파라미터 감지
+                    this.detectedParams = (typeof SqlParamUtils !== 'undefined')
+                        ? SqlParamUtils.detect(this.currentSql)
+                        : { type: 'none', count: 0, names: [] };
 
                     $('#testModalQueryId').val(queryId || '');
                     $('#testModalSqlGroupId').val(sqlGroupId || '');
                     $('#testModalDbId').val(dbId || '');
 
-                    // 이전 결과 초기화
+                    this._renderParams();
+                    this._updateInfoMessage();
                     this._showState('init');
 
                     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('sqlQueryTestModal'));
                     modal.show();
                 },
 
+                /** 파라미터 감지 결과에 따라 입력 행을 동적 생성한다. */
+                _renderParams: function () {
+                    const $section = $('#testParamSection');
+                    const $list    = $('#testParamList');
+                    $list.empty();
+                    $list.off('change', '.param-null-check'); // 이전 핸들러 해제
+
+                    const detected = this.detectedParams;
+                    if (!detected || detected.count === 0) {
+                        $section.addClass('d-none');
+                        return;
+                    }
+
+                    const typeLabel = detected.type === 'mybatis'
+                        ? '— MyBatis #{} 방식'
+                        : '— JDBC ? 방식';
+                    $('#testParamTypeLabel').text(typeLabel + ' (' + detected.count + '개)');
+                    $section.removeClass('d-none');
+
+                    for (let i = 0; i < detected.count; i++) {
+                        // MyBatis면 변수명, JDBC 또는 빈 #{} 이면 순번을 레이블로 표시
+                        const name = detected.names[i];
+                        const rawLabel = (detected.type === 'mybatis' && name)
+                            ? '#{' + name + '}'
+                            : '파라미터 ' + (i + 1);
+                        const safeLabel = (typeof HtmlUtils !== 'undefined')
+                            ? HtmlUtils.escape(rawLabel)
+                            : rawLabel;
+
+                        const $row = $('<div class="row mb-1 g-2 align-items-center param-row">' +
+                            '<div class="col-auto" style="min-width:170px;">' +
+                                '<code class="text-primary">' + safeLabel + '</code>' +
+                            '</div>' +
+                            '<div class="col">' +
+                                '<input type="text" class="form-control form-control-sm param-input"' +
+                                       ' data-index="' + i + '" placeholder="값 입력">' +
+                            '</div>' +
+                            '<div class="col-auto">' +
+                                '<div class="form-check mb-0">' +
+                                    '<input class="form-check-input param-null-check" type="checkbox"' +
+                                           ' id="paramNull' + i + '" data-index="' + i + '">' +
+                                    '<label class="form-check-label" for="paramNull' + i + '">NULL</label>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>');
+                        $list.append($row);
+                    }
+
+                    // NULL 체크박스 토글 → 입력 필드 비활성화/활성화
+                    $list.on('change', '.param-null-check', function () {
+                        const idx    = $(this).data('index');
+                        const $input = $list.find('.param-input[data-index="' + idx + '"]');
+                        if ($(this).is(':checked')) {
+                            $input.val('').prop('disabled', true);
+                        } else {
+                            $input.prop('disabled', false).focus();
+                        }
+                    });
+                },
+
+                /** 파라미터 유무에 따라 안내 메시지를 교체한다. */
+                _updateInfoMessage: function () {
+                    const $msg = $('#testInfoMessage');
+                    if (this.detectedParams && this.detectedParams.count > 0) {
+                        $msg.html(
+                            '<i class="bi bi-info-circle"></i> ' +
+                            '<small>SELECT 쿼리만 테스트 가능합니다. 파라미터 값을 입력(또는 NULL 선택) 후 실행하세요. ' +
+                            '최대 <strong>50행</strong>까지 표시됩니다.</small>'
+                        );
+                    } else {
+                        $msg.html(
+                            '<i class="bi bi-info-circle"></i> ' +
+                            '<small>SELECT 쿼리만 테스트 가능합니다. MyBatis <code>#{변수}</code> 바인딩은 <strong>NULL</strong>로 ' +
+                            '치환되어 실행되며, 최대 <strong>50행</strong>까지 표시됩니다.</small>'
+                        );
+                    }
+                },
+
+                /** 파라미터 입력 영역에서 값을 수집한다. null 항목은 SQL NULL로 바인딩된다. */
+                _collectParams: function () {
+                    const detected = this.detectedParams;
+                    if (!detected || detected.count === 0) return null;
+
+                    const params = [];
+                    for (let i = 0; i < detected.count; i++) {
+                        const isNull = $('#paramNull' + i).is(':checked');
+                        // NULL 선택 시 JSON null, 그 외엔 입력 문자열
+                        params.push(isNull ? null : $('.param-input[data-index="' + i + '"]').val());
+                    }
+                    return params;
+                },
+
                 execute: function () {
                     if (!this.currentQueryId) return;
 
+                    // 파라미터가 있는 경우 빈 입력값 유효성 검사
+                    const detected = this.detectedParams;
+                    if (detected && detected.count > 0) {
+                        for (let i = 0; i < detected.count; i++) {
+                            const isNull = $('#paramNull' + i).is(':checked');
+                            const val    = $('.param-input[data-index="' + i + '"]').val();
+                            if (!isNull && !val.trim()) {
+                                if (typeof Toast !== 'undefined') {
+                                    Toast.warning('값을 입력하거나 NULL을 선택하세요.');
+                                }
+                                return;
+                            }
+                        }
+                    }
+
                     this._showState('loading');
+
+                    const params      = this._collectParams();
+                    const requestBody = (params !== null) ? JSON.stringify({ params: params }) : null;
 
                     $.ajax({
                         url: API_BASE_URL + '/sql-queries/' + encodeURIComponent(this.currentQueryId) + '/test',
                         method: 'POST',
+                        contentType: 'application/json',
+                        data: requestBody,
                         success: (response) => {
                             if (response.success && response.data) {
                                 const data = response.data;

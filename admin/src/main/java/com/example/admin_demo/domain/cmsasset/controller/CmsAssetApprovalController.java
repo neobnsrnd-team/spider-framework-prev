@@ -51,6 +51,7 @@ public class CmsAssetApprovalController {
     private final CmsAssetService cmsAssetService;
     private final CmsBuilderClient cmsBuilderClient;
 
+    /** 승인 담당자가 검토할 자산 목록을 상태·검색 조건과 함께 조회한다. */
     @GetMapping("/api/cms-admin/asset-approvals")
     @PreAuthorize("hasAuthority('CMS:R')")
     public ResponseEntity<ApiResponse<PageResponse<CmsAssetListResponse>>> findApprovalList(
@@ -92,6 +93,7 @@ public class CmsAssetApprovalController {
         return ResponseEntity.ok(ApiResponse.success(cmsAssetService.findById(assetId)));
     }
 
+    /** 승인 대기 자산을 승인하고 CMS Builder 배포까지 연계한다. */
     @PostMapping("/api/cms-admin/asset-approvals/{assetId}/approve")
     @PreAuthorize("hasAuthority('CMS:W')")
     public ResponseEntity<ApiResponse<Void>> approve(
@@ -101,6 +103,7 @@ public class CmsAssetApprovalController {
         return ResponseEntity.ok(ApiResponse.success("승인이 완료되었습니다.", null));
     }
 
+    /** 승인 대기 자산을 반려하고 검토 사유를 남긴다. */
     @PostMapping("/api/cms-admin/asset-approvals/{assetId}/reject")
     @PreAuthorize("hasAuthority('CMS:W')")
     public ResponseEntity<ApiResponse<Void>> reject(
@@ -112,6 +115,7 @@ public class CmsAssetApprovalController {
         return ResponseEntity.ok(ApiResponse.success("반려가 완료되었습니다.", null));
     }
 
+    /** 자산의 실제 노출 가능 여부를 켜거나 끈다. */
     @PostMapping("/api/cms-admin/asset-approvals/{assetId}/visibility")
     @PreAuthorize("hasAuthority('CMS:W')")
     public ResponseEntity<ApiResponse<Void>> updateVisibility(
@@ -124,16 +128,30 @@ public class CmsAssetApprovalController {
         return ResponseEntity.ok(ApiResponse.success("노출 여부가 변경되었습니다.", null));
     }
 
+    /**
+     * 관리자가 즉시 사용 가능한 자산을 업로드한다.
+     *
+     * <p>일반 사용자 업로드와 달리 승인 대기 없이 바로 승인 및 배포 흐름으로 연결된다.
+     */
     @PostMapping(value = "/api/cms-admin/asset-approvals/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('CMS:W')")
     public ResponseEntity<ApiResponse<CmsAssetUploadResponse>> uploadApproved(
             @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "assetName", required = false) String assetName,
             @RequestParam(value = "businessCategory", required = false) String businessCategory,
             @RequestParam(value = "assetDesc", required = false) String assetDesc,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
+        // assetName이 blank이면 원본 파일명으로 폴백하여 CMS에 항상 non-null 값을 전달
+        String resolvedAssetName = (assetName != null && !assetName.isBlank()) ? assetName : file.getOriginalFilename();
+
         CmsAssetUploadResponse response = cmsAssetService.uploadApprovedAsset(
-                file, businessCategory, assetDesc, userDetails.getUserId(), userDetails.getDisplayName());
+                file,
+                resolvedAssetName,
+                businessCategory,
+                assetDesc,
+                userDetails.getUserId(),
+                userDetails.getDisplayName());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("관리자 이미지 업로드가 완료되었습니다.", response));
     }

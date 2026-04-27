@@ -695,8 +695,9 @@
                 const queryId    = $('#sqModalQueryId').val();
                 const sqlGroupId = $('#sqModalSqlGroupId').val();
                 const dbId       = $('#sqModalDbId').val();
+                const sqlText    = $('#sqModalSqlQuery').val();
                 if (window.SqlQueryTestModal) {
-                    SqlQueryTestModal.open(queryId, sqlGroupId, dbId);
+                    SqlQueryTestModal.open(queryId, sqlGroupId, dbId, sqlText);
                 }
             });
 

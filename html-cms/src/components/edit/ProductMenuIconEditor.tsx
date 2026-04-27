@@ -41,9 +41,10 @@ const ICON_LABELS: Record<string, string> = {
 const COLOR_PRESETS = ['#374151', '#0046A4', '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6'];
 
 // 페이지 저장 시 사용할 아이콘 HTML (width/height + stroke 색상 명시)
+// aria-hidden="true" — 장식용 SVG는 .pm-label이 접근 텍스트를 담당하므로 스크린 리더 중복 낭독 방지
 function buildIconHtml(key: string, color: string): string {
     return ICONS[key]
-        .replace('<svg ', `<svg width="30" height="30" `)
+        .replace('<svg ', `<svg width="30" height="30" aria-hidden="true" `)
         .replace(/stroke="currentColor"/g, `stroke="${color}"`);
 }
 
@@ -75,6 +76,9 @@ export default function ProductMenuIconEditor({ blockEl, onClose }: Props) {
     const dragging = useRef(false);
     const dragStart = useRef({ mx: 0, my: 0, px: 0, py: 0 });
 
+    // CMS 이미지 피커 cleanup 참조 — 언마운트 시 미처리된 피커를 강제 종료하여 message 리스너 누수 방지
+    const pickerCleanupRef = useRef<(() => void) | null>(null);
+
     const onHeaderMouseDown = useCallback(
         (e: React.MouseEvent) => {
             if ((e.target as HTMLElement).closest('button')) return;
@@ -101,6 +105,14 @@ export default function ProductMenuIconEditor({ blockEl, onClose }: Props) {
         return () => {
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
+        };
+    }, []);
+
+    // 컴포넌트 언마운트 시 열려 있는 CMS 이미지 피커를 강제 종료
+    // 피커가 열린 채 편집 모달이 닫히는 경우 window message 리스너가 남지 않도록 정리
+    useEffect(() => {
+        return () => {
+            pickerCleanupRef.current?.();
         };
     }, []);
 
@@ -147,19 +159,29 @@ export default function ProductMenuIconEditor({ blockEl, onClose }: Props) {
         [blockEl],
     );
 
-    // 이미지 업로드 후 교체
-    const uploadImage = useCallback((itemEl: HTMLElement) => {
+    // CMS 이미지 브라우저를 열어 아이콘 이미지 교체
+    // openCmsFilesPicker — /cms/files 승인 이미지 선택기를 iframe 모달로 표시하고,
+    // 선택 완료 시 콜백으로 URL 1건을 전달받는다.
+    const openImagePicker = useCallback((itemEl: HTMLElement) => {
         try {
-            openCmsFilesPicker((url) => {
+            pickerCleanupRef.current = openCmsFilesPicker((url) => {
+                pickerCleanupRef.current = null; // 선택 완료 — 피커 내부에서 이미 cleanup 호출됨
                 const wrap = itemEl.querySelector('.pm-icon-wrap');
                 if (wrap) {
-                    wrap.innerHTML = `<img src="${url}" alt="" style="width:30px;height:30px;object-fit:contain;" />`;
+                    // createElement 방식으로 img 요소 생성 — innerHTML 사용 시 url이 HTML로 파싱되어
+                    // XSS 가능성이 있으므로 속성 직접 설정으로 대체
+                    // alt="" — 장식용 이미지. .pm-label이 접근 텍스트를 담당하므로 빈 alt 허용
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = '';
+                    img.style.cssText = 'width:30px;height:30px;object-fit:contain;';
+                    wrap.replaceChildren(img);
                 }
                 setPickerIdx(null);
                 setTick((n) => n + 1);
             });
         } catch (err: unknown) {
-            console.error('cms/files 이미지 선택 실패:', err);
+            console.error('CMS 이미지 선택 실패:', err);
         }
     }, []);
 
@@ -448,9 +470,9 @@ export default function ProductMenuIconEditor({ blockEl, onClose }: Props) {
                                         )}
                                     </div>
 
-                                    {/* 이미지 업로드 */}
+                                    {/* CMS 이미지 선택 버튼 — /cms/files 브라우저를 열어 승인된 이미지를 아이콘으로 설정 */}
                                     <button
-                                        onClick={() => uploadImage(item)}
+                                        onClick={() => openImagePicker(item)}
                                         style={{
                                             width: '100%',
                                             padding: 7,
@@ -474,6 +496,7 @@ export default function ProductMenuIconEditor({ blockEl, onClose }: Props) {
                                             (e.currentTarget as HTMLElement).style.color = '#374151';
                                         }}
                                     >
+                                        {/* 이미지 프레임 아이콘 — CMS 이미지 브라우저 열기 의미 */}
                                         <svg
                                             width="13"
                                             height="13"
@@ -483,12 +506,13 @@ export default function ProductMenuIconEditor({ blockEl, onClose }: Props) {
                                             strokeWidth="2"
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
+                                            aria-hidden="true"
                                         >
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                            <polyline points="17 8 12 3 7 8" />
-                                            <line x1="12" y1="3" x2="12" y2="15" />
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                            <circle cx="8.5" cy="8.5" r="1.5" />
+                                            <polyline points="21 15 16 10 5 21" />
                                         </svg>
-                                        이미지 업로드
+                                        이미지 선택
                                     </button>
                                 </div>
                             )}

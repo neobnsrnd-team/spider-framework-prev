@@ -13,6 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/** 특정 A/B 그룹의 식별자와 소속 페이지 목록을 반환하는 응답 DTO. */
 public class CmsAbGroupResponse {
 
     private String groupId;

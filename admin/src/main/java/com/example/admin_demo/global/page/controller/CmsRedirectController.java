@@ -8,6 +8,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+/**
+ * CMS 사용자 진입 URL을 역할과 요청 방식에 따라 분기하는 컨트롤러.
+ *
+ * <p>같은 메뉴에서 접속하더라도 CMS 관리자 권한 사용자는 Admin 내부 승인 화면으로,
+ * 일반 CMS 사용자는 실제 CMS 화면으로 보내야 하므로 별도 분기 지점이 필요하다.
+ * 또한 탭 기반 UI의 AJAX 요청과 일반 브라우저 직접 접근을 함께 처리한다.
+ */
 @Controller
 public class CmsRedirectController {
 
@@ -27,6 +34,12 @@ public class CmsRedirectController {
     @Value("${cms.user-url:}")
     private String cmsUserUrl;
 
+    /**
+     * 공통 CMS 진입 요청을 현재 사용자에게 맞는 최종 화면으로 보낸다.
+     *
+     * <p>관리자 계열 역할은 승인 관리 화면으로 redirect 하고, 일반 사용자는 CMS 사용자 URL로 이동시킨다.
+     * 탭 AJAX 요청인 경우에는 HTTP redirect 대신 중간 뷰를 반환해 상위 브라우저 창을 안전하게 이동시킨다.
+     */
     @GetMapping("/cms/user-dashboard")
     public String redirectCmsRoot(
             @AuthenticationPrincipal CustomUserDetails userDetails, HttpServletRequest request, Model model) {

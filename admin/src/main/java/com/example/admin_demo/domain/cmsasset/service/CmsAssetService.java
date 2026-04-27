@@ -27,6 +27,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * CMS 자산 업로드, 승인, 공개 여부 변경을 담당하는 서비스.
+ *
+ * <p>이미지 자산은 단순 파일 저장으로 끝나지 않고 승인 상태 전이, CMS Builder 연동,
+ * 업로더 권한 검증, 배포 실패 보상 처리까지 함께 다뤄야 한다.
+ * 이 서비스는 Admin의 자산 운영 규칙과 외부 CMS 연동을 한곳에 모아 상태 일관성을 유지하기 위해 필요하다.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -44,12 +51,16 @@ public class CmsAssetService {
     private static final int REJECTED_REASON_MAX_CHARS = 1000;
     private static final int REJECTED_REASON_MAX_BYTES = 1000;
 
+    /** ASSET_NAME VARCHAR2(200) — Oracle UTF-8 기준 한글 1자 = 3바이트이므로 200바이트 제한 */
+    private static final int ASSET_NAME_MAX_BYTES = 200;
+
     private final CmsAssetMapper cmsAssetMapper;
     private final CodeService codeService;
     private final CmsBuilderClient cmsBuilderClient;
     private final AssetUploadValidator assetUploadValidator;
     private final TransactionTemplate transactionTemplate;
 
+    /** 현재 사용자가 등록한 자산 요청 목록을 조회한다. */
     @Transactional(readOnly = true)
     public PageResponse<CmsAssetListResponse> findMyRequestList(
             String currentUserId, CmsAssetRequestListRequest req, PageRequest pageRequest) {
@@ -63,6 +74,7 @@ public class CmsAssetService {
         return PageResponse.of(list, total, pageRequest.getPage(), pageRequest.getSize());
     }
 
+    /** 승인 담당자가 검토할 자산 승인 목록을 조회한다. */
     @Transactional(readOnly = true)
     public PageResponse<CmsAssetListResponse> findApprovalList(
             CmsAssetApprovalListRequest req, PageRequest pageRequest) {
@@ -74,6 +86,7 @@ public class CmsAssetService {
         return PageResponse.of(list, total, pageRequest.getPage(), pageRequest.getSize());
     }
 
+    /** 업로드 화면에서 사용할 활성 자산 카테고리 코드만 반환한다. */
     @Transactional(readOnly = true)
     public List<CodeResponse> getAssetCategoryCodes() {
         // 코드그룹의 USE_YN='Y' 항목을 그대로 노출. 카테고리 추가·폐기는 코드그룹 관리로 일원화한다.
@@ -82,6 +95,7 @@ public class CmsAssetService {
                 .toList();
     }
 
+    /** 자산 상세 모달에 필요한 메타데이터를 조회한다. */
     @Transactional(readOnly = true)
     public CmsAssetDetailResponse findById(String assetId) {
         CmsAssetDetailResponse detail = cmsAssetMapper.findDetailById(assetId);
@@ -91,6 +105,7 @@ public class CmsAssetService {
         return detail;
     }
 
+    /** 작업 중인 자산을 승인 대기 상태로 전환한다. */
     @Transactional
     public void requestApproval(String assetId, String modifierId, String modifierName) {
         assertTransition(assetId, STATE_WORK, STATE_PENDING);
@@ -153,23 +168,45 @@ public class CmsAssetService {
         }
     }
 
+    /**
+     * 일반 자산 업로드를 수행하고 CMS Builder가 발급한 자산 ID와 URL을 반환한다.
+     *
+     * <p>상태 전이는 하지 않고 파일 검증, 카테고리 정규화, 외부 업로드 연동만 담당한다.
+     */
     public CmsAssetUploadResponse uploadAsset(
-            MultipartFile file, String businessCategory, String assetDesc, String uploaderId, String uploaderName) {
+            MultipartFile file,
+            String assetName,
+            String businessCategory,
+            String assetDesc,
+            String uploaderId,
+            String uploaderName) {
 
+        validateAssetNameBytes(assetName);
         assetUploadValidator.validate(file);
         String normalizedCategory = normalizeBusinessCategory(businessCategory);
         CmsBuilderUploadApiResponse cmsResponse =
-                cmsBuilderClient.upload(file, uploaderId, uploaderName, normalizedCategory, assetDesc);
+                cmsBuilderClient.upload(file, assetName, uploaderId, uploaderName, normalizedCategory, assetDesc);
         return CmsAssetUploadResponse.builder()
                 .assetId(cmsResponse.getAssetId())
                 .url(cmsResponse.getUrl())
                 .build();
     }
 
+    /**
+     * 관리자가 업로드 즉시 승인까지 끝내는 자산 등록 흐름을 처리한다.
+     *
+     * <p>운영자가 별도 승인 단계를 생략해야 할 때 업로드 후 바로 APPROVED 전이와 배포까지 연속 수행한다.
+     */
     public CmsAssetUploadResponse uploadApprovedAsset(
-            MultipartFile file, String businessCategory, String assetDesc, String uploaderId, String uploaderName) {
+            MultipartFile file,
+            String assetName,
+            String businessCategory,
+            String assetDesc,
+            String uploaderId,
+            String uploaderName) {
 
-        CmsAssetUploadResponse response = uploadAsset(file, businessCategory, assetDesc, uploaderId, uploaderName);
+        CmsAssetUploadResponse response =
+                uploadAsset(file, assetName, businessCategory, assetDesc, uploaderId, uploaderName);
 
         transactionTemplate.executeWithoutResult(status -> {
             assertTransition(response.getAssetId(), STATE_WORK, STATE_APPROVED);
@@ -200,6 +237,11 @@ public class CmsAssetService {
         }
     }
 
+    /**
+     * 본인이 업로드한 자산만 삭제한다.
+     *
+     * <p>승인 흐름에 들어간 자산이 임의로 제거되지 않도록 WORK 또는 REJECTED 상태만 삭제를 허용한다.
+     */
     public void deleteMyAsset(String assetId, String userId) {
         String createUserId = cmsAssetMapper.findCreateUserIdByAssetId(assetId);
         if (createUserId == null) {
@@ -220,6 +262,7 @@ public class CmsAssetService {
         log.info("CMS 이미지 삭제 요청 완료: assetId={}, prevState={}, userId={}", assetId, currentState, userId);
     }
 
+    /** 승인 대기 자산을 반려하고 사유를 함께 기록한다. */
     @Transactional
     public void reject(String assetId, String rejectedReason, String modifierId, String modifierName) {
         assertTransition(assetId, STATE_PENDING, STATE_REJECTED);
@@ -232,6 +275,7 @@ public class CmsAssetService {
         log.info("CMS 이미지 반려 완료: assetId={}, modifierId={}", assetId, modifierId);
     }
 
+    /** 자산의 실제 노출 가능 여부를 변경한다. */
     @Transactional
     public void updateVisibility(String assetId, String useYn, String modifierId, String modifierName) {
         ensureAssetExists(assetId);
@@ -257,6 +301,20 @@ public class CmsAssetService {
     private void ensureAssetExists(String assetId) {
         if (cmsAssetMapper.existsByAssetId(assetId) != 1) {
             throw new NotFoundException("이미지를 찾을 수 없습니다. assetId=" + assetId);
+        }
+    }
+
+    /**
+     * 이미지명의 바이트 길이를 검증한다.
+     *
+     * <p>Oracle VARCHAR2(200)은 바이트 단위 제한이므로, 한글 1자 = 3바이트 기준으로
+     * 200바이트를 초과하면 ORA-12899가 발생한다. 서버에서 사전 차단한다.
+     */
+    private void validateAssetNameBytes(String assetName) {
+        if (assetName == null) return;
+        if (assetName.getBytes(StandardCharsets.UTF_8).length > ASSET_NAME_MAX_BYTES) {
+            throw new InvalidInputException(
+                    "이미지명이 너무 깁니다. UTF-8 기준 " + ASSET_NAME_MAX_BYTES + "바이트 이하로 입력해 주세요. (한글 약 66자)");
         }
     }
 

@@ -26,6 +26,9 @@
     <!-- 공통 HTML 이스케이프 유틸리티 (XSS 방지) — 인라인 스크립트보다 먼저 로드 -->
     <script th:src="@{/js/utils/html-utils.js}"></script>
 
+    <!-- SQL 파라미터 감지 유틸리티 (? / #{} 개수 추출) -->
+    <script th:src="@{/js/utils/sql-param-utils.js}"></script>
+
     <th:block layout:fragment="head-extras"></th:block>
 </head>
 <body>

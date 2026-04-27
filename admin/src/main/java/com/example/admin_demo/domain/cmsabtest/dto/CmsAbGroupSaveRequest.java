@@ -9,6 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+/** 그룹 ID와 구성 페이지 목록을 함께 저장할 때 사용하는 요청 DTO. */
 public class CmsAbGroupSaveRequest {
 
     private String groupId;
