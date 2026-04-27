@@ -1,5 +1,6 @@
 package com.example.spiderbatch.domain.batch.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -8,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
  * <p>WAS가 배치 이력을 직접 INSERT/UPDATE한다.
  * Admin의 TODO 주석에서 이관된 책임이다.</p>
  */
+@Mapper
 public interface BatchHisMapper {
 
     /**

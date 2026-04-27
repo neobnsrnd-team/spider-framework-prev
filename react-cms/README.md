@@ -146,6 +146,27 @@ SavePageModal (pageName, uri 입력)
 
 ## 개발 환경 실행
 
+### .env 설정
+
+실행 전 프로젝트 루트에 `.env` 파일을 생성한다. `.env.example`을 복사해 사용한다.
+
+```bash
+cp .env.example .env
+```
+
+| 변수 | 설명 | 기본값 |
+|---|---|---|
+| `VITE_CMS_BRAND` | CMS 셸 브랜드 테마 색상 | `hana` |
+| `ORACLE_USER` / `ORACLE_PASSWORD` 등 | Oracle DB 접속 정보 | — |
+
+**`VITE_CMS_BRAND`** 값에 따라 CMS 빌더 UI의 주요 색상(헤더, 버튼 등)이 변경된다.
+
+```bash
+VITE_CMS_BRAND=hana   # hana | kb | ibk | woori | shinhan | nh
+```
+
+### 실행
+
 ```bash
 cd react-cms
 npm install

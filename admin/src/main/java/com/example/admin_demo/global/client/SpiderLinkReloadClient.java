@@ -45,7 +45,8 @@ public class SpiderLinkReloadClient {
                 body.put("useYn", "N");
             }
 
-            restClient.post()
+            restClient
+                    .post()
                     .uri(reloadUrl)
                     .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                     .body(body)
@@ -55,11 +56,12 @@ public class SpiderLinkReloadClient {
             log.info("[SpiderLinkReloadClient] 리로드 성공: queryId={}, useYn={}", queryId, useYn);
         } catch (Exception e) {
             // Reload 실패는 저장 결과에 영향 없음 — 경고 로그만 출력
-            log.warn("[SpiderLinkReloadClient] 리로드 실패 (spider-link 미기동 또는 네트워크 오류): queryId={}, error={}",
-                    queryId, e.getMessage());
+            log.warn(
+                    "[SpiderLinkReloadClient] 리로드 실패 (spider-link 미기동 또는 네트워크 오류): queryId={}, error={}",
+                    queryId,
+                    e.getMessage());
         }
     }
-
     /**
      * FWK_SQL_QUERY 전체를 spider-link에 리로드한다.
      *
@@ -67,7 +69,8 @@ public class SpiderLinkReloadClient {
      */
     public void reloadAll() {
         try {
-            restClient.post()
+            restClient
+                    .post()
                     .uri(reloadUrl)
                     .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                     .body(Map.of())

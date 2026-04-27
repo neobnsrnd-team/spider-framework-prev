@@ -1,5 +1,6 @@
 package com.example.spiderbatch.global.security;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -7,8 +8,12 @@ import org.springframework.core.Ordered;
 
 /**
  * Batch WAS HTTP 엔드포인트 보안 설정 — {@link ApiKeyAuthFilter}를 서블릿 필터로 등록한다.
+ *
+ * <p>{@code batch.security.enabled=false}로 설정하면 API Key 인증 필터가 비활성화된다.
+ * 개발·테스트 환경에서 인증 없이 엔드포인트에 접근할 때 사용한다.</p>
  */
 @Configuration
+@ConditionalOnProperty(name = "batch.security.enabled", matchIfMissing = true)
 public class BatchWasSecurityConfig {
 
     /**

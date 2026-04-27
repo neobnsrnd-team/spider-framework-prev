@@ -37,6 +37,7 @@ import ko from '@/data/ko';
 import useToast from '@/hooks/useToast';
 import { nextApi } from '@/lib/api-url';
 import { attachResizeHandles, centerInitialBox } from '@/lib/resizable-box';
+import { normalizeCmsViewMode } from '@/lib/view-mode';
 
 // 기본 블록 타입 — DB SPW_CMS_COMPONENT에서 로드
 export interface BasicBlock {
@@ -194,9 +195,7 @@ function logEditPerf(label: string, metrics: Record<string, unknown>) {
 }
 
 function normalizeViewMode(value: unknown): ViewMode {
-    if (value === 'web' || value === 'PC') return 'web';
-    if (value === 'responsive') return 'responsive';
-    return 'mobile';
+    return normalizeCmsViewMode(value);
 }
 
 /** hex 색상(#RRGGBB)을 "R,G,B" 문자열로 변환 — rgba() 치환용 */
@@ -305,6 +304,42 @@ export default function EditClient({
     // 탭 추가 인라인 입력 표시 여부
     const [showAddTab, setShowAddTab] = useState(false);
 
+    const getRemainingTabsWithoutCurrent = useCallback((): TabData[] => {
+        const removeCurrent = (source: TabData[]) => source.filter((tab) => tab.id !== bank);
+
+        if (tabs.length > 0) {
+            return removeCurrent(tabs);
+        }
+
+        try {
+            const stored = sessionStorage.getItem(SESSION_TABS_KEY);
+            if (!stored) return [];
+            const parsed = JSON.parse(stored) as TabData[];
+            return removeCurrent(parsed).map((tab) => ({
+                ...tab,
+                viewMode: normalizeViewMode(tab.viewMode),
+            }));
+        } catch (err: unknown) {
+            console.warn('탭 목록 세션 복원 실패:', err);
+            return [];
+        }
+    }, [SESSION_TABS_KEY, bank, tabs]);
+
+    const removeCurrentTabAndRedirect = useCallback(
+        (message?: string) => {
+            const remaining = getRemainingTabsWithoutCurrent();
+            setTabs(remaining);
+
+            if (message) {
+                alert(message);
+            }
+
+            window.location.href =
+                remaining.length > 0 ? nextApi(`/edit?bank=${remaining[0].id}`) : nextApi('/dashboard');
+        },
+        [getRemainingTabsWithoutCurrent],
+    );
+
     // product-menu 아이콘 편집 모달
     const [productMenuBlock, setProductMenuBlock] = useState<HTMLElement | null>(null);
     // media-video 영상 URL 편집 모달
@@ -329,6 +364,8 @@ export default function EditClient({
     const [infoCardBlock, setInfoCardBlock] = useState<HTMLElement | null>(null);
     // popup-banner 이미지 팝업 배너 편집 패널
     const [popupBannerBlock, setPopupBannerBlock] = useState<HTMLElement | null>(null);
+    // popup-banner onChange: ContentBuilder 스냅샷 갱신 콜백 (openContentEditor 세 번째 인자)
+    const [popupBannerOnChange, setPopupBannerOnChange] = useState<(() => void) | null>(null);
     // status-card 현황 카드 편집 모달
     const [statusCardBlock, setStatusCardBlock] = useState<HTMLElement | null>(null);
     const [myDataAssetBlock, setMyDataAssetBlock] = useState<HTMLElement | null>(null);
@@ -902,13 +939,14 @@ export default function EditClient({
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     e.preventDefault();
+                    // popup-banner는 data-component-id 없이 data-cb-type만 사용
                     const block =
                         document
                             .querySelector<HTMLElement>('.icon-active')
-                            ?.closest<HTMLElement>('[data-component-id^="popup-banner"]') ??
+                            ?.closest<HTMLElement>('[data-cb-type="popup-banner"]') ??
                         document
                             .querySelector<HTMLElement>('.elm-active')
-                            ?.closest<HTMLElement>('[data-component-id^="popup-banner"]');
+                            ?.closest<HTMLElement>('[data-cb-type="popup-banner"]');
                     if (block) setPopupBannerBlock(block);
                 });
                 linkTool.appendChild(btn);
@@ -950,9 +988,10 @@ export default function EditClient({
             }
             const pbBtn = document.querySelector<HTMLElement>(`#divLinkTool .${SPW_PB_BTN_CLASS}`);
             if (pbBtn) {
+                // popup-banner는 data-component-id 없이 data-cb-type만 사용
                 const isInPb =
-                    !!iconActive?.closest('[data-component-id^="popup-banner"]') ||
-                    !!elmActive?.closest('[data-component-id^="popup-banner"]');
+                    !!iconActive?.closest('[data-cb-type="popup-banner"]') ||
+                    !!elmActive?.closest('[data-cb-type="popup-banner"]');
                 pbBtn.style.display = isInPb ? 'flex' : 'none';
             }
         };
@@ -1819,11 +1858,6 @@ export default function EditClient({
             })
             .then(({ json: response, networkMs, jsonMs }) => {
                 if (loadController.signal.aborted) return;
-                if (response.fileNotFound) {
-                    alert(
-                        '페이지 파일이 로컬에 존재하지 않습니다.\ngit pull 후 다시 시도하거나, 에디터에서 새로 저장해 주세요.',
-                    );
-                }
                 if (response.html && builderRef.current) {
                     const loadHtmlStart = performance.now();
                     builderRef.current.loadHtml(response.html);
@@ -1833,6 +1867,10 @@ export default function EditClient({
                     });
                 }
                 // 로드 응답에서 탭 정보 등록 — 최근 접근 순(왼쪽), 최대 10개
+                if (response.pageMissing) {
+                    removeCurrentTabAndRedirect('삭제되었거나 존재하지 않는 페이지입니다.');
+                    return;
+                }
                 if (response.pageName) {
                     setTabs((prev) => {
                         const filtered = prev.filter((t) => t.id !== bank);
@@ -2015,8 +2053,13 @@ export default function EditClient({
     // popup-banner 편집 버튼 클릭 이벤트 수신 (index.js → CustomEvent → 패널 오픈)
     useEffect(() => {
         const handleEditEvent = (e: Event) => {
-            const block = (e as CustomEvent<{ element: HTMLElement }>).detail?.element;
-            if (block) setPopupBannerBlock(block);
+            const detail = (e as CustomEvent<{ element: HTMLElement; onChange?: () => void }>).detail;
+            if (detail?.element) {
+                setPopupBannerBlock(detail.element);
+                // useState setter에 함수를 직접 넘기면 React가 state updater로 해석하므로
+                // () => fn 형태로 래핑하여 함수 자체를 state 값으로 저장
+                setPopupBannerOnChange(() => detail.onChange ?? null);
+            }
         };
         document.addEventListener('spw:popup-banner:edit', handleEditEvent);
         return () => document.removeEventListener('spw:popup-banner:edit', handleEditEvent);
@@ -2442,15 +2485,20 @@ export default function EditClient({
         if (!builderRef.current) return;
         const builder = builderRef.current;
         const html = builder.html();
+        const pageName = tabs.find((tab) => tab.id === bank)?.label;
 
         if (!canWrite) return;
         const response = await fetch(nextApi('/api/builder/save'), {
             method: 'POST',
-            body: JSON.stringify({ html, bank, thumbnail: '' }),
+            body: JSON.stringify({ html, bank, pageName, thumbnail: '' }),
             headers: { 'Content-Type': 'application/json' },
         });
         const result = await response.json();
         if (result.error) {
+            if (result.errorCode === 'PAGE_NOT_FOUND') {
+                removeCurrentTabAndRedirect('삭제되었거나 존재하지 않는 페이지입니다.');
+                return;
+            }
             throw new Error(result.error);
         }
     };
@@ -2868,7 +2916,14 @@ export default function EditClient({
 
             {/* ── popup-banner 이미지 팝업 편집 패널 ── */}
             {popupBannerBlock && (
-                <PopupBannerEditor blockEl={popupBannerBlock} onClose={() => setPopupBannerBlock(null)} />
+                <PopupBannerEditor
+                    blockEl={popupBannerBlock}
+                    cbOnChange={popupBannerOnChange}
+                    onClose={() => {
+                        setPopupBannerBlock(null);
+                        setPopupBannerOnChange(null);
+                    }}
+                />
             )}
 
             {/* ── site-footer 드롭다운 편집 패널 ── */}
