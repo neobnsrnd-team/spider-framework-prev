@@ -15,14 +15,81 @@
 @import "tailwindcss";
 
 @theme {
-  /* CMS 셸 전용 primary 컬러 — 하나은행 기본값.
-     :root 의 --color-primary-* 변수가 unlayered 우선순위로 이 값을 오버라이드한다. */
-  --color-primary: #008485;
-  --color-primary-dark: #006d6d;
+  /* ── Gray Palette ── */
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+  --color-gray-300: #cbd5e1;
+  --color-gray-400: #94a3b8;
+  --color-gray-500: #64748b;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1e293b;
+  --color-gray-900: #0f172a;
+
+  /* ── Primary Palette (하나은행 기본값) ──
+     :root / [data-theme] 블록이 unlayered 우선순위로 이 값들을 오버라이드한다. */
   --color-primary-50: #f0f9f9;
+  --color-primary-100: #d0eeee;
+  --color-primary-200: #a1dddd;
+  --color-primary-300: #6ecbcb;
+  --color-primary-400: #33acac;
+  --color-primary-500: #008485;
+  --color-primary-600: #006d6d;
+  --color-primary-700: #005757;
+  --color-primary-800: #003f3f;
+  --color-primary-900: #002828;
+
+  /* ── Brand Aliases ── */
+  --color-primary: var(--color-primary-500);
+  --color-primary-dark: var(--color-primary-600);
+  --color-primary-light: var(--color-primary-50);
+
+  /* ── Semantic: Text ── */
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-500);
+  --color-text-muted: var(--color-gray-400);
+  --color-text-accent: var(--color-primary-500);
+  --color-slate: var(--color-gray-700);
+  --color-slate-light: var(--color-gray-600);
+  --color-text-inverse: #ffffff;
+
+  /* ── Semantic: Background ── */
+  --color-surface: #ffffff;
+  --color-surface-sub: var(--color-gray-50);
+  --color-surface-hover: var(--color-gray-100);
+  --color-app-bg: #f5f8f8;
+  --color-desktop-bg: #e8edf2;
+  --color-input-bg: var(--color-gray-50);
+  --color-overlay: rgb(0 0 0 / 0.5);
+
+  /* ── Semantic: Border ── */
+  --color-border: var(--color-gray-200);
+  --color-border-focus: var(--color-primary-500);
+  --color-divider: var(--color-gray-100);
+  --color-focus-ring: var(--color-primary-500);
+
+  /* ── Semantic: State ── */
+  --color-success: #10b981;
+  --color-success-light: #ecfdf5;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fffbeb;
+  --color-error: #ef4444;
+  --color-error-light: #fef2f2;
+  --color-info: #3b82f6;
+  --color-info-light: #eff6ff;
+
+  /* ── Component: Input ── */
+  --color-input-border: var(--color-border);
+  --color-input-border-focus: var(--color-border-focus);
+  --color-input-border-error: var(--color-error);
+  --color-input-text: var(--color-text-primary);
+  --color-input-placeholder: var(--color-text-muted);
+  --color-input-label: var(--color-slate);
 }
 
-/* ── 공통 토큰 + 하나은행 기본값 ── */
+/* ── 런타임 오버라이드 ──
+   @theme 값을 unlayered 우선순위로 덮어쓴다. 브랜드 전환 시 [data-theme] 블록이 추가 오버라이드한다. */
 :root {
   /* Gray Palette */
   --color-gray-50: #f8fafc;

@@ -12,6 +12,7 @@ Figma 디자인을 Claude Code에 입력하면, 이 라이브러리의 컴포넌
 - [컴포넌트 라이브러리](#컴포넌트-라이브러리)
 - [디자인 토큰 시스템](#디자인-토큰-시스템)
 - [CSS 아키텍처](#css-아키텍처)
+- [스크립트](#스크립트)
 - [Storybook](#storybook)
 - [Generated 파일](#generated-파일)
 - [연동 프로젝트](#연동-프로젝트)
@@ -146,6 +147,35 @@ npm run build:css
 | `react-cms` | `src/index.css` | `@import "@cl/dist/styles.css"` (user-scope.css, 캔버스 격리) |
 | `preview-app` | `src/index.css` | `@import "@cl/dist/styles.css"` (index.css) |
 | Storybook | `.storybook/preview.ts` | `import '../component-library/dist/styles.css'` |
+
+---
+
+## 스크립트
+
+| 명령어 | 설명 |
+|--------|------|
+| `npm run build:css` | `globals.css` + Tailwind → `component-library/dist/styles.css` 빌드. **globals.css 수정 후 반드시 실행** |
+| `npm run build:css:watch` | `build:css`의 파일 감시(watch) 모드. 변경 시 자동으로 재빌드 |
+| `npm run generate:prompts` | 컴포넌트·디자인 토큰·페이지 규칙을 `generated/` 폴더에 마크다운으로 추출. **컴포넌트 추가·수정 후 반드시 실행** |
+| `npm run typecheck` | TypeScript 타입 오류 검사 (파일 출력 없음) |
+| `npm run lint` | ESLint 정적 분석 |
+| `npm run storybook` | Storybook 개발 서버 실행 (`http://localhost:6006`) |
+| `npm run build-storybook` | Storybook 정적 빌드 |
+
+### 주요 작업별 실행 순서
+
+**globals.css 수정 후**
+
+```bash
+npm run build:css           # dist/styles.css 재빌드
+```
+
+**컴포넌트 추가·수정 후**
+
+```bash
+npm run generate:prompts    # generated/ 갱신 (Claude API System Prompt 소스)
+npm run build:css           # 새 컴포넌트의 Tailwind 클래스가 dist/styles.css에 포함되도록 재빌드
+```
 
 ---
 
