@@ -147,6 +147,10 @@ batch:
   was:
     http-port: ${BATCH_WAS_HTTP_PORT:8081}
 
+# spider-link SQL Reload API 설정
+spiderlink:
+  reload-url: ${SPIDERLINK_RELOAD_URL:http://localhost:8082/api/internal/sql/reload}
+
 # TCP 통신 설정
 # Admin TCP 서버(9999), batch-was TCP 서버(9998), spider-link TCP 서버(9996) → demo/backend(9997)
 tcp:

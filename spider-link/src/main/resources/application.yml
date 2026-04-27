@@ -33,6 +33,14 @@ tcp:
     host: ${TCP_EXT_HOST:localhost}
     port: ${TCP_EXT_PORT:19100}
 
+# 내부 API 보안 설정 — /api/internal/** 접근 허용 IP 목록
+# Admin과 spider-link가 서로 다른 서버에 배포된 경우 Admin 서버 IP를 추가한다.
+internal-api:
+  allowed-ips:
+    - 127.0.0.1
+    - "0:0:0:0:0:0:0:1"   # IPv6 loopback
+    - "::1"               # IPv6 loopback 단축형
+
 # Actuator 설정 — health 엔드포인트만 노출
 management:
   endpoints:
