@@ -516,7 +516,7 @@ export default function EventBannerEditor({ blockEl, onClose }: Props) {
                                             style={{
                                                 width: '100%',
                                                 aspectRatio: '16/9',
-                                                objectFit: 'cover',
+                                                objectFit: 'contain', // buildSlideHtml과 동일 — 에디터 프리뷰와 실제 렌더링 일치
                                                 borderRadius: 6,
                                                 border: '1px solid #e5e7eb',
                                                 background: '#f9fafb',
