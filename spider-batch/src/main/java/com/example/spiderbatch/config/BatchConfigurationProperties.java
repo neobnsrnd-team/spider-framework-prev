@@ -21,10 +21,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *     port: 9998
  *     handler-pool-size: 20
  *     queue-capacity: 100
+ *     enabled: true
  *   file:
  *     input-dir: ./batch-files/input
  *     archive-dir: ./batch-files/archive
  *     error-dir: ./batch-files/error
+ *   security:
+ *     enabled: true
  * }</pre>
  */
 @Getter
@@ -35,6 +38,7 @@ public class BatchConfigurationProperties {
     private Was was = new Was();
     private Tcp tcp = new Tcp();
     private File file = new File();
+    private Security security = new Security();
 
     @Getter
     @Setter
@@ -52,6 +56,8 @@ public class BatchConfigurationProperties {
         private int handlerPoolSize = 20;
         /** 핸들러 풀 포화 시 대기 허용 최대 요청 수 */
         private int queueCapacity = 100;
+        /** false로 설정 시 TCP 서버를 비활성화한다 */
+        private boolean enabled = true;
     }
 
     @Getter
@@ -63,5 +69,12 @@ public class BatchConfigurationProperties {
         private String archiveDir = "./batch-files/archive";
         /** 처리 실패 파일 보관 디렉토리 */
         private String errorDir = "./batch-files/error";
+    }
+
+    @Getter
+    @Setter
+    public static class Security {
+        /** false로 설정 시 API Key 인증 필터를 비활성화한다 */
+        private boolean enabled = true;
     }
 }

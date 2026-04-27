@@ -7,6 +7,7 @@ import com.example.spiderlink.infra.tcp.model.ManagementContext;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,9 +16,13 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p>spider-link의 {@link SpiderTcpServer}에 {@link ObjectStreamMessageCodec}과
  * {@link BatchExecCommandHandler}를 주입하여 Admin ↔ spider-batch 구간 TCP 서버를 구성한다.</p>
+ *
+ * <p>{@code batch.tcp.enabled=false}로 설정하면 TCP 서버가 비활성화된다.
+ * HTTP 전용 환경(REST API만 사용)에서 불필요한 소켓 포트를 열지 않을 때 사용한다.</p>
  */
 @Configuration
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "batch.tcp.enabled", matchIfMissing = true)
 public class TcpServerConfig {
 
     private final BatchConfigurationProperties batchProps;
