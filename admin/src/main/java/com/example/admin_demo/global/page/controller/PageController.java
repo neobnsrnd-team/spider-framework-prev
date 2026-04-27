@@ -290,7 +290,7 @@ public class PageController {
 
     // ── 내 작업함 ── worklist (FWK_WORK_LIST)
 
-    @GetMapping("/approval")
+    @GetMapping("/my-work")
     public String myWorkList(HttpServletRequest request, Model model) {
         return resolveView(request, "pages/worklist/worklist-list :: content", model);
     }

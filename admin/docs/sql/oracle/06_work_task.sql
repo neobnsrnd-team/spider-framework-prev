@@ -93,7 +93,7 @@ INSERT INTO FWK_MENU (
     MENU_ID, MENU_NAME, MENU_URL, PRIOR_MENU_ID, SORT_ORDER,
     DISPLAY_YN, USE_YN, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
 ) VALUES (
-    'v3_approval_workspace', '나의 작업함', '/approval', 'v3_acl_manage', 1,
+    'v3_approval_workspace', '나의 작업함', '/my-work', 'v3_acl_manage', 1,
     'Y', 'Y', TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'), 'Admin'
 );
 
