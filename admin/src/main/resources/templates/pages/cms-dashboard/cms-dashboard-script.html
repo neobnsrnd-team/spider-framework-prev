@@ -327,7 +327,18 @@
             $('#approveRequestPageId').val(pageId);
             $('#approveRequestPageName').text(row.pageName || '-');
             $('#approveRequestApproverId').html('<option value="">승인자 선택</option>');
-            $('#approveRequestBeginningDate').val(row.beginningDate || '');
+
+            // 노출 시작일 최소값 = 오늘 (과거 노출은 의미 없으므로 date picker에서 선택 불가)
+            // YYYY-MM-DD 로컬 시각 기준 — toISOString()은 UTC라 한국 시간 자정 부근에 하루 어긋날 수 있어 사용 금지
+            const now = new Date();
+            const todayStr = now.getFullYear() + '-'
+                           + String(now.getMonth() + 1).padStart(2, '0') + '-'
+                           + String(now.getDate()).padStart(2, '0');
+            $('#approveRequestBeginningDate').attr('min', todayStr);
+
+            // 재승인 케이스에서 row.beginningDate가 과거이면 빈 값으로 초기화 (min 위배 값 잔존 방지)
+            const prefBegin = row.beginningDate || '';
+            $('#approveRequestBeginningDate').val(prefBegin && prefBegin >= todayStr ? prefBegin : '');
             $('#approveRequestExpiredDate').val(row.expiredDate || '');
 
             // 승인자 목록 로드

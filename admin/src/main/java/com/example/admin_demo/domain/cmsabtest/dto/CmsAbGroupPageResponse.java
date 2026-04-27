@@ -12,6 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/** 그룹 상세 조회 시 각 페이지의 가중치와 성과 지표를 보여주기 위한 응답 DTO. */
 public class CmsAbGroupPageResponse {
 
     private String pageId;
