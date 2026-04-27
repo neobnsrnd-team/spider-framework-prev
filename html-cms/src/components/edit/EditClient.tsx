@@ -328,6 +328,8 @@ export default function EditClient({
     const [infoCardBlock, setInfoCardBlock] = useState<HTMLElement | null>(null);
     // popup-banner 이미지 팝업 배너 편집 패널
     const [popupBannerBlock, setPopupBannerBlock] = useState<HTMLElement | null>(null);
+    // popup-banner onChange: ContentBuilder 스냅샷 갱신 콜백 (openContentEditor 세 번째 인자)
+    const [popupBannerOnChange, setPopupBannerOnChange] = useState<(() => void) | null>(null);
     // status-card 현황 카드 편집 모달
     const [statusCardBlock, setStatusCardBlock] = useState<HTMLElement | null>(null);
     const [myDataAssetBlock, setMyDataAssetBlock] = useState<HTMLElement | null>(null);
@@ -901,13 +903,14 @@ export default function EditClient({
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     e.preventDefault();
+                    // popup-banner는 data-component-id 없이 data-cb-type만 사용
                     const block =
                         document
                             .querySelector<HTMLElement>('.icon-active')
-                            ?.closest<HTMLElement>('[data-component-id^="popup-banner"]') ??
+                            ?.closest<HTMLElement>('[data-cb-type="popup-banner"]') ??
                         document
                             .querySelector<HTMLElement>('.elm-active')
-                            ?.closest<HTMLElement>('[data-component-id^="popup-banner"]');
+                            ?.closest<HTMLElement>('[data-cb-type="popup-banner"]');
                     if (block) setPopupBannerBlock(block);
                 });
                 linkTool.appendChild(btn);
@@ -949,9 +952,10 @@ export default function EditClient({
             }
             const pbBtn = document.querySelector<HTMLElement>(`#divLinkTool .${SPW_PB_BTN_CLASS}`);
             if (pbBtn) {
+                // popup-banner는 data-component-id 없이 data-cb-type만 사용
                 const isInPb =
-                    !!iconActive?.closest('[data-component-id^="popup-banner"]') ||
-                    !!elmActive?.closest('[data-component-id^="popup-banner"]');
+                    !!iconActive?.closest('[data-cb-type="popup-banner"]') ||
+                    !!elmActive?.closest('[data-cb-type="popup-banner"]');
                 pbBtn.style.display = isInPb ? 'flex' : 'none';
             }
         };
@@ -2014,8 +2018,13 @@ export default function EditClient({
     // popup-banner 편집 버튼 클릭 이벤트 수신 (index.js → CustomEvent → 패널 오픈)
     useEffect(() => {
         const handleEditEvent = (e: Event) => {
-            const block = (e as CustomEvent<{ element: HTMLElement }>).detail?.element;
-            if (block) setPopupBannerBlock(block);
+            const detail = (e as CustomEvent<{ element: HTMLElement; onChange?: () => void }>).detail;
+            if (detail?.element) {
+                setPopupBannerBlock(detail.element);
+                // useState setter에 함수를 직접 넘기면 React가 state updater로 해석하므로
+                // () => fn 형태로 래핑하여 함수 자체를 state 값으로 저장
+                setPopupBannerOnChange(() => detail.onChange ?? null);
+            }
         };
         document.addEventListener('spw:popup-banner:edit', handleEditEvent);
         return () => document.removeEventListener('spw:popup-banner:edit', handleEditEvent);
@@ -2867,7 +2876,14 @@ export default function EditClient({
 
             {/* ── popup-banner 이미지 팝업 편집 패널 ── */}
             {popupBannerBlock && (
-                <PopupBannerEditor blockEl={popupBannerBlock} onClose={() => setPopupBannerBlock(null)} />
+                <PopupBannerEditor
+                    blockEl={popupBannerBlock}
+                    cbOnChange={popupBannerOnChange}
+                    onClose={() => {
+                        setPopupBannerBlock(null);
+                        setPopupBannerOnChange(null);
+                    }}
+                />
             )}
 
             {/* ── site-footer 드롭다운 편집 패널 ── */}

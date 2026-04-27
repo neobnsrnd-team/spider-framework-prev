@@ -79,8 +79,11 @@ export default {
     editor: {
         openContentEditor(element, builder, onChange) {
             // 설정 버튼 클릭 → CustomEvent dispatch → EditClient.tsx에서 PopupBannerEditor 모달 오픈
+            // onChange: ContentBuilder에 변경 사실을 알려 내부 HTML 스냅샷을 갱신하는 콜백
+            //   PopupBannerEditor가 setAttribute 후 onChange()를 호출해야
+            //   applyBehavior() 시 ContentBuilder가 구 스냅샷으로 DOM을 복원하지 않는다.
             document.dispatchEvent(
-                new CustomEvent('spw:popup-banner:edit', { detail: { element } })
+                new CustomEvent('spw:popup-banner:edit', { detail: { element, onChange } })
             );
             // ContentBuilder가 appendChild할 수 있도록 빈 container 반환 (숨김)
             const container = document.createElement('div');

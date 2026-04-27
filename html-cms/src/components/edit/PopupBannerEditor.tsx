@@ -18,6 +18,8 @@ interface BannerImage {
 
 interface Props {
     blockEl: HTMLElement;
+    /** ContentBuilder openContentEditor 세 번째 인자 — 호출 시 ContentBuilder가 현재 DOM을 스냅샷하여 내부 HTML 갱신 */
+    cbOnChange?: (() => void) | null;
     onClose: () => void;
 }
 
@@ -51,11 +53,8 @@ function parseHideDays(el: HTMLElement): number {
 
 const FONT = "-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Gothic Neo',sans-serif";
 
-export default function PopupBannerEditor({ blockEl, onClose }: Props) {
-    const [images, setImages] = useState<BannerImage[]>(() => {
-        const parsed = parseImages(blockEl);
-        return parsed.length > 0 ? parsed : [{ url: '', link: '#', alt: '' }];
-    });
+export default function PopupBannerEditor({ blockEl, cbOnChange, onClose }: Props) {
+    const [images, setImages] = useState<BannerImage[]>(() => parseImages(blockEl));
     const [hideDays, setHideDays] = useState<number>(() => parseHideDays(blockEl));
 
     // ── 이미지 필드 변경 ─────────────────────────────────────────────────
@@ -100,26 +99,17 @@ export default function PopupBannerEditor({ blockEl, onClose }: Props) {
             alt: img.alt.trim(),
         }));
 
-        // blockEl의 기존 속성(data-cb-type, class 등 ContentBuilder 메타 속성 포함)을 모두 복사하되
-        // data-images / data-hide-days만 갱신한 새 요소를 생성하여 교체한다.
-        //
-        // setAttribute + builderReinit 방식은 ContentBuilder의 MutationObserver / HTML 스냅샷 복원과
-        // 충돌하여 이미지 갱신이 누락되는 문제가 있다. (EventBannerEditor와 동일한 replaceWith 방식 적용)
-        //
-        // replaceWith 후 ContentBuilder가 MutationObserver로 교체를 감지 →
-        // onChange → debouncedReinit → reinitialize() → mount(newEl) 자동 실행되며,
-        // mount()가 data-images를 읽어 pb-sheet--editor를 새로 생성한다.
-        const newEl = document.createElement(blockEl.tagName.toLowerCase());
-        Array.from(blockEl.attributes).forEach((attr) => {
-            // data-images / data-hide-days는 아래에서 갱신된 값으로 설정
-            if (attr.name !== 'data-images' && attr.name !== 'data-hide-days') {
-                newEl.setAttribute(attr.name, attr.value);
-            }
-        });
-        newEl.setAttribute('data-images', JSON.stringify(validated));
-        newEl.setAttribute('data-hide-days', String(hideDays));
-
-        blockEl.replaceWith(newEl);
+        // popup-banner 요소는 data-cb-type만 있고 data-component-id가 없으므로
+        // replaceWith 방식은 ContentBuilder 내부 참조를 갱신하지 못한다.
+        // 올바른 방식:
+        //   1) 속성 갱신 (DOM에 즉시 반영)
+        //   2) cbOnChange() — ContentBuilder에 변경을 알려 내부 HTML 스냅샷 갱신
+        //      → debouncedReinit의 applyBehavior() 가 구 스냅샷으로 DOM을 복원하는 것을 방지
+        //   3) reinitialize() — Runtime이 즉시 unmount → mount 실행 (300ms debounce 없음)
+        blockEl.setAttribute('data-images', JSON.stringify(validated));
+        blockEl.setAttribute('data-hide-days', String(hideDays));
+        cbOnChange?.();
+        void window.builderRuntime?.reinitialize();
         onClose();
     }
 

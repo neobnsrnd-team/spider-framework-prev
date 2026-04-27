@@ -6,6 +6,8 @@ declare global {
     interface Window {
         __spwEditor?: boolean;
         builderReinit?: () => void;
+        /** ContentBuilderRuntime 인스턴스 — EditClient.tsx에서 전역 노출 */
+        builderRuntime?: { reinitialize: (container?: Document | HTMLElement) => Promise<number> };
     }
 }
 
