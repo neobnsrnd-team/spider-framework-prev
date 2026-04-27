@@ -67,8 +67,7 @@ public class CmsDashboardService {
                 throw new NotFoundException("유효하지 않은 템플릿입니다. templateId=" + templateId);
             }
             if (!CmsViewModeUtil.isTemplateCompatible(req.getViewMode(), template.getViewMode())) {
-                throw new InvalidInputException(
-                        "선택한 레이아웃과 템플릿의 레이아웃이 일치하지 않습니다. templateId=" + templateId);
+                throw new InvalidInputException("선택한 레이아웃과 템플릿의 레이아웃이 일치하지 않습니다. templateId=" + templateId);
             }
         }
 
