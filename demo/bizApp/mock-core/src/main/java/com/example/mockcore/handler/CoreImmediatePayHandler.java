@@ -1,10 +1,10 @@
 package com.example.mockcore.handler;
 
 import com.example.bizcommon.BizCommands;
+import com.example.mockcore.infra.FixedMessageReader;
+import com.example.mockcore.infra.FixedMessageWriter;
+import com.example.mockcore.infra.LegacyCoreHandler;
 import com.example.mockcore.repository.AccountRepository;
-import com.example.spiderlink.infra.tcp.handler.CommandHandler;
-import com.example.spiderlink.infra.tcp.model.JsonCommandRequest;
-import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,109 +14,88 @@ import java.util.Map;
 /**
  * 즉시결제 처리 커맨드 핸들러 ({@code CORE_IMMEDIATE_PAY}).
  *
- * <p>userId, cardId, amount, accountNumber를 수신하여 즉시결제를 처리하고
- * paidAmount, processedCount, completedAt을 반환한다.</p>
- *
- * <p>오류 유형별 처리:</p>
- * <ul>
- *   <li>{@code INSUFFICIENT_BALANCE}: 계좌 잔액 부족 ("잔액이 부족합니다.")</li>
- *   <li>{@code ACCOUNT_NOT_FOUND}: 계좌 정보 미존재 ("계좌 정보를 찾을 수 없습니다.")</li>
- * </ul>
+ * <p>REQ: COMMAND(C,20) + REQUEST_ID(C,36) + userId(C,20) + cardId(C,20)
+ *         + amount(N,15) + accountNumber(C,20)
+ * RES: SUCCESS(C,1) + ERROR_MSG(K,200) + paidAmount(N,15)
+ *      + processedCount(N,4) + completedAt(C,20)</p>
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class CoreImmediatePayHandler implements CommandHandler<JsonCommandRequest, JsonCommandResponse> {
+public class CoreImmediatePayHandler implements LegacyCoreHandler {
 
     private final AccountRepository accountRepository;
 
     @Override
-    public boolean supports(String command) {
-        return BizCommands.CORE_IMMEDIATE_PAY.equals(command);
+    public String getCommand() {
+        return BizCommands.CORE_IMMEDIATE_PAY;
     }
 
     @Override
-    public JsonCommandResponse handle(String command, JsonCommandRequest request) {
-        Map<String, Object> payload = request.getPayload();
+    public byte[] handle(byte[] requestBytes) {
+        FixedMessageReader reader = new FixedMessageReader(requestBytes);
+        reader.skip(20); // COMMAND
+        reader.skip(36); // REQUEST_ID
+        String userId        = reader.readC(20);
+        String cardId        = reader.readC(20);
+        String amountStr     = reader.readN(15);
+        String accountNumber = reader.readC(20);
 
+        log.debug("[CORE_IMMEDIATE_PAY] 즉시결제 요청 — userId={}, cardId={}, amount={}", userId, cardId, amountStr);
+
+        FixedMessageWriter writer = new FixedMessageWriter();
         try {
-            String userId = getRequiredString(payload, "userId");
-            String cardId = getRequiredString(payload, "cardId");
-            String accountNumber = getRequiredString(payload, "accountNumber");
-
-            // amount: Number 타입으로 수신될 수 있으므로 안전하게 변환
-            Object amountObj = payload.get("amount");
-            if (amountObj == null) {
-                throw new IllegalArgumentException("필수 파라미터 누락: amount");
-            }
-            long amount;
-            try {
-                amount = ((Number) amountObj).longValue();
-            } catch (ClassCastException e) {
-                // JSON 역직렬화 결과가 String으로 올 경우를 방어 처리
-                amount = Long.parseLong(amountObj.toString());
-            }
-
+            long amount = amountStr.isBlank() ? 0L : Long.parseLong(amountStr.trim());
             if (amount <= 0) {
                 throw new IllegalArgumentException("결제 금액은 0보다 커야 합니다.");
             }
 
-            log.debug("[CORE_IMMEDIATE_PAY] 즉시결제 요청 — userId={}, cardId={}, amount={}, accountNumber={}",
-                    userId, cardId, amount, accountNumber);
-
             Map<String, Object> result = accountRepository.processImmediatePay(userId, cardId, amount, accountNumber);
+            long paidAmount      = toLong(result.get("paidAmount"));
+            int  processedCount  = (int) toLong(result.get("processedCount"));
+            String completedAt   = str(result, "completedAt");
 
-            log.info("[CORE_IMMEDIATE_PAY] 즉시결제 완료 — userId={}, cardId={}, paidAmount={}, processedCount={}",
-                    userId, cardId, result.get("paidAmount"), result.get("processedCount"));
-
-            return JsonCommandResponse.builder()
-                    .command(command)
-                    .success(true)
-                    .message("즉시결제 처리 완료")
-                    .payload(result)
-                    .build();
+            log.info("[CORE_IMMEDIATE_PAY] 즉시결제 완료 — paidAmount={}, processedCount={}", paidAmount, processedCount);
+            writer.writeC("Y", 1);
+            writer.writeK("", 200);
+            writer.writeN(paidAmount, 15);
+            writer.writeN(processedCount, 4);
+            writer.writeC(completedAt, 20);
 
         } catch (IllegalArgumentException e) {
-            // 잔액 부족, 계좌 미존재 등 비즈니스 예외는 error 코드로 구분하여 반환
-            String errorMsg = e.getMessage();
-            String errorCode;
-            if (errorMsg != null && errorMsg.contains("잔액이 부족합니다")) {
-                errorCode = "INSUFFICIENT_BALANCE";
-            } else if (errorMsg != null && errorMsg.contains("계좌 정보를 찾을 수 없습니다")) {
-                errorCode = "ACCOUNT_NOT_FOUND";
-            } else {
-                errorCode = "INVALID_PARAMETER";
-            }
-            log.warn("[CORE_IMMEDIATE_PAY] 결제 실패 — errorCode={}, message={}", errorCode, errorMsg);
-            return JsonCommandResponse.builder()
-                    .command(command)
-                    .success(false)
-                    .error(errorCode + ": " + errorMsg)
-                    .build();
-
+            String msg = e.getMessage() != null ? e.getMessage() : "처리 실패";
+            String code = msg.contains("잔액이 부족합니다") ? "INSUFFICIENT_BALANCE"
+                    : msg.contains("계좌 정보를 찾을 수 없습니다") ? "ACCOUNT_NOT_FOUND"
+                    : "INVALID_PARAMETER";
+            log.warn("[CORE_IMMEDIATE_PAY] 결제 실패 — {}: {}", code, msg);
+            writer = new FixedMessageWriter();
+            writer.writeC("N", 1);
+            writer.writeK(code + ": " + msg, 200);
+            writer.writeN(0L, 15);
+            writer.writeN(0, 4);
+            writer.writeC("", 20);
         } catch (Exception e) {
-            log.error("[CORE_IMMEDIATE_PAY] 결제 처리 중 오류 — {}", e.getMessage(), e);
-            return JsonCommandResponse.builder()
-                    .command(command)
-                    .success(false)
-                    .error(e.getMessage())
-                    .build();
+            log.error("[CORE_IMMEDIATE_PAY] 처리 오류 — {}", e.getMessage(), e);
+            writer = new FixedMessageWriter();
+            writer.writeC("N", 1);
+            writer.writeK(e.getMessage(), 200);
+            writer.writeN(0L, 15);
+            writer.writeN(0, 4);
+            writer.writeC("", 20);
         }
+        return writer.toBytes();
     }
 
-    /**
-     * payload에서 필수 문자열 값을 추출한다. null이거나 빈 값이면 예외를 던진다.
-     *
-     * @param payload 요청 payload
-     * @param key     추출할 키
-     * @return 문자열 값
-     * @throws IllegalArgumentException 값이 없거나 빈 문자열인 경우
-     */
-    private String getRequiredString(Map<String, Object> payload, String key) {
-        Object value = payload.get(key);
-        if (value == null || value.toString().isBlank()) {
-            throw new IllegalArgumentException("필수 파라미터 누락: " + key);
+    private long toLong(Object val) {
+        if (val instanceof Number n) return n.longValue();
+        if (val != null) {
+            try { return Long.parseLong(val.toString()); } catch (NumberFormatException ignored) {}
         }
-        return value.toString();
+        return 0L;
+    }
+
+    private String str(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v != null ? v.toString() : "";
     }
 }

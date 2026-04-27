@@ -1,7 +1,11 @@
 package com.example.spiderlink.infra.tcp.parser;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -209,5 +213,134 @@ public class FixedLengthParser {
         byte[] buf = new byte[len];
         System.arraycopy(bytes, offset, buf, 0, len);
         return new String(buf, Charset.forName("EUC-KR"));
+    }
+
+    // ── serialize (Map → byte[]) ─────────────────────────────
+
+    /**
+     * MessageStructure 기반으로 data Map을 고정길이 byte[] 로 직렬화한다.
+     *
+     * <p>TcpClient 에서 REQ 전문 전송 시, mock-core LegacyMessageWriter 에서
+     * RES 전문 응답 시 사용한다.</p>
+     *
+     * <p>반복 구조(LoopField)의 경우 data 에 루프명 → {@code List<Map>} 형태로 포함해야 한다.
+     * 카운트 참조 방식(defaultValue)인 경우, 카운트 값은 별도 필드(예: cardCnt)에
+     * 이미 포함되어 있어야 하며 루프 직렬화 시 List.size() 를 자동으로 사용한다.</p>
+     *
+     * @param structure 전문 구조 (필드 메타데이터 포함)
+     * @param data      필드명 → 값 Map. 반복 구조는 List&lt;Map&gt; 포함
+     * @return 직렬화된 byte[]
+     * @throws IOException 직렬화 실패 시
+     */
+    public byte[] serialize(MessageStructure structure, Map<String, Object> data) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        for (MessageField field : structure.getFields()) {
+            if (field instanceof LoopField loop) {
+                serializeLoopField(loop, data, baos);
+            } else {
+                serializeField(field, data.get(field.getName()), baos);
+            }
+        }
+        return baos.toByteArray();
+    }
+
+    /** 반복 구조 직렬화 */
+    @SuppressWarnings("unchecked")
+    private void serializeLoopField(LoopField loop, Map<String, Object> data,
+                                    ByteArrayOutputStream out) throws IOException {
+        List<Map<String, Object>> items =
+                (List<Map<String, Object>>) data.getOrDefault(loop.getName(), List.of());
+
+        // length > 0: 반복 횟수를 전문에 직접 기술하는 방식 (defaultValue 참조 방식과 구분)
+        if (loop.getLength() > 0) {
+            out.write(formatNumeric(String.valueOf(items.size()), loop.getLength()));
+        }
+
+        for (Map<String, Object> item : items) {
+            for (MessageField child : loop.getChildren()) {
+                serializeField(child, item.get(child.getName()), out);
+            }
+        }
+    }
+
+    private void serializeField(MessageField field, Object value, OutputStream out) throws IOException {
+        out.write(encodeField(field, value));
+    }
+
+    private byte[] encodeField(MessageField field, Object value) {
+        int len = field.getLength();
+        String strVal = value != null ? value.toString().trim() : "";
+
+        return switch (field.getDataType()) {
+            case MessageField.CHR    -> padRight(strVal.getBytes(), len, ' ');
+            case MessageField.NUM    -> formatNumeric(strVal, len);
+            case MessageField.KOREAN -> padRight(toEucKrBytes(strVal), len, ' ');
+            case MessageField.HEXA   -> fromHex(strVal, len);
+            case MessageField.BINARY -> encodeBinary(value, len);
+            default -> {
+                log.warn("[FixedLengthParser] 알 수 없는 타입 직렬화: type={}, field={}",
+                        field.getDataType(), field.getName());
+                yield padRight(strVal.getBytes(), len, ' ');
+            }
+        };
+    }
+
+    /** N 타입: 숫자 문자열을 좌측 '0' 패딩하여 len 바이트로 반환 */
+    private byte[] formatNumeric(String strVal, int len) {
+        String digits = strVal.replaceAll("[^0-9]", "");
+        byte[] src = digits.isEmpty() ? new byte[]{'0'} : digits.getBytes();
+        return padLeft(src, len, '0');
+    }
+
+    /** C/K 타입: 우측 패딩. src 가 len 초과 시 앞에서 자름 */
+    private byte[] padRight(byte[] src, int len, char padChar) {
+        byte[] result = new byte[len];
+        Arrays.fill(result, (byte) padChar);
+        System.arraycopy(src, 0, result, 0, Math.min(src.length, len));
+        return result;
+    }
+
+    /** N 타입: 좌측 패딩. src 가 len 초과 시 하위 len 바이트만 사용 */
+    private byte[] padLeft(byte[] src, int len, char padChar) {
+        byte[] result = new byte[len];
+        Arrays.fill(result, (byte) padChar);
+        int copyLen = Math.min(src.length, len);
+        System.arraycopy(src, src.length - copyLen, result, len - copyLen, copyLen);
+        return result;
+    }
+
+    private byte[] toEucKrBytes(String str) {
+        try {
+            return str.getBytes(Charset.forName("EUC-KR"));
+        } catch (Exception e) {
+            log.warn("[FixedLengthParser] EUC-KR 인코딩 실패: str={}", str);
+            return str.getBytes();
+        }
+    }
+
+    /** H 타입: hex 문자열 → byte[] */
+    private byte[] fromHex(String hex, int len) {
+        byte[] result = new byte[len];
+        String clean = hex.replaceAll("[^0-9a-fA-F]", "");
+        for (int i = 0; i < len && (i * 2 + 1) < clean.length(); i++) {
+            result[i] = (byte) Integer.parseInt(clean.substring(i * 2, i * 2 + 2), 16);
+        }
+        return result;
+    }
+
+    /** B 타입: 값을 big-endian byte[] 로 인코딩 */
+    private byte[] encodeBinary(Object value, int len) {
+        long num = 0;
+        if (value instanceof Number n) {
+            num = n.longValue();
+        } else if (value != null) {
+            try { num = Long.parseLong(value.toString().trim()); } catch (NumberFormatException ignored) {}
+        }
+        byte[] result = new byte[len];
+        for (int i = len - 1; i >= 0; i--) {
+            result[i] = (byte) (num & 0xFF);
+            num >>= 8;
+        }
+        return result;
     }
 }

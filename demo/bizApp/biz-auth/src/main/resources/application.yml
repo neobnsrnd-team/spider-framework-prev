@@ -27,6 +27,9 @@ mock:
     host: ${MOCK_CORE_HOST}
     port: ${MOCK_CORE_PORT}
 
+app:
+  org-id: ${APP_ORG_ID:DEMO}
+
 logging:
   level:
     com.example.bizauth: DEBUG

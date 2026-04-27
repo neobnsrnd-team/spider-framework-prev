@@ -42,6 +42,10 @@ public class AuthService {
     @Value("${mock.core.port:19300}")
     private int mockCorePort;
 
+    /** FWK_MESSAGE 조회 기관 ID (기본값: DEMO) */
+    @Value("${app.org-id:DEMO}")
+    private String orgId;
+
     /**
      * 로그인 요청을 계정계 Mock 에 위임한다.
      *
@@ -60,7 +64,7 @@ public class AuthService {
                 .build();
 
         try {
-            return tcpClient.sendJson(mockCoreHost, mockCorePort, coreRequest);
+            return tcpClient.send(mockCoreHost, mockCorePort, orgId, coreRequest);
         } catch (IOException e) {
             log.error("[AuthService] mock-core 연결 실패 (login): {}", e.getMessage());
             // 계정계 연결 장애를 실패 응답으로 변환 — 커맨드는 호출자가 AUTH_LOGIN 으로 덮어씀
@@ -90,7 +94,7 @@ public class AuthService {
                 .build();
 
         try {
-            return tcpClient.sendJson(mockCoreHost, mockCorePort, coreRequest);
+            return tcpClient.send(mockCoreHost, mockCorePort, orgId, coreRequest);
         } catch (IOException e) {
             log.error("[AuthService] mock-core 연결 실패 (getMe): {}", e.getMessage());
             // 계정계 연결 장애를 실패 응답으로 변환 — 커맨드는 호출자가 AUTH_ME 로 덮어씀
