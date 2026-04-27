@@ -72,7 +72,6 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer());
         const assetId = crypto.randomUUID();
 
-        console.log('[upload route] assetNameInput=%s, file.name=%s', assetNameInput, file.name);
         // 표시명(DB 저장): 사용자 입력명 우선, 없으면 원본 파일명 그대로 사용 (한글 허용)
         const assetName = assetNameInput || file.name;
 

@@ -80,7 +80,6 @@ public class CmsBuilderClient {
             String businessCategory,
             String assetDesc) {
 
-        log.info("[CmsBuilderClient.upload] assetName='{}', userId='{}'", assetName, userId);
         MultiValueMap<String, Object> form =
                 buildFormData(file, assetName, userId, userName, businessCategory, assetDesc);
 

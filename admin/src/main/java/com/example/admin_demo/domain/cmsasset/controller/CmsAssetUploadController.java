@@ -46,11 +46,6 @@ public class CmsAssetUploadController {
 
         // assetName이 blank이면 원본 파일명으로 폴백하여 CMS에 항상 non-null 값을 전달
         String resolvedAssetName = (assetName != null && !assetName.isBlank()) ? assetName : file.getOriginalFilename();
-        log.info(
-                "[upload] received assetName='{}', originalFilename='{}', resolved='{}'",
-                assetName,
-                file.getOriginalFilename(),
-                resolvedAssetName);
 
         CmsAssetUploadResponse response = cmsAssetService.uploadAsset(
                 file,
