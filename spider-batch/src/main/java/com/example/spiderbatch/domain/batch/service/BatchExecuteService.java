@@ -4,7 +4,8 @@ import com.example.spiderbatch.constant.BatchConstants;
 import com.example.spiderbatch.domain.batch.dto.BatchExecuteRequest;
 import com.example.spiderbatch.domain.batch.dto.BatchExecuteResponse;
 import com.example.spiderbatch.domain.batch.mapper.BatchAppMapper;
-import com.example.spiderbatch.domain.batch.mapper.BatchHisMapper;
+import com.example.spiderbatch.config.BatchConfigurationProperties;
+import com.example.spiderbatch.spi.BatchHistoryRecorder;
 import com.example.spiderbatch.global.log.BatchAuditLogger;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -23,7 +24,6 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.NoSuchJobException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
@@ -39,14 +39,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class BatchExecuteService {
 
-    /** application.yml의 batch.was.instance-id 값 (FWK_WAS_INSTANCE.INSTANCE_ID 와 일치) */
-    @Value("${batch.was.instance-id}")
-    private String instanceId;
-
+    private final BatchConfigurationProperties batchProps;
     private final JobRegistry jobRegistry;
     private final JobLauncher jobLauncher;
     private final BatchAppMapper batchAppMapper;
-    private final BatchHisMapper batchHisMapper;
+    private final BatchHistoryRecorder batchHistoryRecorder;
     /** Micrometer MeterRegistry: batch.job.duration / batch.job.status / batch.step.write.count 기록 */
     private final MeterRegistry meterRegistry;
     private final BatchAuditLogger auditLogger;
@@ -82,13 +79,13 @@ public class BatchExecuteService {
         }
 
         // 2. 다음 실행 회차 계산
-        int nextSeq = batchHisMapper.selectNextExecuteSeq(
-                request.getBatchAppId(), instanceId, request.getBatchDate());
+        int nextSeq = batchHistoryRecorder.nextExecuteSeq(
+                request.getBatchAppId(), batchProps.getWas().getInstanceId(), request.getBatchDate());
 
         // 3. FWK_BATCH_HIS INSERT (STARTED)
         String logDtime = LocalDateTime.now().format(BatchConstants.LOG_DATE_TIME_FORMATTER);
-        batchHisMapper.insertBatchHis(
-                request.getBatchAppId(), instanceId, request.getBatchDate(),
+        batchHistoryRecorder.insertStarted(
+                request.getBatchAppId(), batchProps.getWas().getInstanceId(), request.getBatchDate(),
                 nextSeq, logDtime, userId);
 
         log.info("배치 실행 시작: batchAppId={}, jobName={}, seq={}, batchDate={}",
@@ -193,8 +190,8 @@ public class BatchExecuteService {
                     request.getBatchAppId(), seq, readCount, writeCount, skipCount);
 
             // EXECUTE_COUNT=읽은건수, SUCCESS_COUNT=쓴건수, FAIL_COUNT=스킵건수
-            int updated = batchHisMapper.updateBatchHisResult(
-                    request.getBatchAppId(), instanceId, request.getBatchDate(), seq,
+            int updated = batchHistoryRecorder.updateResult(
+                    request.getBatchAppId(), batchProps.getWas().getInstanceId(), request.getBatchDate(), seq,
                     BatchConstants.RES_RT_SUCCESS, batchEndDtime,
                     null, readCount, writeCount, skipCount, userId);
             if (updated == 0) {
@@ -217,8 +214,8 @@ public class BatchExecuteService {
                     request.getBatchAppId(), seq, jobExecution.getStatus(),
                     readCount, writeCount, skipCount, errorReason);
 
-            int updated = batchHisMapper.updateBatchHisResult(
-                    request.getBatchAppId(), instanceId, request.getBatchDate(), seq,
+            int updated = batchHistoryRecorder.updateResult(
+                    request.getBatchAppId(), batchProps.getWas().getInstanceId(), request.getBatchDate(), seq,
                     BatchConstants.RES_RT_ABNORMAL, batchEndDtime,
                     errorReason, readCount, writeCount, skipCount, userId);
             if (updated == 0) {
@@ -244,8 +241,8 @@ public class BatchExecuteService {
             String batchAppId, String batchDate, int seq, String userId, String errorReason) {
 
         String batchEndDtime = LocalDateTime.now().format(BatchConstants.END_DATE_TIME_FORMATTER);
-        int updated = batchHisMapper.updateBatchHisResult(
-                batchAppId, instanceId, batchDate, seq,
+        int updated = batchHistoryRecorder.updateResult(
+                batchAppId, batchProps.getWas().getInstanceId(), batchDate, seq,
                 BatchConstants.RES_RT_ABNORMAL, batchEndDtime,
                 errorReason, 0L, 0L, 0L, userId);
         if (updated == 0) {

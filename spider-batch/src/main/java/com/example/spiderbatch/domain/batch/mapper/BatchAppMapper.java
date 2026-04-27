@@ -1,6 +1,7 @@
 package com.example.spiderbatch.domain.batch.mapper;
 
 import com.example.spiderbatch.domain.batch.dto.BatchAppInfo;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -9,6 +10,7 @@ import org.apache.ibatis.annotations.Param;
  * <p>배치 실행 시 BATCH_APP_FILE_NAME(= JobRegistry Bean 이름)을 조회하거나,
  * 모니터링 시 배치 이름과 CRON 표현식을 조회하는 용도로 사용한다.</p>
  */
+@Mapper
 public interface BatchAppMapper {
 
     /**

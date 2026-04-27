@@ -1,84 +1,71 @@
 package com.example.spiderbatch.job.db2foreign;
 
-import com.example.spiderbatch.job.common.BatchJobParametersValidator;
+import com.example.spiderbatch.job.AbstractDb2ForeignJob;
 import com.example.spiderbatch.job.common.CardUsage;
-import java.util.LinkedHashMap;
+import com.example.spiderbatch.job.common.CardUsageQuery;
 import java.util.Map;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.Order;
 import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.client.RestTemplate;
 
 /**
  * DB2ForeignJob 설정.
  *
  * <p>DB → 외부 시스템 HTTP 전문 연계 패턴을 시연한다.
- * JdbcPagingItemReader로 POC_카드사용내역을 페이징 조회한 후,
- * TransferItemWriter가 각 건을 Mock 외부 엔드포인트(POST /mock/external/transfer)로 전송한다.</p>
+ * {@link AbstractDb2ForeignJob}이 제공하는 단일 Chunk Step 골격을 재사용하고,
+ * 이 클래스는 POC_카드사용내역 도메인에 특화된 SQL과 HTTP Writer만 제공한다.</p>
  *
  * <p>Job Bean 이름 "db2foreign"이 FWK_BATCH_APP.BATCH_APP_FILE_NAME과 일치해야 한다.</p>
  */
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class Db2ForeignJobConfig {
-
-    private static final int PAGE_SIZE = 5;
+public class Db2ForeignJobConfig extends AbstractDb2ForeignJob<CardUsage> {
 
     private final DataSource dataSource;
-
-    /** PK 전체를 이용일자 우선으로 고정한 compound sort key */
-    private static Map<String, Order> buildSortKeys() {
-        Map<String, Order> keys = new LinkedHashMap<>();
-        keys.put("이용일자", Order.ASCENDING);
-        keys.put("이용자", Order.ASCENDING);
-        keys.put("카드번호", Order.ASCENDING);
-        keys.put("승인시각", Order.ASCENDING);
-        return keys;
-    }
 
     /** WAS 포트를 application.yml에서 읽어 Mock URL 구성에 사용 */
     @Value("${server.port:8081}")
     private int serverPort;
 
+    @Override
+    protected String getJobName() {
+        return "db2foreign";
+    }
+
+    /** ExternalTransferException만 skip — 그 외 RuntimeException은 즉시 Step 실패 */
+    @Override
+    protected Class<? extends Throwable> getSkippableException() {
+        return ExternalTransferException.class;
+    }
+
+    /** PK 전체를 이용일자 우선으로 고정한 compound sort key */
+    private static Map<String, Order> buildSortKeys() {
+        return CardUsageQuery.buildSortKeys();
+    }
+
     @Bean(name = "db2foreign")
     public Job db2ForeignJob(JobRepository jobRepository, Step db2ForeignStep) {
-        return new JobBuilder("db2foreign", jobRepository)
-                .validator(new BatchJobParametersValidator())
-                .start(db2ForeignStep)
-                .build();
+        return buildJob(jobRepository, db2ForeignStep);
     }
 
     @Bean
     public Step db2ForeignStep(JobRepository jobRepository,
                                PlatformTransactionManager transactionManager) {
-        return new StepBuilder("db2ForeignStep", jobRepository)
-                .<CardUsage, CardUsage>chunk(PAGE_SIZE, transactionManager)
-                .reader(db2ForeignReader())
-                .writer(transferItemWriter())
-                .faultTolerant()
-                // ExternalTransferException만 skip — 그 외 RuntimeException은 즉시 Step 실패
-                // RuntimeException.class를 skip 대상으로 두면 NullPointer 등 프로그래밍 오류도 삼킴
-                .skip(ExternalTransferException.class)
-                .noSkip(RuntimeException.class)
-                .skipLimit(5)
-                // 완료된 Step은 재시작 시 skip — RETRYABLE_YN='N'이면 Job에 preventRestart() 추가 권장
-                // TODO: FWK_BATCH_APP.RETRYABLE_YN 값에 따라 JobBuilder.preventRestart() 연동 필요
-                .allowStartIfComplete(false)
-                .build();
+        return buildStep(jobRepository, transactionManager,
+                "db2ForeignStep", db2ForeignReader(), transferItemWriter());
     }
 
     /**
@@ -97,7 +84,6 @@ public class Db2ForeignJobConfig {
                                승인번호, 결제잔액, 누적결제금액, 결제상태코드, 최종결제일자
                         """)
                 .fromClause("FROM POC_카드사용내역")
-                // PK 전체를 compound sort key로 명시적 순서 지정 (Map.of는 순서 비보장)
                 .sortKeys(buildSortKeys())
                 .rowMapper((rs, rowNum) -> CardUsage.builder()
                         .userId(rs.getString("이용자"))
@@ -116,7 +102,7 @@ public class Db2ForeignJobConfig {
                         .paymentStatusCode(rs.getString("결제상태코드"))
                         .lastPaymentDt(rs.getString("최종결제일자"))
                         .build())
-                .pageSize(PAGE_SIZE)
+                .pageSize(getPageSize())
                 .build();
     }
 
