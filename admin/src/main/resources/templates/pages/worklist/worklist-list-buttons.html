@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="buttons">
+    <div class="d-flex justify-content-end gap-2 mt-3"
+         th:if="${#authorization.expression('hasAuthority(''WORK_TASK:W'')')}">
+        <button type="button" class="btn btn-outline-primary btn-sm"
+                onclick="window.WorkList.openGroupMoveModal()">
+            <i class="bi bi-folder-symlink"></i> 그룹 이동
+        </button>
+        <button type="button" class="btn btn-outline-warning btn-sm"
+                onclick="window.WorkList.openTransferModal()">
+            <i class="bi bi-arrow-right-circle"></i> 권한이양
+        </button>
+    </div>
+</div>
+</body>
+</html>

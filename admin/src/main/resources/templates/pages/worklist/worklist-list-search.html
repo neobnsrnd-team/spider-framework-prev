@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="search">
+    <!-- 현재 로그인 사용자 ID — JavaScript에서 참조 -->
+    <input type="hidden" id="currentUserId" th:value="${currentUserId}">
+
+    <!-- 그룹 탭 -->
+    <ul class="nav nav-tabs" id="workGroupTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" type="button" role="tab"
+                    data-group-id=""
+                    onclick="window.WorkList.switchGroup('')">
+                전체
+            </button>
+        </li>
+        <!-- 동적 그룹 탭은 JavaScript에서 주입 -->
+    </ul>
+</div>
+</body>
+</html>

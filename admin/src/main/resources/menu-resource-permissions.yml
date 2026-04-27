@@ -15,9 +15,6 @@ menu-resource:
     v3_access_user_id:
       R: ACCESS_USER:R
       W: ACCESS_USER:W
-    v3_user_work_group:
-      R: USER_WORK_GROUP:R
-      W: USER_WORK_GROUP:W
     v3_approval_workspace:
       R: WORK_TASK:R
       W: WORK_TASK:W

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="content">
+
+    <!-- 그룹 탭 필터 -->
+    <div th:replace="~{pages/worklist/worklist-list-search :: search}"></div>
+
+    <!-- 리스트 헤더 + 페이지 사이즈 선택 -->
+    <div class="page-header mt-3">
+        <h4 class="page-title">
+            <i class="bi bi-briefcase-fill text-primary"></i>
+            나의 작업함
+        </h4>
+        <div class="d-flex align-items-center gap-2">
+            <select id="limitRows" class="form-select form-select-sm sp-limit-select">
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+            <label class="form-label mb-0 small fw-medium fs-xs me-2">건씩</label>
+        </div>
+    </div>
+
+    <!-- 테이블 -->
+    <div th:replace="~{pages/worklist/worklist-list-table :: table}"></div>
+
+    <!-- 페이지네이션 -->
+    <div th:replace="~{fragments/page-content-layout :: pagination}"></div>
+
+    <!-- 하단 버튼 -->
+    <div th:replace="~{pages/worklist/worklist-list-buttons :: buttons}"></div>
+
+    <!-- 그룹 이동 모달 (#5에서 구현) -->
+    <!-- <div th:replace="~{pages/worklist/worklist-group-modal :: modal}"></div> -->
+
+    <!-- 권한이양 모달 (#6에서 구현) -->
+    <!-- <div th:replace="~{pages/worklist/worklist-transfer-modal :: modal}"></div> -->
+
+    <!-- 스크립트 -->
+    <th:block th:replace="~{pages/worklist/worklist-list-script :: script}"/>
+</div>
+</body>
+</html>

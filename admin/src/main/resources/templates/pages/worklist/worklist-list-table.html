@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="table">
+    <div class="table-responsive">
+        <table id="workListTable" class="table table-hover table-bordered align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-center" style="width:40px">
+                        <input type="checkbox" id="checkAll"
+                               onchange="window.WorkList.toggleCheckAll(this)">
+                    </th>
+                    <th class="text-center" style="width:60px"  data-sort="workSeq">번호</th>
+                    <th style="width:110px" data-sort="workId">항목</th>
+                    <th data-sort="workDataPk">식별자</th>
+                    <th data-sort="workName">작업내용</th>
+                    <th class="text-center" style="width:130px" data-sort="approvalSeq">결재일련번호</th>
+                    <th class="text-center" style="width:90px"  data-sort="distYn">운영반영여부</th>
+                    <th class="text-center" style="width:150px" data-sort="distDtime">운영반영일시</th>
+                    <th class="text-center" style="width:110px" data-sort="lastUpdateUserId">최종수정자</th>
+                    <th class="text-center" style="width:150px" data-sort="lastUpdateDtime">최종수정일시</th>
+                    <th class="text-center" style="width:100px">이행스크립트</th>
+                </tr>
+            </thead>
+            <tbody id="workListTableBody">
+                <tr>
+                    <td colspan="11" class="text-center py-4 text-body-secondary">조회 중...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>
