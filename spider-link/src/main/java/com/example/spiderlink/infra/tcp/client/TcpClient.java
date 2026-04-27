@@ -55,6 +55,11 @@ public class TcpClient {
         this.recorder = recorder;
     }
 
+    /** recorder 없이 생성하는 편의 생성자 — DB 기록이 필요하지 않은 경우(테스트 등) 사용 */
+    public TcpClient(ObjectMapper objectMapper) {
+        this(objectMapper, null);
+    }
+
     /**
      * 대상 TCP 서버에 JsonCommandRequest를 JSON 형식으로 전송하고 응답을 수신한다.
      * recorder가 설정된 경우 송신 요청과 수신 응답을 FWK_MESSAGE_INSTANCE에 기록한다.

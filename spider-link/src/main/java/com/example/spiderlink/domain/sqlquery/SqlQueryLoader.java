@@ -5,8 +5,12 @@ import com.example.spiderlink.domain.sqlquery.mapper.SqlQueryDynamicMapper;
 import jakarta.annotation.PostConstruct;
 import java.lang.reflect.Field;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -28,6 +32,9 @@ import org.springframework.stereotype.Component;
  * <p>이미 등록된 static mapper와 충돌하는 statementId는 건너뛰고 경고 로그를 출력한다.
  * Reload API(Task #6)에서 {@link #reloadAll()} / {@link #reloadById(String)}를 호출해
  * WAS 재시작 없이 실시간 반영한다.
+ *
+ * <p>동시 리로드 요청은 {@code reloadLock}으로 직렬화하며, Zombie Statement 방지를 위해
+ * DB에서 사라진 항목은 메모리에서 함께 제거한다.
  */
 @Slf4j
 @Component
@@ -36,6 +43,34 @@ public class SqlQueryLoader {
 
     private final SqlSessionFactory sqlSessionFactory;
     private final SqlQueryDynamicMapper sqlQueryDynamicMapper;
+
+    /**
+     * MyBatis Configuration의 내부 mappedStatements / resultMaps 맵에 리플렉션으로 접근하기 위해
+     * static block에서 한 번만 Field 객체를 조회해 캐싱한다. 매 호출마다 getDeclaredField()를
+     * 재수행하는 비효율과 ReflectiveOperationException 중복 처리를 방지한다.
+     */
+    private static final Field MAPPED_STATEMENTS_FIELD;
+    private static final Field RESULT_MAPS_FIELD;
+
+    static {
+        try {
+            MAPPED_STATEMENTS_FIELD = Configuration.class.getDeclaredField("mappedStatements");
+            MAPPED_STATEMENTS_FIELD.setAccessible(true);
+            RESULT_MAPS_FIELD = Configuration.class.getDeclaredField("resultMaps");
+            RESULT_MAPS_FIELD.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    /** 동시 리로드 요청을 직렬화하여 Configuration 내부 맵의 Race Condition을 방지 */
+    private final ReentrantLock reloadLock = new ReentrantLock();
+
+    /**
+     * 동적으로 등록된 statementId 목록. reloadAll() 시 DB에서 사라진 항목(Zombie)을
+     * 식별해 메모리에서 제거하는 데 사용한다.
+     */
+    private final Set<String> dynamicStatementIds = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /** 기동 시 FWK_SQL_QUERY 전체 로딩 */
     @PostConstruct
@@ -64,6 +99,7 @@ public class SqlQueryLoader {
 
             try {
                 registerStatement(configuration, statementId, query.getSqlQuery(), query.getSqlType());
+                dynamicStatementIds.add(statementId);
                 loaded++;
                 log.debug("[SqlQueryLoader] 등록: {}", statementId);
             } catch (Exception e) {
@@ -95,43 +131,71 @@ public class SqlQueryLoader {
         Configuration configuration = sqlSessionFactory.getConfiguration();
         String statementId = buildStatementId(record);
 
-        removeStatementIfExists(configuration, statementId);
-        registerStatement(configuration, statementId, record.getSqlQuery(), record.getSqlType());
+        reloadLock.lock();
+        try {
+            removeStatementIfExists(configuration, statementId);
+            registerStatement(configuration, statementId, record.getSqlQuery(), record.getSqlType());
+            dynamicStatementIds.add(statementId);
+        } finally {
+            reloadLock.unlock();
+        }
         log.info("[SqlQueryLoader] 리로드 완료: {}", statementId);
     }
 
     /**
      * FWK_SQL_QUERY 전체를 DB에서 재조회해 MappedStatement를 전체 갱신한다 (Reload API 용).
      *
-     * <p>기존에 동적 등록된 statement를 모두 제거 후 재등록한다.
-     * static mapper로 등록된 statement는 건드리지 않는다.
+     * <p>DB에서 사라진(USE_YN='N' 또는 삭제된) statement를 메모리에서도 제거(Zombie 정리)하고,
+     * 활성 statement를 재등록한다. static mapper로 등록된 statement는 건드리지 않는다.
      */
     public void reloadAll() {
         Configuration configuration = sqlSessionFactory.getConfiguration();
         List<SqlQueryRecord> queries = sqlQueryDynamicMapper.findAllActive();
 
-        int reloaded = 0;
-        int skipped = 0;
+        // DB 활성 statementId 목록 — 유효하지 않은 SQL은 제외
+        Set<String> activeIds = queries.stream()
+                .filter(q -> q.getSqlQuery() != null && !q.getSqlQuery().isBlank())
+                .map(this::buildStatementId)
+                .collect(Collectors.toSet());
 
-        for (SqlQueryRecord query : queries) {
-            if (query.getSqlQuery() == null || query.getSqlQuery().isBlank()) {
-                skipped++;
-                continue;
+        reloadLock.lock();
+        try {
+            // Zombie Statement 정리: 동적 등록 목록에 있지만 DB에서 사라진 항목 제거
+            Set<String> zombieIds = new HashSet<>(dynamicStatementIds);
+            zombieIds.removeAll(activeIds);
+            for (String zombieId : zombieIds) {
+                removeStatementIfExists(configuration, zombieId);
+                dynamicStatementIds.remove(zombieId);
+                log.info("[SqlQueryLoader] Zombie statement 제거: {}", zombieId);
             }
 
-            String statementId = buildStatementId(query);
+            int reloaded = 0;
+            int skipped = 0;
 
-            try {
-                removeStatementIfExists(configuration, statementId);
-                registerStatement(configuration, statementId, query.getSqlQuery(), query.getSqlType());
-                reloaded++;
-            } catch (Exception e) {
-                log.error("[SqlQueryLoader] 리로드 실패: {} — {}", statementId, e.getMessage());
-                skipped++;
+            for (SqlQueryRecord query : queries) {
+                if (query.getSqlQuery() == null || query.getSqlQuery().isBlank()) {
+                    skipped++;
+                    continue;
+                }
+
+                String statementId = buildStatementId(query);
+
+                try {
+                    removeStatementIfExists(configuration, statementId);
+                    registerStatement(configuration, statementId, query.getSqlQuery(), query.getSqlType());
+                    dynamicStatementIds.add(statementId);
+                    reloaded++;
+                } catch (Exception e) {
+                    log.error("[SqlQueryLoader] 리로드 실패: {} — {}", statementId, e.getMessage());
+                    skipped++;
+                }
             }
+
+            log.info("[SqlQueryLoader] 전체 리로드 완료 — 갱신: {}건, Zombie 제거: {}건, 실패: {}건",
+                    reloaded, zombieIds.size(), skipped);
+        } finally {
+            reloadLock.unlock();
         }
-
-        log.info("[SqlQueryLoader] 전체 리로드 완료 — 갱신: {}건, 실패: {}건", reloaded, skipped);
     }
 
     /**
@@ -145,7 +209,14 @@ public class SqlQueryLoader {
 
         Configuration configuration = sqlSessionFactory.getConfiguration();
         String statementId = buildStatementId(record);
-        removeStatementIfExists(configuration, statementId);
+
+        reloadLock.lock();
+        try {
+            removeStatementIfExists(configuration, statementId);
+            dynamicStatementIds.remove(statementId);
+        } finally {
+            reloadLock.unlock();
+        }
         log.info("[SqlQueryLoader] statement 제거: {}", statementId);
     }
 
@@ -189,20 +260,24 @@ public class SqlQueryLoader {
     }
 
     /**
-     * Configuration 내부의 mappedStatements 맵에서 직접 제거한다.
+     * Configuration 내부의 mappedStatements / resultMaps 맵에서 해당 statement를 제거한다.
      *
-     * <p>MyBatis Configuration은 removeStatement() API를 제공하지 않으므로
-     * 리플렉션으로 접근한다. Reload 시 중복 등록을 방지하기 위해 사용한다.
+     * <p>MyBatis Configuration은 removeStatement() API를 제공하지 않으므로 static block에서
+     * 미리 캐싱한 Field 객체로 접근한다. SELECT 쿼리의 ResultMap도 함께 제거하여
+     * 반복 리로드 시 resultMaps가 누적되는 Memory Leak을 방지한다.
      */
     private void removeStatementIfExists(Configuration configuration, String statementId) {
         if (!configuration.hasStatement(statementId, false)) return;
 
         try {
-            Field field = Configuration.class.getDeclaredField("mappedStatements");
-            field.setAccessible(true);
             @SuppressWarnings("unchecked")
-            Map<String, Object> mappedStatements = (Map<String, Object>) field.get(configuration);
+            Map<String, Object> mappedStatements = (Map<String, Object>) MAPPED_STATEMENTS_FIELD.get(configuration);
             mappedStatements.remove(statementId);
+
+            // SELECT 쿼리에 등록된 ResultMap도 함께 제거 — 누적 Memory Leak 방지
+            @SuppressWarnings("unchecked")
+            Map<String, Object> resultMaps = (Map<String, Object>) RESULT_MAPS_FIELD.get(configuration);
+            resultMaps.remove(statementId + "-Inline");
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException(
                     "MappedStatement 제거 실패: " + statementId, e);

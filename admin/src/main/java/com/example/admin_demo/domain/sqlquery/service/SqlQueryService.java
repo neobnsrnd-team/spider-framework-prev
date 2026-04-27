@@ -296,21 +296,17 @@ public class SqlQueryService {
 
     /**
      * null/빈 파라미터에 해당하는 조건을 1=1로 치환하고, 비 null 파라미터는 ?로 치환한다.
-     * MyBatis #{} 방식과 JDBC ? 방식 모두 지원한다.
      *
-     * <p>null/빈 파라미터 → col = #{} 전체를 1=1로 교체하여 WHERE 절에서 해당 필터를 제외한다.
-     * 따라서 해당 조건이 없는 것처럼 전체 데이터가 조회된다.
+     * <p>#{varName} 과 ? 플레이스홀더를 등장 순서대로 처리하므로 두 방식이 혼재된 쿼리도
+     * 파라미터 인덱스 불일치 없이 정상 처리된다.
+     * <ul>
+     *   <li>null/빈 파라미터 → LHS 컬럼·연산자를 제거하고 1=1로 교체 (해당 필터를 WHERE에서 제외)</li>
+     *   <li>비 null 파라미터 → JDBC ? 로 변환 후 bindArgs에 추가</li>
+     * </ul>
      */
     private String applyNullableParams(String sql, List<String> params, List<Object> bindArgs) {
-        if (sql.contains("#{")) {
-            return applyMybatisParams(sql, params, bindArgs);
-        }
-        return applyJdbcParams(sql, params, bindArgs);
-    }
-
-    /** MyBatis #{varName} 방식 파라미터 적용. */
-    private String applyMybatisParams(String sql, List<String> params, List<Object> bindArgs) {
-        Matcher matcher = Pattern.compile("#\\{[^}]*\\}").matcher(sql);
+        // #{...} 와 ? 를 등장 순서대로 단일 패턴으로 탐색하여 혼재 쿼리도 올바르게 처리
+        Matcher matcher = Pattern.compile("#\\{[^}]*\\}|\\?").matcher(sql);
         StringBuilder result = new StringBuilder();
         int lastEnd = 0;
         int paramIdx = 0;
@@ -320,37 +316,17 @@ public class SqlQueryService {
             boolean isNull = (paramVal == null || paramVal.trim().isEmpty());
 
             if (isNull) {
-                // #{} 직전 텍스트에서 비교 연산자+컬럼명을 제거하고 1=1 삽입
-                result.append(removeConditionLhs(sql.substring(lastEnd, matcher.start())));
-                result.append("1=1");
-            } else {
-                result.append(sql, lastEnd, matcher.start());
-                result.append("?");
-                bindArgs.add(paramVal);
-            }
-
-            lastEnd = matcher.end();
-            paramIdx++;
-        }
-
-        result.append(sql, lastEnd, sql.length());
-        return result.toString();
-    }
-
-    /** JDBC ? 방식 파라미터 적용. */
-    private String applyJdbcParams(String sql, List<String> params, List<Object> bindArgs) {
-        Matcher matcher = Pattern.compile("\\?").matcher(sql);
-        StringBuilder result = new StringBuilder();
-        int lastEnd = 0;
-        int paramIdx = 0;
-
-        while (matcher.find()) {
-            String paramVal = (paramIdx < params.size()) ? params.get(paramIdx) : null;
-            boolean isNull = (paramVal == null || paramVal.trim().isEmpty());
-
-            if (isNull) {
-                result.append(removeConditionLhs(sql.substring(lastEnd, matcher.start())));
-                result.append("1=1");
+                String prefix = sql.substring(lastEnd, matcher.start());
+                String stripped = removeConditionLhs(prefix);
+                if (stripped != null) {
+                    // LHS(컬럼+연산자)를 제거하고 1=1 삽입 — 해당 조건을 WHERE에서 완전히 제외
+                    result.append(stripped);
+                    result.append("1=1");
+                } else {
+                    // LHS 패턴 미매칭(중첩 함수, 산술식 등) — NULL 치환으로 폴백하여 잘못된 SQL 방지
+                    result.append(prefix);
+                    result.append("NULL");
+                }
             } else {
                 result.append(sql, lastEnd, matcher.start());
                 result.append("?");
@@ -366,20 +342,37 @@ public class SqlQueryService {
     }
 
     /**
-     * 텍스트 끝부분에서 비교 연산자와 그 앞의 컬럼명을 제거한다.
+     * 텍스트 끝부분에서 비교 연산자와 그 앞의 LHS 표현식을 제거한다.
      *
-     * <p>예: "WHERE col = " → "WHERE "  /  " AND t.col LIKE " → " AND "
-     * null 파라미터 조건을 1=1로 대체하기 전에 호출해 LHS를 제거한다.
+     * <p>예: {@code "WHERE col = "} → {@code "WHERE "}
+     * <br>예: {@code " AND t.col LIKE "} → {@code " AND "}
+     * <br>예: {@code " AND UPPER(col) = "} → {@code " AND "}
+     *
+     * <p>LHS 패턴은 다음 두 형식을 지원한다:
+     * <ul>
+     *   <li>단순 컬럼명 / 별칭 접두사: {@code col}, {@code t.col}, {@code "col"}, {@code [col]}</li>
+     *   <li>단일 인수 함수 호출: {@code UPPER(col)}, {@code TRIM(col)}, {@code NVL(col, '')}</li>
+     * </ul>
+     *
+     * <p><b>한계</b>: 중첩 함수 {@code UPPER(NVL(col,''))} 또는 산술 표현식 {@code col + 1}은
+     * 매칭되지 않는다. 미매칭 시 플레이스홀더를 NULL로 치환하여 잘못된 SQL 생성을 방지한다.
      */
     private static final Pattern CONDITION_LHS =
-            Pattern.compile("(?i)[\\w.`\"\\[\\]]+\\s*(?:NOT\\s+LIKE|NOT\\s+IN|LIKE|IN|<>|!=|<=|>=|=|<|>)\\s*$");
+            Pattern.compile(
+                    "(?i)(?:\\w+\\s*\\([^)]*\\)|[\\w.`\"\\[\\]]+)\\s*"
+                    + "(?:NOT\\s+LIKE|NOT\\s+IN|LIKE|IN|<>|!=|<=|>=|=|<|>)\\s*$");
 
+    /**
+     * {@link #CONDITION_LHS}로 LHS를 제거하고, 매칭 실패 시 {@code null}을 반환한다.
+     * 호출부에서 null 시 NULL 치환 폴백을 적용한다.
+     */
     private String removeConditionLhs(String text) {
         Matcher m = CONDITION_LHS.matcher(text);
         if (m.find()) {
             return text.substring(0, m.start());
         }
-        return text;
+        // 매칭 실패(중첩 함수, 산술식 등) — null 반환으로 호출부가 NULL 치환 폴백 수행
+        return null;
     }
 
     /** 사용여부(USE_YN) Y↔N 반전 — 목록 인라인 토글에서 호출 */
