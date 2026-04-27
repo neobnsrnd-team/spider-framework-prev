@@ -89,19 +89,45 @@ public class LogLevelService {
                 .logName(logger.getName())
                 .logLevel(logger.getLevel() != null ? logger.getLevel().toString() : null)
                 .effectiveLevel(logger.getEffectiveLevel().toString())
+                .parentEffectiveLevel(resolveParentEffectiveLevel(logger))
                 .additivity(logger.isAdditive() ? "Y" : "N")
                 .appender(collectAppenderNames(logger))
                 .build();
+    }
+
+    /**
+     * 이름 계층을 역으로 올라가며 가장 가까운 조상 로거의 effective level을 반환합니다.
+     * ROOT는 부모가 없으므로 null을 반환합니다.
+     */
+    private String resolveParentEffectiveLevel(Logger logger) {
+        LoggerContext ctx = getLoggerContext();
+        String name = logger.getName();
+        if (Logger.ROOT_LOGGER_NAME.equals(name)) {
+            return null;
+        }
+        // 이름에 점이 없으면 바로 ROOT가 부모
+        int lastDot = name.lastIndexOf('.');
+        if (lastDot < 0) {
+            return ctx.getLogger(Logger.ROOT_LOGGER_NAME).getEffectiveLevel().toString();
+        }
+        // 점 단위로 잘라올라가며 이미 생성된 조상 로거를 탐색
+        String parentName = name.substring(0, lastDot);
+        while (!Logger.ROOT_LOGGER_NAME.equals(parentName)) {
+            Logger ancestor = ctx.exists(parentName);
+            if (ancestor != null) {
+                return ancestor.getEffectiveLevel().toString();
+            }
+            int dot = parentName.lastIndexOf('.');
+            parentName = dot >= 0 ? parentName.substring(0, dot) : Logger.ROOT_LOGGER_NAME;
+        }
+        return ctx.getLogger(Logger.ROOT_LOGGER_NAME).getEffectiveLevel().toString();
     }
 
     private String collectAppenderNames(Logger logger) {
         Iterator<Appender<ILoggingEvent>> it = logger.iteratorForAppenders();
         StringJoiner joiner = new StringJoiner(", ");
         while (it.hasNext()) {
-            Appender<ILoggingEvent> appender = it.next();
-            String name = appender.getName();
-            // getName()이 null인 경우 클래스 단순명으로 fallback
-            joiner.add(name != null ? name : appender.getClass().getSimpleName());
+            joiner.add(it.next().getClass().getName());
         }
         return joiner.toString();
     }

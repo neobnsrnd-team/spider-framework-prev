@@ -4,6 +4,7 @@ import com.example.admin_demo.domain.loglevel.dto.AdditivityUpdateRequest;
 import com.example.admin_demo.domain.loglevel.dto.LogLevelResponse;
 import com.example.admin_demo.domain.loglevel.dto.LogLevelUpdateRequest;
 import com.example.admin_demo.domain.loglevel.service.LogLevelService;
+import com.example.admin_demo.global.client.SpiderLogLevelClient;
 import com.example.admin_demo.global.dto.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class LogLevelController {
 
     private final LogLevelService logLevelService;
+    private final SpiderLogLevelClient spiderLogLevelClient;
 
     /**
      * 전체 로거 목록을 Logback LoggerContext에서 조회합니다.
@@ -59,6 +61,8 @@ public class LogLevelController {
     public ResponseEntity<ApiResponse<Void>> updateLevel(@Valid @RequestBody LogLevelUpdateRequest request) {
         log.info("PATCH /api/log-level/level - logName={}, level={}", request.getLogName(), request.getLevel());
         logLevelService.updateLevel(request);
+        // Admin 자신의 Logback 변경 후 spider-link에도 동일하게 전파 (실패해도 200 반환)
+        spiderLogLevelClient.syncLevel(request.getLogName(), request.getLevel());
         return ResponseEntity.ok(ApiResponse.success("로그 레벨이 변경되었습니다", null));
     }
 
@@ -75,6 +79,8 @@ public class LogLevelController {
                 request.getLogName(),
                 request.getAdditivity());
         logLevelService.updateAdditivity(request);
+        // Admin 자신의 Logback 변경 후 spider-link에도 동일하게 전파 (실패해도 200 반환)
+        spiderLogLevelClient.syncAdditivity(request.getLogName(), request.getAdditivity());
         return ResponseEntity.ok(ApiResponse.success("Additivity가 변경되었습니다", null));
     }
 }

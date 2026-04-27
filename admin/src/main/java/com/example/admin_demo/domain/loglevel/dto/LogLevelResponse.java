@@ -24,6 +24,9 @@ public class LogLevelResponse {
     /** 실제 적용 중인 레벨. logLevel이 null일 때 부모로부터 상속받은 값을 나타냄 */
     private String effectiveLevel;
 
+    /** 부모 로거의 effective level. 상속 선택 시 실제로 적용될 레벨을 미리 보여주기 위해 사용 */
+    private String parentEffectiveLevel;
+
     /** Additivity 여부 (Y: 상위 로거에도 전파, N: 이 로거에서만 처리) */
     private String additivity;
 

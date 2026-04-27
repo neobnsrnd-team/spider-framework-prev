@@ -135,12 +135,17 @@
 
         function createRow(logger, index) {
             // Level 셀: 쓰기 권한이면 드롭다운+저장 버튼, 없으면 텍스트 표시
-            const inheritedLabel = `상속 (${logger.effectiveLevel})`;
+            // 드롭다운의 "상속" 옵션은 선택 시 실제로 적용될 부모 레벨을 표시
+            // 읽기전용 뱃지는 현재 실제 적용 중인 effectiveLevel 표시
+            const inheritedOptionLabel = logger.parentEffectiveLevel
+                ? `상속 (${logger.parentEffectiveLevel})`
+                : '상속';
+            const inheritedBadgeLabel = `상속 (${logger.effectiveLevel})`;
             const levelCell = hasLogLevelWrite
                 ? `<td>
                        <div class="d-flex gap-1 align-items-center">
                            <select class="form-select form-select-sm level-select" style="min-width:130px;">
-                               <option value="" ${!logger.logLevel ? 'selected' : ''}>${inheritedLabel}</option>
+                               <option value="" ${!logger.logLevel ? 'selected' : ''}>${inheritedOptionLabel}</option>
                                ${LEVEL_OPTIONS.map(l =>
                                    `<option value="${l}" ${logger.logLevel === l ? 'selected' : ''}>${l}</option>`
                                ).join('')}
@@ -150,7 +155,7 @@
                    </td>`
                 : `<td>${logger.logLevel
                         ? `<span class="badge bg-secondary">${logger.logLevel}</span>`
-                        : `<span class="text-muted small">${inheritedLabel}</span>`}
+                        : `<span class="text-muted small">${inheritedBadgeLabel}</span>`}
                    </td>`;
 
             // Additivity 셀: 쓰기 권한이면 드롭다운+저장 버튼, 없으면 텍스트 표시
