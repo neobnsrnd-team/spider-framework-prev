@@ -1818,11 +1818,6 @@ export default function EditClient({
             })
             .then(({ json: response, networkMs, jsonMs }) => {
                 if (loadController.signal.aborted) return;
-                if (response.fileNotFound) {
-                    alert(
-                        '페이지 파일이 로컬에 존재하지 않습니다.\ngit pull 후 다시 시도하거나, 에디터에서 새로 저장해 주세요.',
-                    );
-                }
                 if (response.html && builderRef.current) {
                     const loadHtmlStart = performance.now();
                     builderRef.current.loadHtml(response.html);
