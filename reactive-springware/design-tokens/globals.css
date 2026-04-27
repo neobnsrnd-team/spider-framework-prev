@@ -1,14 +1,11 @@
 /* ================================================================
    MULTI-DOMAIN WHITE-LABEL THEME ENGINE
-   Tailwind CSS v4 · Source of Truth: packages/shared/styles/themes/
+   Tailwind CSS v4 기반 멀티 브랜드·도메인 테마 엔진
 
    Layer 1 — Domain Tokens : [data-domain='...'] (도메인 공통 배경 등)
    Layer 2 — Brand Tokens  : [data-brand='...']  (브랜드별 가변 색상)
    Layer 3 — Common Theme  : @theme 블록 (고정 공통 토큰)
    Layer 4 — Base / Utils  : 전역 기본 스타일 & 커스텀 유틸리티
-
-   [AUTO-GENERATED] 이 파일은 themeGenerator.ts 가 자동으로 생성합니다.
-   직접 편집하지 마세요. JSON 수정 후 npm run build:css-all 을 실행하세요.
 ================================================================ */
 
 /* ================================================================
@@ -26,24 +23,6 @@
 /* Material Symbols Outlined: 아이콘 폰트 (--font-icon) */
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 
-/* ================================================================
-   TAILWIND v4
-   preflight는 포함한다. 고객사 프로젝트에 Tailwind가 이미 있어도
-   preflight는 동일한 규칙을 @layer base에 중복 선언하는 것이므로
-   시각적 충돌이 발생하지 않는다. 제거하면 <button> 등의 브라우저
-   기본 테두리·여백이 살아나 컴포넌트 스타일이 깨진다.
-   - preflight.css : 브라우저 기본 스타일 리셋 (버튼 테두리 제거 등)
-   - theme.css     : 디폴트 테마 변수 (@theme 블록의 커스텀 토큰과 병합됨)
-   - utilities.css : 유틸리티 클래스 생성 (@source 지정 파일 스캔 결과 포함)
-================================================================ */
-@import 'tailwindcss/preflight' layer(base);
-@import 'tailwindcss/theme' layer(base);
-@import 'tailwindcss/utilities' layer(utilities);
-
-/* Tailwind v4: 자동 스캔 범위 밖에 있는 컴포넌트 디렉토리를 명시적으로 추가.
-   packages/component-library 는 각 앱의 Vite 루트 밖에 위치하므로
-   @source 없이는 Tailwind가 해당 파일의 클래스명을 수집하지 못한다. */
-@source "../component-library/**/*.{ts,tsx}";
 
 /* ================================================================
    BREAKPOINT REFERENCE VARIABLES (JS 참조용)
@@ -226,21 +205,23 @@
   --shadow-primary: 0px 8px 20px -4px var(--brand-shadow);
 }
 
-/* ── 지로 기본 ─────────────────────────────────────── */
-[data-brand='giro'] {
-  --brand-primary: #5b21b6;
-  --brand-alt: #8b5cf6;
-  --brand-bg: #f9f7ff;
-  --brand-name: '지로 기본';
+/* ── 공통 브랜드 색상 매핑 ─────────────────────────────────────
+   [data-brand] 선택자는 @layer theme보다 명시도가 높아,
+   @theme의 --color-brand-* 가 빌드 시 고정되더라도 런타임 교체를 보장한다.
+─────────────────────────────────────────────────────────────── */
+[data-brand] {
+  --color-brand: var(--brand-primary);
+  --color-brand-alt: var(--brand-alt);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-text: var(--brand-text);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-darker: var(--brand-darker);
+  --color-brand-5: var(--brand-5);
+  --color-brand-10: var(--brand-10);
+  --color-brand-20: var(--brand-20);
+  --color-brand-shadow: var(--brand-shadow);
 }
 
-/* ── 보험 기본 ─────────────────────────────────────── */
-[data-brand='insurance'] {
-  --brand-primary: #e03a1e;
-  --brand-alt: #f97f6a;
-  --brand-bg: #fff8f7;
-  --brand-name: '보험 기본';
-}
 
 /* ================================================================
    LAYER 3 — COMMON THEME (@theme)

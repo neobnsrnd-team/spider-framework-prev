@@ -27,7 +27,7 @@
 | ---------- | ---------------------------------- |
 | Framework  | React 19 + TypeScript              |
 | Build      | Vite 8                             |
-| Style      | Tailwind CSS 4                     |
+| Style      | Tailwind CSS 4 + `@cl/dist/styles.css` (디자인 토큰 + 유틸리티) |
 | 트랜스파일 | @babel/standalone (CDN)            |
 | 컴포넌트   | reactive-springware + lucide-react |
 
@@ -108,6 +108,12 @@ window.__components = {
 reactive-springware 컴포넌트는 `@cl` alias로 소스를 직접 참조하므로
 별도 dist 빌드 없이 변경 사항이 즉시 반영된다.
 
+### 디자인 토큰 적용
+
+`src/index.css`가 `@cl/dist/styles.css`를 import하여 디자인 토큰과 Tailwind 유틸리티를 로드한다.
+생성된 컴포넌트 코드에 `data-brand="hana"` / `data-domain="card"` 속성이 있으면
+해당 브랜드·도메인의 CSS 변수가 자동으로 활성화된다.
+
 ### 오류 처리
 
 오류 발생 단계에 따라 처리 방식이 다르다.
@@ -162,6 +168,7 @@ preview-app/
 ├── vite.config.ts          # base: /preview-app/, outDir: ../admin/.../static/preview-app
 ├── src/
 │   ├── main.tsx            # 진입점 — postMessage 수신, componentRegistry 초기화
+│   ├── index.css           # Tailwind 엔트리 + @import "@cl/dist/styles.css"
 │   ├── Renderer.tsx        # 핵심 렌더링 엔진 (import 패치 → Babel → new Function → React)
 │   ├── componentRegistry.ts# window.__components 초기화 (reactive-springware + lucide-react)
 │   ├── ErrorBoundary.tsx   # 런타임 렌더링 오류 포착 (React 클래스형 컴포넌트)
