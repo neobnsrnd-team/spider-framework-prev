@@ -76,6 +76,9 @@ export default function ProductMenuIconEditor({ blockEl, onClose }: Props) {
     const dragging = useRef(false);
     const dragStart = useRef({ mx: 0, my: 0, px: 0, py: 0 });
 
+    // CMS 이미지 피커 cleanup 참조 — 언마운트 시 미처리된 피커를 강제 종료하여 message 리스너 누수 방지
+    const pickerCleanupRef = useRef<(() => void) | null>(null);
+
     const onHeaderMouseDown = useCallback(
         (e: React.MouseEvent) => {
             if ((e.target as HTMLElement).closest('button')) return;
@@ -102,6 +105,14 @@ export default function ProductMenuIconEditor({ blockEl, onClose }: Props) {
         return () => {
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
+        };
+    }, []);
+
+    // 컴포넌트 언마운트 시 열려 있는 CMS 이미지 피커를 강제 종료
+    // 피커가 열린 채 편집 모달이 닫히는 경우 window message 리스너가 남지 않도록 정리
+    useEffect(() => {
+        return () => {
+            pickerCleanupRef.current?.();
         };
     }, []);
 
@@ -153,11 +164,18 @@ export default function ProductMenuIconEditor({ blockEl, onClose }: Props) {
     // 선택 완료 시 콜백으로 URL 1건을 전달받는다.
     const openImagePicker = useCallback((itemEl: HTMLElement) => {
         try {
-            openCmsFilesPicker((url) => {
+            pickerCleanupRef.current = openCmsFilesPicker((url) => {
+                pickerCleanupRef.current = null; // 선택 완료 — 피커 내부에서 이미 cleanup 호출됨
                 const wrap = itemEl.querySelector('.pm-icon-wrap');
                 if (wrap) {
+                    // createElement 방식으로 img 요소 생성 — innerHTML 사용 시 url이 HTML로 파싱되어
+                    // XSS 가능성이 있으므로 속성 직접 설정으로 대체
                     // alt="" — 장식용 이미지. .pm-label이 접근 텍스트를 담당하므로 빈 alt 허용
-                    wrap.innerHTML = `<img src="${url}" alt="" style="width:30px;height:30px;object-fit:contain;" />`;
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = '';
+                    img.style.cssText = 'width:30px;height:30px;object-fit:contain;';
+                    wrap.replaceChildren(img);
                 }
                 setPickerIdx(null);
                 setTick((n) => n + 1);
