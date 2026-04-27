@@ -6,13 +6,14 @@
     <table class="table table-sm table-hover sp-data-grid" id="deployPageTable">
         <thead class="table-light">
             <tr>
-                <th class="col-w-120">페이지 ID</th>
-                <th>페이지명</th>
-                <th class="col-w-100">작성자</th>
-                <th class="col-w-220">노출기간</th>
-                <th class="col-w-90">배포 미리보기</th>
+                <th class="col-w-120 sortable" data-sort="pageId">페이지 ID</th>
+                <th class="sortable" data-sort="pageName">페이지명</th>
+                <th class="col-w-100 sortable" data-sort="createUserName">작성자</th>
+                <th class="col-w-220 sortable" data-sort="beginningDate">노출기간</th>
                 <th class="col-w-70"
                     th:if="${userAuthorities != null && userAuthorities.contains('CMS:W')}">배포</th>
+                <th class="col-w-90">배포 미리보기</th>
+                <th class="col-w-320">배포 URL</th>
                 <th class="col-w-90"
                     th:if="${userAuthorities != null && userAuthorities.contains('CMS:W')}">만료수동처리</th>
                 <th class="col-w-80">배포이력 상세</th>
@@ -20,12 +21,12 @@
         </thead>
         <tbody id="deployPageTableBody">
             <tr>
-                <!-- canWrite 기준 8컬럼, 미권한 6컬럼 — JS renderTable()의 colspan과 일치해야 함 -->
-                <td colspan="8" class="text-center py-4 text-body-secondary"
+                <!-- canWrite 기준 9컬럼, 미권한 7컬럼 — JS renderTable()의 colspan과 일치해야 함 -->
+                <td colspan="9" class="text-center py-4 text-body-secondary"
                     th:if="${userAuthorities != null && userAuthorities.contains('CMS:W')}">
                     조회 버튼을 클릭하여 데이터를 불러오세요.
                 </td>
-                <td colspan="6" class="text-center py-4 text-body-secondary"
+                <td colspan="7" class="text-center py-4 text-body-secondary"
                     th:unless="${userAuthorities != null && userAuthorities.contains('CMS:W')}">
                     조회 버튼을 클릭하여 데이터를 불러오세요.
                 </td>
