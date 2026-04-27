@@ -40,7 +40,7 @@ function escapeHtml(str: string): string {
 
 function buildSlideHtml(slide: BannerSlide, idx: number): string {
     const imgHtml = slide.imageUrl
-        ? `<img src="${escapeHtml(slide.imageUrl)}" alt="${escapeHtml(slide.altText ?? '')}" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;" />`
+        ? `<img src="${escapeHtml(slide.imageUrl)}" alt="${escapeHtml(slide.altText ?? '')}" style="width:100%;aspect-ratio:16/9;object-fit:contain;display:block;" />`
         : `<div style="width:100%;aspect-ratio:16/9;background:#E5E7EB;display:flex;align-items:center;justify-content:center;"><span style="color:#9CA3AF;font-size:14px;">이미지를 추가하세요</span></div>`;
 
     const overlayHtml =
@@ -516,7 +516,7 @@ export default function EventBannerEditor({ blockEl, onClose }: Props) {
                                             style={{
                                                 width: '100%',
                                                 aspectRatio: '16/9',
-                                                objectFit: 'cover',
+                                                objectFit: 'contain', // buildSlideHtml과 동일 — 에디터 프리뷰와 실제 렌더링 일치
                                                 borderRadius: 6,
                                                 border: '1px solid #e5e7eb',
                                                 background: '#f9fafb',
