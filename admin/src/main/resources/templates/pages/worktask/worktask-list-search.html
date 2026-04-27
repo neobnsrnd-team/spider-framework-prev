@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- 작업함 그룹 탭 필터 -->
+<div th:fragment="search">
+    <!-- 현재 로그인 사용자 ID (JS에서 읽어 API 호출에 사용) -->
+    <input type="hidden" id="currentUserId" th:value="${currentUserId}">
+
+    <div class="page-header">
+        <h4 class="page-title">
+            <i class="bi bi-exclamation-circle-fill text-danger"></i>
+            그룹 필터
+        </h4>
+    </div>
+
+    <!-- Bootstrap nav-tabs: 전체 + 그룹별 탭 (JS에서 동적 추가) -->
+    <ul class="nav nav-tabs mb-0" id="workGroupTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-all" type="button" role="tab"
+                    data-group-id=""
+                    onclick="window.WorkTaskList.switchGroup('')">
+                전체
+            </button>
+        </li>
+        <!-- 그룹 탭은 JS에서 동적으로 추가됩니다 -->
+    </ul>
+</div>
+</body>
+</html>

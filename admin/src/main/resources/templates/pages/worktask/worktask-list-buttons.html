@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- 작업함 하단 버튼 -->
+<div th:fragment="buttons" class="bottom-actions">
+    <button th:if="${userAuthorities != null and userAuthorities.contains('WORK_TASK:W')}"
+            class="btn btn-secondary btn-sm"
+            onclick="window.WorkTaskList.openGroupMoveModal()">
+        <i class="bi bi-folder-symlink"></i> 그룹 이동
+    </button>
+    <button th:if="${userAuthorities != null and userAuthorities.contains('WORK_TASK:W')}"
+            class="btn btn-warning btn-sm"
+            onclick="window.WorkTaskList.openTransferModal()">
+        <i class="bi bi-arrow-right-square"></i> 권한이양
+    </button>
+</div>
+</body>
+</html>

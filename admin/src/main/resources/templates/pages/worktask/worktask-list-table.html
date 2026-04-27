@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- 작업함 테이블 -->
+<div th:fragment="table" class="table-responsive">
+    <table class="table table-sm table-hover sp-data-grid" id="workTaskTable">
+        <thead class="table-light">
+            <tr>
+                <th class="col-w-50">
+                    <input type="checkbox" id="checkAll" onclick="window.WorkTaskList.toggleCheckAll(this)">
+                </th>
+                <th class="col-w-200" data-sort="menuName">메뉴명</th>
+                <th data-sort="menuUrl">메뉴 URL</th>
+                <th class="col-w-150" data-sort="groupName">그룹</th>
+                <th class="col-w-80 text-center" data-sort="taskOrder">정렬순서</th>
+                <th class="col-w-80 text-center" data-sort="authCode">권한</th>
+            </tr>
+        </thead>
+        <tbody id="workTaskTableBody">
+            <tr>
+                <td colspan="6" class="text-center py-4 text-body-secondary">
+                    로딩 중...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

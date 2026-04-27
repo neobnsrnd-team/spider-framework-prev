@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<script th:fragment="script">
+    window.WorkTaskList = (function () {
+        let workTasks = [];
+        let currentGroupId = '';
+
+        // 정렬 상태
+        let sortBy = null;
+        let sortDir = 'ASC';
+
+        // 페이징 상태
+        let currentPage = 1;
+        let itemsPerPage = 20;
+
+        function init() {
+            attachSortHandlers();
+            bindPageSizeSelector();
+            loadGroups();
+
+            $('[data-tab-page]').off('tab:activated.workTask').on('tab:activated.workTask', function () {
+                loadGroups();
+            });
+        }
+
+        // 컬럼 정렬 핸들러 등록
+        function attachSortHandlers() {
+            document.querySelectorAll('#workTaskTable thead th[data-sort]').forEach(th => {
+                th.classList.add('sortable');
+                th.addEventListener('click', function () {
+                    const key = this.getAttribute('data-sort');
+                    if (sortBy === key) {
+                        if (sortDir === 'ASC') { sortDir = 'DESC'; }
+                        else { sortBy = null; sortDir = 'ASC'; }
+                    } else {
+                        sortBy = key;
+                        sortDir = 'ASC';
+                    }
+                    currentPage = 1;
+                    updateSortIndicators();
+                    renderTablePage();
+                });
+            });
+        }
+
+        function updateSortIndicators() {
+            document.querySelectorAll('#workTaskTable thead th.sortable').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+            });
+            if (!sortBy) return;
+            const th = document.querySelector(`#workTaskTable thead th[data-sort="${sortBy}"]`);
+            if (th) th.classList.add(sortDir === 'ASC' ? 'sort-asc' : 'sort-desc');
+        }
+
+        function bindPageSizeSelector() {
+            const sel = document.getElementById('limitRows');
+            if (sel) {
+                sel.value = itemsPerPage;
+                sel.addEventListener('change', function () {
+                    itemsPerPage = parseInt(this.value);
+                    currentPage = 1;
+                    renderTablePage();
+                });
+            }
+        }
+
+        // 그룹 탭 로드
+        function loadGroups() {
+            const userId = document.getElementById('currentUserId').value;
+            fetch(`${API_BASE_URL}/user-work-groups?userId=${encodeURIComponent(userId)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        renderGroupTabs(data.data || []);
+                        loadWorkTasks(currentGroupId);
+                    } else {
+                        Toast.error(data.message || '그룹 조회 실패');
+                    }
+                })
+                .catch(e => Toast.error('그룹 조회 중 오류: ' + e.message));
+        }
+
+        function renderGroupTabs(groups) {
+            const tabList = document.getElementById('workGroupTabs');
+            tabList.querySelectorAll('li.nav-item[data-dynamic]').forEach(el => el.remove());
+            groups.forEach(group => {
+                const li = document.createElement('li');
+                li.className = 'nav-item';
+                li.setAttribute('role', 'presentation');
+                li.setAttribute('data-dynamic', 'true');
+                li.innerHTML = `
+                    <button class="nav-link" type="button" role="tab"
+                            data-group-id="${escapeHtml(group.groupId)}"
+                            onclick="window.WorkTaskList.switchGroup('${escapeHtml(group.groupId)}')">
+                        ${escapeHtml(group.groupName)}
+                    </button>`;
+                tabList.appendChild(li);
+            });
+        }
+
+        function switchGroup(groupId) {
+            currentGroupId = groupId;
+            currentPage = 1;
+            document.querySelectorAll('#workGroupTabs .nav-link').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-group-id') === groupId);
+            });
+            loadWorkTasks(groupId);
+        }
+
+        function loadWorkTasks(groupId) {
+            const userId = document.getElementById('currentUserId').value;
+            const params = new URLSearchParams({ userId });
+            if (groupId) params.append('workGroupId', groupId);
+
+            fetch(`${API_BASE_URL}/work-tasks?${params.toString()}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        workTasks = data.data || [];
+                        currentPage = 1;
+                        renderTablePage();
+                    } else {
+                        Toast.error(data.message || '목록 조회 실패');
+                    }
+                })
+                .catch(e => Toast.error('목록 조회 중 오류: ' + e.message));
+        }
+
+        // 정렬 후 현재 페이지 데이터 렌더링
+        function renderTablePage() {
+            const sorted = getSortedTasks();
+            const total = sorted.length;
+            const start = (currentPage - 1) * itemsPerPage;
+            const paged = sorted.slice(start, start + itemsPerPage);
+
+            renderTable(paged, start);
+            renderPagination(total);
+        }
+
+        function getSortedTasks() {
+            if (!sortBy) return [...workTasks];
+            return [...workTasks].sort((a, b) => {
+                const va = a[sortBy] ?? '';
+                const vb = b[sortBy] ?? '';
+                const cmp = String(va).localeCompare(String(vb), 'ko');
+                return sortDir === 'ASC' ? cmp : -cmp;
+            });
+        }
+
+        function renderTable(tasks, startIndex) {
+            // 페이지 전환 시 전체선택 초기화
+            const checkAll = document.getElementById('checkAll');
+            if (checkAll) checkAll.checked = false;
+
+            const tbody = document.getElementById('workTaskTableBody');
+            tbody.innerHTML = '';
+
+            if (tasks.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>`;
+                return;
+            }
+
+            tasks.forEach((task, i) => {
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-index', startIndex + i);
+                tr.setAttribute('data-menu-id', task.menuId);
+                tr.innerHTML = `
+                    <td class="text-center">
+                        <input type="checkbox" class="row-checkbox" data-index="${startIndex + i}"
+                               onchange="window.WorkTaskList.syncCheckAll()">
+                    </td>
+                    <td>${escapeHtml(task.menuName || '')}</td>
+                    <td class="text-body-secondary small">${escapeHtml(task.menuUrl || '')}</td>
+                    <td>${task.groupName ? escapeHtml(task.groupName) : '<span class="text-body-secondary">미분류</span>'}</td>
+                    <td class="text-center">${task.taskOrder ?? 0}</td>
+                    <td class="text-center"><span class="badge bg-secondary">${escapeHtml(task.authCode || '')}</span></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderPagination(total) {
+            const totalPages = Math.ceil(total / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            const pageInfo = document.getElementById('pageInfo');
+            if (!pagination) return;
+
+            let html = `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="window.WorkTaskList.changePage(1);return false;"><i class="bi bi-chevron-double-left"></i></a>
+                </li>
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="window.WorkTaskList.changePage(${currentPage - 1});return false;"><i class="bi bi-chevron-left"></i></a>
+                </li>`;
+
+            const maxBtn = 5;
+            let sp = Math.max(1, currentPage - Math.floor(maxBtn / 2));
+            let ep = Math.min(totalPages, sp + maxBtn - 1);
+            if (ep - sp + 1 < maxBtn) sp = Math.max(1, ep - maxBtn + 1);
+
+            for (let i = sp; i <= ep; i++) {
+                html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="window.WorkTaskList.changePage(${i});return false;">${i}</a></li>`;
+            }
+
+            html += `
+                <li class="page-item ${currentPage >= totalPages || totalPages === 0 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="window.WorkTaskList.changePage(${currentPage + 1});return false;"><i class="bi bi-chevron-right"></i></a>
+                </li>
+                <li class="page-item ${currentPage >= totalPages || totalPages === 0 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="window.WorkTaskList.changePage(${totalPages});return false;"><i class="bi bi-chevron-double-right"></i></a>
+                </li>`;
+
+            pagination.innerHTML = html;
+
+            if (pageInfo) {
+                const s = total === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+                const e = Math.min(currentPage * itemsPerPage, total);
+                pageInfo.textContent = `${s} - ${e} of ${total} items`;
+            }
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(workTasks.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTablePage();
+        }
+
+        function toggleCheckAll(checkbox) {
+            document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = checkbox.checked);
+        }
+
+        // 개별 체크박스 변경 시 전체선택 상태 동기화
+        function syncCheckAll() {
+            const all = document.querySelectorAll('.row-checkbox');
+            const checked = document.querySelectorAll('.row-checkbox:checked');
+            const checkAll = document.getElementById('checkAll');
+            if (checkAll) checkAll.checked = all.length > 0 && all.length === checked.length;
+        }
+
+        function getCheckedMenuIds() {
+            const checked = document.querySelectorAll('.row-checkbox:checked');
+            if (checked.length === 0) { Toast.warning('항목을 선택해주세요.'); return null; }
+            return Array.from(checked).map(cb => cb.closest('tr').getAttribute('data-menu-id'));
+        }
+
+        function openGroupMoveModal() {
+            const menuIds = getCheckedMenuIds();
+            if (!menuIds) return;
+            Toast.info('그룹 이동 기능은 준비 중입니다.');
+        }
+
+        function openTransferModal() {
+            const menuIds = getCheckedMenuIds();
+            if (!menuIds) return;
+            Toast.info('권한이양 기능은 준비 중입니다.');
+        }
+
+        function moveGroup(menuIds, workGroupId) {
+            const userId = document.getElementById('currentUserId').value;
+            fetch(`${API_BASE_URL}/work-tasks/group-move`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, menuIds, workGroupId: workGroupId || null })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) { Toast.success('그룹 이동이 완료되었습니다.'); loadWorkTasks(currentGroupId); }
+                    else { Toast.error(data.message || '그룹 이동 실패'); }
+                })
+                .catch(e => Toast.error('그룹 이동 중 오류: ' + e.message));
+        }
+
+        function transferAuthority(menuIds, toUserId) {
+            const fromUserId = document.getElementById('currentUserId').value;
+            fetch(`${API_BASE_URL}/work-tasks/transfer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fromUserId, toUserId, menuIds })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) { Toast.success('권한이양이 완료되었습니다.'); loadGroups(); }
+                    else { Toast.error(data.message || '권한이양 실패'); }
+                })
+                .catch(e => Toast.error('권한이양 중 오류: ' + e.message));
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(String(str)));
+            return div.innerHTML;
+        }
+
+        return { init, switchGroup, toggleCheckAll, syncCheckAll, changePage, openGroupMoveModal, openTransferModal, moveGroup, transferAuthority };
+    })();
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { window.WorkTaskList.init(); });
+    } else {
+        window.WorkTaskList.init();
+    }
+</script>
+</body>
+</html>

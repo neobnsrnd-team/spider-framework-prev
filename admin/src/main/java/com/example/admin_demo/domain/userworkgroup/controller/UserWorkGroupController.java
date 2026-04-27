@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/user-work-groups")
 @RequiredArgsConstructor
-@PreAuthorize("hasAuthority('USER_WORK_GROUP:R')")
+@PreAuthorize("hasAuthority('WORK_TASK:R')")
 public class UserWorkGroupController {
 
     private final UserWorkGroupService userWorkGroupService;
@@ -36,7 +36,7 @@ public class UserWorkGroupController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('USER_WORK_GROUP:W')")
+    @PreAuthorize("hasAuthority('WORK_TASK:W')")
     public ResponseEntity<ApiResponse<UserWorkGroupResponse>> createUserWorkGroup(
             @Valid @RequestBody UserWorkGroupCreateRequest dto) {
         UserWorkGroupResponse response = userWorkGroupService.createUserWorkGroup(dto);
@@ -44,7 +44,7 @@ public class UserWorkGroupController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAuthority('USER_WORK_GROUP:W')")
+    @PreAuthorize("hasAuthority('WORK_TASK:W')")
     public ResponseEntity<ApiResponse<UserWorkGroupResponse>> updateUserWorkGroup(
             @Valid @RequestBody UserWorkGroupUpdateRequest dto) {
         UserWorkGroupResponse response = userWorkGroupService.updateUserWorkGroup(dto);
@@ -57,7 +57,7 @@ public class UserWorkGroupController {
      * @param groupId 그룹 ID
      */
     @DeleteMapping("/{userId}/{groupId}")
-    @PreAuthorize("hasAuthority('USER_WORK_GROUP:W')")
+    @PreAuthorize("hasAuthority('WORK_TASK:W')")
     public ResponseEntity<ApiResponse<Void>> deleteUserWorkGroup(
             @PathVariable String userId, @PathVariable String groupId) {
         userWorkGroupService.deleteUserWorkGroup(userId, groupId);

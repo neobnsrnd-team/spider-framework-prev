@@ -18,7 +18,7 @@ menu-resource:
     v3_user_work_group:
       R: USER_WORK_GROUP:R
       W: USER_WORK_GROUP:W
-    v3_work_task:
+    v3_approval_workspace:
       R: WORK_TASK:R
       W: WORK_TASK:W
     v3_user_page_log:
