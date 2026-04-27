@@ -1226,6 +1226,7 @@ span.readonly-select {
 .col-w-200 { width: 200px; }
 .col-w-250 { width: 250px; }
 .col-w-300 { width: 300px; }
+.col-w-350 { width: 350px; }
 
 /* Width utilities */
 .w-70  { width: 70px !important; }
