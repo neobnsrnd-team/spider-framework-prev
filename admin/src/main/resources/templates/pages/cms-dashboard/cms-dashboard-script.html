@@ -19,6 +19,7 @@
         sortBy: null,
         sortDirection: null,
         rowsByPageId: {},
+        templateOptions: [],
 
         APPROVE_STATE_BADGE: {
             WORK:     '<span class="badge bg-secondary">작업중</span>',
@@ -240,6 +241,7 @@
                 .removeClass('active')
                 .filter(`[data-view-mode="${viewMode}"]`)
                 .addClass('active');
+            this.renderCreateTemplates();
         },
 
         selectCreateTemplate: function(templateId) {
@@ -262,20 +264,42 @@
                 .then(r => r.json())
                 .then(res => {
                     if (!res.success || !res.data) return;
-                    const $list = $('.cms-create-template-list');
-                    // 이전에 동적으로 추가된 항목 제거 (중복 방지)
-                    $list.find('.cms-create-template:not([data-template-id="blank"])').remove();
-                    res.data.forEach(function(t) {
-                        const $btn = $('<button type="button" class="cms-create-template"></button>');
-                        $btn.attr('data-template-id', t.pageId);
-                        const $radio = $('<span class="cms-create-template-radio"></span>');
-                        const $title = $('<span class="cms-create-template-title"></span>').text(t.pageName);
-                        const $desc  = $('<span class="cms-create-template-desc">미리 구성된 템플릿으로 시작합니다.</span>');
-                        $btn.append($radio).append($('<span></span>').append($title).append($desc));
-                        $list.append($btn);
-                    });
+                    this.templateOptions = Array.isArray(res.data) ? res.data : [];
+                    this.renderCreateTemplates();
                 })
                 .catch(() => {}); // 로드 실패 시 빈 페이지만으로 정상 동작
+        },
+
+        renderCreateTemplates: function() {
+            const $list = $('.cms-create-template-list');
+            const selectedViewMode = $('#createViewMode').val() || 'mobile';
+            const currentTemplateId = $('#createTemplateId').val() || 'blank';
+            const filteredTemplates = this.templateOptions.filter((template) =>
+                template.viewMode === selectedViewMode || (selectedViewMode === 'web' && template.viewMode === 'PC'));
+
+            // 이전에 동적으로 추가된 항목 제거 (중복 방지)
+            $list.find('.cms-create-template:not([data-template-id="blank"])').remove();
+
+            filteredTemplates.forEach(function(template) {
+                const $btn = $('<button type="button" class="cms-create-template"></button>');
+                $btn.attr('data-template-id', template.pageId);
+                $btn.attr('data-template-view-mode', template.viewMode);
+                const $radio = $('<span class="cms-create-template-radio"></span>');
+                const $title = $('<span class="cms-create-template-title"></span>').text(template.pageName);
+                const $desc = $('<span class="cms-create-template-desc"></span>').text('미리 구성된 템플릿으로 시작합니다.');
+                $btn.append($radio).append($('<span></span>').append($title).append($desc));
+                $list.append($btn);
+            });
+
+            const hasCurrentTemplate = currentTemplateId === 'blank'
+                || filteredTemplates.some((template) => template.pageId === currentTemplateId);
+
+            if (!hasCurrentTemplate) {
+                this.selectCreateTemplate('blank');
+                return;
+            }
+
+            this.selectCreateTemplate(currentTemplateId);
         },
 
         updateCreateButtonState: function(creating) {

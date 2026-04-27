@@ -54,6 +54,11 @@ async function savePage(
             if (!template || template.PAGE_TYPE !== 'TEMPLATE') {
                 throw new Error('유효하지 않은 템플릿입니다.');
             }
+            const sameViewMode =
+                !viewMode || template.VIEW_MODE === viewMode || (viewMode === 'web' && template.VIEW_MODE === 'PC');
+            if (!sameViewMode) {
+                throw new Error('선택한 레이아웃과 템플릿의 레이아웃이 일치하지 않습니다.');
+            }
             pageHtml = template.PAGE_HTML ?? '';
         }
 
