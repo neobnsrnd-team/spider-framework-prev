@@ -4,6 +4,7 @@ import com.example.admin_demo.domain.cmsasset.client.dto.CmsBuilderUploadApiResp
 import com.example.admin_demo.domain.cmsasset.config.CmsBuilderProperties;
 import com.example.admin_demo.global.exception.ErrorType;
 import com.example.admin_demo.global.exception.base.BaseException;
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
@@ -63,6 +64,7 @@ public class CmsBuilderClient {
      * CMS Builder 로 이미지 파일을 업로드한다.
      *
      * @param file             원본 이미지
+     * @param assetName        이미지 표시명 (DB 저장용, 한글 허용)
      * @param userId           업로더 ID
      * @param userName         업로더 이름
      * @param businessCategory 업무 카테고리 (선택)
@@ -71,9 +73,15 @@ public class CmsBuilderClient {
      * @throws BaseException 업로드 실패 또는 CMS 응답 오류 시 (HTTP 502)
      */
     public CmsBuilderUploadApiResponse upload(
-            MultipartFile file, String userId, String userName, String businessCategory, String assetDesc) {
+            MultipartFile file,
+            String assetName,
+            String userId,
+            String userName,
+            String businessCategory,
+            String assetDesc) {
 
-        MultiValueMap<String, Object> form = buildFormData(file, userId, userName, businessCategory, assetDesc);
+        MultiValueMap<String, Object> form =
+                buildFormData(file, assetName, userId, userName, businessCategory, assetDesc);
 
         try {
             // cmsBuilderRestClient 사용 — 대용량 업로드를 위해 60초 read-timeout 유지 (#177)
@@ -190,25 +198,52 @@ public class CmsBuilderClient {
         }
     }
 
-    /** 멀티파트 form-data 구성. file 은 파일명·Content-Type 을 보존하여 전송한다. */
+    /**
+     * 멀티파트 form-data 구성. file 은 파일명·Content-Type 을 보존하여 전송한다.
+     *
+     * <p>String 파트는 반드시 {@code text/plain;charset=UTF-8} HttpEntity 로 감싸야 한다.
+     * 그냥 String 을 넣으면 Spring FormHttpMessageConverter 가 ISO-8859-1 로 인코딩하여
+     * 한글(3바이트 UTF-8)이 깨진다.
+     */
     private MultiValueMap<String, Object> buildFormData(
-            MultipartFile file, String userId, String userName, String businessCategory, String assetDesc) {
+            MultipartFile file,
+            String assetName,
+            String userId,
+            String userName,
+            String businessCategory,
+            String assetDesc) {
 
         MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
         form.add("file", toFilePart(file));
+        if (assetName != null && !assetName.isBlank()) {
+            form.add("assetName", toTextPart(assetName));
+        }
         if (userId != null) {
-            form.add("userId", userId);
+            form.add("userId", toTextPart(userId));
         }
         if (userName != null) {
-            form.add("userName", userName);
+            form.add("userName", toTextPart(userName));
         }
         if (businessCategory != null && !businessCategory.isBlank()) {
-            form.add("businessCategory", businessCategory);
+            form.add("businessCategory", toTextPart(businessCategory));
         }
         if (assetDesc != null && !assetDesc.isBlank()) {
-            form.add("assetDesc", assetDesc);
+            form.add("assetDesc", toTextPart(assetDesc));
         }
         return form;
+    }
+
+    /**
+     * 문자열을 {@code text/plain;charset=UTF-8} HttpEntity 로 감싸 반환한다.
+     *
+     * <p>Spring RestClient 가 멀티파트 파트로 직렬화할 때 charset 을 명시하지 않으면
+     * FormHttpMessageConverter 기본값(ISO-8859-1)으로 처리되어 한글 등 멀티바이트 문자가 깨진다.
+     * 명시적으로 UTF-8 을 지정함으로써 한글 이미지명·사용자명 등이 CMS 측에 올바르게 전달된다.
+     */
+    private HttpEntity<String> toTextPart(String value) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8));
+        return new HttpEntity<>(value, headers);
     }
 
     /**

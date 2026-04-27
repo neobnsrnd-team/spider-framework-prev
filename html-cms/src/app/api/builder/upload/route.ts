@@ -27,6 +27,8 @@ export async function POST(req: NextRequest) {
     const bodyUserName = formData.get('userName')?.toString() || null;
     const businessCategoryInput = formData.get('businessCategory')?.toString() || null;
     const assetDesc = formData.get('assetDesc')?.toString() || null;
+    // 사용자가 직접 입력한 표시명. Admin 서버에서 항상 채워서 전달하므로 없을 경우 원본 파일명 폴백
+    const assetNameInput = formData.get('assetName')?.toString().trim() || null;
 
     try {
         const deployTokenValid = isValidDeployToken(req.headers.get('x-deploy-token'));
@@ -54,9 +56,13 @@ export async function POST(req: NextRequest) {
 
         const buffer = Buffer.from(await file.arrayBuffer());
         const assetId = crypto.randomUUID();
-        const assetName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-        const filename = `${assetId}_${assetName}`;
+        // 표시명(DB 저장): 사용자 입력명 우선, 없으면 원본 파일명 그대로 사용 (한글 허용)
+        const assetName = assetNameInput || file.name;
+
+        // 파일시스템 저장명: 영문·숫자·점·하이픈만 허용하여 OS 경로 안전성 확보
+        const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const filename = `${assetId}_${safeFilename}`;
         const filepath = join(ASSET_UPLOAD_DIR, filename);
         await mkdir(dirname(filepath), { recursive: true });
         await writeFile(filepath, buffer);

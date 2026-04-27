@@ -51,6 +51,9 @@ public class CmsAssetService {
     private static final int REJECTED_REASON_MAX_CHARS = 1000;
     private static final int REJECTED_REASON_MAX_BYTES = 1000;
 
+    /** ASSET_NAME VARCHAR2(200) — Oracle UTF-8 기준 한글 1자 = 3바이트이므로 200바이트 제한 */
+    private static final int ASSET_NAME_MAX_BYTES = 200;
+
     private final CmsAssetMapper cmsAssetMapper;
     private final CodeService codeService;
     private final CmsBuilderClient cmsBuilderClient;
@@ -171,12 +174,18 @@ public class CmsAssetService {
      * <p>상태 전이는 하지 않고 파일 검증, 카테고리 정규화, 외부 업로드 연동만 담당한다.
      */
     public CmsAssetUploadResponse uploadAsset(
-            MultipartFile file, String businessCategory, String assetDesc, String uploaderId, String uploaderName) {
+            MultipartFile file,
+            String assetName,
+            String businessCategory,
+            String assetDesc,
+            String uploaderId,
+            String uploaderName) {
 
+        validateAssetNameBytes(assetName);
         assetUploadValidator.validate(file);
         String normalizedCategory = normalizeBusinessCategory(businessCategory);
         CmsBuilderUploadApiResponse cmsResponse =
-                cmsBuilderClient.upload(file, uploaderId, uploaderName, normalizedCategory, assetDesc);
+                cmsBuilderClient.upload(file, assetName, uploaderId, uploaderName, normalizedCategory, assetDesc);
         return CmsAssetUploadResponse.builder()
                 .assetId(cmsResponse.getAssetId())
                 .url(cmsResponse.getUrl())
@@ -189,9 +198,15 @@ public class CmsAssetService {
      * <p>운영자가 별도 승인 단계를 생략해야 할 때 업로드 후 바로 APPROVED 전이와 배포까지 연속 수행한다.
      */
     public CmsAssetUploadResponse uploadApprovedAsset(
-            MultipartFile file, String businessCategory, String assetDesc, String uploaderId, String uploaderName) {
+            MultipartFile file,
+            String assetName,
+            String businessCategory,
+            String assetDesc,
+            String uploaderId,
+            String uploaderName) {
 
-        CmsAssetUploadResponse response = uploadAsset(file, businessCategory, assetDesc, uploaderId, uploaderName);
+        CmsAssetUploadResponse response =
+                uploadAsset(file, assetName, businessCategory, assetDesc, uploaderId, uploaderName);
 
         transactionTemplate.executeWithoutResult(status -> {
             assertTransition(response.getAssetId(), STATE_WORK, STATE_APPROVED);
@@ -286,6 +301,20 @@ public class CmsAssetService {
     private void ensureAssetExists(String assetId) {
         if (cmsAssetMapper.existsByAssetId(assetId) != 1) {
             throw new NotFoundException("이미지를 찾을 수 없습니다. assetId=" + assetId);
+        }
+    }
+
+    /**
+     * 이미지명의 바이트 길이를 검증한다.
+     *
+     * <p>Oracle VARCHAR2(200)은 바이트 단위 제한이므로, 한글 1자 = 3바이트 기준으로
+     * 200바이트를 초과하면 ORA-12899가 발생한다. 서버에서 사전 차단한다.
+     */
+    private void validateAssetNameBytes(String assetName) {
+        if (assetName == null) return;
+        if (assetName.getBytes(StandardCharsets.UTF_8).length > ASSET_NAME_MAX_BYTES) {
+            throw new InvalidInputException(
+                    "이미지명이 너무 깁니다. UTF-8 기준 " + ASSET_NAME_MAX_BYTES + "바이트 이하로 입력해 주세요. (한글 약 66자)");
         }
     }
 
