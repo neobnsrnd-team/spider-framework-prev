@@ -124,6 +124,7 @@
                 });
 
                 if (worklist_write_access) {
+                    $('#btnGroupManage').on('click', function() { self.openGroupManageModal(); });
                     $('#btnGroupMove').on('click', function() { self.openGroupMoveModal(); });
                     $('#btnTransfer').on('click', function() { self.openTransferModal(); });
                 }
@@ -249,10 +250,14 @@
                 return checked.map(function(cb) { return parseInt(cb.getAttribute('data-work-seq')); });
             },
 
+            openGroupManageModal: function() {
+                WorkGroupModal.open();
+            },
+
             openGroupMoveModal: function() {
-                if (!this.getCheckedWorkSeqs()) return;
-                // Task #6에서 그룹 관리 팝업 구현 예정
-                Toast.info('그룹 이동 기능은 준비 중입니다.');
+                var workSeqs = this.getCheckedWorkSeqs();
+                if (!workSeqs) return;
+                WorkGroupMoveModal.open(workSeqs);
             },
 
             openTransferModal: function() {
@@ -266,7 +271,7 @@
                 Toast.info('이행스크립트 보기 기능은 준비 중입니다. (seq: ' + workSeq + ')');
             },
 
-            moveGroup: function(workSeqs, groupId) {
+            moveGroup: function(workSeqs, groupId, callback) {
                 var self = this;
                 $.ajax({
                     url: API_BASE_URL + '/work-list/group-move',
@@ -274,8 +279,11 @@
                     contentType: 'application/json',
                     data: JSON.stringify({ workSeqs: workSeqs, groupId: groupId }),
                     success: function(res) {
-                        if (res.success) { Toast.success('그룹 이동이 완료되었습니다.'); self.loadGroups(); }
-                        else { Toast.error(res.message || '그룹 이동 실패'); }
+                        if (res.success) {
+                            Toast.success('그룹 이동이 완료되었습니다.');
+                            if (callback) callback();
+                            self.loadGroups();
+                        } else { Toast.error(res.message || '그룹 이동 실패'); }
                     },
                     error: function() { Toast.error('그룹 이동 중 오류가 발생했습니다.'); }
                 });

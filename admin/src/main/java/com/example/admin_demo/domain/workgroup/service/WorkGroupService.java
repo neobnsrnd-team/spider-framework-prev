@@ -4,7 +4,7 @@ import com.example.admin_demo.domain.workgroup.dto.WorkGroupCreateRequest;
 import com.example.admin_demo.domain.workgroup.dto.WorkGroupResponse;
 import com.example.admin_demo.domain.workgroup.dto.WorkGroupUpdateRequest;
 import com.example.admin_demo.domain.workgroup.mapper.WorkGroupMapper;
-import com.example.admin_demo.global.exception.InternalException;
+import com.example.admin_demo.global.exception.InvalidInputException;
 import com.example.admin_demo.global.exception.NotFoundException;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +54,11 @@ public class WorkGroupService {
     public void deleteGroup(String groupId) {
         int affected = workGroupMapper.delete(groupId);
         if (affected == 0) {
-            throw new InternalException("그룹을 삭제할 수 없습니다. 작업 항목이 남아 있거나 존재하지 않는 그룹입니다.");
+            // SQL의 NOT IN 조건으로 0 rows → 그룹 미존재 또는 항목 잔존 구분
+            if (workGroupMapper.findByGroupId(groupId) == null) {
+                throw new NotFoundException("그룹을 찾을 수 없습니다: " + groupId);
+            }
+            throw new InvalidInputException("작업 항목이 있는 그룹은 삭제할 수 없습니다. 먼저 항목을 다른 그룹으로 이동해주세요.");
         }
     }
 }

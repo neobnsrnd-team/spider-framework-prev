@@ -4,6 +4,9 @@
 <!-- 나의 작업함 하단 버튼 -->
 <div th:fragment="buttons" class="bottom-actions"
      th:if="${userAuthorities != null and userAuthorities.contains('WORK_TASK:W')}">
+    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnGroupManage">
+        <i class="bi bi-folder2-open"></i> 그룹 관리
+    </button>
     <button type="button" class="btn btn-outline-primary btn-sm" id="btnGroupMove">
         <i class="bi bi-folder-symlink"></i> 그룹 이동
     </button>

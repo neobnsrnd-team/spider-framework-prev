@@ -31,15 +31,16 @@
         WHERE GROUP_ID = #{groupId}
     </select>
 
-    <!-- 가장 최근 생성된 그룹 조회 (INSERT 직후 응답용) -->
+    <!-- 가장 최근 생성된 그룹 조회 (INSERT 직후 응답용) — ROWNUM 방식으로 Oracle 하위 버전 호환 -->
     <select id="findLatestByUserId" parameterType="String" resultMap="WorkGroupResultMap">
-        SELECT GROUP_ID, GROUP_NAME, GROUP_DESC,
-               LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
-        FROM FWK_WORK_GROUP
-        WHERE GROUP_ID LIKE #{userId} || '%'
-          AND LENGTH(#{userId}) + 3 = LENGTH(GROUP_ID)
-        ORDER BY GROUP_ID DESC
-        FETCH FIRST 1 ROWS ONLY
+        SELECT * FROM (
+            SELECT GROUP_ID, GROUP_NAME, GROUP_DESC,
+                   LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
+            FROM FWK_WORK_GROUP
+            WHERE GROUP_ID LIKE #{userId} || '%'
+              AND LENGTH(#{userId}) + 3 = LENGTH(GROUP_ID)
+            ORDER BY GROUP_ID DESC
+        ) WHERE ROWNUM = 1
     </select>
 
     <!--

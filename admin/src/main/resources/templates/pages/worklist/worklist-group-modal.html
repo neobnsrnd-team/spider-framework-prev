@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal">
+
+    <!-- 그룹 관리 모달 (추가·수정·삭제) -->
+    <div class="modal fade" id="workGroupManageModal" tabindex="-1" aria-labelledby="workGroupManageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="workGroupManageModalLabel">
+                        <i class="bi bi-folder2-open"></i> 그룹 관리
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <!-- 그룹 목록 -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-medium small">그룹 목록</span>
+                            <button type="button" class="btn btn-outline-primary btn-xs small" id="btnWgAdd">
+                                <i class="bi bi-plus-lg"></i> 추가
+                            </button>
+                        </div>
+                        <div id="wgGroupList" class="border rounded" style="max-height: 200px; overflow-y: auto;">
+                            <div class="text-center text-muted small py-3">로딩 중...</div>
+                        </div>
+                    </div>
+
+                    <!-- 그룹 폼 (추가/수정 시 노출) -->
+                    <div id="wgFormSection" style="display: none;">
+                        <hr class="my-2">
+                        <div class="mb-2">
+                            <label class="form-label small fw-medium mb-1">그룹명 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="wgGroupName"
+                                   maxlength="100" placeholder="그룹명 입력">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-medium mb-1">그룹 설명</label>
+                            <input type="text" class="form-control form-control-sm" id="wgGroupDesc"
+                                   maxlength="200" placeholder="그룹 설명 (선택)">
+                        </div>
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-secondary btn-xs small" id="btnWgFormCancel">취소</button>
+                            <button type="button" class="btn btn-primary btn-xs small" id="btnWgFormSave">
+                                <i class="bi bi-floppy"></i> 저장
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> 닫기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            window.WorkGroupModal = {
+                _mode: 'create',       // 'create' | 'edit'
+                _selectedGroupId: null,
+
+                open: function () {
+                    this._hideForm();
+                    this._loadGroups();
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('workGroupManageModal')).show();
+                },
+
+                _loadGroups: function () {
+                    var self = this;
+                    var userId = document.getElementById('currentUserId').value;
+                    $.ajax({
+                        url: API_BASE_URL + '/work-groups',
+                        data: { userId: userId },
+                        success: function (res) {
+                            if (res.success) self._renderGroupList(res.data || []);
+                            else Toast.error(res.message || '그룹 조회 실패');
+                        },
+                        error: function () { Toast.error('그룹 조회 중 오류가 발생했습니다.'); }
+                    });
+                },
+
+                _renderGroupList: function (groups) {
+                    var $list = $('#wgGroupList');
+                    if (!groups.length) {
+                        $list.html('<div class="text-center text-muted small py-3">등록된 그룹이 없습니다.</div>');
+                        return;
+                    }
+                    var html = '';
+                    groups.forEach(function (g) {
+                        html +=
+                            '<div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom wg-group-item"' +
+                            '     data-group-id="' + _wlEsc(g.groupId) + '"' +
+                            '     data-group-name="' + _wlEsc(g.groupName) + '"' +
+                            '     data-group-desc="' + _wlEsc(g.groupDesc || '') + '">' +
+                            '  <span class="small">' + _wlEsc(g.groupName) +
+                            '    <span class="text-muted ms-1 fs-xs">' + _wlEsc(g.groupId) + '</span>' +
+                            '  </span>' +
+                            '  <div class="d-flex gap-1">' +
+                            '    <button class="btn btn-outline-secondary btn-xs small" onclick="WorkGroupModal._openEdit(\'' + _wlEsc(g.groupId) + '\', \'' + _wlEsc(g.groupName) + '\', \'' + _wlEsc(g.groupDesc || '') + '\')">' +
+                            '      <i class="bi bi-pencil"></i>' +
+                            '    </button>' +
+                            '    <button class="btn btn-outline-danger btn-xs small" onclick="WorkGroupModal._deleteGroup(\'' + _wlEsc(g.groupId) + '\', \'' + _wlEsc(g.groupName) + '\')">' +
+                            '      <i class="bi bi-trash"></i>' +
+                            '    </button>' +
+                            '  </div>' +
+                            '</div>';
+                    });
+                    $list.html(html);
+                },
+
+                _openCreate: function () {
+                    this._mode = 'create';
+                    this._selectedGroupId = null;
+                    $('#wgGroupName').val('');
+                    $('#wgGroupDesc').val('');
+                    $('#wgFormSection').slideDown(150);
+                    $('#wgGroupName').focus();
+                },
+
+                _openEdit: function (groupId, groupName, groupDesc) {
+                    this._mode = 'edit';
+                    this._selectedGroupId = groupId;
+                    $('#wgGroupName').val(groupName);
+                    $('#wgGroupDesc').val(groupDesc);
+                    $('#wgFormSection').slideDown(150);
+                    $('#wgGroupName').focus();
+                },
+
+                _hideForm: function () {
+                    $('#wgFormSection').hide();
+                    $('#wgGroupName').val('');
+                    $('#wgGroupDesc').val('');
+                    this._selectedGroupId = null;
+                },
+
+                _save: function () {
+                    var groupName = $('#wgGroupName').val().trim();
+                    if (!groupName) {
+                        Toast.warning('그룹명을 입력해주세요.');
+                        $('#wgGroupName').focus();
+                        return;
+                    }
+
+                    var self = this;
+                    var userId = document.getElementById('currentUserId').value;
+
+                    if (this._mode === 'create') {
+                        $.ajax({
+                            url: API_BASE_URL + '/work-groups',
+                            method: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ userId: userId, groupName: groupName, groupDesc: $('#wgGroupDesc').val() }),
+                            success: function (res) {
+                                if (res.success) {
+                                    Toast.success('그룹이 추가되었습니다.');
+                                    self._hideForm();
+                                    self._loadGroups();
+                                    if (window.WorkListPage) WorkListPage.loadGroups();
+                                } else { Toast.error(res.message || '그룹 추가 실패'); }
+                            },
+                            error: function (xhr) { Toast.error(xhr.responseJSON?.message || '그룹 추가 중 오류가 발생했습니다.'); }
+                        });
+                    } else {
+                        $.ajax({
+                            url: API_BASE_URL + '/work-groups',
+                            method: 'PUT',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ groupId: self._selectedGroupId, groupName: groupName, groupDesc: $('#wgGroupDesc').val() }),
+                            success: function (res) {
+                                if (res.success) {
+                                    Toast.success('그룹이 수정되었습니다.');
+                                    self._hideForm();
+                                    self._loadGroups();
+                                    if (window.WorkListPage) WorkListPage.loadGroups();
+                                } else { Toast.error(res.message || '그룹 수정 실패'); }
+                            },
+                            error: function (xhr) { Toast.error(xhr.responseJSON?.message || '그룹 수정 중 오류가 발생했습니다.'); }
+                        });
+                    }
+                },
+
+                _deleteGroup: function (groupId, groupName) {
+                    var self = this;
+                    Toast.confirm('"' + groupName + '" 그룹을 삭제하시겠습니까?', function () {
+                        $.ajax({
+                            url: API_BASE_URL + '/work-groups/' + encodeURIComponent(groupId),
+                            method: 'DELETE',
+                            success: function (res) {
+                                if (res.success) {
+                                    Toast.success('그룹이 삭제되었습니다.');
+                                    self._loadGroups();
+                                    if (window.WorkListPage) WorkListPage.loadGroups();
+                                } else { Toast.error(res.message || '그룹 삭제 실패'); }
+                            },
+                            error: function (xhr) {
+                                var msg = xhr.responseJSON?.message || '그룹 삭제 중 오류가 발생했습니다.';
+                                // 400: 작업 항목 있음 — warning으로 안내, 그 외는 error
+                                if (xhr.status === 400) Toast.warning(msg);
+                                else Toast.error(msg);
+                            }
+                        });
+                    });
+                }
+            };
+
+            $(document).off('click', '#btnWgAdd').on('click', '#btnWgAdd', function () {
+                WorkGroupModal._openCreate();
+            });
+            $(document).off('click', '#btnWgFormSave').on('click', '#btnWgFormSave', function () {
+                WorkGroupModal._save();
+            });
+            $(document).off('click', '#btnWgFormCancel').on('click', '#btnWgFormCancel', function () {
+                WorkGroupModal._hideForm();
+            });
+        })();
+    </script>
+</div>
+</body>
+</html>
