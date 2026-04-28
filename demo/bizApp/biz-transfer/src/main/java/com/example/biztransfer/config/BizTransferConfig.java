@@ -7,6 +7,8 @@ import com.example.spiderlink.infra.tcp.handler.CommandDispatcher;
 import com.example.spiderlink.infra.tcp.handler.CommandHandler;
 import com.example.spiderlink.infra.tcp.model.JsonCommandRequest;
 import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
+import com.example.spiderlink.infra.tcp.parser.FixedLengthParser;
+import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,16 +50,22 @@ public class BizTransferConfig {
      *
      * <p>{@link TcpClient} 는 {@code com.example.spiderlink} 패키지에 선언되어 있어
      * 컴포넌트 스캔 범위에 포함되지 않으므로 명시적으로 등록한다.
-     * {@link MessageInstanceRecorder} 가 존재하면 주입하여 전문 이력을 기록한다.</p>
+     * {@link MessageInstanceRecorder} 가 존재하면 주입하여 전문 이력을 기록한다.
+     * {@link MessageStructurePool} / {@link FixedLengthParser} 를 주입하면 mock-core 고정길이 프로토콜을 사용한다.</p>
      *
-     * @param objectMapper Jackson ObjectMapper
-     * @param recorder     전문 이력 기록기 (JdbcTemplate 빈이 없으면 empty)
+     * @param objectMapper     Jackson ObjectMapper
+     * @param recorder         전문 이력 기록기 (JdbcTemplate 빈이 없으면 empty)
+     * @param structurePool    전문 구조 캐시 (빈 없으면 empty — JSON fallback)
+     * @param fixedLengthParser 고정길이 파서 (빈 없으면 empty — JSON fallback)
      * @return TcpClient 인스턴스
      */
     @Bean
     public TcpClient tcpClient(ObjectMapper objectMapper,
-                                Optional<MessageInstanceRecorder> recorder) {
-        return new TcpClient(objectMapper, recorder.orElse(null));
+                                Optional<MessageInstanceRecorder> recorder,
+                                Optional<MessageStructurePool> structurePool,
+                                Optional<FixedLengthParser> fixedLengthParser) {
+        return new TcpClient(objectMapper, recorder.orElse(null),
+                structurePool.orElse(null), fixedLengthParser.orElse(null));
     }
 
     /**
