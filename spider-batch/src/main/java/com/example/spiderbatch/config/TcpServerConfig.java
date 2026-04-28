@@ -2,8 +2,8 @@ package com.example.spiderbatch.config;
 
 import com.example.spiderbatch.tcp.BatchExecCommandHandler;
 import com.example.spiderlink.infra.tcp.codec.ObjectStreamMessageCodec;
-import com.example.spiderlink.infra.tcp.handler.CommandDispatcher;
-import com.example.spiderlink.infra.tcp.model.ManagementContext;
+import com.example.spidercommon.infra.tcp.handler.CommandDispatcher;
+import com.example.spidercommon.infra.tcp.model.ManagementContext;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

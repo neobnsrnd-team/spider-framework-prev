@@ -1,0 +1,2 @@
+com.example.spidercommon.config.SpiderCommonAutoConfiguration
+com.example.spidercommon.config.SpiderCommonServletAutoConfiguration

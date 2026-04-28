@@ -1,9 +1,9 @@
 package com.example.spiderlink.domain.messageinstance;
 
-import com.example.spiderlink.infra.tcp.model.CommandRequest;
-import com.example.spiderlink.infra.tcp.model.HasCommand;
-import com.example.spiderlink.infra.tcp.model.JsonCommandRequest;
-import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.model.CommandRequest;
+import com.example.spidercommon.infra.tcp.model.HasCommand;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

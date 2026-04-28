@@ -2,7 +2,7 @@ package com.example.bizchannel.web.controller;
 
 import com.example.bizchannel.client.BizClient;
 import com.example.bizcommon.BizCommands;
-import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

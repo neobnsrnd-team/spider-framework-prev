@@ -29,6 +29,13 @@
     </properties>
 
     <dependencies>
+        <!-- spider-common — TCP 프로토콜 모델, 관리 명령 처리, 로그레벨 조정 기능 -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>spider-common</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
         <!-- Spring Boot Web (Jackson ObjectMapper 포함) — AP 서버가 제공하지 않을 경우 주입 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

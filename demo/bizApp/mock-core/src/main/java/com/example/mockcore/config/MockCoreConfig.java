@@ -2,10 +2,10 @@ package com.example.mockcore.config;
 
 import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
 import com.example.spiderlink.infra.tcp.codec.JsonMessageCodec;
-import com.example.spiderlink.infra.tcp.handler.CommandDispatcher;
-import com.example.spiderlink.infra.tcp.handler.CommandHandler;
-import com.example.spiderlink.infra.tcp.model.JsonCommandRequest;
-import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.handler.CommandDispatcher;
+import com.example.spidercommon.infra.tcp.handler.CommandHandler;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;

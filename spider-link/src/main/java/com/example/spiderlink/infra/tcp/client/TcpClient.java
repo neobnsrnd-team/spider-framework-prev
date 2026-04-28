@@ -1,8 +1,8 @@
 package com.example.spiderlink.infra.tcp.client;
 
 import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
-import com.example.spiderlink.infra.tcp.model.JsonCommandRequest;
-import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

@@ -1,6 +1,6 @@
 package com.example.spiderlink.infra.tcp.codec;
 
-import com.example.spiderlink.infra.tcp.model.ManagementContext;
+import com.example.spidercommon.infra.tcp.model.ManagementContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputFilter;
@@ -22,7 +22,7 @@ public class ObjectStreamMessageCodec implements MessageCodec<ManagementContext,
 
     /** 역직렬화 허용 클래스 화이트리스트 — ManagementContext, String, java.util.** 외 차단 */
     private static final String DESERIALIZATION_FILTER =
-            "com.example.spiderlink.infra.tcp.model.ManagementContext;java.lang.String;java.util.**;!*";
+            "com.example.spidercommon.infra.tcp.model.ManagementContext;java.lang.String;java.util.**;!*";
 
     /**
      * ObjectInputStream으로 ManagementContext를 역직렬화한다.
