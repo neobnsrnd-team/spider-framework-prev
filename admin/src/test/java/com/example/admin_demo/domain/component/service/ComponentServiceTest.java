@@ -234,7 +234,8 @@ class ComponentServiceTest {
         void notExists_throwsNotFoundException() {
             given(componentMapper.countById("NOT-EXIST")).willReturn(0);
 
-            assertThatThrownBy(() -> componentService.delete("NOT-EXIST", "TYPE-A")).isInstanceOf(NotFoundException.class);
+            assertThatThrownBy(() -> componentService.delete("NOT-EXIST", "TYPE-A"))
+                    .isInstanceOf(NotFoundException.class);
         }
     }
 

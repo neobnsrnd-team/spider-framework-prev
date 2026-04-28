@@ -203,7 +203,8 @@ class FwkServiceServiceTest {
         void notExists_throwsNotFoundException() {
             given(fwkServiceMapper.countById("NOT-EXIST")).willReturn(0);
 
-            assertThatThrownBy(() -> fwkServiceService.delete("NOT-EXIST", "TYPE-A")).isInstanceOf(NotFoundException.class);
+            assertThatThrownBy(() -> fwkServiceService.delete("NOT-EXIST", "TYPE-A"))
+                    .isInstanceOf(NotFoundException.class);
             then(fwkServiceMapper).should(never()).deleteById(any());
         }
     }
