@@ -15,8 +15,8 @@ spring:
     hikari:
       # Admin과 동일 스키마 사용 (FWK_BATCH_APP, FWK_BATCH_HIS 공유)
       connection-init-sql: ALTER SESSION SET CURRENT_SCHEMA = ${DB_SCHEMA:}
-      maximum-pool-size: 5
-      minimum-idle: 2
+      maximum-pool-size: 3
+      minimum-idle: 1
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000

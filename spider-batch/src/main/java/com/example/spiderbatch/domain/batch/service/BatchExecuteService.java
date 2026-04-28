@@ -1,10 +1,12 @@
 package com.example.spiderbatch.domain.batch.service;
 
 import com.example.spiderbatch.constant.BatchConstants;
+import com.example.spiderbatch.domain.batch.dto.BatchAppInfo;
 import com.example.spiderbatch.domain.batch.dto.BatchExecuteRequest;
 import com.example.spiderbatch.domain.batch.dto.BatchExecuteResponse;
 import com.example.spiderbatch.domain.batch.mapper.BatchAppMapper;
 import com.example.spiderbatch.config.BatchConfigurationProperties;
+import com.example.spiderbatch.global.notification.NotificationService;
 import com.example.spiderbatch.spi.BatchHistoryRecorder;
 import com.example.spiderbatch.global.log.BatchAuditLogger;
 import io.micrometer.core.instrument.Counter;
@@ -47,6 +49,8 @@ public class BatchExecuteService {
     /** Micrometer MeterRegistry: batch.job.duration / batch.job.status / batch.step.write.count 기록 */
     private final MeterRegistry meterRegistry;
     private final BatchAuditLogger auditLogger;
+    /** 알림 서비스 목록 — Slack·Email 등 다중 구현체 지원 (미등록 시 빈 리스트) */
+    private final List<NotificationService> notificationServices;
 
     /**
      * 배치 Job을 동기 실행하고 FWK_BATCH_HIS에 이력을 기록한다.
@@ -140,6 +144,23 @@ public class BatchExecuteService {
         } else {
             // ABNORMAL: updateResult가 비정상 종료로 판단한 경우
             auditLogger.logFailure(request.getBatchAppId(), nextSeq, response.getErrorReason());
+        }
+
+        // 7. SLA 초과 확인 — FWK_BATCH_APP.SLA_SECONDS가 설정된 경우에만 동작
+        if (!notificationServices.isEmpty()) {
+            BatchAppInfo appInfo = batchAppMapper.selectBatchAppInfo(request.getBatchAppId());
+            if (appInfo != null && appInfo.getSlaSeconds() != null) {
+                long elapsedSeconds = durationMs / 1000;
+                if (elapsedSeconds > appInfo.getSlaSeconds()) {
+                    log.warn("SLA 초과 감지: batchAppId={}, 소요={}초, 기준={}초",
+                            request.getBatchAppId(), elapsedSeconds, appInfo.getSlaSeconds());
+                    String batchAppName = appInfo.getBatchAppName();
+                    long slaSeconds = appInfo.getSlaSeconds();
+                    notificationServices.forEach(svc ->
+                            svc.sendSlaViolation(request.getBatchAppId(), batchAppName,
+                                    elapsedSeconds, slaSeconds));
+                }
+            }
         }
 
         return response;

@@ -11,10 +11,11 @@
         WHERE BATCH_APP_ID = #{batchAppId}
     </select>
 
-    <!-- batchAppId로 배치 앱 이름과 CRON 표현식 조회 (실행 중인 배치 모니터링 표시 정보 보강용) -->
+    <!-- batchAppId로 배치 앱 이름, CRON 표현식, SLA 기준 조회 -->
     <select id="selectBatchAppInfo" resultType="com.example.spiderbatch.domain.batch.dto.BatchAppInfo">
         SELECT BATCH_APP_NAME AS batchAppName,
-               CRON_TEXT      AS cronText
+               CRON_TEXT      AS cronText,
+               SLA_SECONDS    AS slaSeconds
         FROM FWK_BATCH_APP
         WHERE BATCH_APP_ID = #{batchAppId}
     </select>
