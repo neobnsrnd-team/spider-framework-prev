@@ -45,7 +45,8 @@ body[data-view-mode="responsive"] .pb-sheet {
 }
 
 /* ── 에디터 모드: inline 고정 표시 ── */
-[data-component-id^="popup-banner"] .pb-sheet--editor {
+/* data-cb-type: ContentBuilderRuntime이 플러그인 식별에 사용하는 실제 속성 */
+[data-cb-type="popup-banner"] .pb-sheet--editor {
     position: relative;
     transform: none;
     border-radius: 20px 20px 0 0;

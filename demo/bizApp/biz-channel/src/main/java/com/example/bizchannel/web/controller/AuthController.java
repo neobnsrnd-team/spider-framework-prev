@@ -152,6 +152,9 @@ public class AuthController {
             // 리프레시 토큰 인메모리 저장 (이전 토큰 덮어쓰기)
             refreshTokenStore.put(userId, refreshToken);
 
+            // HttpLoggingInterceptor.afterCompletion()에서 RES 로그 userId 기록에 사용
+            request.setAttribute("loginUserId", userId);
+
             // 리프레시 토큰을 httpOnly 쿠키로 설정
             setRefreshTokenCookie(response, refreshToken);
 

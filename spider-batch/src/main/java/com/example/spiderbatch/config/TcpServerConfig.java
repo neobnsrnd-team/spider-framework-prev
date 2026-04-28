@@ -6,7 +6,8 @@ import com.example.spiderlink.infra.tcp.handler.CommandDispatcher;
 import com.example.spiderlink.infra.tcp.model.ManagementContext;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,9 +16,16 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p>spider-link의 {@link SpiderTcpServer}에 {@link ObjectStreamMessageCodec}과
  * {@link BatchExecCommandHandler}를 주입하여 Admin ↔ spider-batch 구간 TCP 서버를 구성한다.</p>
+ *
+ * <p>{@code batch.tcp.enabled=false}로 설정하면 TCP 서버가 비활성화된다.
+ * HTTP 전용 환경(REST API만 사용)에서 불필요한 소켓 포트를 열지 않을 때 사용한다.</p>
  */
 @Configuration
+@RequiredArgsConstructor
+@ConditionalOnProperty(name = "batch.tcp.enabled", matchIfMissing = true)
 public class TcpServerConfig {
+
+    private final BatchConfigurationProperties batchProps;
 
     /**
      * Admin과 ObjectStream 프로토콜로 통신하는 배치 TCP 서버 Bean.
@@ -27,14 +35,14 @@ public class TcpServerConfig {
      */
     @Bean
     public SpiderTcpServer<ManagementContext, ManagementContext> batchTcpServer(
-            @Value("${batch.tcp.port:9998}") int port,
-            @Value("${batch.tcp.handler-pool-size:20}") int handlerPoolSize,
-            @Value("${batch.tcp.queue-capacity:100}") int queueCapacity,
             BatchExecCommandHandler handler) {
 
+        BatchConfigurationProperties.Tcp tcp = batchProps.getTcp();
         CommandDispatcher<ManagementContext, ManagementContext> dispatcher =
                 new CommandDispatcher<>(List.of(handler));
 
-        return new SpiderTcpServer<>(port, handlerPoolSize, queueCapacity, new ObjectStreamMessageCodec(), dispatcher);
+        return new SpiderTcpServer<>(
+                tcp.getPort(), tcp.getHandlerPoolSize(), tcp.getQueueCapacity(),
+                new ObjectStreamMessageCodec(), dispatcher);
     }
 }

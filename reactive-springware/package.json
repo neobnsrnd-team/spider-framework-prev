@@ -3,6 +3,8 @@
   "type": "module",
   "description": "Figma 디자인 → React 컴포넌트 라이브러리 (Bank App 기반)",
   "scripts": {
+    "build:css": "tailwindcss -i component-library/styles.css -o component-library/dist/styles.css",
+    "build:css:watch": "tailwindcss -i component-library/styles.css -o component-library/dist/styles.css --watch",
     "generate:prompts": "npx tsx scripts/extract-components.ts && npx tsx scripts/extract-design-tokens.ts && npx tsx scripts/extract-page-generation-rules.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@storybook/react-vite": "^10.3.3",
+    "@tailwindcss/cli": "^4.2.4",
     "@tokens-studio/sd-transforms": "^2.0.3",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",

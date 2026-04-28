@@ -2,6 +2,7 @@ package com.example.admin_demo.domain.batch.controller;
 
 import com.example.admin_demo.domain.batch.dto.BatchExecRequest;
 import com.example.admin_demo.domain.batch.dto.BatchHisResponse;
+import com.example.admin_demo.domain.batch.enums.BatchResRtCode;
 import com.example.admin_demo.domain.batch.service.BatchExecService;
 import com.example.admin_demo.global.dto.ApiResponse;
 import jakarta.validation.Valid;
@@ -44,8 +45,30 @@ public class BatchExecController {
 
         List<BatchHisResponse> results = batchExecService.executeManualBatch(requestDTO);
 
-        String message = String.format("배치 실행 요청이 등록되었습니다. (총 %d건)", results.size());
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(message, results));
+        long successCount = 0;
+        long abnormalCount = 0;
+        for (BatchHisResponse r : results) {
+            if (BatchResRtCode.SUCCESS.getCode().equals(r.getResRtCode())) successCount++;
+            else if (BatchResRtCode.ABNORMAL_TERMINATION.getCode().equals(r.getResRtCode())) abnormalCount++;
+        }
+
+        if (abnormalCount == 0) {
+            // 전체 성공
+            String message = String.format("배치 실행이 완료되었습니다. (총 %d건 성공)", successCount);
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(message, results));
+        }
+
+        // 전체 실패 또는 부분 실패 — 빌더 통합
+        String message = (successCount == 0)
+                ? String.format("배치 실행이 실패하였습니다. (총 %d건 실패)", abnormalCount)
+                : String.format("일부 배치 실행에 실패하였습니다. (성공: %d건 / 실패: %d건)", successCount, abnormalCount);
+
+        return ResponseEntity.ok(ApiResponse.<List<BatchHisResponse>>builder()
+                .success(false)
+                .message(message)
+                .data(results)
+                .code(200)
+                .build());
     }
 
     /**

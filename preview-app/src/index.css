@@ -1,0 +1,7 @@
+/* Tailwind v4 — preview-app 유틸리티 클래스 생성.
+   @tailwindcss/vite 플러그인이 Vite 모듈 그래프(@cl 포함)를 자동 스캔하므로
+   컴포넌트에 사용된 클래스가 자동으로 포함된다. */
+@import "tailwindcss";
+
+/* 디자인 토큰 + Tailwind 유틸리티 (컴파일된 순수 CSS로 이중 처리 없음) */
+@import "@cl/dist/styles.css";

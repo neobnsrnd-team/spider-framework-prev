@@ -8,11 +8,8 @@ import { closePool } from '../src/db/connection';
 
 const THUMBNAIL = '/assets/minimalist-blocks/preview/ibk-popup-banner.svg';
 
-/** 기본 샘플 이미지 데이터 */
-const DEFAULT_IMAGES = JSON.stringify([
-    { url: '/uploads/sample-banner-1.jpg', link: '#', alt: '이벤트 배너 1' },
-    { url: '/uploads/sample-banner-2.jpg', link: '#', alt: '이벤트 배너 2' },
-]);
+/** 기본 이미지 데이터 — 빈 배열로 시작하여 편집 모달에서 이미지를 직접 추가하도록 유도 */
+const DEFAULT_IMAGES = JSON.stringify([]);
 
 /** 뷰 모드별 초기 HTML — data-component-id 루트 + data-cb-type(ContentBuilder 플러그인 식별용) */
 function buildHtml(viewMode: string): string {

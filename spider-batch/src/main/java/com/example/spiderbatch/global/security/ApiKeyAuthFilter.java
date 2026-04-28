@@ -11,6 +11,7 @@ import java.security.MessageDigest;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "batch.security.enabled", matchIfMissing = true)
 public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
     /** 요청 헤더에서 API Key를 읽어오는 헤더 이름 */

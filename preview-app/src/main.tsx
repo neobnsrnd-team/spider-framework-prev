@@ -11,6 +11,7 @@
  */
 import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
+import './index.css'
 // componentRegistry를 진입점에서 import해 window.__components를 앱 실행 전에 초기화한다
 import './componentRegistry'
 import Renderer from './Renderer'

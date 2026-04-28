@@ -1,0 +1,60 @@
+spring:
+  profiles:
+    active: oracle
+  batch:
+    jdbc:
+      # never: Spring Batch 메타 테이블을 자동 생성하지 않음 (Oracle은 always 설정 시 ORA-00955 오류)
+      # DB에 기존 BATCH_* 테이블이 있어도 충돌하지 않도록 전용 prefix 사용
+      # BATCH_5_* 테이블이 없으면 spider-batch/docs/sql/01_create_tables.sql 수동 실행
+      initialize-schema: never
+      table-prefix: BATCH_5_
+    job:
+      # 애플리케이션 시작 시 Job 자동 실행 방지 (API 호출로만 실행)
+      enabled: false
+
+logging:
+  charset:
+    console: UTF-8
+
+server:
+  port: 8081
+
+# Batch WAS 인스턴스 식별 ID (FWK_WAS_INSTANCE.INSTANCE_ID 와 일치해야 함)
+batch:
+  was:
+    instance-id: BT01
+  tcp:
+    port: ${BATCH_TCP_PORT:9998}
+    # 동시 처리 가능한 최대 클라이언트 수 (Admin 동시 요청량에 맞게 조정)
+    handler-pool-size: 20
+    # 핸들러 풀이 가득 찼을 때 대기시킬 최대 요청 수 — 초과 시 소켓을 즉시 닫아 OOM 방지
+    queue-capacity: 100
+  file:
+    # 고정 길이 파일 처리 디렉터리 (환경변수로 재정의 가능)
+    input-dir: ${BATCH_FILE_INPUT_DIR:./batch-files/input}
+    archive-dir: ${BATCH_FILE_ARCHIVE_DIR:./batch-files/archive}
+    error-dir: ${BATCH_FILE_ERROR_DIR:./batch-files/error}
+
+notification:
+  email:
+    # NOTIFICATION_EMAIL_TO 환경변수로 수신 주소 설정 (미설정 시 Email 알림 생략)
+    to: ${NOTIFICATION_EMAIL_TO:}
+
+# SMTP 설정은 .env에 SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD 추가 시 자동 활성화.
+# spring.mail.host 값이 있으면 Spring Boot가 JavaMailSender Bean을 자동 등록하여 실 발송으로 전환.
+# 미설정 시 EmailNotificationService가 로그 출력(Mock)으로 동작.
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # health: 운영 헬스체크, prometheus: Prometheus 스크랩 엔드포인트
+        include: health,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      # 모든 메트릭에 공통 태그 부여 — Grafana에서 애플리케이션·인스턴스별 필터링 가능
+      application: spider-batch
+      instance: ${batch.was.instance-id:BT01}

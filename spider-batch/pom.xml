@@ -15,7 +15,7 @@
     <artifactId>spider-batch</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>spider-batch</name>
-    <description>Spider Batch — spider-link 내장 배치 실행 서버</description>
+    <description>Spider Batch — 배치 오케스트레이션·이력관리·TCP 연동 라이브러리 (spider-link와 동일 계층)</description>
 
     <properties>
         <java.version>17</java.version>
@@ -23,46 +23,46 @@
     </properties>
 
     <dependencies>
-        <!-- Web -->
+        <!-- Web: REST 엔드포인트 제공 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Batch -->
+        <!-- Spring Batch 5.x 코어 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-batch</artifactId>
         </dependency>
 
-        <!-- MyBatis (FWK_BATCH_APP, FWK_BATCH_HIS 직접 관리) -->
+        <!-- MyBatis: FWK_BATCH_APP, FWK_BATCH_HIS 직접 관리 -->
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
             <artifactId>mybatis-spring-boot-starter</artifactId>
             <version>${mybatis-spring-boot.version}</version>
         </dependency>
 
-        <!-- Oracle JDBC -->
+        <!-- Oracle JDBC — 소비자가 직접 JDBC 드라이버를 선택할 수 있도록 optional 처리 -->
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc11</artifactId>
             <scope>runtime</scope>
+            <optional>true</optional>
         </dependency>
-
-        <!-- Oracle UCP (Connection Pool) -->
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ucp</artifactId>
             <scope>runtime</scope>
+            <optional>true</optional>
         </dependency>
 
-        <!-- Actuator: /actuator/health, /actuator/prometheus 엔드포인트 제공 -->
+        <!-- Actuator: /actuator/health, /actuator/prometheus -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Micrometer Prometheus Registry: Prometheus 메트릭 수집 포맷 지원 -->
+        <!-- Micrometer Prometheus -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
@@ -81,26 +81,24 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- .env 파일 로딩 (admin과 동일한 방식) -->
-        <dependency>
-            <groupId>me.paulschwarz</groupId>
-            <artifactId>spring-dotenv</artifactId>
-            <version>4.0.0</version>
-        </dependency>
-
-        <!-- Dev Tools -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- spider-link 공통 연계엔진 라이브러리 (ManagementContext, TCP 인프라 공유) -->
+        <!-- spider-link: TCP 서버 인프라 & ManagementContext -->
         <dependency>
             <groupId>com.example</groupId>
             <artifactId>spider-link</artifactId>
             <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <!-- AutoConfiguration 지원 (spring-boot에 포함되어 있으나 명시적 선언) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+
+        <!-- Email 알림: optional 처리 — 소비자가 spring-boot-starter-mail을 추가해야 실 발송 가능 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- Test -->
@@ -116,26 +114,6 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <encoding>UTF-8</encoding>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                    <jvmArguments>
-                        -Dfile.encoding=UTF-8
-                        -Dstdout.encoding=UTF-8
-                        -Dstderr.encoding=UTF-8
-                    </jvmArguments>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <!-- spring-boot-maven-plugin 미사용: 라이브러리 JAR로 배포 -->
+
 </project>

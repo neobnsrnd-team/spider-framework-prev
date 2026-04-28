@@ -256,10 +256,13 @@ const SLIDE_SCRIPT =
     `track.querySelectorAll('[data-card-item] > div').forEach(function(inner){` +
     `inner.style.minHeight=maxH+'px';` +
     `});` +
-    `track.querySelectorAll('[data-card-item]').forEach(function(card){` +
+    `var cardItems=track.querySelectorAll('[data-card-item]');` +
+    // 카드 1개일 때는 100%로 화면을 꽉 채움 — 2개 이상이면 92%로 다음 카드를 살짝 노출
+    `var isSingle=cardItems.length===1;` +
+    `cardItems.forEach(function(card){` +
     `if(mode==='web'){card.style.flex='0 0 min(480px,46vw)';card.style.width='min(480px,46vw)';card.style.maxWidth='';card.style.minWidth='0';card.style.scrollSnapAlign='start';}` +
     `else if(mode==='responsive'){card.style.flex='0 0 min(440px,78vw)';card.style.width='min(440px,78vw)';card.style.scrollSnapAlign='start';}` +
-    `else{card.style.flex='0 0 92%';card.style.width='92%';card.style.scrollSnapAlign='center';}` +
+    `else{var w=isSingle?'100%':'92%';card.style.flex='0 0 '+w;card.style.width=w;card.style.scrollSnapAlign='center';}` +
     `});` +
     `track.querySelectorAll('[data-card-item] a').forEach(function(btn){` +
     `if(!btn.style.borderRadius)return;` +
@@ -334,8 +337,6 @@ function parseSlides(blockEl: HTMLElement): CardSlide[] {
             const innerStyle = innerCard?.getAttribute('style') || '';
             const innerWidthMatch = innerStyle.match(/(?:^|;)width:min\(100%,(\d+)px\)/i);
             const heightMatch = innerStyle.match(/(?:^|;)min-height:(\d+)px/i);
-            const liveWidth = innerCard?.getBoundingClientRect().width || item.getBoundingClientRect().width || 0;
-            const liveHeight = innerCard?.getBoundingClientRect().height || 0;
             const widthPx = Number.parseInt(widthMatch?.[1] || innerWidthMatch?.[1] || '', 10);
             const heightPx = Number.parseInt(heightMatch?.[1] || '', 10);
             const copyable = !!item.querySelector('[data-card-copy]') || !!fallback.copyable;
@@ -368,8 +369,11 @@ function parseSlides(blockEl: HTMLElement): CardSlide[] {
                 showMore,
                 moreHref,
                 title: safeTitle,
-                widthPx: Number.isFinite(widthPx) ? widthPx : liveWidth > 0 ? Math.round(liveWidth) : undefined,
-                heightPx: Number.isFinite(heightPx) ? heightPx : liveHeight > 0 ? Math.round(liveHeight) : undefined,
+                // liveWidth/liveHeight 자동 저장 제거 — 렌더링 너비를 고정값으로 박으면
+                // SLIDE_SCRIPT가 너비를 100%로 바꿔도 inner div가 고정 px로 막히는 부작용 발생.
+                // widthPx/heightPx는 사용자가 에디터 입력 필드에 명시적으로 입력한 값만 보존.
+                widthPx: Number.isFinite(widthPx) ? widthPx : undefined,
+                heightPx: Number.isFinite(heightPx) ? heightPx : undefined,
                 copyable,
                 subtitle,
                 infoLines,

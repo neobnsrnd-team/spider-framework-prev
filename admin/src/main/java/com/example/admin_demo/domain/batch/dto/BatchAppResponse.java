@@ -26,4 +26,6 @@ public class BatchAppResponse {
     private String ioType;
     private String lastUpdateDtime;
     private String lastUpdateUserId;
+    /** FWK_BATCH_APP.SLA_SECONDS — 최대 허용 실행 시간(초), null이면 SLA 미적용 */
+    private Integer slaSeconds;
 }

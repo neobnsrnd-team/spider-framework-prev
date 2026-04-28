@@ -38,7 +38,7 @@ function escapeHtml(str: string): string {
 function buildSlideHtml(slide: BannerSlide, idx: number): string {
     // 이미지 영역 (없으면 플레이스홀더)
     const imgHtml = slide.imageUrl
-        ? `<img src="${escapeHtml(slide.imageUrl)}" alt="${escapeHtml(slide.altText ?? '')}" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;" />`
+        ? `<img src="${escapeHtml(slide.imageUrl)}" alt="${escapeHtml(slide.altText ?? '')}" style="width:100%;aspect-ratio:16/9;object-fit:contain;display:block;" />`
         : `<div style="width:100%;aspect-ratio:16/9;background:#E5E7EB;display:flex;align-items:center;justify-content:center;"><span style="color:#9CA3AF;font-size:14px;">이미지를 추가하세요</span></div>`;
 
     // 오버레이 텍스트 (선택)

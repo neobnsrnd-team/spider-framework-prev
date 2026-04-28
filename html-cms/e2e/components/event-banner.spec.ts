@@ -80,7 +80,7 @@ interface BannerSlide {
 
 const buildSlide = (slide: BannerSlide, idx: number): string => {
     const imgHtml = slide.imageUrl
-        ? `<img src="${slide.imageUrl}" alt="${slide.altText ?? ''}" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;">`
+        ? `<img src="${slide.imageUrl}" alt="${slide.altText ?? ''}" style="width:100%;aspect-ratio:16/9;object-fit:contain;display:block;">`
         : `<div style="width:100%;aspect-ratio:16/9;background:#E5E7EB;display:flex;align-items:center;justify-content:center;">` +
           `<span style="color:#9CA3AF;font-size:14px;">이미지를 추가하세요</span></div>`;
 
@@ -327,11 +327,11 @@ test.describe('event-banner — 세로형(portrait) 이미지 비율 처리', ()
         expect(ratio, `16:9 비율(0.5625)을 유지해야 합니다 (실제: ${ratio.toFixed(4)})`).toBeCloseTo(9 / 16, 1);
     });
 
-    test('이미지에 object-fit:cover가 적용됨 (세로 이미지 crop 처리)', async ({ page }) => {
+    test('이미지에 object-fit:contain이 적용됨 (비율 불일치 시 잘림 없이 전체 표시)', async ({ page }) => {
         const objectFit = await page.locator('[data-banner-item] img').first().evaluate(
             (el) => getComputedStyle(el).objectFit,
         );
-        expect(objectFit, 'object-fit:cover로 portrait 이미지가 crop되어야 합니다').toBe('cover');
+        expect(objectFit, 'object-fit:contain으로 이미지 전체가 배너 영역 안에 표시되어야 합니다').toBe('contain');
     });
 
     // eslint-disable-next-line playwright/expect-expect

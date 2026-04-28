@@ -1,5 +1,6 @@
 package com.example.admin_demo.domain.batch.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -60,6 +61,9 @@ public class BatchAppCreateRequest {
 
     @Size(max = 1, message = "입출력 구분은 1자여야 합니다")
     private String ioType;
+
+    @Min(value = 1, message = "SLA 허용 시간은 1초 이상이어야 합니다")
+    private Integer slaSeconds;
 
     // WAS 인스턴스 ID 목록 (생성 시 할당)
     private List<String> instanceIds;

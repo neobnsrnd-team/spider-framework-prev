@@ -6,6 +6,7 @@ import com.example.admin_demo.domain.cmsdashboard.dto.CmsDashboardListRequest;
 import com.example.admin_demo.domain.cmsdashboard.dto.CmsDashboardPageResponse;
 import com.example.admin_demo.domain.cmsdashboard.dto.CmsTemplateResponse;
 import com.example.admin_demo.domain.cmsdashboard.mapper.CmsDashboardMapper;
+import com.example.admin_demo.domain.cmsdashboard.util.CmsViewModeUtil;
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.exception.InvalidInputException;
@@ -60,8 +61,14 @@ public class CmsDashboardService {
         String templateId = "blank".equals(req.getTemplateId()) ? null : req.getTemplateId();
 
         // 클라이언트 전달값 검증 — PAGE_TYPE='TEMPLATE' AND USE_YN='Y' 인 페이지인지 확인 (임의 pageId 주입 방지)
-        if (templateId != null && cmsDashboardMapper.existsTemplate(templateId) == 0) {
-            throw new NotFoundException("유효하지 않은 템플릿입니다. templateId=" + templateId);
+        if (templateId != null) {
+            CmsTemplateResponse template = cmsDashboardMapper.findTemplateById(templateId);
+            if (template == null) {
+                throw new NotFoundException("유효하지 않은 템플릿입니다. templateId=" + templateId);
+            }
+            if (!CmsViewModeUtil.isTemplateCompatible(req.getViewMode(), template.getViewMode())) {
+                throw new InvalidInputException("선택한 레이아웃과 템플릿의 레이아웃이 일치하지 않습니다. templateId=" + templateId);
+            }
         }
 
         cmsDashboardMapper.insertPage(pageId, req.getPageName(), req.getViewMode(), templateId, userId, userName);

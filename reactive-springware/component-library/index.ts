@@ -9,10 +9,14 @@
  * import { Button, Modal } from '@cl';
  */
 
-// 연동 프로젝트(demo/front, react-cms 등)가 '@cl' alias로 이 파일을 참조할 때
-// 각 프로젝트의 tailwindcss() 플러그인이 globals.css를 처리하고,
-// globals.css 내부의 @source 지시어로 컴포넌트 파일을 스캔해 사용된 Tailwind 클래스를 출력한다.
-import '../design-tokens/globals.css';
+// CSS는 각 소비 프로젝트가 직접 import한다.
+// globals.css를 여기서 import하면 @tailwindcss/vite가 이중 처리해
+// @layer theme 변수가 initial로 리셋되는 문제가 발생한다.
+//
+// 모든 소비 프로젝트: component-library/dist/styles.css 를 import
+//   @tailwindcss/vite 프로젝트 (demo/front): index.css 에 @import "@cl/dist/styles.css"
+//   @tailwindcss/vite 프로젝트 (Storybook):  preview.ts 에 import '../component-library/dist/styles.css'
+//   react-cms 캔버스: user-scope.css 에 @import "@cl/dist/styles.css"
 
 /* ── Core (원자 컴포넌트) ─────────────────────────────────────── */
 export * from './core/Badge';

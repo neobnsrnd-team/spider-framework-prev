@@ -60,8 +60,9 @@ export default async function DashboardPage({
         expiredDate: p.EXPIRED_DATE ? new Date(p.EXPIRED_DATE).toLocaleDateString('en-CA') : null,
         rejectedReason: p.REJECTED_REASON ?? null,
         hasFile:
-            !!p.PAGE_HTML ||
-            (p.FILE_PATH ? existsSync(join(process.cwd(), 'public', p.FILE_PATH.replace(/^\//, ''))) : false),
+            p.PAGE_HTML != null ||
+            !p.FILE_PATH ||
+            existsSync(join(process.cwd(), 'public', p.FILE_PATH.replace(/^\//, ''))),
         isExpired: isPageExpired(p.IS_PUBLIC, p.EXPIRED_DATE),
         isPublic: p.IS_PUBLIC ?? 'Y',
     }));

@@ -21,4 +21,7 @@ public class BatchAppInfo {
 
     /** FWK_BATCH_APP.CRON_TEXT — CRON 표현식 (스케줄 미등록 시 null) */
     private String cronText;
+
+    /** FWK_BATCH_APP.SLA_SECONDS — 최대 허용 실행 시간(초), NULL이면 SLA 미적용 */
+    private Integer slaSeconds;
 }
