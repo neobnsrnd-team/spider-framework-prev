@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="modal">
+
+    <!-- 이행스크립트 조회 모달 -->
+    <div class="modal fade" id="workListScriptModal" tabindex="-1" aria-labelledby="workListScriptModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="workListScriptModalLabel">
+                        <i class="bi bi-file-earmark-code"></i> 이행스크립트
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- 파일명 표시 -->
+                    <div class="px-3 pt-3 pb-2 border-bottom">
+                        <small class="text-muted">
+                            <i class="bi bi-file-earmark-text"></i>
+                            <span id="scriptFileName" class="ms-1 font-monospace">-</span>
+                        </small>
+                    </div>
+                    <!-- SQL 내용 -->
+                    <pre id="scriptContent"
+                         class="m-0 p-3 bg-dark text-light small font-monospace"
+                         style="max-height: 450px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;"></pre>
+                </div>
+                <div class="modal-footer">
+                    <!-- 재생성 버튼 (WORK_TASK:W 권한 있을 때만 표시) -->
+                    <button type="button" class="btn btn-outline-warning btn-sm" id="btnScriptRegenerate"
+                            th:if="${userAuthorities != null and userAuthorities.contains('WORK_TASK:W')}"
+                            onclick="WorkScriptModal.regenerate()">
+                        <i class="bi bi-arrow-clockwise"></i> 재생성
+                    </button>
+                    <!-- 다운로드 버튼 -->
+                    <a id="btnScriptDownload" class="btn btn-outline-primary btn-sm" href="#" download>
+                        <i class="bi bi-download"></i> 다운로드
+                    </a>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /** 이행스크립트 모달 컨트롤러 */
+        var WorkScriptModal = {
+            _currentWorkSeq: null,
+            _modal: null,
+
+            /** View 버튼 클릭 시 — 파일 내용 조회 후 모달 오픈. */
+            open: function(workSeq) {
+                this._currentWorkSeq = workSeq;
+                if (!this._modal) {
+                    this._modal = new bootstrap.Modal(document.getElementById('workListScriptModal'));
+                }
+                this._loadContent(workSeq);
+                this._modal.show();
+            },
+
+            _loadContent: function(workSeq) {
+                document.getElementById('scriptContent').textContent = '불러오는 중...';
+                document.getElementById('scriptFileName').textContent = '-';
+                document.getElementById('btnScriptDownload').href = '#';
+
+                $.ajax({
+                    url: API_BASE_URL + '/work-list/script/' + workSeq,
+                    success: function(res) {
+                        if (res.success) {
+                            document.getElementById('scriptContent').textContent = res.data.content;
+                            document.getElementById('scriptFileName').textContent = res.data.fileName || '-';
+                            document.getElementById('btnScriptDownload').href =
+                                API_BASE_URL + '/work-list/script/' + workSeq + '/download';
+                        } else {
+                            document.getElementById('scriptContent').textContent = '[ERROR] ' + (res.message || '조회 실패');
+                        }
+                    },
+                    error: function() {
+                        document.getElementById('scriptContent').textContent = '[ERROR] 스크립트 조회 중 오류가 발생했습니다.';
+                    }
+                });
+            },
+
+            /** 재생성 버튼 클릭 시 — API 재호출 후 모달 내용 및 목록 갱신. */
+            regenerate: function() {
+                var self = this;
+                var workSeq = this._currentWorkSeq;
+                if (!workSeq) return;
+
+                document.getElementById('scriptContent').textContent = '재생성 중...';
+                $.ajax({
+                    url: API_BASE_URL + '/work-list/script/' + workSeq + '/generate',
+                    method: 'POST',
+                    success: function(res) {
+                        if (res.success) {
+                            document.getElementById('scriptContent').textContent = res.data.content;
+                            document.getElementById('scriptFileName').textContent = res.data.fileName || '-';
+                            document.getElementById('btnScriptDownload').href =
+                                API_BASE_URL + '/work-list/script/' + workSeq + '/download';
+                            Toast.success('재생성이 완료되었습니다.');
+                            // 목록 항목의 fileName 업데이트 후 리렌더 (버튼 상태 유지)
+                            var item = WorkListPage.allItems.find(function(i) { return i.workSeq === workSeq; });
+                            if (item) {
+                                item.fileName = res.data.fileName;
+                                WorkListPage.renderPage();
+                            }
+                        } else {
+                            Toast.error(res.message || '재생성 실패');
+                            document.getElementById('scriptContent').textContent = '[ERROR] ' + (res.message || '재생성 실패');
+                        }
+                    },
+                    error: function() {
+                        Toast.error('재생성 중 오류가 발생했습니다.');
+                        document.getElementById('scriptContent').textContent = '[ERROR] 재생성 중 오류가 발생했습니다.';
+                    }
+                });
+            }
+        };
+
+    </script>
+
+</th:block>
+</body>
+</html>

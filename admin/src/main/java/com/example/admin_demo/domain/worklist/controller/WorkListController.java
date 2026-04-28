@@ -3,17 +3,25 @@ package com.example.admin_demo.domain.worklist.controller;
 import com.example.admin_demo.domain.worklist.dto.WorkListApprovalRequest;
 import com.example.admin_demo.domain.worklist.dto.WorkListGroupMoveRequest;
 import com.example.admin_demo.domain.worklist.dto.WorkListResponse;
+import com.example.admin_demo.domain.worklist.dto.WorkListScriptResponse;
 import com.example.admin_demo.domain.worklist.dto.WorkListTransferRequest;
+import com.example.admin_demo.domain.worklist.service.WorkListScriptService;
 import com.example.admin_demo.domain.worklist.service.WorkListService;
 import com.example.admin_demo.global.dto.ApiResponse;
 import com.example.admin_demo.global.security.CustomUserDetails;
 import com.example.admin_demo.global.util.SecurityUtil;
 import jakarta.validation.Valid;
+import java.nio.file.Path;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,6 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class WorkListController {
 
     private final WorkListService workListService;
+    private final WorkListScriptService workListScriptService;
 
     /**
      * 작업함 목록 조회.
@@ -69,5 +78,32 @@ public class WorkListController {
         CustomUserDetails currentUser = SecurityUtil.getCurrentUser();
         workListService.createApproval(request, currentUser.getUserId());
         return ResponseEntity.ok(ApiResponse.success("결재요청이 완료되었습니다.", null));
+    }
+
+    /** 이행스크립트 생성 — 원본 테이블 데이터로 DELETE+INSERT SQL 파일 생성 후 FILE_NAME 등록. */
+    @PostMapping("/script/{workSeq}/generate")
+    @PreAuthorize("hasAuthority('WORK_TASK:W')")
+    public ResponseEntity<ApiResponse<WorkListScriptResponse>> generateScript(@PathVariable int workSeq) {
+        WorkListScriptResponse result = workListScriptService.generateAndSave(workSeq);
+        return ResponseEntity.ok(ApiResponse.success("이행스크립트가 생성되었습니다.", result));
+    }
+
+    /** 이행스크립트 내용 조회. */
+    @GetMapping("/script/{workSeq}")
+    public ResponseEntity<ApiResponse<WorkListScriptResponse>> getScript(@PathVariable int workSeq) {
+        return ResponseEntity.ok(ApiResponse.success(workListScriptService.getContent(workSeq)));
+    }
+
+    /** 이행스크립트 파일 다운로드. */
+    @GetMapping("/script/{workSeq}/download")
+    public ResponseEntity<Resource> downloadScript(@PathVariable int workSeq) {
+        Path filePath = workListScriptService.getFilePath(workSeq);
+        Resource resource = new FileSystemResource(filePath);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + filePath.getFileName().toString() + "\"")
+                .body(resource);
     }
 }

@@ -48,4 +48,10 @@ public interface WorkListMapper {
      * <p>파라미터 키: approvalId, workSeqs
      */
     int updateApprovalSeq(Map<String, Object> params);
+
+    /** 단건 조회 — 이행스크립트 생성·조회 시 사용 (workOriId, workDataPk, fileName). */
+    WorkListResponse findByWorkSeq(int workSeq);
+
+    /** 이행스크립트 파일명 업데이트. */
+    void updateFileName(@Param("workSeq") int workSeq, @Param("fileName") String fileName);
 }

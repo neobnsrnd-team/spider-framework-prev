@@ -108,15 +108,27 @@
             {
               key: "fileName",
               label: "이행스크립트",
-              width: "100px",
+              width: "110px",
               sortable: false,
               align: "center",
               render: function (val, row) {
-                return val
-                  ? '<button class="btn btn-outline-secondary btn-xs small" onclick="WorkListPage.viewScript(' +
-                      row.workSeq +
-                      ', event)"><i class="bi bi-file-earmark-text"></i> View</button>'
-                  : '<span class="text-body-secondary small">-</span>';
+                if (val) {
+                  // 생성 완료 → View 버튼 (녹색)
+                  return (
+                    '<button class="btn btn-outline-success btn-xs small" onclick="WorkListPage.viewScript(' +
+                    row.workSeq +
+                    ', event)"><i class="bi bi-file-earmark-text"></i> View</button>'
+                  );
+                }
+                if (worklist_write_access) {
+                  // 미생성 + 쓰기 권한 → 생성 버튼 (파란색)
+                  return (
+                    '<button class="btn btn-outline-primary btn-xs small" onclick="WorkListPage.generateScript(' +
+                    row.workSeq +
+                    ', event)"><i class="bi bi-file-earmark-plus"></i> 생성</button>'
+                  );
+                }
+                return '<span class="text-body-secondary small">-</span>';
               },
             },
           ],
@@ -362,11 +374,38 @@
             WorkApprovalModal.open(workSeqs, defaultName);
           },
 
+          /** 이행스크립트 생성 버튼 — API 호출 후 버튼 View로 전환. */
+          generateScript: function (workSeq, e) {
+            if (e) e.stopPropagation();
+            var self = this;
+            $.ajax({
+              url: API_BASE_URL + "/work-list/script/" + workSeq + "/generate",
+              method: "POST",
+              success: function (res) {
+                if (res.success) {
+                  Toast.success("이행스크립트가 생성되었습니다.");
+                  // 목록 항목의 fileName 갱신 후 리렌더 (생성→View 버튼 전환)
+                  var item = self.allItems.find(function (i) {
+                    return i.workSeq === workSeq;
+                  });
+                  if (item) {
+                    item.fileName = res.data.fileName;
+                    self.renderPage();
+                  }
+                } else {
+                  Toast.error(res.message || "이행스크립트 생성 실패");
+                }
+              },
+              error: function () {
+                Toast.error("이행스크립트 생성 중 오류가 발생했습니다.");
+              },
+            });
+          },
+
+          /** View 버튼 — 모달로 스크립트 내용 표시. */
           viewScript: function (workSeq, e) {
             if (e) e.stopPropagation();
-            Toast.info(
-              "이행스크립트 보기 기능은 준비 중입니다. (seq: " + workSeq + ")",
-            );
+            WorkScriptModal.open(workSeq);
           },
 
           moveGroup: function (workSeqs, groupId, callback) {

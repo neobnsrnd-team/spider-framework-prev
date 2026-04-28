@@ -53,6 +53,11 @@ server:
 file:
   upload-dir: ${user.dir}/uploads
 
+# 이행스크립트 저장 경로 (기본값: 실행 디렉터리/worklist-scripts)
+worklist:
+  script:
+    path: ${user.dir}/worklist-scripts
+
 # XML Property Configuration
 xml-property:
   directory: ${user.dir}/xml-properties

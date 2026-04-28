@@ -157,4 +157,21 @@
         </foreach>
     </update>
 
+    <!-- 이행스크립트용 단건 조회 (workOriId, workDataPk, fileName) -->
+    <select id="findByWorkSeq" parameterType="int" resultMap="WorkListResultMap">
+        SELECT WORK_SEQ,
+               WORK_ID AS WORK_ORI_ID,
+               WORK_DATA_PK,
+               FILE_NAME
+        FROM FWK_WORK_LIST
+        WHERE WORK_SEQ = #{workSeq}
+    </select>
+
+    <!-- 이행스크립트 파일명 업데이트 -->
+    <update id="updateFileName">
+        UPDATE FWK_WORK_LIST
+        SET FILE_NAME = #{fileName}
+        WHERE WORK_SEQ = #{workSeq}
+    </update>
+
 </mapper>
