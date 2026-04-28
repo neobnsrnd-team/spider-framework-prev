@@ -256,10 +256,13 @@ const SLIDE_SCRIPT =
     `track.querySelectorAll('[data-card-item] > div').forEach(function(inner){` +
     `inner.style.minHeight=maxH+'px';` +
     `});` +
-    `track.querySelectorAll('[data-card-item]').forEach(function(card){` +
+    `var cardItems=track.querySelectorAll('[data-card-item]');` +
+    // 카드 1개일 때는 100%로 화면을 꽉 채움 — 2개 이상이면 92%로 다음 카드를 살짝 노출
+    `var isSingle=cardItems.length===1;` +
+    `cardItems.forEach(function(card){` +
     `if(mode==='web'){card.style.flex='0 0 min(480px,46vw)';card.style.width='min(480px,46vw)';card.style.maxWidth='';card.style.minWidth='0';card.style.scrollSnapAlign='start';}` +
     `else if(mode==='responsive'){card.style.flex='0 0 min(440px,78vw)';card.style.width='min(440px,78vw)';card.style.scrollSnapAlign='start';}` +
-    `else{card.style.flex='0 0 92%';card.style.width='92%';card.style.scrollSnapAlign='center';}` +
+    `else{var w=isSingle?'100%':'92%';card.style.flex='0 0 '+w;card.style.width=w;card.style.scrollSnapAlign='center';}` +
     `});` +
     `track.querySelectorAll('[data-card-item] a').forEach(function(btn){` +
     `if(!btn.style.borderRadius)return;` +
