@@ -306,6 +306,7 @@
 
                 // 실행 버튼 비활성화
                 $('#btnExecuteBatch').prop('disabled', true);
+                Toast.info('배치를 시작합니다.');
 
                 $.ajax({
                     url: API_BASE_URL + '/batch/exec',
