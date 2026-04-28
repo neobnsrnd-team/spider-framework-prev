@@ -9,6 +9,7 @@ import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,6 +23,8 @@ import org.springframework.context.annotation.Configuration;
  * 전환 전까지는 spider-link standalone 프로세스가 9995 포트를 담당한다.</p>
  */
 @Configuration
+// biz-auth/biz-transfer가 spiderlink 패키지를 스캔할 때 불필요한 TCP 서버 기동을 방지
+@ConditionalOnProperty(name = "tcp.demo-server.enabled", havingValue = "true", matchIfMissing = false)
 public class DemoTcpConfig {
 
     /**

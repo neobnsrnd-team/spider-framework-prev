@@ -16,16 +16,20 @@ spring:
       maximum-pool-size: 2
       minimum-idle: 1
 
+mybatis:
+  # classpath*: 로 spider-link JAR 내부 XML까지 탐색
+  mapper-locations: classpath*:mapper/oracle/**/*.xml
+
 tcp:
   server:
     port: ${TCP_SERVER_PORT}
     handler-pool-size: ${TCP_SERVER_HANDLER_POOL_SIZE}
     queue-capacity: ${TCP_SERVER_QUEUE_CAPACITY}
-
-mock:
-  core:
-    host: ${MOCK_CORE_HOST}
-    port: ${MOCK_CORE_PORT}
+  ext:
+    # MetaDrivenCommandHandler B-type TcpCallBiz 가 호출할 외부시스템 (mock-core)
+    # TCP_EXT_HOST 미설정 시 기존 MOCK_CORE_HOST 로 폴백하여 .env 호환성 유지
+    host: ${TCP_EXT_HOST:${MOCK_CORE_HOST:localhost}}
+    port: ${TCP_EXT_PORT:${MOCK_CORE_PORT:19300}}
 
 app:
   org-id: ${APP_ORG_ID:DEMO}
