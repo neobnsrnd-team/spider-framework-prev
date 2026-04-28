@@ -7,6 +7,7 @@ import com.example.spiderlink.infra.tcp.handler.CommandDispatcher;
 import com.example.spiderlink.infra.tcp.handler.CommandHandler;
 import com.example.spiderlink.infra.tcp.model.JsonCommandRequest;
 import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
+import com.example.spiderlink.infra.tcp.client.pool.SocketPoolManager;
 import com.example.spiderlink.infra.tcp.parser.FixedLengthParser;
 import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
@@ -58,15 +59,18 @@ public class BizAuthConfig {
      * @param recorder         전문 이력 기록기 (JdbcTemplate 빈이 없으면 empty)
      * @param structurePool    전문 구조 캐시 (빈 없으면 empty — JSON fallback)
      * @param fixedLengthParser 고정길이 파서 (빈 없으면 empty — JSON fallback)
+     * @param poolManager      소켓 커넥션 풀 매니저 (빈 없으면 empty — 요청마다 신규 소켓)
      * @return TcpClient 인스턴스
      */
     @Bean
     public TcpClient tcpClient(ObjectMapper objectMapper,
                                 Optional<MessageInstanceRecorder> recorder,
                                 Optional<MessageStructurePool> structurePool,
-                                Optional<FixedLengthParser> fixedLengthParser) {
+                                Optional<FixedLengthParser> fixedLengthParser,
+                                Optional<SocketPoolManager> poolManager) {
         return new TcpClient(objectMapper, recorder.orElse(null),
-                structurePool.orElse(null), fixedLengthParser.orElse(null));
+                structurePool.orElse(null), fixedLengthParser.orElse(null),
+                poolManager.orElse(null));
     }
 
     /**
