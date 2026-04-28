@@ -45,36 +45,30 @@ public class BatchExecController {
 
         List<BatchHisResponse> results = batchExecService.executeManualBatch(requestDTO);
 
-        long successCount = results.stream()
-                .filter(r -> BatchResRtCode.SUCCESS.getCode().equals(r.getResRtCode()))
-                .count();
-        long abnormalCount = results.stream()
-                .filter(r -> BatchResRtCode.ABNORMAL_TERMINATION.getCode().equals(r.getResRtCode()))
-                .count();
+        long successCount = 0;
+        long abnormalCount = 0;
+        for (BatchHisResponse r : results) {
+            if (BatchResRtCode.SUCCESS.getCode().equals(r.getResRtCode())) successCount++;
+            else if (BatchResRtCode.ABNORMAL_TERMINATION.getCode().equals(r.getResRtCode())) abnormalCount++;
+        }
 
         if (abnormalCount == 0) {
             // 전체 성공
-            String message = String.format("배치 실행이 완료되었습니다. (총 %d건 성공)", results.size());
+            String message = String.format("배치 실행이 완료되었습니다. (총 %d건 성공)", successCount);
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(message, results));
-        } else if (successCount == 0) {
-            // 전체 실패
-            String message = String.format("배치 실행이 실패하였습니다. (총 %d건 실패)", results.size());
-            return ResponseEntity.ok(ApiResponse.<List<BatchHisResponse>>builder()
-                    .success(false)
-                    .message(message)
-                    .data(results)
-                    .code(200)
-                    .build());
-        } else {
-            // 부분 실패
-            String message = String.format("일부 배치 실행에 실패하였습니다. (성공: %d건 / 실패: %d건)", successCount, abnormalCount);
-            return ResponseEntity.ok(ApiResponse.<List<BatchHisResponse>>builder()
-                    .success(false)
-                    .message(message)
-                    .data(results)
-                    .code(200)
-                    .build());
         }
+
+        // 전체 실패 또는 부분 실패 — 빌더 통합
+        String message = (successCount == 0)
+                ? String.format("배치 실행이 실패하였습니다. (총 %d건 실패)", abnormalCount)
+                : String.format("일부 배치 실행에 실패하였습니다. (성공: %d건 / 실패: %d건)", successCount, abnormalCount);
+
+        return ResponseEntity.ok(ApiResponse.<List<BatchHisResponse>>builder()
+                .success(false)
+                .message(message)
+                .data(results)
+                .code(200)
+                .build());
     }
 
     /**

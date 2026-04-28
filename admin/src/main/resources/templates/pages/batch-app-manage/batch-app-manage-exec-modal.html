@@ -320,13 +320,11 @@
                         } else {
                             // 실패 인스턴스 목록 추출 (response.data에 포함)
                             const results = response.data || [];
-                            const failedIds = results
-                                .filter(r => r.resRtCode === '9')
-                                .map(r => r.instanceId)
-                                .join(', ');
+                            const isAbnormal = r => r.resRtCode === '9';
+                            const failedIds = results.filter(isAbnormal).map(r => r.instanceId).join(', ');
                             const msg = (response.message || '') + (failedIds ? ` [실패: ${failedIds}]` : '');
 
-                            if (results.length > 0 && results.every(r => r.resRtCode === '9')) {
+                            if (results.length > 0 && results.every(isAbnormal)) {
                                 // 전체 실패: 에러 토스트, 모달 유지
                                 Toast.error(msg || '배치 실행이 실패하였습니다. 실행 이력을 확인하세요.');
                             } else {
