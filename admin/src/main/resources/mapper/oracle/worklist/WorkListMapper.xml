@@ -58,6 +58,7 @@
             WORK_NAME,
             (CASE CRUD_TYPE
                 WHEN 'C' THEN '생성'
+                WHEN 'R' THEN '조회'
                 WHEN 'U' THEN '수정'
                 WHEN 'D' THEN '삭제'
                 ELSE CRUD_TYPE
