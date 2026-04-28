@@ -166,6 +166,22 @@ public class SocketPool {
         }
     }
 
+    /** Admin 모니터링용 상태 맵 — REST API 응답에 사용 */
+    public java.util.Map<String, Object> getInfoMap() {
+        synchronized (lock) {
+            int idleCount = idle.size();
+            int activeCount = totalCount - idleCount;
+            java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+            map.put("host", host);
+            map.put("port", port);
+            map.put("active", activeCount);
+            map.put("idle", idleCount);
+            map.put("total", totalCount);
+            map.put("maxActive", MAX_ACTIVE);
+            return map;
+        }
+    }
+
     public String getHost() { return host; }
     public int getPort() { return port; }
 }
