@@ -371,8 +371,11 @@ function parseSlides(blockEl: HTMLElement): CardSlide[] {
                 showMore,
                 moreHref,
                 title: safeTitle,
-                widthPx: Number.isFinite(widthPx) ? widthPx : liveWidth > 0 ? Math.round(liveWidth) : undefined,
-                heightPx: Number.isFinite(heightPx) ? heightPx : liveHeight > 0 ? Math.round(liveHeight) : undefined,
+                // liveWidth/liveHeight 자동 저장 제거 — 렌더링 너비를 고정값으로 박으면
+                // SLIDE_SCRIPT가 너비를 100%로 바꿔도 inner div가 고정 px로 막히는 부작용 발생.
+                // widthPx/heightPx는 사용자가 에디터 입력 필드에 명시적으로 입력한 값만 보존.
+                widthPx: Number.isFinite(widthPx) ? widthPx : undefined,
+                heightPx: Number.isFinite(heightPx) ? heightPx : undefined,
                 copyable,
                 subtitle,
                 infoLines,
