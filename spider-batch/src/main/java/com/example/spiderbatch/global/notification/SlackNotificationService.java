@@ -1,12 +1,15 @@
 package com.example.spiderbatch.global.notification;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -24,9 +27,13 @@ public class SlackNotificationService implements NotificationService {
     @Value("${SLACK_WEBHOOK_URL:}")
     private String webhookUrl;
 
-    /** Webhook 호출 전용 RestTemplate — 재사용으로 커넥션 풀 없이 간단한 단건 POST에 적합 */
-    private static final RestTemplate REST_TEMPLATE = new RestTemplate();
+    /** Webhook 호출 전용 RestTemplate — connect/read 5초 타임아웃으로 외부 장애 시 스레드 점유 방지 */
+    private static final RestTemplate REST_TEMPLATE = new RestTemplateBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .readTimeout(Duration.ofSeconds(5))
+            .build();
 
+    @Async
     @Override
     public void sendSuccess(String batchAppId, String batchAppName, long writeCount, long elapsedSeconds) {
         String text = String.format("✅ *배치 성공* — %s (%s)%n처리 건수: %,d건 | 소요 시간: %d초",
@@ -34,6 +41,7 @@ public class SlackNotificationService implements NotificationService {
         post("good", text);
     }
 
+    @Async
     @Override
     public void sendFailure(String batchAppId, String batchAppName, String errorReason) {
         String text = String.format("❌ *배치 실패* — %s (%s)%n오류: %s",
@@ -41,6 +49,7 @@ public class SlackNotificationService implements NotificationService {
         post("danger", text);
     }
 
+    @Async
     @Override
     public void sendSlaViolation(String batchAppId, String batchAppName, long elapsedSeconds, long slaSeconds) {
         // <!channel> 멘션으로 SLA 초과 시 채널 전체 에스컬레이션

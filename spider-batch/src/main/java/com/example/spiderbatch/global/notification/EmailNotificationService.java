@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,6 +29,7 @@ public class EmailNotificationService implements NotificationService {
     @Value("${notification.email.to:}")
     private String emailTo;
 
+    @Async
     @Override
     public void sendSuccess(String batchAppId, String batchAppName, long writeCount, long elapsedSeconds) {
         String subject = String.format("[배치 성공] %s (%s)", batchAppName, batchAppId);
@@ -37,6 +39,7 @@ public class EmailNotificationService implements NotificationService {
         send(subject, body);
     }
 
+    @Async
     @Override
     public void sendFailure(String batchAppId, String batchAppName, String errorReason) {
         String subject = String.format("[배치 실패] %s (%s)", batchAppName, batchAppId);
@@ -46,6 +49,7 @@ public class EmailNotificationService implements NotificationService {
         send(subject, body);
     }
 
+    @Async
     @Override
     public void sendSlaViolation(String batchAppId, String batchAppName, long elapsedSeconds, long slaSeconds) {
         String subject = String.format("[SLA 초과] %s (%s)", batchAppName, batchAppId);

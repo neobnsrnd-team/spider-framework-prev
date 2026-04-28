@@ -31,8 +31,9 @@ public class BatchNotificationListener implements JobExecutionListener {
             return;
         }
 
-        // batchAppId를 알림 표시명으로 사용 (ex. FILE2DB_JOB, DB2DB_JOB)
         String batchAppId = jobExecution.getJobParameters().getString("batchAppId", "UNKNOWN");
+        // batchAppName은 BatchExecuteService가 JobParameter에 포함시켜 전달 (없으면 ID로 대체)
+        String batchAppName = jobExecution.getJobParameters().getString("batchAppName", batchAppId);
 
         long writeCount = jobExecution.getStepExecutions().stream()
                 .mapToLong(StepExecution::getWriteCount)
@@ -41,11 +42,11 @@ public class BatchNotificationListener implements JobExecutionListener {
 
         if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
             notificationServices.forEach(svc ->
-                    svc.sendSuccess(batchAppId, batchAppId, writeCount, elapsedSeconds));
+                    svc.sendSuccess(batchAppId, batchAppName, writeCount, elapsedSeconds));
         } else {
             String errorReason = collectErrorReason(jobExecution);
             notificationServices.forEach(svc ->
-                    svc.sendFailure(batchAppId, batchAppId, errorReason));
+                    svc.sendFailure(batchAppId, batchAppName, errorReason));
         }
     }
 
