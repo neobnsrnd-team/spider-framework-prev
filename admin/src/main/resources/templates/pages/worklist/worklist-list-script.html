@@ -41,11 +41,7 @@
               width: "120px",
               sortable: true,
               render: function (val) {
-                return val
-                  ? '<span class="badge text-bg-primary">' +
-                      _wlEsc(val) +
-                      "</span>"
-                  : "";
+                return val ? _wlEsc(val) : "";
               },
             },
             {
@@ -144,6 +140,9 @@
           itemsPerPage: 20,
           _sortBy: null,
           _sortDir: null,
+          _searchWorkId: "",
+          _searchField: "workDataPk",
+          _searchKeyword: "",
 
           init: function () {
             var self = this;
@@ -200,7 +199,7 @@
               data: { userId: userId },
               success: function (res) {
                 if (res.success) {
-                  self.renderGroupTabs(res.data || []);
+                  self.renderGroupOptions(res.data || []);
                   if (onComplete) {
                     onComplete();
                   } else {
@@ -216,22 +215,16 @@
             });
           },
 
-          renderGroupTabs: function (groups) {
-            var $tabs = $("#workGroupTabs");
-            $tabs.find("[data-dynamic]").remove();
+          renderGroupOptions: function (groups) {
+            var $searchGroup = $("#searchGroup");
+            $searchGroup.find("[data-dynamic]").remove();
             groups.forEach(function (g) {
-              $tabs.append(
-                '<li class="nav-item" role="presentation" data-dynamic="true">' +
-                  '<button class="nav-link" type="button" role="tab"' +
-                  ' data-group-id="' +
+              $searchGroup.append(
+                '<option value="' +
                   _wlEsc(g.groupId) +
-                  '"' +
-                  " onclick=\"WorkListPage.switchGroup('" +
-                  _wlEsc(g.groupId) +
-                  "')\">" +
+                  '" data-dynamic="true">' +
                   _wlEsc(g.groupName) +
-                  "</button>" +
-                  "</li>",
+                  "</option>",
               );
             });
           },
@@ -239,10 +232,7 @@
           switchGroup: function (groupId) {
             this.currentGroupId = groupId;
             this.currentPage = 1;
-            $("#workGroupTabs .nav-link").each(function () {
-              var btnGroupId = $(this).attr("data-group-id");
-              $(this).toggleClass("active", btnGroupId === groupId);
-            });
+            $("#searchGroup").val(groupId);
             this.loadWorkList(groupId);
           },
 
@@ -258,7 +248,6 @@
               success: function (res) {
                 if (res.success) {
                   self.allItems = res.data || [];
-                  self.totalItems = self.allItems.length;
                   self.currentPage = 1;
                   self.renderPage();
                 } else {
@@ -274,7 +263,10 @@
           },
 
           renderPage: function () {
-            var sorted = this._getSorted();
+            var filtered = this._getFiltered();
+            this.totalItems = filtered.length;
+
+            var sorted = this._getSorted(filtered);
             var start = (this.currentPage - 1) * this.itemsPerPage;
             var paged = sorted.slice(start, start + this.itemsPerPage);
 
@@ -291,16 +283,58 @@
             });
           },
 
-          _getSorted: function () {
-            if (!this._sortBy || !this._sortDir) return this.allItems.slice();
+          _getFiltered: function () {
+            var items = this.allItems.slice();
+            var workId = this._searchWorkId;
+            var field = this._searchField;
+            var kw = this._searchKeyword
+              ? this._searchKeyword.toLowerCase()
+              : "";
+
+            if (workId) {
+              items = items.filter(function (i) {
+                return i.workOriId === workId;
+              });
+            }
+            if (kw) {
+              items = items.filter(function (i) {
+                var val = i[field];
+                return (
+                  val != null && String(val).toLowerCase().indexOf(kw) !== -1
+                );
+              });
+            }
+            return items;
+          },
+
+          _getSorted: function (items) {
+            var base = items ? items.slice() : this.allItems.slice();
+            if (!this._sortBy || !this._sortDir) return base;
             var key = this._sortBy;
             var dir = this._sortDir;
-            return this.allItems.slice().sort(function (a, b) {
+            return base.sort(function (a, b) {
               var va = a[key] == null ? "" : String(a[key]);
               var vb = b[key] == null ? "" : String(b[key]);
               var cmp = va.localeCompare(vb, "ko");
               return dir === "ASC" ? cmp : -cmp;
             });
+          },
+
+          applySearch: function () {
+            var newGroupId = document.getElementById("searchGroup").value;
+            this._searchWorkId = document.getElementById("searchWorkId").value;
+            this._searchField = document.getElementById("searchField").value;
+            this._searchKeyword = document
+              .getElementById("searchKeyword")
+              .value.trim();
+            this.currentPage = 1;
+
+            if (newGroupId !== this.currentGroupId) {
+              // 그룹이 바뀌면 API 재조회 (renderPage에서 필터 적용)
+              this.switchGroup(newGroupId);
+            } else {
+              this.renderPage();
+            }
           },
 
           toggleCheckAll: function (cb) {
