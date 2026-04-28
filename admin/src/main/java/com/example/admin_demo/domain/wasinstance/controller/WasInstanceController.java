@@ -1,5 +1,6 @@
 package com.example.admin_demo.domain.wasinstance.controller;
 
+import com.example.admin_demo.domain.wasinstance.dto.PoolStatusResponse;
 import com.example.admin_demo.domain.wasinstance.dto.WasInstanceBatchSaveRequest;
 import com.example.admin_demo.domain.wasinstance.dto.WasInstanceRequest;
 import com.example.admin_demo.domain.wasinstance.dto.WasInstanceResponse;
@@ -86,6 +87,12 @@ public class WasInstanceController {
             @Valid @RequestBody List<WasInstanceBatchSaveRequest> requests) {
         int processedCount = wasInstanceService.batchSave(requests);
         return ResponseEntity.ok(ApiResponse.success(processedCount + "개의 인스턴스가 처리되었습니다", processedCount));
+    }
+
+    @GetMapping("/{instanceId}/pool-status")
+    public ResponseEntity<ApiResponse<PoolStatusResponse>> getPoolStatus(@PathVariable String instanceId) {
+        PoolStatusResponse status = wasInstanceService.getPoolStatus(instanceId);
+        return ResponseEntity.ok(ApiResponse.success(status));
     }
 
     @GetMapping("/export")

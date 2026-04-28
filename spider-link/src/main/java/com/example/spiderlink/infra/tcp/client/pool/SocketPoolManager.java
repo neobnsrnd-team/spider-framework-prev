@@ -87,6 +87,19 @@ public class SocketPoolManager implements SmartLifecycle {
         return pool != null ? pool.getInfo() : key + " — 풀 없음";
     }
 
+    /**
+     * Admin 모니터링용 — 등록된 모든 풀의 상태를 구조화된 맵으로 반환한다.
+     *
+     * <p>키: "host:port", 값: active / idle / total / maxActive 필드를 담은 맵.</p>
+     *
+     * @return 엔드포인트별 풀 상태 맵 (등록된 풀이 없으면 빈 맵)
+     */
+    public java.util.Map<String, java.util.Map<String, Object>> getAllPoolInfo() {
+        java.util.Map<String, java.util.Map<String, Object>> result = new java.util.LinkedHashMap<>();
+        pools.forEach((key, pool) -> result.put(key, pool.getInfoMap()));
+        return result;
+    }
+
     /** 등록된 모든 풀의 상태를 로그에 출력한다 */
     public void logPoolState() {
         if (pools.isEmpty()) {

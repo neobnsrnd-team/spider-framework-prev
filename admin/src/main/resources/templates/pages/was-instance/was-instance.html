@@ -47,6 +47,7 @@
                 <col class="col-w-100">
                 <col class="col-w-120">
                 <col class="col-w-120">
+                <col class="col-w-100">
             </colgroup>
             <thead class="table-light">
             <tr>
@@ -60,11 +61,12 @@
                 <th class="sortable" data-sort="instanceType">유형</th>
                 <th class="sortable" data-sort="operModeType">운영모드</th>
                 <th>프로퍼티</th>
+                <th>풀 현황</th>
             </tr>
             </thead>
             <tbody id="wasInstanceTableBody">
             <tr>
-                <td colspan="10" class="text-center py-4 text-body-secondary">
+                <td colspan="11" class="text-center py-4 text-body-secondary">
                     데이터를 불러오는 중...
                 </td>
             </tr>
@@ -234,6 +236,25 @@
         </div>
     </div>
 
+    <!-- Pool Status Modal -->
+    <div class="modal fade" id="poolStatusModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-bar-chart-fill"></i> AP 서버 소켓 풀 현황</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="poolStatusModalBody"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshPoolStatus()">
+                        <i class="bi bi-arrow-repeat"></i> 새로고침
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript -->
     <script>
         // WAS Instance Table Script
@@ -369,7 +390,7 @@
                         tbody.empty();
                         tbody.append(`
                             <tr>
-                                <td colspan="10" class="text-center py-4 text-danger">
+                                <td colspan="11" class="text-center py-4 text-danger">
                                     데이터를 불러오는데 실패했습니다.
                                 </td>
                             </tr>
@@ -480,7 +501,7 @@
                 if (!instances || instances.length === 0) {
                     tbody.append(`
                         <tr>
-                            <td colspan="10" class="text-center py-4 text-body-secondary">
+                            <td colspan="11" class="text-center py-4 text-body-secondary">
                                 조회된 데이터가 없습니다.
                             </td>
                         </tr>
@@ -593,7 +614,21 @@
                         propertyTd.append(propertyBtn);
                     }
                     row.append(propertyTd);
-                    
+
+                    // 풀 현황 버튼 (AP 인스턴스만)
+                    const poolTd = $('<td class="text-center"></td>');
+                    if (!isNew && normalizeInstanceType(instance.instanceType) === '2') {
+                        const poolBtn = $('<button class="btn-property">풀 현황</button>');
+                        poolBtn.click(function(e) {
+                            e.stopPropagation();
+                            showPoolStatus(instance.instanceId);
+                        });
+                        poolTd.append(poolBtn);
+                    } else {
+                        poolTd.text('-');
+                    }
+                    row.append(poolTd);
+
                     tbody.append(row);
                 });
             }
@@ -1828,6 +1863,84 @@
             }
 
             // Expose functions to window
+            // Pool Status
+            let currentPoolInstanceId = null;
+
+            function showPoolStatus(instanceId) {
+                currentPoolInstanceId = instanceId;
+                const modal = new bootstrap.Modal(document.getElementById('poolStatusModal'));
+                modal.show();
+                loadPoolStatus(instanceId);
+            }
+
+            function refreshPoolStatus() {
+                if (currentPoolInstanceId) loadPoolStatus(currentPoolInstanceId);
+            }
+
+            function loadPoolStatus(instanceId) {
+                const body = $('#poolStatusModalBody');
+                body.html('<div class="text-center py-3"><i class="bi bi-arrow-repeat sp-spin"></i> 조회 중...</div>');
+                $.ajax({
+                    url: `/api/was/instance/${instanceId}/pool-status`,
+                    method: 'GET',
+                    success: function(response) { renderPoolStatus(response.data); },
+                    error: function(xhr) {
+                        body.html(`<div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill"></i> ${xhr.responseJSON?.message || '풀 현황 조회에 실패했습니다.'}</div>`);
+                    }
+                });
+            }
+
+            function renderPoolStatus(data) {
+                const body = $('#poolStatusModalBody');
+                if (!data || !data.success) {
+                    body.html(`<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill"></i> ${data?.errorMessage || '풀 현황 조회 실패'}</div>`);
+                    return;
+                }
+                const pools = data.pools || {};
+                const entries = Object.entries(pools);
+                if (entries.length === 0) {
+                    body.html('<div class="text-muted text-center py-3"><i class="bi bi-info-circle"></i> 등록된 소켓 풀이 없습니다.</div>');
+                    return;
+                }
+                let rows = '';
+                entries.forEach(([key, pool]) => {
+                    const usageRate = pool.maxActive > 0 ? Math.round((pool.active / pool.maxActive) * 100) : 0;
+                    const barClass = usageRate >= 80 ? 'bg-danger' : usageRate >= 50 ? 'bg-warning' : 'bg-success';
+                    rows += `<tr>
+                        <td>${key}</td>
+                        <td class="text-center ${pool.active > 0 ? 'fw-bold text-primary' : ''}">${pool.active}</td>
+                        <td class="text-center">${pool.idle}</td>
+                        <td class="text-center">${pool.total}</td>
+                        <td class="text-center">${pool.maxActive}</td>
+                        <td><div class="d-flex align-items-center gap-1">
+                            <div class="progress flex-grow-1" style="height:12px;"><div class="progress-bar ${barClass}" style="width:${usageRate}%"></div></div>
+                            <small>${usageRate}%</small>
+                        </div></td>
+                    </tr>`;
+                });
+                body.html(`
+                    <p class="mb-2 text-body-secondary small">인스턴스: <strong>${data.instanceId}</strong> (${data.instanceName || '-'})</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>대상 (host:port)</th>
+                                    <th class="text-center">Active</th>
+                                    <th class="text-center">Idle</th>
+                                    <th class="text-center">Total</th>
+                                    <th class="text-center">Max</th>
+                                    <th>사용률</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                `);
+            }
+
+            window.showPoolStatus = showPoolStatus;
+            window.refreshPoolStatus = refreshPoolStatus;
+
             window.showPropertySection = showPropertySection;
             window.closePropertySection = closePropertySection;
             window.addPropertyRow = addPropertyRow;

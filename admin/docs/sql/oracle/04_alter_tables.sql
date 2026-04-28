@@ -717,3 +717,39 @@ INSERT INTO FWK_PROPERTY (PROPERTY_GROUP_ID, PROPERTY_ID, PROPERTY_NAME, PROPERT
 VALUES ('was_config', 'trf.MANAGEMENT_SERVER_PORT', 'biz-transfer 관리 서버 포트', 'Admin reload API 대상 포트', 'N', '19280', 'system');
 
 COMMIT;
+
+-- =============================================================
+-- feat/#249: BT02 인스턴스 관리 포트 수정 (2026-04-28)
+-- BT02.MANAGEMENT_SERVER_PORT 가 19100(biz-auth TCP 포트)으로 잘못 설정되어
+-- Admin → biz-transfer pool-status API 호출 실패하는 문제 수정
+-- 올바른 값: 19280 (biz-transfer HTTP 서버 포트)
+-- ※ 아래 쿼리는 개발자가 DB에서 직접 실행해야 합니다.
+-- =============================================================
+MERGE INTO FWK_PROPERTY dst
+USING (SELECT 'was_config' GRP, 'BT02.MANAGEMENT_SERVER_PORT' PID FROM DUAL) src
+ON (dst.PROPERTY_GROUP_ID = src.GRP AND dst.PROPERTY_ID = src.PID)
+WHEN MATCHED THEN
+    UPDATE SET DEFAULT_VALUE = '19280', LAST_UPDATE_USER_ID = 'system'
+WHEN NOT MATCHED THEN
+    INSERT (PROPERTY_GROUP_ID, PROPERTY_ID, PROPERTY_NAME, PROPERTY_DESC, DATA_TYPE, DEFAULT_VALUE, LAST_UPDATE_USER_ID)
+    VALUES ('was_config', 'BT02.MANAGEMENT_SERVER_PORT', 'biz-transfer 관리 포트', 'Admin pool/reload API 대상 포트', 'N', '19280', 'system');
+
+COMMIT;
+
+-- =============================================================
+-- feat/#249: BT03 인스턴스 관리 포트 수정 (2026-04-28)
+-- BT03.MANAGEMENT_SERVER_PORT 가 19200(biz-transfer TCP 포트)으로 잘못 설정되어
+-- Admin → biz-transfer pool-status API 호출 실패하는 문제 수정
+-- 올바른 값: 19280 (biz-transfer HTTP 서버 포트)
+-- ※ 아래 쿼리는 개발자가 DB에서 직접 실행해야 합니다.
+-- =============================================================
+MERGE INTO FWK_PROPERTY dst
+USING (SELECT 'was_config' GRP, 'BT03.MANAGEMENT_SERVER_PORT' PID FROM DUAL) src
+ON (dst.PROPERTY_GROUP_ID = src.GRP AND dst.PROPERTY_ID = src.PID)
+WHEN MATCHED THEN
+    UPDATE SET DEFAULT_VALUE = '19280', LAST_UPDATE_USER_ID = 'system'
+WHEN NOT MATCHED THEN
+    INSERT (PROPERTY_GROUP_ID, PROPERTY_ID, PROPERTY_NAME, PROPERTY_DESC, DATA_TYPE, DEFAULT_VALUE, LAST_UPDATE_USER_ID)
+    VALUES ('was_config', 'BT03.MANAGEMENT_SERVER_PORT', 'biz-transfer 관리 포트', 'Admin pool/reload API 대상 포트', 'N', '19280', 'system');
+
+COMMIT;
