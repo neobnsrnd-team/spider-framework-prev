@@ -6,11 +6,15 @@ import com.example.admin_demo.domain.batch.dto.BatchHisResponse;
 import com.example.admin_demo.domain.batch.enums.BatchResRtCode;
 import com.example.admin_demo.domain.batch.mapper.BatchAppMapper;
 import com.example.admin_demo.domain.batch.mapper.BatchHisMapper;
+import com.example.admin_demo.domain.batch.mapper.WasExecBatchMapper;
+import com.example.admin_demo.global.exception.InternalException;
 import com.example.admin_demo.global.exception.InvalidInputException;
 import com.example.admin_demo.global.exception.NotFoundException;
 import com.example.admin_demo.global.util.AuditUtil;
 import com.example.admin_demo.infra.tcp.adapter.BatchManagementAdapter;
 import com.example.spiderlink.infra.tcp.model.ManagementContext;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +38,7 @@ public class BatchExecService {
 
     private final BatchAppMapper batchAppMapper;
     private final BatchHisMapper batchHisMapper;
+    private final WasExecBatchMapper wasExecBatchMapper;
 
     /** Admin ↔ batch-was 간 TCP 통신 어댑터 (ObjectStream 방식) */
     private final BatchManagementAdapter batchManagementAdapter;
@@ -44,6 +49,11 @@ public class BatchExecService {
 
     /** TCP 커맨드 상수 — batch-was와 약속된 식별자 */
     private static final String CMD_BATCH_EXEC = "BATCH_EXEC";
+
+    private static final String CMD_SCHEDULE_TRIGGER = "SCHEDULE_TRIGGER";
+    private static final String CMD_SCHEDULE_CRON_UPDATE = "SCHEDULE_CRON_UPDATE";
+
+    private static final DateTimeFormatter BATCH_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     @Transactional
     public List<BatchHisResponse> executeManualBatch(BatchExecRequest requestDTO) {
@@ -216,5 +226,73 @@ public class BatchExecService {
         }
 
         return result;
+    }
+
+    /**
+     * 지정 WAS 인스턴스의 Quartz Job을 즉시 실행한다.
+     * SCHEDULE_TRIGGER 커맨드를 TCP로 전송하면 WAS가 {@code scheduler.triggerJob()}을 호출한다.
+     *
+     * @param batchAppId 배치 APP ID
+     * @param instanceId 실행 대상 WAS 인스턴스 ID
+     * @param batchDate  배치 기준일 (null이면 WAS에서 당일로 자동 설정)
+     */
+    public void triggerSchedule(String batchAppId, String instanceId, String batchDate) {
+        String resolvedDate = (batchDate != null && !batchDate.isBlank())
+                ? batchDate
+                : LocalDate.now().format(BATCH_DATE_FMT);
+
+        ManagementContext ctx = ManagementContext.builder()
+                .command(CMD_SCHEDULE_TRIGGER)
+                .instanceId(instanceId)
+                .batchAppId(batchAppId)
+                .batchDate(resolvedDate)
+                .userId(AuditUtil.currentUserId())
+                .build();
+
+        log.info("스케줄 즉시 실행 TCP 요청: instanceId={}, batchAppId={}", instanceId, batchAppId);
+        ManagementContext response = batchManagementAdapter.doProcess(CMD_SCHEDULE_TRIGGER, ctx);
+
+        if (response == null || "ERROR".equals(response.getResultCode())) {
+            String errorMsg = (response != null) ? response.getErrorMessage() : "응답 없음";
+            throw new InternalException(
+                    "스케줄 즉시 실행 실패: instanceId=" + instanceId + ", batchAppId=" + batchAppId + ", error=" + errorMsg);
+        }
+    }
+
+    /**
+     * 배치의 Cron 표현식을 변경하고 모든 배정 WAS 인스턴스에 스케줄 재등록 커맨드를 전송한다.
+     * SCHEDULE_CRON_UPDATE 커맨드를 각 인스턴스에 TCP로 전송하면 WAS가 {@code scheduler.reschedule()}을 호출한다.
+     *
+     * <p>DB 업데이트(FWK_BATCH_APP.CRON_TEXT)는 BatchAppService.updateCronText()를 통해 Controller에서 처리한다.</p>
+     *
+     * @param batchAppId 배치 APP ID
+     * @param cronText   새 Cron 표현식
+     */
+    public void updateScheduleCron(String batchAppId, String cronText) {
+        List<String> instanceIds = wasExecBatchMapper.selectActiveInstanceIds(batchAppId);
+        if (instanceIds.isEmpty()) {
+            log.info("스케줄 Cron 변경: 배정된 활성 인스턴스 없음 — batchAppId={}", batchAppId);
+            return;
+        }
+
+        String userId = AuditUtil.currentUserId();
+        for (String instanceId : instanceIds) {
+            ManagementContext ctx = ManagementContext.builder()
+                    .command(CMD_SCHEDULE_CRON_UPDATE)
+                    .instanceId(instanceId)
+                    .batchAppId(batchAppId)
+                    .cronText(cronText)
+                    .userId(userId)
+                    .build();
+
+            log.info("스케줄 Cron 변경 TCP 요청: instanceId={}, batchAppId={}, cron={}", instanceId, batchAppId, cronText);
+            ManagementContext response = batchManagementAdapter.doProcess(CMD_SCHEDULE_CRON_UPDATE, ctx);
+
+            if (response == null || "ERROR".equals(response.getResultCode())) {
+                String errorMsg = (response != null) ? response.getErrorMessage() : "응답 없음";
+                // 일부 인스턴스 실패 시 경고 로그만 남기고 나머지 인스턴스는 계속 처리
+                log.warn("스케줄 Cron 변경 실패: instanceId={}, error={}", instanceId, errorMsg);
+            }
+        }
     }
 }

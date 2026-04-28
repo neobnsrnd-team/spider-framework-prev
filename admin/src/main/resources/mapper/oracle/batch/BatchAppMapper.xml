@@ -234,5 +234,13 @@
         <include refid="orderByBatchApp"/>
     </select>
 
+    <!-- Cron 표현식 단독 업데이트 — 스케줄 변경 API 전용 -->
+    <update id="updateCronText">
+        UPDATE FWK_BATCH_APP
+           SET CRON_TEXT             = #{cronText, jdbcType=VARCHAR},
+               LAST_UPDATE_DTIME     = #{lastUpdateDtime},
+               LAST_UPDATE_USER_ID   = #{lastUpdateUserId}
+         WHERE BATCH_APP_ID = #{batchAppId}
+    </update>
 
 </mapper>

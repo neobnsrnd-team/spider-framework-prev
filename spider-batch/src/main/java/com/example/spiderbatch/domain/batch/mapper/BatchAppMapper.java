@@ -1,6 +1,8 @@
 package com.example.spiderbatch.domain.batch.mapper;
 
 import com.example.spiderbatch.domain.batch.dto.BatchAppInfo;
+import com.example.spiderbatch.domain.batch.dto.CronBatchInfo;
+import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -29,4 +31,13 @@ public interface BatchAppMapper {
      * @return BATCH_APP_NAME, CRON_TEXT를 담은 BatchAppInfo, 없으면 null
      */
     BatchAppInfo selectBatchAppInfo(@Param("batchAppId") String batchAppId);
+
+    /**
+     * 인스턴스에 배정된 배치 중 CRON_TEXT가 설정된 목록 조회.
+     * WAS 기동 시 Quartz 자동 등록 대상을 식별하기 위해 사용한다.
+     *
+     * @param instanceId WAS 인스턴스 ID (FWK_WAS_INSTANCE.INSTANCE_ID)
+     * @return CRON_TEXT가 있는 CronBatchInfo 목록
+     */
+    List<CronBatchInfo> selectCronBatchesByInstanceId(@Param("instanceId") String instanceId);
 }

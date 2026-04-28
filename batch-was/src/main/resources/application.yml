@@ -1,6 +1,17 @@
 spring:
   profiles:
     active: oracle
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  quartz:
+    # RAMJobStore: in-memory 저장 — WAS 재기동 시 등록된 Job이 초기화됨
+    # TODO: 운영 환경에서는 job-store-type: jdbc 로 전환하여 재기동 후에도 스케줄 복구 가능하게 할 것
+    job-store-type: memory
+    # WAS 기동 시 QuartzAutoRegistrar가 DB에서 CRON_TEXT를 읽어 직접 Job을 등록하므로 auto-startup은 true
+    auto-startup: true
+    wait-for-jobs-to-complete-on-shutdown: true
   batch:
     jdbc:
       # never: Spring Batch 메타 테이블을 자동 생성하지 않음 (Oracle은 always 설정 시 ORA-00955 오류)

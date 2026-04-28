@@ -308,4 +308,21 @@ public class BatchAppService {
 
         wasExecBatchMapper.deleteWasExecBatchById(batchAppId, instanceId);
     }
+
+    /**
+     * FWK_BATCH_APP.CRON_TEXT를 단독으로 업데이트한다.
+     * 스케줄 변경 API에서 전체 배치앱 정보를 수정하지 않고 Cron 표현식만 변경할 때 사용한다.
+     *
+     * @param batchAppId 배치 APP ID
+     * @param cronText   새 Cron 표현식
+     */
+    @Transactional
+    public void updateCronText(String batchAppId, String cronText) {
+        if (batchAppMapper.countByBatchAppId(batchAppId) == 0) {
+            throw new NotFoundException("batchAppId: " + batchAppId);
+        }
+        String now = AuditUtil.now();
+        String userId = AuditUtil.currentUserId();
+        batchAppMapper.updateCronText(batchAppId, cronText, now, userId);
+    }
 }

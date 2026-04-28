@@ -108,5 +108,12 @@
         LEFT JOIN FWK_WAS_INSTANCE wi ON web.INSTANCE_ID = wi.INSTANCE_ID
     </sql>
 
+    <!-- 배치에 배정된 활성 인스턴스 ID 조회 — 스케줄 Cron 변경 시 전체 인스턴스 TCP 전송에 사용 -->
+    <select id="selectActiveInstanceIds" resultType="String">
+        SELECT INSTANCE_ID
+        FROM   FWK_WAS_EXEC_BATCH
+        WHERE  BATCH_APP_ID = #{batchAppId}
+          AND  USE_YN       = 'Y'
+    </select>
 
 </mapper>
