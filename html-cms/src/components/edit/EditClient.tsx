@@ -375,6 +375,17 @@ export default function EditClient({
 
     // 슬라이드 편집 모달 (promo-banner / product-gallery)
     const [slideEditorBlock, setSlideEditorBlock] = useState<HTMLElement | null>(null);
+    // slideEditorBlock의 ref 버전 — message 핸들러(클로저) 내부에서 최신 상태를 동기적으로 읽기 위해 사용
+    const slideEditorBlockRef = useRef<HTMLElement | null>(null);
+    // slideEditorBlock 변경 시 ref를 최신 상태로 동기화.
+    // ASSET_SELECTED 핸들러에서 최신 slideEditorBlock을 동기적으로 읽기 위해 ref 사용.
+    useEffect(() => {
+        slideEditorBlockRef.current = slideEditorBlock;
+        // close 후 applyBehavior()를 즉시 호출하지 않는다.
+        // 즉시 호출 시 ContentBuilder가 row에 캐시된 스냅샷으로
+        // replaceWith(clone) 결과를 덮어쓴다.
+        // debouncedReinit이 ContentBuilder onChange 트리거에 의해 자연스럽게 실행된다.
+    }, [slideEditorBlock]);
 
     // 이미지 교체 picker 모달 — #fileEmbedImage 인터셉트 시 /cms/files를 iframe으로 띄움
     // 별도 브라우저 창(window.open) 대신 에디터 DOM 내부 모달로 표시해
@@ -414,6 +425,8 @@ export default function EditClient({
         const debouncedReinit = () => {
             if (reinitTimer) clearTimeout(reinitTimer);
             reinitTimer = setTimeout(async () => {
+                // DOM을 편집 중에 건드리지 않으므로 모달이 열려 있어도 reinit을 허용한다.
+
                 // reinitialize()가 비동기(플러그인 JS/CSS lazy-load)이므로 완료 후 applyBehavior() 호출
                 await runtimeRef.current?.reinitialize();
                 builderRef.current?.applyBehavior();
@@ -2011,6 +2024,13 @@ export default function EditClient({
 
             switch (event.data.type) {
                 case 'ASSET_SELECTED':
+                    // SlideEditorModal이 열려 있으면 openCmsFilesPicker 유틸이 자체 처리하므로 건너뜀.
+                    // DOM 제거 타이밍에 의존하는 getElementById 가드 대신 ref로 판단해 레이스를 제거한다.
+                    if (slideEditorBlockRef.current != null) {
+                        if (isOwnPicker) setImagePickerOpen(false);
+                        window.focus();
+                        break;
+                    }
                     builderRef.current?.selectAsset(event.data.url);
                     if (isOwnPicker) setImagePickerOpen(false);
                     window.focus();
@@ -2020,14 +2040,16 @@ export default function EditClient({
                     const replaceTarget = imageReplaceTargetRef.current;
 
                     if (replaceTarget && urls[0]) {
-                        // 이미지 교체 모드 — #fileEmbedImage 인터셉트로 연 EditClient 모달 경로
+                        // 이미지 교체 모드 — #fileEmbedImage 인터셉트로 연 EditClient 모달 경로.
+                        // SlideEditorModal 열림 여부와 무관하게 항상 처리한다.
                         replaceTarget.setAttribute('src', urls[0]);
                         imageReplaceTargetRef.current = null;
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ContentBuilder 내부 onChange
                         const onChange = (builderRef.current as any)?.opts?.onChange;
                         if (typeof onChange === 'function') onChange();
-                    } else {
-                        // 일반 삽입 모드 — ContentBuilder 내장 filePicker/imageSelect 경유 또는 activeImg 부재 케이스
+                    } else if (slideEditorBlockRef.current == null) {
+                        // SlideEditorModal이 닫혀 있을 때만 ContentBuilder에 이미지를 삽입한다.
+                        // 열려 있으면 openCmsFilesPicker 유틸이 자체 처리하므로 건너뜀.
                         urls.forEach((url) => builderRef.current?.selectAsset(url));
                     }
                     if (isOwnPicker) setImagePickerOpen(false);
