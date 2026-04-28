@@ -35,6 +35,15 @@ batch:
     archive-dir: ${BATCH_FILE_ARCHIVE_DIR:./batch-files/archive}
     error-dir: ${BATCH_FILE_ERROR_DIR:./batch-files/error}
 
+notification:
+  email:
+    # NOTIFICATION_EMAIL_TO 환경변수로 수신 주소 설정 (미설정 시 Email 알림 생략)
+    to: ${NOTIFICATION_EMAIL_TO:}
+
+# SMTP 설정은 .env에 SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD 추가 시 자동 활성화.
+# spring.mail.host 값이 있으면 Spring Boot가 JavaMailSender Bean을 자동 등록하여 실 발송으로 전환.
+# 미설정 시 EmailNotificationService가 로그 출력(Mock)으로 동작.
+
 management:
   endpoints:
     web:

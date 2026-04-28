@@ -7,6 +7,8 @@ import com.example.spiderbatch.domain.batch.service.BatchExecuteService;
 import com.example.spiderbatch.domain.batch.service.BatchMonitorService;
 import com.example.spiderbatch.domain.batch.service.DefaultBatchHistoryRecorder;
 import com.example.spiderbatch.global.log.BatchAuditLogger;
+import com.example.spiderbatch.global.notification.EmailNotificationService;
+import com.example.spiderbatch.global.notification.SlackNotificationService;
 import com.example.spiderbatch.global.security.ApiKeyAuthFilter;
 import com.example.spiderbatch.global.security.BatchWasSecurityConfig;
 import com.example.spiderbatch.spi.BatchHistoryRecorder;
@@ -52,6 +54,9 @@ import org.springframework.context.annotation.Import;
         BatchMonitorService.class,
         BatchExecuteController.class,
         BatchMonitorController.class,
+        // 알림 서비스 — 환경변수 미설정 시 no-op (Slack: SLACK_WEBHOOK_URL, Email: SMTP_HOST)
+        SlackNotificationService.class,
+        EmailNotificationService.class,
 })
 public class SpiderBatchAutoConfiguration {
 

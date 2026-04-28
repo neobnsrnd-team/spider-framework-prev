@@ -63,6 +63,12 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Email 알림: spring.mail.* 설정 시 실 발송, 미설정 시 Mock(로그 출력) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

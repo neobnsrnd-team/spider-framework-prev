@@ -2,6 +2,7 @@ package com.example.spiderbatch.job.file2db;
 
 import com.example.spiderbatch.job.common.BatchJobParametersValidator;
 import com.example.spiderbatch.job.common.PocUser;
+import com.example.spiderbatch.job.listener.BatchNotificationListener;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,7 @@ public class File2DbJobConfig {
     private static final int CHUNK_SIZE = 5;
 
     private final DataSource dataSource;
+    private final BatchNotificationListener batchNotificationListener;
 
     /**
      * File2DBJob.
@@ -50,6 +52,7 @@ public class File2DbJobConfig {
     public Job file2DbJob(JobRepository jobRepository, Step file2DbStep) {
         return new JobBuilder("file2db", jobRepository)
                 .validator(new BatchJobParametersValidator())
+                .listener(batchNotificationListener)
                 .start(file2DbStep)
                 .build();
     }

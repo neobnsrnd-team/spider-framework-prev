@@ -235,12 +235,24 @@
                             </tr>
                             <tr>
                                 <th>입출력 구분</th>
-                                <td colspan="3">
+                                <td>
                                     <select id="modalIoType" class="form-select w-auto">
                                         <option value="">선택</option>
                                         <option value="I">입력(I)</option>
                                         <option value="O">출력(O)</option>
                                     </select>
+                                </td>
+                                <th>SLA 허용 시간</th>
+                                <td>
+                                    <div class="input-group input-group-sm" style="width: 220px;">
+                                        <input type="number"
+                                               id="modalSlaSeconds"
+                                               class="form-control form-control-sm"
+                                               min="1"
+                                               placeholder="미설정 시 미적용" />
+                                        <span class="input-group-text">초</span>
+                                    </div>
+                                    <div class="hint-text">초과 시 Slack 에스컬레이션 알림 발송</div>
                                 </td>
                             </tr>
                         </tbody>
@@ -358,6 +370,7 @@
             $('#modalOrgId').val('');
             $('#modalTrxId').val('');
             $('#modalIoType').val('');
+            $('#modalSlaSeconds').val('');
             this.assignedInstanceIds = new Set();
             this.renderAssignedInstances();
         },
@@ -497,6 +510,7 @@
                         $('#modalOrgId').val(batchApp.orgId || '');
                         $('#modalTrxId').val(batchApp.trxId || '');
                         $('#modalIoType').val(batchApp.ioType || '');
+                        $('#modalSlaSeconds').val(batchApp.slaSeconds != null ? batchApp.slaSeconds : '');
 
                         // 인스턴스 정보 설정
                         this.allInstances = data.allInstances || [];
@@ -672,6 +686,7 @@
                 orgId: $('#modalOrgId').val().trim() || null,
                 trxId: $('#modalTrxId').val().trim() || null,
                 ioType: $('#modalIoType').val() || null,
+                slaSeconds: $('#modalSlaSeconds').val() ? parseInt($('#modalSlaSeconds').val(), 10) : null,
                 instanceIds: Array.from(this.assignedInstanceIds)
             };
 
