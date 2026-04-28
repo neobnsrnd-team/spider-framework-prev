@@ -31,4 +31,14 @@ public interface WorkListMapper {
      * <p>FIRST_INSERT_USER_ID는 변경하지 않는다 (as-is 동일).
      */
     int transfer(Map<String, Object> params);
+
+    /**
+     * 변경 이력 UPSERT.
+     *
+     * <p>(WORK_ID, WORK_DATA_PK) 기준으로 사용자 소속 항목이 이미 존재하면 UPDATE,
+     * 없으면 INSERT. GROUP_ID 기본값은 userId+'001'.
+     *
+     * <p>파라미터 키: workId, workDataPk, workName, crudType, userId
+     */
+    void upsertHistory(Map<String, Object> params);
 }

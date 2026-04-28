@@ -7,6 +7,7 @@ import com.example.admin_demo.domain.codegroup.dto.CodeGroupResponse;
 import com.example.admin_demo.domain.codegroup.dto.CodeGroupUpdateRequest;
 import com.example.admin_demo.domain.codegroup.dto.CodeGroupWithCodesResponse;
 import com.example.admin_demo.domain.codegroup.mapper.CodeGroupMapper;
+import com.example.admin_demo.global.aop.WorkListRecord;
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.exception.DuplicateException;
@@ -63,6 +64,7 @@ public class CodeGroupService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "Codegroup", crudType = "C", pkExpression = "#dto.codeGroupId", workName = "코드그룹")
     public CodeGroupWithCodesResponse createCodeGroupWithCodes(CodeGroupCreateRequest dto) {
         if (codeGroupMapper.countByCodeGroupId(dto.getCodeGroupId()) > 0) {
             throw new DuplicateException("codeGroupId: " + dto.getCodeGroupId());
@@ -87,6 +89,7 @@ public class CodeGroupService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "Codegroup", crudType = "U", pkExpression = "#codeGroupId", workName = "코드그룹")
     public CodeGroupWithCodesResponse updateCodeGroupWithCodes(String codeGroupId, CodeGroupUpdateRequest dto) {
         CodeGroupResponse existing = codeGroupMapper.selectResponseById(codeGroupId);
         if (existing == null) {
@@ -114,6 +117,7 @@ public class CodeGroupService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "Codegroup", crudType = "D", pkExpression = "#codeGroupId", workName = "코드그룹")
     public void deleteCodeGroupWithCodes(String codeGroupId) {
         if (codeGroupMapper.countByCodeGroupId(codeGroupId) == 0) {
             throw new NotFoundException("codeGroupId: " + codeGroupId);

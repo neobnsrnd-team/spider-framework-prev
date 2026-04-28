@@ -110,4 +110,39 @@
           AND LENGTH(#{fromUserId}) + 3 = LENGTH(GROUP_ID)
     </update>
 
+
+    <!--
+        변경 이력 UPSERT (AOP Hook 전용).
+        (WORK_ID, WORK_DATA_PK) 기준으로 사용자 소속 항목이 있으면 UPDATE, 없으면 INSERT.
+        GROUP_ID 기본값: userId + '001' (사용자 기본 그룹).
+        WORK_SEQ: INSERT 시 MAX+1 채번 (동시성 이슈가 낮은 관리자 화면 용도).
+    -->
+    <update id="upsertHistory" parameterType="map">
+        MERGE INTO FWK_WORK_LIST T
+        USING (SELECT 1 FROM DUAL) S
+        ON (
+            T.WORK_ID       = #{workId}
+            AND T.WORK_DATA_PK   = #{workDataPk}
+            AND T.GROUP_ID LIKE #{userId} || '%'
+            AND LENGTH(#{userId}) + 3 = LENGTH(T.GROUP_ID)
+        )
+        WHEN MATCHED THEN
+            UPDATE SET
+                T.WORK_NAME           = #{workName},
+                T.CRUD_TYPE           = #{crudType},
+                T.LAST_UPDATE_DTIME   = TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'),
+                T.LAST_UPDATE_USER_ID = #{userId}
+        WHEN NOT MATCHED THEN
+            INSERT (
+                WORK_SEQ, WORK_ID, WORK_DATA_PK, WORK_NAME, CRUD_TYPE,
+                LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID,
+                DIST_YN, GROUP_ID, FIRST_INSERT_USER_ID
+            ) VALUES (
+                (SELECT NVL(MAX(WORK_SEQ), 0) + 1 FROM FWK_WORK_LIST),
+                #{workId}, #{workDataPk}, #{workName}, #{crudType},
+                TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'), #{userId},
+                'N', #{userId} || '001', #{userId}
+            )
+    </update>
+
 </mapper>
