@@ -314,10 +314,25 @@
                     data: JSON.stringify(requestData),
                     success: (response) => {
                         if (response.success) {
-                            Toast.success(response.message || '배치 실행 요청이 등록되었습니다.');
+                            // 전체 성공: 성공 토스트 + 모달 닫기
+                            Toast.success(response.message || '배치 실행이 완료되었습니다.');
                             this.close();
                         } else {
-                            Toast.error('실행 실패: ' + (response.message || '알 수 없는 오류'));
+                            // 실패 인스턴스 목록 추출 (response.data에 포함)
+                            const results = response.data || [];
+                            const failedIds = results
+                                .filter(r => r.resRtCode === '9')
+                                .map(r => r.instanceId)
+                                .join(', ');
+                            const msg = (response.message || '') + (failedIds ? ` [실패: ${failedIds}]` : '');
+
+                            if (results.length > 0 && results.every(r => r.resRtCode === '9')) {
+                                // 전체 실패: 에러 토스트, 모달 유지
+                                Toast.error(msg || '배치 실행이 실패하였습니다. 실행 이력을 확인하세요.');
+                            } else {
+                                // 부분 실패: 경고 토스트, 모달 유지
+                                Toast.warning(msg || '일부 배치 실행에 실패하였습니다. 실행 이력을 확인하세요.');
+                            }
                         }
                     },
                     error: (xhr) => {
