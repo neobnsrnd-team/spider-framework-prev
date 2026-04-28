@@ -4,7 +4,7 @@
  *
  * Admin에서 배포된 긴급공지를 화면 중앙 모달로 표시한다.
  * 언어 설정에 따라 한국어(EMERGENCY_KO) 또는 영어(EMERGENCY_EN) 공지를 표시하며,
- * 현재는 한국어를 기본으로 표시한다.
+ * 브라우저 언어(navigator.language)가 'en'으로 시작하면 영어를, 그 외에는 한국어를 기본으로 표시한다.
  *
  * 줄바꿈 마커(_$BR) 처리:
  *   DB에 저장된 _$BR 마커를 줄바꿈으로 변환하여 렌더링한다.
@@ -29,7 +29,7 @@ interface EmergencyNoticeBannerProps {
   onClose?: () => void;
   /** 미리보기 모드에서 localStorage 오늘 하루 보지 않기 설정을 무시하고 강제 표시한다. */
   forceOpen?: boolean;
-  /** 표시할 언어 코드 (예: 'EMERGENCY_KO' | 'EMERGENCY_EN'). 생략 시 한국어(EMERGENCY_KO)를 기본으로 사용한다. */
+  /** 표시할 언어 코드 (예: 'EMERGENCY_KO' | 'EMERGENCY_EN'). 생략 시 브라우저 언어를 기반으로 자동 결정한다. */
   lang?: string;
 }
 
@@ -60,7 +60,7 @@ function parseContent(content: string): string {
   return content.replace(/_\$BR/g, "\n");
 }
 
-export function EmergencyNoticeBanner({ data, onClose, forceOpen = false, lang = "EMERGENCY_KO" }: EmergencyNoticeBannerProps) {
+export function EmergencyNoticeBanner({ data, onClose, forceOpen = false, lang = navigator.language.startsWith("en") ? "EMERGENCY_EN" : "EMERGENCY_KO" }: EmergencyNoticeBannerProps) {
   const [hideToday, setHideToday] = useState(false);
 
   /* 닫기 버튼 허용 여부 — N이면 사용자가 모달을 닫을 수 없음 (critical 장애 시) */

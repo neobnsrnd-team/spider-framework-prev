@@ -10,15 +10,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * Admin → spider-link 간 TCP 통신 어댑터.
+ * Admin → biz-channel 내장 TCP 서버 통신 어댑터.
  *
  * <p>JsonCommandRequest를 4바이트 길이 프리픽스 + UTF-8 JSON 형식으로 전송한다.</p>
  *
- * <p>분리 이전: Admin이 직접 demo/backend(9997)로 JSON TCP 전송<br>
- * 분리 이후:  Admin이 spider-link(9996)로 JSON TCP 전송 →
- *             spider-link가 demo/backend(9997)로 프록시</p>
+ * <p>biz-channel은 spider-link를 내장하여 TCP 서버(기본 9997)를 직접 운영한다.
+ * standalone spider-link 프로세스 없이 biz-channel 기동만으로 통신이 가능하다.</p>
  *
- * <p>설정값 {@code tcp.demo-backend.host/port}는 실제로 spider-link 주소를 가리킨다.</p>
+ * <p>설정값 {@code tcp.demo-backend.host/port}는 biz-channel 내장 TCP 서버 주소를 가리킨다.</p>
  */
 @Slf4j
 @Component
@@ -30,10 +29,10 @@ public class DemoBackendAdapter implements ManagementAdapter<JsonCommandRequest,
     @Value("${tcp.demo-backend.host:localhost}")
     private String demoBackendHost;
 
-    @Value("${tcp.demo-backend.port:9996}")
+    @Value("${tcp.demo-backend.port:19400}")
     private int demoBackendPort;
 
-    /** spider-link는 항상 별도 프로세스이므로 로컬 실행 없음 */
+    /** biz-channel은 별도 프로세스이므로 로컬 실행 없음 */
     @Override
     public boolean isLocal() {
         return false;
@@ -58,7 +57,7 @@ public class DemoBackendAdapter implements ManagementAdapter<JsonCommandRequest,
             return tcpClient.sendJson(demoBackendHost, demoBackendPort, req);
         } catch (IOException e) {
             log.error(
-                    "[DemoBackendAdapter] TCP 전송 실패: command={}, host={}:{}, error={} — spider-link가 기동 중인지 확인하세요.",
+                    "[DemoBackendAdapter] TCP 전송 실패: command={}, host={}:{}, error={} — biz-channel이 기동 중인지 확인하세요.",
                     command,
                     demoBackendHost,
                     demoBackendPort,
