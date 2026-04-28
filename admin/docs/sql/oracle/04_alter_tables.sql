@@ -683,3 +683,37 @@ INSERT INTO FWK_RELATION_PARAM (SERVICE_ID, SERVICE_SEQ_NO, COMPONENT_ID, PARAM_
 VALUES ('SVC_BIZ_PAYABLE_AMT', 1, 'BIZ_TCP_CORE_PAYABLE_AMT', 2, 'cardId');
 
 COMMIT;
+
+-- =============================================================
+-- #248 Admin 동적 리로드 — WAS 인스턴스 및 관리 포트 등록
+-- =============================================================
+-- ※ 개발자가 DB에서 직접 실행해야 합니다.
+-- Admin 운영정보 → Reload 화면에서 biz-auth / biz-transfer 대상 선택 가능해짐.
+-- 실행 전 중복 확인:
+--   SELECT * FROM FWK_WAS_INSTANCE WHERE INSTANCE_ID IN ('auth', 'trf');
+--   SELECT * FROM FWK_PROPERTY WHERE PROPERTY_GROUP_ID = 'was_config';
+-- =============================================================
+
+-- Step 1: biz-auth WAS 인스턴스 등록
+INSERT INTO FWK_WAS_INSTANCE (INSTANCE_ID, INSTANCE_NAME, INSTANCE_DESC, INSTANCE_TYPE, IP, PORT, OPER_MODE_TYPE)
+VALUES ('auth', 'biz-auth', '인증 AP 서버 (TCP:19100 / HTTP:19180)', 'A', '127.0.0.1', '19100', 'D');
+
+-- Step 2: biz-transfer WAS 인스턴스 등록
+INSERT INTO FWK_WAS_INSTANCE (INSTANCE_ID, INSTANCE_NAME, INSTANCE_DESC, INSTANCE_TYPE, IP, PORT, OPER_MODE_TYPE)
+VALUES ('trf', 'biz-transfer', '이체 AP 서버 (TCP:19200 / HTTP:19280)', 'A', '127.0.0.1', '19200', 'D');
+
+-- Step 3: biz-auth 관리 포트 FWK_PROPERTY 등록
+INSERT INTO FWK_PROPERTY (PROPERTY_GROUP_ID, PROPERTY_ID, PROPERTY_NAME, PROPERTY_DESC, DATA_TYPE, DEFAULT_VALUE, LAST_UPDATE_USER_ID)
+VALUES ('was_config', 'auth.MANAGEMENT_SERVER_IP', 'biz-auth 관리 서버 IP', 'Admin reload API 대상 IP', 'S', '127.0.0.1', 'system');
+
+INSERT INTO FWK_PROPERTY (PROPERTY_GROUP_ID, PROPERTY_ID, PROPERTY_NAME, PROPERTY_DESC, DATA_TYPE, DEFAULT_VALUE, LAST_UPDATE_USER_ID)
+VALUES ('was_config', 'auth.MANAGEMENT_SERVER_PORT', 'biz-auth 관리 서버 포트', 'Admin reload API 대상 포트', 'N', '19180', 'system');
+
+-- Step 4: biz-transfer 관리 포트 FWK_PROPERTY 등록
+INSERT INTO FWK_PROPERTY (PROPERTY_GROUP_ID, PROPERTY_ID, PROPERTY_NAME, PROPERTY_DESC, DATA_TYPE, DEFAULT_VALUE, LAST_UPDATE_USER_ID)
+VALUES ('was_config', 'trf.MANAGEMENT_SERVER_IP', 'biz-transfer 관리 서버 IP', 'Admin reload API 대상 IP', 'S', '127.0.0.1', 'system');
+
+INSERT INTO FWK_PROPERTY (PROPERTY_GROUP_ID, PROPERTY_ID, PROPERTY_NAME, PROPERTY_DESC, DATA_TYPE, DEFAULT_VALUE, LAST_UPDATE_USER_ID)
+VALUES ('was_config', 'trf.MANAGEMENT_SERVER_PORT', 'biz-transfer 관리 서버 포트', 'Admin reload API 대상 포트', 'N', '19280', 'system');
+
+COMMIT;
