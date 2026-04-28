@@ -23,6 +23,7 @@ interface PromoBannerSlide {
 }
 
 interface ProductGalleryCard {
+    itemId: string; // React key 및 DOM data-item-id — crypto.randomUUID()로 생성
     type: 'savings' | 'deposit' | 'loan';
     badge: string;
     productName: string;
@@ -78,6 +79,8 @@ function parseCard(inner: HTMLElement | null): ProductGalleryCard {
           })()
         : undefined;
     return {
+        // DOM에서 data-item-id를 읽거나 없으면 UUID 생성 (React key 안정성 보장)
+        itemId: inner?.getAttribute('data-item-id') ?? `pg-${crypto.randomUUID()}`,
         type: (inner?.getAttribute('data-type') ?? 'savings') as ProductGalleryCard['type'],
         badge: inner?.querySelector('[data-pg-field="badge"]')?.textContent ?? '',
         productName: inner?.querySelector('[data-pg-field="productName"]')?.textContent ?? '',
@@ -202,7 +205,7 @@ const DEFAULT_SLIDE: PromoBannerSlide = {
     ctaHref: '#',
 };
 
-const DEFAULT_CARD: ProductGalleryCard = {
+const DEFAULT_CARD: Omit<ProductGalleryCard, 'itemId'> = {
     type: 'savings',
     badge: '적금',
     productName: '새 상품명',
@@ -457,7 +460,7 @@ function PromoSlidesEditor({
     const update = (idx: number, patch: Partial<PromoBannerSlide>) =>
         onChange((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
 
-    const add = () => onChange((prev) => [...prev, { ...DEFAULT_SLIDE, itemId: `pb-${Date.now()}` }]);
+    const add = () => onChange((prev) => [...prev, { ...DEFAULT_SLIDE, itemId: `pb-${crypto.randomUUID()}` }]);
 
     const remove = (idx: number) => onChange((prev) => prev.filter((_, i) => i !== idx));
 
@@ -699,7 +702,7 @@ function ProductCardsEditor({
     const update = (idx: number, patch: Partial<ProductGalleryCard>) =>
         onChange((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)));
 
-    const add = () => onChange((prev) => [...prev, { ...DEFAULT_CARD }]);
+    const add = () => onChange((prev) => [...prev, { ...DEFAULT_CARD, itemId: `pg-${crypto.randomUUID()}` }]);
 
     const remove = (idx: number) => onChange((prev) => prev.filter((_, i) => i !== idx));
 
@@ -707,7 +710,7 @@ function ProductCardsEditor({
         <>
             {cards.map((card, idx) => (
                 <div
-                    key={idx}
+                    key={card.itemId}
                     style={{
                         border: '1px solid #e5e7eb',
                         borderRadius: '8px',
