@@ -69,6 +69,17 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
         log.info("[MetaDrivenCommandHandler] 등록된 커맨드 {}개 로드: {}", supportedCommands.size(), supportedCommands);
     }
 
+    /**
+     * 지원 커맨드 캐시를 DB에서 다시 로드한다.
+     *
+     * <p>Admin에서 FWK_LISTENER_TRX_MESSAGE 변경 후 재기동 없이 반영할 때
+     * {@code POST /api/management/reload} (gubun=request_app_mapping) 호출 시 실행된다.</p>
+     */
+    public void refreshCommands() {
+        supportedCommands = new HashSet<>(metaRoutingMapper.selectRegisteredCommands(GW_ID));
+        log.info("[MetaDrivenCommandHandler] 커맨드 캐시 갱신 완료: {}개 — {}", supportedCommands.size(), supportedCommands);
+    }
+
     @Override
     public boolean supports(String command) {
         return supportedCommands.contains(command);

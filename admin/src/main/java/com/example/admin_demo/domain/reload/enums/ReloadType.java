@@ -18,7 +18,7 @@ public enum ReloadType implements BaseEnum {
     SERVICE("service_reload_all", "서비스 정보", "서비스 정보를 Reload한다."),
     ERROR("error", "오류 코드 정보", "오류코드 정보를 Reload한다."),
     XML_PROPERTY("xml_property", "XML Property 정보", "XML Property 정보를 Reload한다.", false),
-    MESSAGE("message", "전문 정보", "전문정보를 Reload한다.", false),
+    MESSAGE("message", "전문 정보", "전문정보를 Reload한다."),
     SQL_QUERY("sql_query", "SQL Query 정보", "SQL Query 정보를 Reload한다.", false);
 
     private final String code;

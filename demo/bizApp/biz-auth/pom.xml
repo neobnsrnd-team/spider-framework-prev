@@ -24,6 +24,12 @@
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
+        <!-- Admin reload API(/api/management/reload) 수신을 위한 내장 웹 서버 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
         <!-- Jackson — ObjectMapper 빈 자동 구성 (JsonMessageCodec, TcpClient 의존) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

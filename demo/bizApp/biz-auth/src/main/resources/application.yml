@@ -4,8 +4,6 @@ spring:
   config:
     import: optional:file:.env[.properties]
   main:
-    # HTTP 서버 없이 순수 TCP 서버로 동작 (spring-boot-starter 전용)
-    web-application-type: none
     keep-alive: true
   datasource:
     url: ${DB_URL}
@@ -19,6 +17,10 @@ spring:
 mybatis:
   # classpath*: 로 spider-link JAR 내부 XML까지 탐색
   mapper-locations: classpath*:mapper/oracle/**/*.xml
+
+server:
+  # Admin reload API 수신용 HTTP 관리 포트 (TCP 포트와 별도)
+  port: ${HTTP_SERVER_PORT:19180}
 
 tcp:
   server:
