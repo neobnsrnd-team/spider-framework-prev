@@ -58,6 +58,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- MyBatis — @MapperScan 어노테이션 + MetaDrivenCommandHandler 매퍼 스캔 (spider-link에서 optional이라 전이 안 됨) -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>3.0.3</version>
+        </dependency>
+
         <!-- Lombok — 컴파일 타임 코드 생성, 런타임 불필요 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
