@@ -248,8 +248,11 @@ public class FixedLengthParser {
     @SuppressWarnings("unchecked")
     private void serializeLoopField(LoopField loop, Map<String, Object> data,
                                     ByteArrayOutputStream out) throws IOException {
-        List<Map<String, Object>> items =
-                (List<Map<String, Object>>) data.getOrDefault(loop.getName(), List.of());
+        Object raw = data.getOrDefault(loop.getName(), List.of());
+        // List 타입이 아닌 값이 들어올 경우 ClassCastException 방지
+        List<Map<String, Object>> items = (raw instanceof List<?> list)
+                ? (List<Map<String, Object>>) list
+                : List.of();
 
         // length > 0: 반복 횟수를 전문에 직접 기술하는 방식 (defaultValue 참조 방식과 구분)
         if (loop.getLength() > 0) {

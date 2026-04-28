@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
@@ -23,6 +24,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 // @ConditionalOnBean(JdbcTemplate.class) 조건을 올바르게 평가할 수 있다
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
 @ConditionalOnClass(JdbcTemplate.class)
+@Import(SpiderLinkMessageConfig.class)
 public class SpiderLinkAutoConfiguration {
 
     /**

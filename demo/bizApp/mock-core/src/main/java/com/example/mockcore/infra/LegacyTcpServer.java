@@ -16,7 +16,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -59,7 +60,9 @@ public class LegacyTcpServer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         handlerMap = handlers.stream()
                 .collect(Collectors.toMap(LegacyCoreHandler::getCommand, Function.identity()));
-        threadPool = Executors.newFixedThreadPool(poolSize);
+        // 무제한 큐 대신 유한 큐(100)를 사용하여 요청 폭주 시 OOM 방지
+        threadPool = new ThreadPoolExecutor(poolSize, poolSize,
+                0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(100));
         serverSocket = new ServerSocket(port);
         log.info("[LegacyTcpServer] TCP 서버 시작: port={}, handlers={}", port, handlerMap.keySet());
 

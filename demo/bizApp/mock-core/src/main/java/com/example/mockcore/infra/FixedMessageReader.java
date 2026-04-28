@@ -19,7 +19,8 @@ public class FixedMessageReader {
 
     /** C 타입: 지정 길이를 읽어 앞뒤 공백 제거 후 반환 */
     public String readC(int len) {
-        String val = new String(data, pos, safe(len));
+        int actual = safe(len);
+        String val = (actual > 0) ? new String(data, pos, actual) : "";
         pos += len;
         return val.trim();
     }
@@ -32,7 +33,7 @@ public class FixedMessageReader {
     /** K 타입: 지정 길이를 EUC-KR로 디코딩 후 앞뒤 공백 제거 반환 */
     public String readK(int len) {
         int actual = safe(len);
-        String val = new String(data, pos, actual, Charset.forName("EUC-KR"));
+        String val = (actual > 0) ? new String(data, pos, actual, Charset.forName("EUC-KR")) : "";
         pos += len;
         return val.trim();
     }
@@ -43,6 +44,7 @@ public class FixedMessageReader {
     }
 
     private int safe(int len) {
-        return Math.min(len, data.length - pos);
+        if (pos < 0 || pos >= data.length) return 0;
+        return Math.max(0, Math.min(len, data.length - pos));
     }
 }
