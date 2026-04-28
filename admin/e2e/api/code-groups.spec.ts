@@ -58,7 +58,8 @@ test.describe('/api/code-groups/page — 페이지네이션 조회', () => {
 
     test('검색 필터 적용 시 일치하는 결과만 반환해야 한다', async ({ request }) => {
         const id = uniqueId();
-        const createRes = await request.post('/api/code-groups/with-codes', { data: buildCreateData(id, 'SearchGroup') });
+        // 병렬 워커 간 이름 충돌 방지 — id가 이미 유일하므로 이름에 포함
+        const createRes = await request.post('/api/code-groups/with-codes', { data: buildCreateData(id, 'SearchGrp-' + id) });
         expect(createRes.status()).toBe(201);
 
         try {

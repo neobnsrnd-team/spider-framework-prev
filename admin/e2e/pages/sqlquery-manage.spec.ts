@@ -12,7 +12,7 @@ async function createSqlQuery(request: APIRequestContext, id: string, name: stri
         data: {
             queryId: id,
             queryName: name,
-            sqlGroupId: '',
+            sqlGroupId: 'E2E-SG',  // UI 유효성 검사 통과 위해 비워두지 않음
             dbId: 'e2e-ds-001',
             sqlType: 'SELECT',
             execType: 'SYNC',
@@ -126,6 +126,9 @@ test.describe('SQL Query CRUD', () => {
             await page.locator('#sqModalCacheYn').selectOption('N');
             await page.locator('#sqModalUseYn').selectOption('Y');
             await page.locator('#sqModalSqlQuery').fill('SELECT 1 FROM DUAL');
+            // _validateForm()이 sqlGroupId, queryDesc 필수 검증 → 비워두면 POST가 전송되지 않음
+            await page.locator('#sqModalSqlGroupId').fill('E2E-SG');
+            await page.locator('#sqModalQueryDesc').fill('E2E 테스트용');
 
             // 저장 클릭 및 응답 대기
             const responsePromise = page.waitForResponse(r =>

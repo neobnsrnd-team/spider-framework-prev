@@ -53,6 +53,25 @@
   └─────────────────────┴───────────────────────────────────────────────────┘
 ```
 
+## 빌드 순서 및 의존 관계
+
+일부 모듈은 Maven 로컬 저장소에 먼저 설치되어야 하는 **라이브러리 의존 관계**가 있다.
+
+```
+spider-link  →  spider-batch  →  admin
+    ↓
+  (모든 bizApp 서버)
+```
+
+| 순서 | 모듈 | 명령 | 이유 |
+|------|------|------|------|
+| 1 | spider-link | `mvn install -f spider-link/pom.xml` | spider-batch·admin·bizApp 서버가 의존 |
+| 2 | spider-batch | `mvn install -f spider-batch/pom.xml` | spider-link에 의존, admin이 의존 |
+| 3 | admin 등 | `mvn package -f admin/pom.xml` | 위 두 라이브러리가 로컬 저장소에 있어야 빌드 가능 |
+
+> **CI/CD**: GitHub Actions(`ci.yml`)가 위 순서를 자동으로 보장하므로, CI 환경에서는 수동 실행 불필요.  
+> **로컬 최초 세팅 또는 spider-link·spider-batch 변경 시**에는 위 순서대로 직접 `mvn install`을 실행해야 한다.
+
 ## 각 모듈 개요
 
 ### admin

@@ -31,6 +31,19 @@ tcp:
     host: ${TCP_EXT_HOST:${MOCK_CORE_HOST:localhost}}
     port: ${TCP_EXT_PORT:${MOCK_CORE_PORT:19300}}
 
+app:
+  org-id: ${APP_ORG_ID:DEMO}
+
+mybatis:
+  # spider-link JAR 내부의 XML 매퍼 파일 위치를 명시한다 (spider-link에서 optional로 선언되어 자동 적용 안 됨)
+  mapper-locations: classpath:mapper/oracle/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: VARCHAR
+    lazy-loading-enabled: false
+    cache-enabled: false
+    auto-mapping-behavior: PARTIAL
+
 logging:
   level:
     com.example.bizauth: DEBUG
