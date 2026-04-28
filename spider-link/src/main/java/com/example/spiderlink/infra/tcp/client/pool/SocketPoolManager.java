@@ -46,11 +46,18 @@ public class SocketPoolManager implements SmartLifecycle {
      * @throws IOException 연결 실패 또는 풀 고갈 타임아웃
      */
     public PooledSocket borrow(String host, int port) throws IOException {
+        // stop() 이후 신규 소켓 생성 차단 — Context 종료 중 연결 시도 방지
+        if (!running) {
+            throw new IOException("[SocketPoolManager] 매니저가 중지 상태 — 소켓 대여 불가");
+        }
         return getOrCreate(host, port).borrow();
     }
 
     /**
      * 소켓을 풀에 반납한다.
+     *
+     * <p>stop() 이후 pools 맵이 비워진 상태에서 지연된 응답이 반납될 수 있으므로,
+     * pools.get()으로 기존 풀이 있을 때만 반납하고 없으면 소켓을 즉시 폐기한다.</p>
      *
      * @param host    대상 호스트
      * @param port    대상 포트
@@ -58,7 +65,13 @@ public class SocketPoolManager implements SmartLifecycle {
      * @param success 통신 성공 여부 — false면 소켓 폐기
      */
     public void release(String host, int port, PooledSocket pooled, boolean success) {
-        getOrCreate(host, port).release(pooled, success);
+        SocketPool pool = pools.get(host + ":" + port);
+        if (pool != null) {
+            pool.release(pooled, success);
+        } else {
+            // shutdown 완료 후 반납 — 풀이 이미 제거됐으므로 소켓 직접 폐기
+            pooled.invalidate();
+        }
     }
 
     /**

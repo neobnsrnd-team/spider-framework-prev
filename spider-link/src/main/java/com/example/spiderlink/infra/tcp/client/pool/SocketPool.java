@@ -91,7 +91,7 @@ public class SocketPool {
                             host, port, totalCount, MAX_ACTIVE));
                 }
                 try {
-                    lock.wait(Math.min(remaining, 100));
+                    lock.wait(remaining);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new IOException("[SocketPool] borrow 대기 중 인터럽트", e);
