@@ -1,16 +1,20 @@
 package com.example.admin_demo.domain.worklist.controller;
 
+import com.example.admin_demo.domain.worklist.dto.WorkListApprovalRequest;
 import com.example.admin_demo.domain.worklist.dto.WorkListGroupMoveRequest;
 import com.example.admin_demo.domain.worklist.dto.WorkListResponse;
 import com.example.admin_demo.domain.worklist.dto.WorkListTransferRequest;
 import com.example.admin_demo.domain.worklist.service.WorkListService;
 import com.example.admin_demo.global.dto.ApiResponse;
+import com.example.admin_demo.global.security.CustomUserDetails;
+import com.example.admin_demo.global.util.SecurityUtil;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -56,5 +60,14 @@ public class WorkListController {
     public ResponseEntity<ApiResponse<Void>> transfer(@Valid @RequestBody WorkListTransferRequest request) {
         workListService.transfer(request);
         return ResponseEntity.ok(ApiResponse.success("권한이양이 완료되었습니다.", null));
+    }
+
+    /** 결재요청 — FWK_SETTLEMENT 레코드 생성 후 선택 항목 APPROVAL_SEQ 갱신. */
+    @PostMapping("/approval")
+    @PreAuthorize("hasAuthority('WORK_TASK:W')")
+    public ResponseEntity<ApiResponse<Void>> createApproval(@Valid @RequestBody WorkListApprovalRequest request) {
+        CustomUserDetails currentUser = SecurityUtil.getCurrentUser();
+        workListService.createApproval(request, currentUser.getUserId());
+        return ResponseEntity.ok(ApiResponse.success("결재요청이 완료되었습니다.", null));
     }
 }

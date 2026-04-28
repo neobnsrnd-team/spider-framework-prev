@@ -41,4 +41,11 @@ public interface WorkListMapper {
      * <p>파라미터 키: workId, workDataPk, workName, crudType, userId
      */
     void upsertHistory(Map<String, Object> params);
+
+    /**
+     * 결재요청 — APPROVAL_SEQ를 FWK_SETTLEMENT의 APPROVAL_ID로 갱신.
+     *
+     * <p>파라미터 키: approvalId, workSeqs
+     */
+    int updateApprovalSeq(Map<String, Object> params);
 }

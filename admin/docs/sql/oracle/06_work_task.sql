@@ -80,8 +80,9 @@ CREATE INDEX IDX_FWK_WORK_LIST_USER  ON FWK_WORK_LIST (FIRST_INSERT_USER_ID);
 -- =============================================================
 -- 4. guest01 권한 부여
 -- =============================================================
-GRANT SELECT, INSERT, UPDATE, DELETE ON FWK_WORK_GROUP TO guest01;
-GRANT SELECT, INSERT, UPDATE, DELETE ON FWK_WORK_LIST  TO guest01;
+GRANT SELECT, INSERT, UPDATE, DELETE ON FWK_WORK_GROUP  TO guest01;
+GRANT SELECT, INSERT, UPDATE, DELETE ON FWK_WORK_LIST   TO guest01;
+GRANT SELECT, INSERT, UPDATE         ON FWK_SETTLEMENT  TO guest01;
 
 
 -- =============================================================

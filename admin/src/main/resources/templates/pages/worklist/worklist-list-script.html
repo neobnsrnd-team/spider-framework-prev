@@ -127,6 +127,7 @@
                     $('#btnGroupManage').on('click', function() { self.openGroupManageModal(); });
                     $('#btnGroupMove').on('click', function() { self.openGroupMoveModal(); });
                     $('#btnTransfer').on('click', function() { self.openTransferModal(); });
+                    $('#btnApproval').on('click', function() { self.openApprovalModal(); });
                 }
 
                 this.loadGroups();
@@ -266,6 +267,17 @@
                 WorkTransferModal.open(workSeqs);
             },
 
+            openApprovalModal: function() {
+                var workSeqs = this.getCheckedWorkSeqs();
+                if (!workSeqs) return;
+                // 선택된 첫 번째 항목의 작업내용을 기본 결재명으로 제안
+                var checked = document.querySelectorAll('.row-checkbox:checked');
+                var firstSeq = parseInt(checked[0].getAttribute('data-work-seq'));
+                var firstItem = this.allItems.find(function(i) { return i.workSeq === firstSeq; });
+                var defaultName = firstItem ? firstItem.workName || '' : '';
+                WorkApprovalModal.open(workSeqs, defaultName);
+            },
+
             viewScript: function(workSeq, e) {
                 if (e) e.stopPropagation();
                 Toast.info('이행스크립트 보기 기능은 준비 중입니다. (seq: ' + workSeq + ')');
@@ -286,6 +298,26 @@
                         } else { Toast.error(res.message || '그룹 이동 실패'); }
                     },
                     error: function() { Toast.error('그룹 이동 중 오류가 발생했습니다.'); }
+                });
+            },
+
+            requestApproval: function(workSeqs, approvalName, approvalDesc, finalManager) {
+                var self = this;
+                $.ajax({
+                    url: API_BASE_URL + '/work-list/approval',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        workSeqs: workSeqs,
+                        approvalName: approvalName,
+                        approvalDesc: approvalDesc || '',
+                        finalManager: finalManager
+                    }),
+                    success: function(res) {
+                        if (res.success) { Toast.success('결재요청이 완료되었습니다.'); self.loadWorkList(self.currentGroupId); }
+                        else { Toast.error(res.message || '결재요청 실패'); }
+                    },
+                    error: function() { Toast.error('결재요청 중 오류가 발생했습니다.'); }
                 });
             },
 

@@ -145,4 +145,15 @@
             )
     </update>
 
+
+    <!-- 결재요청 — 선택 항목의 APPROVAL_SEQ를 채번된 APPROVAL_ID로 갱신 -->
+    <update id="updateApprovalSeq" parameterType="map">
+        UPDATE FWK_WORK_LIST
+        SET APPROVAL_SEQ = #{approvalId}
+        WHERE WORK_SEQ IN
+        <foreach collection="workSeqs" item="seq" open="(" separator="," close=")">
+            #{seq}
+        </foreach>
+    </update>
+
 </mapper>
