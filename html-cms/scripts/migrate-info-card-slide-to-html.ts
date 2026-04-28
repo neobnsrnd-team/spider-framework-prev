@@ -250,11 +250,13 @@ const SLIDE_SCRIPT =
     `track.querySelectorAll('[data-card-item] > div').forEach(function(inner){` +
     `inner.style.minHeight=maxH+'px';` +
     `});` +
-    // 카드 너비 92% + snap center + 정중앙 정렬
-    `track.querySelectorAll('[data-card-item]').forEach(function(card){` +
+    // 카드 너비 — 1개이면 100%(화면 꽉 채움), 2개 이상이면 92%(다음 카드 살짝 노출)
+    `var cardItems=track.querySelectorAll('[data-card-item]');` +
+    `var isSingle=cardItems.length===1;` +
+    `cardItems.forEach(function(card){` +
     `if(mode==='web'){card.style.flex='0 0 min(480px,46vw)';card.style.width='min(480px,46vw)';card.style.maxWidth='';card.style.minWidth='0';card.style.scrollSnapAlign='start';}` +
     `else if(mode==='responsive'){card.style.flex='0 0 min(440px,78vw)';card.style.width='min(440px,78vw)';card.style.scrollSnapAlign='start';}` +
-    `else{card.style.flex='0 0 92%';card.style.width='92%';card.style.scrollSnapAlign='center';}` +
+    `else{var w=isSingle?'100%':'92%';card.style.flex='0 0 '+w;card.style.width=w;card.style.scrollSnapAlign='center';}` +
     `});` +
     // 하단 버튼 텍스트 넘침 시 글자 크기 자동 축소
     `track.querySelectorAll('[data-card-item] a').forEach(function(btn){` +
