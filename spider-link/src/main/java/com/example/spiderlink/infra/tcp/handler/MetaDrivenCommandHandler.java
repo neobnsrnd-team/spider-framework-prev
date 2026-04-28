@@ -186,8 +186,9 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
 
     private String toCamelCase(String columnName) {
         if (columnName == null) return null;
+        // "_" 없으면 이미 camelCase 또는 단일 소문자 — 원본 유지
+        if (!columnName.contains("_")) return columnName;
         String lower = columnName.toLowerCase();
-        if (!lower.contains("_")) return lower;
         String[] parts = lower.split("_");
         StringBuilder sb = new StringBuilder(parts[0]);
         for (int i = 1; i < parts.length; i++) {

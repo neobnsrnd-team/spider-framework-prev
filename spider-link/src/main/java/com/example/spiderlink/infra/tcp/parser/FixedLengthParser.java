@@ -23,11 +23,11 @@ import org.springframework.stereotype.Component;
  *
  * <h4>지원 데이터 타입</h4>
  * <pre>
- * C (문자)   → String (trim 없이 원본 유지)
+ * C (문자)   → String (trailing 공백 제거 — 참고소스 FixedLengthMessageParser 동일)
  * N (숫자)   → String (scale > 0 이면 소수점 포함)
  * H (헥사)   → String (hex 문자열)
  * B (바이너리)→ Integer (4byte) / Short (2byte)
- * K (한글)   → String (EUC-KR 디코딩)
+ * K (한글)   → String (EUC-KR 디코딩 후 trailing 공백 제거)
  * </pre>
  */
 @Slf4j
@@ -159,9 +159,9 @@ public class FixedLengthParser {
         };
     }
 
-    /** C 타입: trim 없이 원본 문자열 반환 */
+    /** C 타입: trailing 공백 제거 후 반환 (참고소스 FixedLengthMessageParser 동일) */
     private String readString(byte[] bytes, int offset, int len) {
-        return new String(bytes, offset, len);
+        return new String(bytes, offset, len).stripTrailing();
     }
 
     /**
@@ -206,13 +206,13 @@ public class FixedLengthParser {
     }
 
     /**
-     * K 타입: 한글(EUC-KR) 바이트 배열을 문자열로 디코딩.
-     * 실제 운영 환경에 따라 charset 이 다를 수 있으므로 필요 시 수정.
+     * K 타입: 한글(EUC-KR) 바이트 배열을 문자열로 디코딩 후 trailing 공백 제거.
+     * 참고소스 FixedLengthMessageParser.removeRightFiller 동일 처리.
      */
     private String readKorean(byte[] bytes, int offset, int len) {
         byte[] buf = new byte[len];
         System.arraycopy(bytes, offset, buf, 0, len);
-        return new String(buf, Charset.forName("EUC-KR"));
+        return new String(buf, Charset.forName("EUC-KR")).stripTrailing();
     }
 
     // ── serialize (Map → byte[]) ─────────────────────────────

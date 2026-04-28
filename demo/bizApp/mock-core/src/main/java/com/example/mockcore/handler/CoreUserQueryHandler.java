@@ -16,7 +16,7 @@ import java.util.Map;
  *
  * <p>REQ: COMMAND(C,20) + REQUEST_ID(C,36) + userId(C,20)
  * RES: SUCCESS(C,1) + ERROR_MSG(K,200) + userId(C,20) + userName(K,60)
- *      + userGrade(C,1) + lastLoginDtime(C,14)</p>
+ *      + userGrade(K,6) + lastLoginDtime(C,14)</p>
  */
 @Slf4j
 @Component
@@ -47,7 +47,7 @@ public class CoreUserQueryHandler implements LegacyCoreHandler {
             writer.writeK("", 200);
             writer.writeC(str(info, "userId"), 20);
             writer.writeK(str(info, "userName"), 60);
-            writer.writeC(str(info, "userGrade"), 1);
+            writer.writeK(str(info, "userGrade"), 6);
             writer.writeC(str(info, "lastLoginDtime"), 14);
         } catch (Exception e) {
             log.warn("[CORE_USER_QUERY] 조회 실패 — {}", e.getMessage());
@@ -56,7 +56,7 @@ public class CoreUserQueryHandler implements LegacyCoreHandler {
             writer.writeK(e.getMessage(), 200);
             writer.writeC("", 20);
             writer.writeK("", 60);
-            writer.writeC("", 1);
+            writer.writeK("", 6);
             writer.writeC("", 14);
         }
         return writer.toBytes();

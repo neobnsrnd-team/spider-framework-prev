@@ -753,3 +753,16 @@ WHEN NOT MATCHED THEN
     VALUES ('was_config', 'BT03.MANAGEMENT_SERVER_PORT', 'biz-transfer 관리 포트', 'Admin pool/reload API 대상 포트', 'N', '19280', 'system');
 
 COMMIT;
+
+-- ─────────────────────────────────────────────────────────────────
+-- feat/#247: CORE_USER_*_RES.userGrade C,1 → K,6 변경
+--   mock-core LegacyTcpServer가 EUC-KR 한글(예: "개인")을 writeK(6)으로 기록하도록
+--   핸들러 수정에 맞춰 메타데이터도 동일하게 변경한다.
+-- ─────────────────────────────────────────────────────────────────
+UPDATE FWK_MESSAGE_FIELD
+   SET DATA_TYPE = 'K', DATA_LENGTH = 6, LAST_UPDATE_DTIME = TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+ WHERE ORG_ID = 'DEMO'
+   AND MESSAGE_ID IN ('CORE_USER_AUTH_RES', 'CORE_USER_QUERY_RES')
+   AND MESSAGE_FIELD_ID = 'userGrade';
+
+COMMIT;
