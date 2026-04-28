@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
 import org.quartz.JobBuilder;
+import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
 import org.quartz.Scheduler;
@@ -85,8 +86,13 @@ public class SchedulerManagementService {
 
             TriggerKey triggerKey = TriggerKey.triggerKey(batchAppId, JOB_GROUP);
             CronTrigger newTrigger = buildCronTrigger(batchAppId, cronText);
-            scheduler.rescheduleJob(triggerKey, newTrigger);
-            log.info("[Quartz] 스케줄 변경: batchAppId={}, cron={}", batchAppId, cronText);
+            // rescheduleJob이 null을 반환하면 Trigger가 없는 상태 — 새로 scheduleJob
+            if (scheduler.rescheduleJob(triggerKey, newTrigger) == null) {
+                scheduler.scheduleJob(newTrigger);
+                log.info("[Quartz] Trigger 없음 — 재생성: batchAppId={}, cron={}", batchAppId, cronText);
+            } else {
+                log.info("[Quartz] 스케줄 변경: batchAppId={}, cron={}", batchAppId, cronText);
+            }
 
         } catch (SchedulerException e) {
             log.error("[Quartz] 스케줄 변경 실패: batchAppId={}, cron={}", batchAppId, cronText, e);
@@ -119,23 +125,29 @@ public class SchedulerManagementService {
      * Job이 등록되어 있지 않아도 실행 가능 — 등록 후 triggerJob 호출.
      *
      * @param batchAppId 배치 APP ID
+     * @param batchDate  배치 기준일 (null이면 Job 내부에서 당일로 자동 설정)
      */
-    public void triggerNow(String batchAppId) {
+    public void triggerNow(String batchAppId, String batchDate) {
         try {
             JobKey jobKey = JobKey.jobKey(batchAppId, JOB_GROUP);
 
-            // Job이 없으면 durability Job만 등록 후 즉시 실행 (cron 없이)
+            // replace=true: 동시 요청 race condition 방어 — 이미 존재해도 덮어쓰지 않고 정상 처리
             if (!scheduler.checkExists(jobKey)) {
                 JobDetail jobDetail = JobBuilder.newJob(BatchJobQuartzTrigger.class)
                         .withIdentity(jobKey)
                         .usingJobData("batchAppId", batchAppId)
                         .storeDurably(true)
                         .build();
-                scheduler.addJob(jobDetail, false);
+                scheduler.addJob(jobDetail, true);
             }
 
-            scheduler.triggerJob(jobKey);
-            log.info("[Quartz] 즉시 실행 트리거: batchAppId={}", batchAppId);
+            // batchDate를 JobDataMap으로 전달 — BatchJobQuartzTrigger에서 manualBatchDate 키로 읽음
+            JobDataMap dataMap = new JobDataMap();
+            if (batchDate != null && !batchDate.isBlank()) {
+                dataMap.put("manualBatchDate", batchDate);
+            }
+            scheduler.triggerJob(jobKey, dataMap);
+            log.info("[Quartz] 즉시 실행 트리거: batchAppId={}, batchDate={}", batchAppId, batchDate);
 
         } catch (SchedulerException e) {
             log.error("[Quartz] 즉시 실행 실패: batchAppId={}", batchAppId, e);

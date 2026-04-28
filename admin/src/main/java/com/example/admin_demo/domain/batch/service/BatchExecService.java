@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -276,23 +277,32 @@ public class BatchExecService {
         }
 
         String userId = AuditUtil.currentUserId();
-        for (String instanceId : instanceIds) {
-            ManagementContext ctx = ManagementContext.builder()
-                    .command(CMD_SCHEDULE_CRON_UPDATE)
-                    .instanceId(instanceId)
-                    .batchAppId(batchAppId)
-                    .cronText(cronText)
-                    .userId(userId)
-                    .build();
+        // 인스턴스별 TCP 요청을 병렬 처리 — 느린 인스턴스 하나가 전체 응답을 지연시키는 것을 방지
+        List<CompletableFuture<Void>> futures = instanceIds.stream()
+                .map(instanceId -> CompletableFuture.runAsync(() -> {
+                    ManagementContext ctx = ManagementContext.builder()
+                            .command(CMD_SCHEDULE_CRON_UPDATE)
+                            .instanceId(instanceId)
+                            .batchAppId(batchAppId)
+                            .cronText(cronText)
+                            .userId(userId)
+                            .build();
 
-            log.info("스케줄 Cron 변경 TCP 요청: instanceId={}, batchAppId={}, cron={}", instanceId, batchAppId, cronText);
-            ManagementContext response = batchManagementAdapter.doProcess(CMD_SCHEDULE_CRON_UPDATE, ctx);
+                    log.info(
+                            "스케줄 Cron 변경 TCP 요청: instanceId={}, batchAppId={}, cron={}",
+                            instanceId,
+                            batchAppId,
+                            cronText);
+                    ManagementContext response = batchManagementAdapter.doProcess(CMD_SCHEDULE_CRON_UPDATE, ctx);
 
-            if (response == null || "ERROR".equals(response.getResultCode())) {
-                String errorMsg = (response != null) ? response.getErrorMessage() : "응답 없음";
-                // 일부 인스턴스 실패 시 경고 로그만 남기고 나머지 인스턴스는 계속 처리
-                log.warn("스케줄 Cron 변경 실패: instanceId={}, error={}", instanceId, errorMsg);
-            }
-        }
+                    if (response == null || "ERROR".equals(response.getResultCode())) {
+                        String errorMsg = (response != null) ? response.getErrorMessage() : "응답 없음";
+                        // 일부 인스턴스 실패 시 경고 로그만 남기고 나머지 인스턴스는 계속 처리
+                        log.warn("스케줄 Cron 변경 실패: instanceId={}, error={}", instanceId, errorMsg);
+                    }
+                }))
+                .toList();
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 }

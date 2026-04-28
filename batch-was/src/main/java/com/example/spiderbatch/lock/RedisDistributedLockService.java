@@ -14,8 +14,9 @@ import org.springframework.stereotype.Service;
  * 동일 배치의 중복 실행을 방지한다.</p>
  *
  * <p>락 키: {@code batch:lock:{batchAppId}}<br>
- * 락 만료 시간: {@value LOCK_EXPIRE_SECONDS}초 — 배치 최대 실행 시간(1시간)을 기준으로 설정.
- * 프로세스가 비정상 종료되더라도 만료 시간 후 자동 해제된다.</p>
+ * leaseTime을 지정하지 않아 Redisson Watchdog이 활성화된다.
+ * Watchdog은 배치 실행 중 락을 30초마다 자동 갱신하며, 배치 완료/실패 시 {@link #unlock}에서 명시적으로 해제한다.
+ * 프로세스가 비정상 종료되면 Watchdog이 멈추고 기본 TTL(30초) 후 락이 자동 해제된다.</p>
  *
  * <p>TODO: 운영 환경에서는 RedissonClient를 Sentinel 또는 Cluster 모드로 구성해야 한다.
  * application.yml의 {@code spring.data.redis} 설정을
@@ -29,12 +30,11 @@ public class RedisDistributedLockService {
     private final RedissonClient redissonClient;
 
     private static final String LOCK_PREFIX = "batch:lock:";
-    /** 락 만료 시간 (초) — 배치 최대 실행 시간 + 여유 시간 */
-    private static final long LOCK_EXPIRE_SECONDS = 3600;
 
     /**
      * 배치 분산 락 획득 시도.
-     * 대기 없이 즉시 시도(tryLock waitTime=0)하여 이미 락이 있으면 false 반환.
+     * leaseTime 없이 tryLock — Watchdog이 활성화되어 배치 실행 중 락이 자동 갱신된다.
+     * 대기 없이 즉시 시도(waitTime=0)하여 이미 락이 있으면 false 반환.
      *
      * @param batchAppId 배치 APP ID
      * @return 락 획득 성공 시 true, 이미 다른 인스턴스가 실행 중이면 false
@@ -42,7 +42,8 @@ public class RedisDistributedLockService {
     public boolean tryLock(String batchAppId) {
         RLock lock = redissonClient.getLock(LOCK_PREFIX + batchAppId);
         try {
-            boolean acquired = lock.tryLock(0, LOCK_EXPIRE_SECONDS, TimeUnit.SECONDS);
+            // leaseTime 생략 → Watchdog 활성화 (배치 실행 시간에 상관없이 락 유지)
+            boolean acquired = lock.tryLock(0, TimeUnit.SECONDS);
             if (acquired) {
                 log.debug("[분산 락] 획득: batchAppId={}", batchAppId);
             } else {

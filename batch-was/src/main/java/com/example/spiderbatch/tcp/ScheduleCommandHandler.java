@@ -37,7 +37,7 @@ public class ScheduleCommandHandler implements CommandHandler<ManagementContext,
 
         try {
             if ("SCHEDULE_TRIGGER".equals(command)) {
-                schedulerManagementService.triggerNow(ctx.getBatchAppId());
+                schedulerManagementService.triggerNow(ctx.getBatchAppId(), ctx.getBatchDate());
             } else {
                 // SCHEDULE_CRON_UPDATE — cronText가 없으면 Job 삭제 (스케줄 비활성화)
                 if (ctx.getCronText() == null || ctx.getCronText().isBlank()) {

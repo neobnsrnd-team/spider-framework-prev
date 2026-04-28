@@ -53,10 +53,11 @@ public class BatchJobQuartzTrigger extends QuartzJobBean {
         }
 
         try {
+            // Admin 즉시 실행 시 전달된 날짜 우선, 없으면 실행 당일
+            String manualBatchDate = ctx.getMergedJobDataMap().getString("manualBatchDate");
             BatchExecuteRequest request = BatchExecuteRequest.builder()
                     .batchAppId(batchAppId)
-                    // 배치 기준일은 실행 당일로 자동 설정
-                    .batchDate(LocalDate.now().format(BATCH_DATE_FMT))
+                    .batchDate(manualBatchDate != null ? manualBatchDate : LocalDate.now().format(BATCH_DATE_FMT))
                     .userId("QUARTZ_SCHEDULER")
                     .build();
 
