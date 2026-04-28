@@ -75,6 +75,12 @@ public class MessageLogQueue implements SmartLifecycle {
         running = false;
         if (consumerThread != null) {
             consumerThread.interrupt();
+            try {
+                // insertOne() 진행 중인 경우 완료 후 drainRemaining()이 실행되도록 대기
+                consumerThread.join(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
         drainRemaining();
         log.info("[MessageLogQueue] 전문 이력 비동기 큐 종료");
