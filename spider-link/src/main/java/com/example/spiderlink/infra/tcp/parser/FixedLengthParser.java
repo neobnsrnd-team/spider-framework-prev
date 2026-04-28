@@ -34,6 +34,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class FixedLengthParser {
 
+    /** EUC-KR 문자셋 — K 타입 인코딩/디코딩 공통 사용 */
+    private static final Charset EUC_KR = Charset.forName("EUC-KR");
+
     /**
      * byte[] 를 MessageStructure 기반으로 파싱하여 Map으로 반환한다.
      *
@@ -210,9 +213,7 @@ public class FixedLengthParser {
      * 참고소스 FixedLengthMessageParser.removeRightFiller 동일 처리.
      */
     private String readKorean(byte[] bytes, int offset, int len) {
-        byte[] buf = new byte[len];
-        System.arraycopy(bytes, offset, buf, 0, len);
-        return new String(buf, Charset.forName("EUC-KR")).stripTrailing();
+        return new String(bytes, offset, len, EUC_KR).stripTrailing();
     }
 
     // ── serialize (Map → byte[]) ─────────────────────────────
@@ -314,7 +315,7 @@ public class FixedLengthParser {
 
     private byte[] toEucKrBytes(String str) {
         try {
-            return str.getBytes(Charset.forName("EUC-KR"));
+            return str.getBytes(EUC_KR);
         } catch (Exception e) {
             log.warn("[FixedLengthParser] EUC-KR 인코딩 실패: str={}", str);
             return str.getBytes();

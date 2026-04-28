@@ -190,7 +190,7 @@ class FwkServiceServiceTest {
         void delete_exists_deletesInFkOrder() {
             given(fwkServiceMapper.countById("SVC-001")).willReturn(1);
 
-            fwkServiceService.delete("SVC-001");
+            fwkServiceService.delete("SVC-001", "TYPE-A");
 
             org.mockito.InOrder inOrder = org.mockito.Mockito.inOrder(fwkServiceRelationMapper, fwkServiceMapper);
             inOrder.verify(fwkServiceRelationMapper).deleteParamsByServiceId("SVC-001");
@@ -203,7 +203,7 @@ class FwkServiceServiceTest {
         void notExists_throwsNotFoundException() {
             given(fwkServiceMapper.countById("NOT-EXIST")).willReturn(0);
 
-            assertThatThrownBy(() -> fwkServiceService.delete("NOT-EXIST")).isInstanceOf(NotFoundException.class);
+            assertThatThrownBy(() -> fwkServiceService.delete("NOT-EXIST", "TYPE-A")).isInstanceOf(NotFoundException.class);
             then(fwkServiceMapper).should(never()).deleteById(any());
         }
     }

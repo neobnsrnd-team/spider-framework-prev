@@ -266,7 +266,7 @@ class FwkServiceControllerTest {
         void delete_notFound_returns404() throws Exception {
             willThrow(new NotFoundException("serviceId: NOT-EXIST"))
                     .given(fwkServiceService)
-                    .delete("NOT-EXIST");
+                    .delete(anyString(), anyString());
 
             mockMvc.perform(delete(BASE_URL + "/NOT-EXIST").with(csrf())).andExpect(status().isNotFound());
         }

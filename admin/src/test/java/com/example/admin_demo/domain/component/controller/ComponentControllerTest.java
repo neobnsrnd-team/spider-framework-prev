@@ -269,7 +269,7 @@ class ComponentControllerTest {
         void delete_notFound_returns404() throws Exception {
             willThrow(new NotFoundException("componentId: NOT-EXIST"))
                     .given(componentService)
-                    .delete("NOT-EXIST");
+                    .delete(anyString(), anyString());
 
             mockMvc.perform(delete(BASE_URL + "/NOT-EXIST").with(csrf())).andExpect(status().isNotFound());
         }
