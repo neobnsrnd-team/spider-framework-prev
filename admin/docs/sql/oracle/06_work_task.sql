@@ -98,3 +98,15 @@ INSERT INTO FWK_MENU (
 );
 
 COMMIT;
+
+
+-- =============================================================
+-- 6. GROUP_ID 컬럼 크기 변경 (VARCHAR2(20) → VARCHAR2(30))
+-- =============================================================
+-- ⚠️  USER_ID 최대 20자 + '001' = 23자 → ORA-12899 방지를 위해 여유있게 30자로 확장
+-- ⚠️  개발자가 DB에서 직접 실행해야 합니다.
+
+ALTER TABLE FWK_WORK_GROUP MODIFY (GROUP_ID VARCHAR2(30) NOT NULL);
+ALTER TABLE FWK_WORK_LIST  MODIFY (GROUP_ID VARCHAR2(30));
+
+COMMIT;

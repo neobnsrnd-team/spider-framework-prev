@@ -377,5 +377,16 @@
         </choose>
     </select>
 
+    <!-- 권한이양 대상 사용자 검색 — userId 또는 userName LIKE, 최대 20건 -->
+    <select id="searchForTransfer" parameterType="String"
+            resultType="com.example.admin_demo.domain.user.dto.UserSimpleResponse">
+        SELECT * FROM (
+            SELECT USER_ID AS userId, USER_NAME AS userName
+            FROM FWK_USER
+            WHERE (USER_ID   LIKE '%' || #{keyword} || '%'
+                OR USER_NAME LIKE '%' || #{keyword} || '%')
+            ORDER BY USER_ID ASC
+        ) WHERE ROWNUM &lt;= 20
+    </select>
 
 </mapper>

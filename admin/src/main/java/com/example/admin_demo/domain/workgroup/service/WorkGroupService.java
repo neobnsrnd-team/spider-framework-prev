@@ -34,7 +34,7 @@ public class WorkGroupService {
         params.put("groupDesc", request.getGroupDesc() != null ? request.getGroupDesc() : "");
         int affected = workGroupMapper.insert(params);
         if (affected == 0) {
-            throw new InternalException("그룹 생성에 실패했습니다.");
+            throw new InvalidInputException("그룹 생성에 실패했습니다.");
         }
         return workGroupMapper.findLatestByUserId(request.getUserId());
     }

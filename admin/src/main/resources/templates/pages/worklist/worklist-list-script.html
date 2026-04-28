@@ -261,9 +261,9 @@
             },
 
             openTransferModal: function() {
-                if (!this.getCheckedWorkSeqs()) return;
-                // Task #7에서 권한이양 팝업 구현 예정
-                Toast.info('권한이양 기능은 준비 중입니다.');
+                var workSeqs = this.getCheckedWorkSeqs();
+                if (!workSeqs) return;
+                WorkTransferModal.open(workSeqs);
             },
 
             viewScript: function(workSeq, e) {
