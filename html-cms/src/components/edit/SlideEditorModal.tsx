@@ -39,15 +39,20 @@ interface ProductGalleryCard {
 function parsePromoBannerSlides(root: HTMLElement): PromoBannerSlide[] {
     return Array.from(root.querySelectorAll('[data-pb-slide]')).map((wrapper, i) => {
         const inner = wrapper.querySelector<HTMLElement>('.pb-slide');
+        // 실제 저장된 HTML은 배경색/배경이미지를 .pb-slide-bg 자식 요소에 둠.
+        // .pb-slide-bg가 없는 구버전 HTML은 .pb-slide로 폴백한다.
+        const bgEl = inner?.querySelector<HTMLElement>('.pb-slide-bg') ?? inner;
         const ctaEl = inner?.querySelector('.pb-slide-cta') as HTMLAnchorElement | null;
-        const bgImageMatch = (inner?.style.backgroundImage ?? '').match(/url\(['"]?([^'"]+)['"]?\)/);
+        const bgImageMatch = (bgEl?.style.backgroundImage ?? '').match(/url\(['"]?([^'"]+)['"]?\)/);
         const rawBgImage = bgImageMatch?.[1];
         const bgImage = rawBgImage ? rawBgImage.replace(/\\/g, '/').replace(/^(?!\/)/, '/') : undefined;
+        // backgroundColor가 있으면 hex로 변환, 없으면 background shorthand에서 url() 제거 후 사용
+        const rawBgColor = bgEl?.style.backgroundColor
+            ? rgbToHex(bgEl.style.backgroundColor)
+            : (bgEl?.style.background ?? '').replace(/url\(.*?\)\s*/g, '').trim();
         return {
             itemId: inner?.getAttribute('data-item-id') ?? `pb-${i + 1}`,
-            bgColor: inner?.style.backgroundColor
-                ? rgbToHex(inner.style.backgroundColor)
-                : (inner?.style.background ?? '').replace(/url\(.*?\)\s*/g, '').trim(),
+            bgColor: rawBgColor || '#0046A4', // 파싱 실패 시 기본값
             bgImage,
             badge: inner?.querySelector('.pb-badge')?.textContent ?? '',
             title: inner?.querySelector('.pb-slide-title')?.textContent ?? '',
@@ -100,11 +105,15 @@ function parseProductGalleryCards(root: HTMLElement, componentId: string): Produ
 // ── HTML 재생성 ───────────────────────────────────────────────────────────
 
 function buildSlideHtml(slide: PromoBannerSlide): string {
-    const bgImageStyle = slide.bgImage
-        ? `background-image:url("${slide.bgImage}");background-size:cover;background-position:center;`
-        : '';
+    // 배경색/배경이미지는 .pb-slide-bg에 분리하여 overflow:hidden 클리핑이 올바르게 동작하도록 함
+    const bgStyle =
+        `position:absolute;top:0;right:0;bottom:0;left:0;background:${slide.bgColor};` +
+        (slide.bgImage
+            ? `background-image:url("${slide.bgImage}");background-size:cover;background-position:center;`
+            : '');
     return (
-        `<div class="pb-slide" data-item-id="${slide.itemId}" style="position:relative;height:200px;border-radius:16px;background:${slide.bgColor};${bgImageStyle}">` +
+        `<div class="pb-slide" data-item-id="${slide.itemId}" style="position:relative;height:200px;overflow:hidden;border-radius:16px;">` +
+        `<div class="pb-slide-bg" style="${bgStyle}"></div>` +
         `<div class="pb-slide-content" style="position:relative;z-index:1;padding:24px 20px;display:flex;flex-direction:column;gap:6px;height:100%;box-sizing:border-box;justify-content:center;">` +
         `<span class="pb-badge" style="display:inline-block;background:rgba(255,255,255,0.25);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:0.5px;width:fit-content;border:1px solid rgba(255,255,255,0.4);">${slide.badge}</span>` +
         `<h3 class="pb-slide-title" style="font-size:22px;font-weight:800;color:#fff;margin:0;line-height:1.2;letter-spacing:-0.5px;">${slide.title}</h3>` +
@@ -245,12 +254,7 @@ export default function SlideEditorModal({ blockEl, onClose }: Props) {
     const componentId = blockEl.getAttribute('data-component-id') ?? '';
     const isPromoBanner = componentId.startsWith('promo-banner-');
 
-    // 모달 열릴 때 DOM 스냅샷 저장 (취소 시 복원용)
-    const snapshot = useRef('');
-    const [promoSlides, setPromoSlides] = useState<PromoBannerSlide[]>(() => {
-        snapshot.current = blockEl.innerHTML;
-        return parsePromoBannerSlides(blockEl);
-    });
+    const [promoSlides, setPromoSlides] = useState<PromoBannerSlide[]>(() => parsePromoBannerSlides(blockEl));
     const [productCards, setProductCards] = useState<ProductGalleryCard[]>(() =>
         parseProductGalleryCards(blockEl, componentId),
     );
@@ -299,23 +303,23 @@ export default function SlideEditorModal({ blockEl, onClose }: Props) {
         };
     }, []);
 
-    // 상태 변경 시 DOM 즉시 반영 (실시간 미리보기)
-    useEffect(() => {
-        if (isPromoBanner) applyPromoBannerSlides(blockEl, promoSlides);
-    }, [blockEl, isPromoBanner, promoSlides]);
-
-    useEffect(() => {
-        if (!isPromoBanner) applyProductGalleryCards(blockEl, productCards, componentId);
-    }, [blockEl, componentId, isPromoBanner, productCards]);
-
-    // 확인: DOM이 이미 반영된 상태이므로 그냥 닫기
+    // 확인: blockEl을 클론하여 변경 사항을 적용한 뒤 replaceWith로 교체.
+    // ContentBuilder는 DOM 노드 레퍼런스로 HTML 스냅샷을 캐싱하므로,
+    // 기존 노드에 innerHTML을 직접 수정하면 applyBehavior() 호출 시 캐시된 구버전으로 덮어쓰인다.
+    // replaceWith로 새 노드를 삽입하면 ContentBuilder가 새 노드를 기준으로 재스냅샷하므로 변경이 유지된다.
     function handleConfirm() {
+        const clone = blockEl.cloneNode(true) as HTMLElement;
+        if (isPromoBanner) {
+            applyPromoBannerSlides(clone, promoSlides);
+        } else {
+            applyProductGalleryCards(clone, productCards, componentId);
+        }
+        blockEl.replaceWith(clone);
         onClose();
     }
 
-    // 취소: 스냅샷으로 DOM 복원 후 닫기
+    // 취소: 편집 중 DOM을 건드리지 않으므로 그냥 닫기 (복원 불필요)
     function handleCancel() {
-        blockEl.innerHTML = snapshot.current;
         onClose();
     }
 
@@ -446,14 +450,16 @@ function PromoSlidesEditor({
     onChange,
 }: {
     slides: PromoBannerSlide[];
-    onChange: (v: PromoBannerSlide[]) => void;
+    onChange: React.Dispatch<React.SetStateAction<PromoBannerSlide[]>>;
 }) {
+    // functional update 패턴으로 작성해 openCmsFilesPicker 콜백이
+    // 캡처 시점의 stale slides를 참조하는 문제를 방지한다.
     const update = (idx: number, patch: Partial<PromoBannerSlide>) =>
-        onChange(slides.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
+        onChange((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
 
-    const add = () => onChange([...slides, { ...DEFAULT_SLIDE, itemId: `pb-${Date.now()}` }]);
+    const add = () => onChange((prev) => [...prev, { ...DEFAULT_SLIDE, itemId: `pb-${Date.now()}` }]);
 
-    const remove = (idx: number) => onChange(slides.filter((_, i) => i !== idx));
+    const remove = (idx: number) => onChange((prev) => prev.filter((_, i) => i !== idx));
 
     return (
         <>
@@ -636,7 +642,7 @@ function PromoSlidesEditor({
                                         }
                                     }}
                                 >
-                                    + cms/files에서 이미지 선택
+                                    + 이미지 선택
                                 </button>
                             )}
                         </div>
@@ -686,14 +692,16 @@ function ProductCardsEditor({
     onChange,
 }: {
     cards: ProductGalleryCard[];
-    onChange: (v: ProductGalleryCard[]) => void;
+    onChange: React.Dispatch<React.SetStateAction<ProductGalleryCard[]>>;
 }) {
+    // functional update 패턴으로 작성해 openCmsFilesPicker 콜백이
+    // 캡처 시점의 stale cards를 참조하는 문제를 방지한다.
     const update = (idx: number, patch: Partial<ProductGalleryCard>) =>
-        onChange(cards.map((c, i) => (i === idx ? { ...c, ...patch } : c)));
+        onChange((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)));
 
-    const add = () => onChange([...cards, { ...DEFAULT_CARD }]);
+    const add = () => onChange((prev) => [...prev, { ...DEFAULT_CARD }]);
 
-    const remove = (idx: number) => onChange(cards.filter((_, i) => i !== idx));
+    const remove = (idx: number) => onChange((prev) => prev.filter((_, i) => i !== idx));
 
     return (
         <>
@@ -919,7 +927,7 @@ function ProductCardsEditor({
                                         }
                                     }}
                                 >
-                                    + cms/files에서 이미지 선택
+                                    + 이미지 선택
                                 </button>
                             )}
                         </div>
