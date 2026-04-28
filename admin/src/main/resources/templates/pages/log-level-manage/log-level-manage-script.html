@@ -171,8 +171,8 @@
                    </td>`
                 : `<td>${logger.additivity === 'Y' ? '예 (Y)' : '아니오 (N)'}</td>`;
 
-            return `<tr data-index="${index}" data-log-name="${escapeAttr(logger.logName)}">
-                        <td class="font-monospace small" style="max-width:300px;">
+            return `<tr data-log-name="${escapeAttr(logger.logName)}">
+                        <td class="font-monospace small" style="max-width:460px;">
                             <div style="overflow-x:auto; white-space:nowrap;">${escapeHtml(logger.logName)}</div>
                         </td>
                         ${levelCell}
@@ -204,7 +204,7 @@
             const level = selectVal || null;
             const levelLabel = level ?? '상속';
 
-            Toast.confirm(`[${logName}] 로그 레벨을 "${levelLabel}"로 변경하시겠습니까?`, function () {
+            Toast.confirm(`[${logName}] 로그 레벨을 "${levelLabel}"로 변경하고 Reload 하시겠습니까?`, function () {
                 fetch(API_BASE_URL + '/log-level/level', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
@@ -213,7 +213,7 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            Toast.success(data.message || '로그 레벨이 변경되었습니다');
+                            showReloadResult(data.data);
                             load();
                         } else {
                             Toast.error(data.message || '변경 실패');
@@ -229,7 +229,7 @@
             if (!logName || !additivity) return;
 
             const label = additivity === 'Y' ? '예 (Y)' : '아니오 (N)';
-            Toast.confirm(`[${logName}] Additivity를 "${label}"로 변경하시겠습니까?`, function () {
+            Toast.confirm(`[${logName}] Additivity를 "${label}"로 변경하고 Reload 하시겠습니까?`, function () {
                 fetch(API_BASE_URL + '/log-level/additivity', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
@@ -238,7 +238,7 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            Toast.success(data.message || 'Additivity가 변경되었습니다');
+                            showReloadResult(data.data);
                             load();
                         } else {
                             Toast.error(data.message || '변경 실패');
@@ -246,6 +246,34 @@
                     })
                     .catch(err => Toast.error('Additivity 변경 중 오류가 발생했습니다: ' + err.message));
             });
+        }
+
+        /**
+         * Reload 결과를 토스트로 표시한다.
+         * - 전체 성공: "Reload 완료 (5/5)"
+         * - 일부 실패: "Reload 완료 (4/5) — 실패: BT02"
+         * - 대상 없음: "Reload 완료 (등록된 WAS 없음)"
+         *
+         * @param {object} reloadData - { reloadType, results: [{instanceId, instanceName, success, errorMessage}] }
+         */
+        function showReloadResult(reloadData) {
+            if (!reloadData || !reloadData.results) {
+                Toast.success('Reload가 완료되었습니다');
+                return;
+            }
+            const results = reloadData.results;
+            if (results.length === 0) {
+                Toast.warning('Reload 완료 (등록된 WAS 없음)');
+                return;
+            }
+            const total     = results.length;
+            const succeeded = results.filter(r => r.success).length;
+            if (succeeded === total) {
+                Toast.success(`Reload 완료 (${total}/${total})`);
+            } else {
+                const failedIds = results.filter(r => !r.success).map(r => r.instanceId).join(', ');
+                Toast.warning(`Reload 완료 (${succeeded}/${total}) — 실패: ${failedIds}`);
+            }
         }
 
         function exportCsv() {

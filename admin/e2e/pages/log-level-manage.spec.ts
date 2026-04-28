@@ -7,8 +7,8 @@
  * - Level 필터 + 조회 버튼
  * - 페이지당 표시 건수 변경
  * - 새로고침 버튼
- * - 레벨 저장 (confirm → 성공 Toast)
- * - Additivity 저장 (confirm → 성공 Toast)
+ * - 레벨 저장 (confirm → 자동 Reload → 성공 Toast)
+ * - Additivity 저장 (confirm → 자동 Reload → 성공 Toast)
  * - 상속 옵션 저장
  * - confirm 취소 시 API 미호출
  * - CSV 내보내기 버튼 존재
@@ -34,8 +34,8 @@ test.describe('로그레벨 목록', () => {
         const count = await rows.count();
         expect(count).toBeGreaterThan(0);
 
-        // 첫 번째 행에 Log Name 값이 존재해야 한다
-        await expect(rows.first().locator('td').first()).not.toBeEmpty();
+        // 첫 번째 행의 Log Name 셀(1번째 td)에 값이 존재해야 한다
+        await expect(rows.first().locator('td').nth(0)).not.toBeEmpty();
     });
 
     test('Log Name 필터 입력 후 조회 시 일치하는 행만 표시되어야 한다', async ({ page }) => {
@@ -46,9 +46,9 @@ test.describe('로그레벨 목록', () => {
         const count = await rows.count();
         expect(count).toBeGreaterThan(0);
 
-        // 표시된 모든 행의 Log Name에 'ROOT'가 포함되어야 한다
+        // 표시된 모든 행의 Log Name(1번째 td)에 'ROOT'가 포함되어야 한다
         for (let i = 0; i < count; i++) {
-            const cellText = await rows.nth(i).locator('td').first().textContent();
+            const cellText = await rows.nth(i).locator('td').nth(0).textContent();
             expect(cellText?.toLowerCase()).toContain('root');
         }
     });

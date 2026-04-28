@@ -6,7 +6,8 @@
  * - 로그 레벨 변경 (모든 유효 레벨 / null(상속) / 유효하지 않은 레벨 / logName 빈값)
  * - Additivity 변경 (성공 / 유효하지 않은 값 / logName 빈값)
  * - 신규(미존재) 로거 레벨 설정
- * - WAS 동기화 내성 — spider-link 미기동 시에도 Admin API 정상 동작
+ * - PATCH 엔드포인트 — Admin 변경 + default 그룹 자동 Reload (ReloadResultResponse 스키마)
+ * - POST /api/log-level/propagate — WAS Reload 요청 유효성 검사
  *
  * 주의: 변경은 런타임 상태에만 적용되고 DB에 저장되지 않으므로
  *       teardown이 불필요하다.
@@ -206,17 +207,16 @@ test.describe('PATCH /api/log-level/additivity — Additivity 변경', () => {
 });
 
 /**
- * WAS 동기화 내성 테스트
+ * PATCH 엔드포인트 응답 스키마 및 동작 테스트
  *
- * Admin은 레벨 변경 후 spider-link에 동기화를 시도하지만 (SpiderLogLevelClient),
- * spider-link가 미기동 상태이거나 네트워크 오류가 발생해도 Admin API는
- * 정상적으로 HTTP 200을 반환해야 한다 (fire-and-forget, 예외 비전파).
- *
- * CI 환경에서 spider-link가 기동되지 않은 상태에서도 이 테스트가 통과해야 한다.
+ * PATCH /api/log-level/level 및 /additivity는 Admin 자신의 Logback 변경과
+ * default 그룹 WAS 자동 Reload를 한 번에 수행한다.
+ * WAS 연결 실패 여부와 관계없이 HTTP 200을 반환하며,
+ * body.data에는 ReloadResultResponse({ reloadType, results }) 가 포함된다.
  */
-test.describe('WAS 동기화 내성 — spider-link 미기동 시에도 Admin API 정상 동작', () => {
+test.describe('PATCH 엔드포인트 — Admin 변경 + 자동 Reload 응답 스키마', () => {
 
-    test('레벨 변경 API는 spider-link 동기화 결과와 무관하게 HTTP 200을 반환해야 한다', async ({ request }) => {
+    test('레벨 변경 API는 HTTP 200과 ReloadResultResponse를 반환해야 한다', async ({ request }) => {
         const res = await request.patch('/api/log-level/level', {
             data: { logName: TEST_LOGGER, level: 'INFO' },
         });
@@ -224,9 +224,12 @@ test.describe('WAS 동기화 내성 — spider-link 미기동 시에도 Admin AP
         expect(res.status()).toBe(200);
         const body = await res.json();
         expect(body.success).toBe(true);
+        // 자동 Reload 결과 포함 여부 확인
+        expect(body.data).toHaveProperty('reloadType');
+        expect(Array.isArray(body.data.results)).toBe(true);
     });
 
-    test('Additivity 변경 API는 spider-link 동기화 결과와 무관하게 HTTP 200을 반환해야 한다', async ({ request }) => {
+    test('Additivity 변경 API는 HTTP 200과 ReloadResultResponse를 반환해야 한다', async ({ request }) => {
         const res = await request.patch('/api/log-level/additivity', {
             data: { logName: TEST_LOGGER, additivity: 'Y' },
         });
@@ -234,6 +237,8 @@ test.describe('WAS 동기화 내성 — spider-link 미기동 시에도 Admin AP
         expect(res.status()).toBe(200);
         const body = await res.json();
         expect(body.success).toBe(true);
+        expect(body.data).toHaveProperty('reloadType');
+        expect(Array.isArray(body.data.results)).toBe(true);
     });
 
     test('레벨 변경 후 Admin 자신의 로거에는 즉시 반영되어야 한다', async ({ request }) => {
@@ -242,7 +247,6 @@ test.describe('WAS 동기화 내성 — spider-link 미기동 시에도 Admin AP
             data: { logName: TEST_LOGGER, level: targetLevel },
         });
 
-        // spider-link 동기화 여부와 무관하게 Admin 자신의 Logback에는 반영됨
         const listRes = await request.get('/api/log-level');
         const listBody = await listRes.json();
         const logger = listBody.data.find((l: { logName: string }) => l.logName === TEST_LOGGER);
@@ -252,5 +256,125 @@ test.describe('WAS 동기화 내성 — spider-link 미기동 시에도 Admin AP
         await request.patch('/api/log-level/level', {
             data: { logName: TEST_LOGGER, level: null },
         });
+    });
+});
+
+/**
+ * POST /api/log-level/propagate — WAS Reload 요청 유효성 검사
+ *
+ * 실제 WAS 인스턴스에 연결하지 않는다.
+ * 유효하지 않은 입력에 대한 400 응답 및 필수 필드 검증에만 집중한다.
+ * 실제 Reload 결과(성공/실패)는 WAS 연결이 필요하므로 별도 통합 테스트로 검증한다.
+ */
+test.describe('POST /api/log-level/propagate — WAS Reload 요청 유효성', () => {
+
+    test('instanceIds가 없으면 HTTP 400을 반환해야 한다', async ({ request }) => {
+        const res = await request.post('/api/log-level/propagate', {
+            data: {
+                instanceIds: [],
+                gubun: 'log_config_level',
+                logName: TEST_LOGGER,
+                level: 'DEBUG',
+            },
+        });
+
+        expect(res.status()).toBe(400);
+        const body = await res.json();
+        expect(body.success).toBe(false);
+    });
+
+    test('gubun이 없으면 HTTP 400을 반환해야 한다', async ({ request }) => {
+        const res = await request.post('/api/log-level/propagate', {
+            data: {
+                instanceIds: ['biz-auth'],
+                logName: TEST_LOGGER,
+                level: 'DEBUG',
+            },
+        });
+
+        expect(res.status()).toBe(400);
+        const body = await res.json();
+        expect(body.success).toBe(false);
+    });
+
+    test('logName이 없으면 HTTP 400을 반환해야 한다', async ({ request }) => {
+        const res = await request.post('/api/log-level/propagate', {
+            data: {
+                instanceIds: ['biz-auth'],
+                gubun: 'log_config_level',
+            },
+        });
+
+        expect(res.status()).toBe(400);
+        const body = await res.json();
+        expect(body.success).toBe(false);
+    });
+
+    test('지원하지 않는 gubun이면 HTTP 400을 반환해야 한다', async ({ request }) => {
+        const res = await request.post('/api/log-level/propagate', {
+            data: {
+                instanceIds: ['biz-auth'],
+                gubun: 'batch_reload',
+                logName: TEST_LOGGER,
+            },
+        });
+
+        expect(res.status()).toBe(400);
+        const body = await res.json();
+        expect(body.success).toBe(false);
+    });
+
+    test('additivity가 Y/N 외의 값이면 HTTP 400을 반환해야 한다', async ({ request }) => {
+        const res = await request.post('/api/log-level/propagate', {
+            data: {
+                instanceIds: ['biz-auth'],
+                gubun: 'log_config_additivity',
+                logName: TEST_LOGGER,
+                additivity: 'X',
+            },
+        });
+
+        expect(res.status()).toBe(400);
+        const body = await res.json();
+        expect(body.success).toBe(false);
+    });
+
+    test('존재하지 않는 instanceId이면 HTTP 200이지만 결과에 실패가 포함되어야 한다', async ({ request }) => {
+        const res = await request.post('/api/log-level/propagate', {
+            data: {
+                instanceIds: ['nonexistent-was-instance'],
+                gubun: 'log_config_level',
+                logName: TEST_LOGGER,
+                level: 'DEBUG',
+            },
+        });
+
+        // 요청 자체는 성공 (HTTP 200)
+        expect(res.status()).toBe(200);
+        const body = await res.json();
+        expect(body.success).toBe(true);
+
+        // Reload 결과에는 해당 인스턴스의 실패가 포함되어야 한다
+        const results: Array<{ instanceId: string; success: boolean }> = body.data.results;
+        const failedResult = results.find(r => r.instanceId === 'nonexistent-was-instance');
+        expect(failedResult).toBeTruthy();
+        expect(failedResult!.success).toBe(false);
+    });
+
+    test('유효한 요청이면 HTTP 200과 results 배열을 반환해야 한다', async ({ request }) => {
+        const res = await request.post('/api/log-level/propagate', {
+            data: {
+                instanceIds: ['nonexistent-was-instance'],
+                gubun: 'log_config_level',
+                logName: TEST_LOGGER,
+                level: 'INFO',
+            },
+        });
+
+        expect(res.status()).toBe(200);
+        const body = await res.json();
+        expect(body.success).toBe(true);
+        expect(body.data).toHaveProperty('reloadType', 'log_config_level');
+        expect(Array.isArray(body.data.results)).toBe(true);
     });
 });

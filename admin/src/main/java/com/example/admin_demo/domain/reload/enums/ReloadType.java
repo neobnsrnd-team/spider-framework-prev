@@ -19,7 +19,11 @@ public enum ReloadType implements BaseEnum {
     ERROR("error", "오류 코드 정보", "오류코드 정보를 Reload한다."),
     XML_PROPERTY("xml_property", "XML Property 정보", "XML Property 정보를 Reload한다.", false),
     MESSAGE("message", "전문 정보", "전문정보를 Reload한다.", false),
-    SQL_QUERY("sql_query", "SQL Query 정보", "SQL Query 정보를 Reload한다.", false);
+    SQL_QUERY("sql_query", "SQL Query 정보", "SQL Query 정보를 Reload한다.", false),
+    /** 로그 레벨 변경 — WAS Reload 전용 (운영정보 Reload 목록에 미표시) */
+    LOG_LEVEL("log_config_level", "로그 레벨", "로그 레벨을 WAS에 Reload한다.", false),
+    /** 로거 Additivity 변경 — WAS Reload 전용 (운영정보 Reload 목록에 미표시) */
+    LOG_ADDITIVITY("log_config_additivity", "로그 Additivity", "로그 Additivity를 WAS에 Reload한다.", false);
 
     private final String code;
     private final String description;

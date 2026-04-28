@@ -24,7 +24,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *
  * <p>환경변수 {@code BATCH_WAS_API_KEY}가 설정된 경우에만 인증을 활성화한다.
  * 값이 비어있으면 필터를 무조건 통과시켜 개발 환경에서의 번거로움을 줄인다.
- * {@code /actuator/**}, {@code /mock/**} 경로는 인증 대상에서 제외한다.</p>
+ * {@code /actuator/**}, {@code /mock/**}, {@code /api/management/**} 경로는 인증 대상에서 제외한다.</p>
  *
  * <p>인증 실패 시 HTTP 401과 JSON 오류 본문을 반환한다.</p>
  *
@@ -40,7 +40,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     private static final String API_KEY_HEADER = "X-API-Key";
 
     /** 인증을 건너뛸 경로 패턴 목록 */
-    private static final String[] EXCLUDE_PATTERNS = {"/actuator/**", "/mock/**"};
+    private static final String[] EXCLUDE_PATTERNS = {"/actuator/**", "/mock/**", "/api/management/**"};
 
     private final String expectedApiKey;
     private final ObjectMapper objectMapper;
