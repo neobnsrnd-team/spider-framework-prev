@@ -1,5 +1,8 @@
 package com.example.admin_demo.domain.worklist.service;
 
+import com.example.admin_demo.domain.worklist.config.WorkListScriptProperties;
+import com.example.admin_demo.domain.worklist.config.WorkListScriptProperties.ChildTableConfigProperties;
+import com.example.admin_demo.domain.worklist.config.WorkListScriptProperties.ScriptConfigProperties;
 import com.example.admin_demo.domain.worklist.dto.WorkListResponse;
 import com.example.admin_demo.domain.worklist.dto.WorkListScriptResponse;
 import com.example.admin_demo.domain.worklist.mapper.WorkListMapper;
@@ -17,8 +20,6 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,7 +27,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>FWK_WORK_LIST 항목의 원본 데이터를 조회하여 DELETE + INSERT SQL 파일을 생성하고,
  * 파일시스템에 저장한 후 FILE_NAME을 FWK_WORK_LIST에 업데이트한다.
+ *
+ * <p>WORK_ID별 테이블 설정은 {@code worklist.script.configs} (application.yml)에서 관리한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,12 +46,7 @@ public class WorkListScriptService {
 
     private final WorkListMapper workListMapper;
     private final JdbcTemplate jdbcTemplate;
-
-    @Value("${worklist.script.path:${user.dir}/worklist-scripts}")
-    private String scriptBasePath;
-
-    /** WORK_ID별 테이블 설정 (메인 테이블 + 자식 테이블). */
-    private static final Map<String, ScriptConfig> SCRIPT_CONFIGS = buildConfigs();
+    private final WorkListScriptProperties scriptProperties;
 
     /**
      * 이행스크립트 생성 및 파일 저장.
@@ -58,7 +55,7 @@ public class WorkListScriptService {
     @Transactional
     public WorkListScriptResponse generateAndSave(int workSeq) {
         WorkListResponse item = getItemOrThrow(workSeq);
-        ScriptConfig config = getConfigOrThrow(item.getWorkOriId());
+        ScriptConfigProperties config = getConfigOrThrow(item.getWorkOriId());
 
         String content = buildScript(config, item.getWorkOriId(), item.getWorkDataPk());
         String fileName = saveToFile(item.getWorkOriId(), item.getWorkDataPk(), content);
@@ -83,14 +80,14 @@ public class WorkListScriptService {
         if (item.getFileName() == null) {
             throw new NotFoundException("이행스크립트가 존재하지 않습니다. workSeq: " + workSeq);
         }
-        return Paths.get(scriptBasePath, item.getFileName());
+        return Paths.get(scriptProperties.getPath(), item.getFileName());
     }
 
     // ============================================================
     // private — 스크립트 생성
     // ============================================================
 
-    private String buildScript(ScriptConfig config, String workOriId, String workDataPk) {
+    private String buildScript(ScriptConfigProperties config, String workOriId, String workDataPk) {
         // WORK_DATA_PK는 복합 PK일 경우 '@' 구분자로 연결된 문자열
         String[] pkValues = workDataPk.split("@", -1);
         StringBuilder sb = new StringBuilder();
@@ -110,7 +107,7 @@ public class WorkListScriptService {
         appendTableScript(sb, config.getTableName(), config.getPkColumns(), pkValues);
 
         // 자식 테이블 (부모 PK = 자식 FK 순서 동일)
-        for (ChildTableConfig child : config.getChildTables()) {
+        for (ChildTableConfigProperties child : config.getChildTables()) {
             appendChildTableScript(sb, child.getTableName(), child.getFkColumns(), pkValues);
         }
 
@@ -211,13 +208,12 @@ public class WorkListScriptService {
             String formatted = new SimpleDateFormat("yyyyMMdd").format(d);
             return "TO_DATE('" + formatted + "', 'YYYYMMDD')";
         }
-        // CLOB 처리
+        // CLOB 처리 — 읽기 실패 시 스크립트 무결성을 위해 예외 throw
         if (value instanceof Clob clob) {
             try {
                 value = clob.getSubString(1, (int) clob.length());
             } catch (Exception e) {
-                log.warn("CLOB 읽기 실패: {}", e.getMessage());
-                return "NULL /*CLOB read error*/";
+                throw new InternalException("CLOB 읽기 실패: " + e.getMessage(), e);
             }
         }
         // NUMBER: 따옴표 없이 출력
@@ -240,7 +236,7 @@ public class WorkListScriptService {
         String fileName = workOriId + "_" + safePk + "_" + timestamp + ".sql";
 
         try {
-            Path dir = Paths.get(scriptBasePath);
+            Path dir = Paths.get(scriptProperties.getPath());
             Files.createDirectories(dir);
             Files.writeString(dir.resolve(fileName), content, StandardCharsets.UTF_8);
             log.info("이행스크립트 저장: {}", fileName);
@@ -252,7 +248,7 @@ public class WorkListScriptService {
 
     private String readFile(String fileName) {
         try {
-            return Files.readString(Paths.get(scriptBasePath, fileName), StandardCharsets.UTF_8);
+            return Files.readString(Paths.get(scriptProperties.getPath(), fileName), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new NotFoundException("이행스크립트 파일을 찾을 수 없습니다: " + fileName);
         }
@@ -268,8 +264,8 @@ public class WorkListScriptService {
         return item;
     }
 
-    private ScriptConfig getConfigOrThrow(String workOriId) {
-        ScriptConfig config = SCRIPT_CONFIGS.get(workOriId);
+    private ScriptConfigProperties getConfigOrThrow(String workOriId) {
+        ScriptConfigProperties config = scriptProperties.getConfigs().get(workOriId);
         if (config == null) {
             throw new InvalidInputException("지원하지 않는 항목 유형입니다: " + workOriId);
         }
@@ -277,7 +273,7 @@ public class WorkListScriptService {
     }
 
     // ============================================================
-    // 내부 설정 클래스
+    // 내부 값 객체
     // ============================================================
 
     @Getter
@@ -285,67 +281,5 @@ public class WorkListScriptService {
     private static class ColumnInfo {
         private final String name;
         private final String dataType;
-    }
-
-    @Getter
-    @AllArgsConstructor
-    private static class ScriptConfig {
-        private final String tableName;
-        private final List<String> pkColumns;
-        private final List<ChildTableConfig> childTables;
-    }
-
-    @Getter
-    @AllArgsConstructor
-    private static class ChildTableConfig {
-        private final String tableName;
-        /** 부모 PK 컬럼과 순서가 일치하는 FK 컬럼 목록. */
-        private final List<String> fkColumns;
-    }
-
-    private static Map<String, ScriptConfig> buildConfigs() {
-        Map<String, ScriptConfig> m = new LinkedHashMap<>();
-        m.put(
-                "Message",
-                new ScriptConfig(
-                        "FWK_MESSAGE",
-                        List.of("ORG_ID", "MESSAGE_ID"),
-                        List.of(new ChildTableConfig("FWK_MESSAGE_FIELD", List.of("ORG_ID", "MESSAGE_ID")))));
-        m.put("Trx", new ScriptConfig("FWK_TRX", List.of("TRX_ID"), List.of()));
-        m.put(
-                "P_SERVICE",
-                new ScriptConfig(
-                        "FWK_SERVICE",
-                        List.of("SERVICE_ID"),
-                        List.of(new ChildTableConfig("FWK_SERVICE_RELATION", List.of("SERVICE_ID")))));
-        m.put(
-                "B_Service",
-                new ScriptConfig(
-                        "FWK_SERVICE",
-                        List.of("SERVICE_ID"),
-                        List.of(new ChildTableConfig("FWK_SERVICE_RELATION", List.of("SERVICE_ID")))));
-        m.put(
-                "P_Component",
-                new ScriptConfig(
-                        "FWK_COMPONENT",
-                        List.of("COMPONENT_ID"),
-                        List.of(new ChildTableConfig("FWK_COMPONENT_PARAM", List.of("COMPONENT_ID")))));
-        m.put(
-                "B_Component",
-                new ScriptConfig(
-                        "FWK_COMPONENT",
-                        List.of("COMPONENT_ID"),
-                        List.of(new ChildTableConfig("FWK_COMPONENT_PARAM", List.of("COMPONENT_ID")))));
-        m.put("SQL_QUERY", new ScriptConfig("FWK_SQL_QUERY", List.of("QUERY_ID"), List.of()));
-        m.put("SQL_CONF", new ScriptConfig("FWK_SQL_CONF", List.of("DB_ID"), List.of()));
-        m.put("Errorcode", new ScriptConfig("FWK_ERROR", List.of("ERROR_CODE"), List.of()));
-        m.put(
-                "Codegroup",
-                new ScriptConfig(
-                        "FWK_CODE_GROUP",
-                        List.of("CODE_GROUP_ID"),
-                        List.of(new ChildTableConfig("FWK_CODE", List.of("CODE_GROUP_ID")))));
-        m.put("Board_Service", new ScriptConfig("FWK_BOARD", List.of("BOARD_ID"), List.of()));
-        return Collections.unmodifiableMap(m);
     }
 }

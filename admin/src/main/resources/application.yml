@@ -53,10 +53,67 @@ server:
 file:
   upload-dir: ${user.dir}/uploads
 
-# 이행스크립트 저장 경로 (기본값: 실행 디렉터리/worklist-scripts)
+# 이행스크립트 저장 경로 및 WORK_ID별 SQL 생성 설정
 worklist:
   script:
     path: ${user.dir}/worklist-scripts
+    configs:
+      Message:
+        table-name: FWK_MESSAGE
+        pk-columns: [ORG_ID, MESSAGE_ID]
+        child-tables:
+          - table-name: FWK_MESSAGE_FIELD
+            fk-columns: [ORG_ID, MESSAGE_ID]
+      Trx:
+        table-name: FWK_TRX
+        pk-columns: [TRX_ID]
+        child-tables: []
+      P_SERVICE:
+        table-name: FWK_SERVICE
+        pk-columns: [SERVICE_ID]
+        child-tables:
+          - table-name: FWK_SERVICE_RELATION
+            fk-columns: [SERVICE_ID]
+      B_Service:
+        table-name: FWK_SERVICE
+        pk-columns: [SERVICE_ID]
+        child-tables:
+          - table-name: FWK_SERVICE_RELATION
+            fk-columns: [SERVICE_ID]
+      P_Component:
+        table-name: FWK_COMPONENT
+        pk-columns: [COMPONENT_ID]
+        child-tables:
+          - table-name: FWK_COMPONENT_PARAM
+            fk-columns: [COMPONENT_ID]
+      B_Component:
+        table-name: FWK_COMPONENT
+        pk-columns: [COMPONENT_ID]
+        child-tables:
+          - table-name: FWK_COMPONENT_PARAM
+            fk-columns: [COMPONENT_ID]
+      SQL_QUERY:
+        table-name: FWK_SQL_QUERY
+        pk-columns: [QUERY_ID]
+        child-tables: []
+      SQL_CONF:
+        table-name: FWK_SQL_CONF
+        pk-columns: [DB_ID]
+        child-tables: []
+      Errorcode:
+        table-name: FWK_ERROR
+        pk-columns: [ERROR_CODE]
+        child-tables: []
+      Codegroup:
+        table-name: FWK_CODE_GROUP
+        pk-columns: [CODE_GROUP_ID]
+        child-tables:
+          - table-name: FWK_CODE
+            fk-columns: [CODE_GROUP_ID]
+      Board_Service:
+        table-name: FWK_BOARD
+        pk-columns: [BOARD_ID]
+        child-tables: []
 
 # XML Property Configuration
 xml-property:
