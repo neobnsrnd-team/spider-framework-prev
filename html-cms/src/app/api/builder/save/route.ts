@@ -1,6 +1,6 @@
 // src/app/api/builder/save/route.ts
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { createPage, getPageById, resetApproveStateToWork, updatePage } from '@/db/repository/page.repository';
 import { contentBuilderErrorResponse, getErrorMessage, successResponse } from '@/lib/api-response';
@@ -9,6 +9,8 @@ import { canAccessCmsEdit, canManageCmsPage, getCurrentUser } from '@/lib/curren
 import { isValidBankId, isPageExpired } from '@/lib/validators';
 import { isTemplateCompatibleViewMode } from '@/lib/view-mode';
 
+class PageNotFoundError extends Error {}
+
 async function savePage(
     bank: string,
     html: string,
@@ -16,7 +18,7 @@ async function savePage(
     viewMode?: string,
     thumbnail?: string,
     templateId?: string,
-    skipExistingLookup = false,
+    allowCreate = false,
 ): Promise<void> {
     const currentUser = await getCurrentUser();
     if (!canAccessCmsEdit(currentUser)) {
@@ -24,7 +26,10 @@ async function savePage(
     }
     const { userId, userName } = currentUser;
 
-    const existing = skipExistingLookup ? null : await getPageById(bank);
+    const existing = allowCreate ? null : await getPageById(bank);
+    if (!existing && !allowCreate) {
+        throw new PageNotFoundError('페이지를 찾을 수 없습니다.');
+    }
     if (existing && isPageExpired(existing.IS_PUBLIC, existing.EXPIRED_DATE)) {
         throw new Error('만료된 페이지는 수정할 수 없습니다.');
     }
@@ -95,6 +100,10 @@ export async function POST(req: NextRequest) {
 
         return successResponse({ pageId: bank, editorUrl: nextApi(`/edit?bank=${encodeURIComponent(bank)}`) });
     } catch (err: unknown) {
+        if (err instanceof PageNotFoundError) {
+            return NextResponse.json({ ok: false, error: err.message, errorCode: 'PAGE_NOT_FOUND' });
+        }
+
         console.error('페이지 저장 실패:', err);
         return contentBuilderErrorResponse(getErrorMessage(err));
     }

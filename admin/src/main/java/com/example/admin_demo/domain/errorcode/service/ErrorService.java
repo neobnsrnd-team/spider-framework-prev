@@ -16,6 +16,7 @@ import com.example.admin_demo.domain.errorhandle.dto.ErrorHandleAppCreateRequest
 import com.example.admin_demo.domain.errorhandle.dto.ErrorHandleAppRequest;
 import com.example.admin_demo.domain.errorhandle.dto.ErrorHandleAppResponse;
 import com.example.admin_demo.domain.errorhandle.service.ErrorHandleAppService;
+import com.example.admin_demo.global.aop.WorkListRecord;
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.exception.DuplicateException;
@@ -170,6 +171,7 @@ public class ErrorService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "Errorcode", crudType = "C", pkExpression = "#dto.errorCode", workName = "에러코드")
     public ErrorResponse createError(ErrorCreateRequest dto) {
         if (errorMapper.countByErrorCode(dto.getErrorCode()) > 0) {
             throw new DuplicateException("errorCode: " + dto.getErrorCode());
@@ -209,6 +211,7 @@ public class ErrorService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "Errorcode", crudType = "U", pkExpression = "#errorCode", workName = "에러코드")
     public ErrorResponse updateError(String errorCode, ErrorUpdateRequest dto) {
         if (errorMapper.countByErrorCode(errorCode) == 0) {
             throw new NotFoundException("errorCode: " + errorCode);
@@ -248,6 +251,7 @@ public class ErrorService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "Errorcode", crudType = "D", pkExpression = "#errorCode", workName = "에러코드")
     public void deleteError(String errorCode) {
         if (errorMapper.countByErrorCode(errorCode) == 0) {
             throw new NotFoundException("errorCode: " + errorCode);

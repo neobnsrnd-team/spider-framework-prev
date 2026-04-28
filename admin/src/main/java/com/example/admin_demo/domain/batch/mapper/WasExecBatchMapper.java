@@ -44,4 +44,13 @@ public interface WasExecBatchMapper {
 
     // Batch 작업 (Oracle UNION ALL 패턴)
     void insertWasExecBatchBatch(@Param("list") List<Map<String, String>> list);
+
+    /**
+     * 해당 배치에 배정된 활성(USE_YN='Y') WAS 인스턴스 ID 목록 조회.
+     * 스케줄 Cron 변경 시 모든 배정 인스턴스에 TCP 커맨드를 전송하기 위해 사용한다.
+     *
+     * @param batchAppId 배치 APP ID
+     * @return USE_YN='Y' 인스턴스 ID 목록
+     */
+    List<String> selectActiveInstanceIds(@Param("batchAppId") String batchAppId);
 }

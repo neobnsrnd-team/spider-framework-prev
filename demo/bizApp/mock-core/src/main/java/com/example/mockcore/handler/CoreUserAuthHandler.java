@@ -1,10 +1,10 @@
 package com.example.mockcore.handler;
 
 import com.example.bizcommon.BizCommands;
+import com.example.mockcore.infra.FixedMessageReader;
+import com.example.mockcore.infra.FixedMessageWriter;
+import com.example.mockcore.infra.LegacyCoreHandler;
 import com.example.mockcore.repository.AccountRepository;
-import com.example.spidercommon.infra.tcp.handler.CommandHandler;
-import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
-import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,65 +14,57 @@ import java.util.Map;
 /**
  * 사용자 인증 커맨드 핸들러 ({@code CORE_USER_AUTH}).
  *
- * <p>userId·password를 수신하여 DB 인증 후 userId, userName, userGrade, lastLoginDtime을 반환한다.
- * 인증 성공 시 LAST_LOGIN_DTIME도 갱신된다.</p>
+ * <p>REQ: COMMAND(C,20) + REQUEST_ID(C,36) + userId(C,20) + password(C,20)
+ * RES: SUCCESS(C,1) + ERROR_MSG(K,200) + userId(C,20) + userName(K,60)
+ *      + userGrade(K,6) + lastLoginDtime(C,14)</p>
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class CoreUserAuthHandler implements CommandHandler<JsonCommandRequest, JsonCommandResponse> {
+public class CoreUserAuthHandler implements LegacyCoreHandler {
 
     private final AccountRepository accountRepository;
 
     @Override
-    public boolean supports(String command) {
-        return BizCommands.CORE_USER_AUTH.equals(command);
+    public String getCommand() {
+        return BizCommands.CORE_USER_AUTH;
     }
 
     @Override
-    public JsonCommandResponse handle(String command, JsonCommandRequest request) {
-        Map<String, Object> payload = request.getPayload();
+    public byte[] handle(byte[] requestBytes) {
+        FixedMessageReader reader = new FixedMessageReader(requestBytes);
+        reader.skip(20); // COMMAND
+        reader.skip(36); // REQUEST_ID
+        String userId   = reader.readC(20);
+        String password = reader.readC(20);
 
+        log.debug("[CORE_USER_AUTH] 인증 요청 — userId={}", userId);
+
+        FixedMessageWriter writer = new FixedMessageWriter();
         try {
-            String userId = getRequiredString(payload, "userId");
-            String password = getRequiredString(payload, "password");
-
-            log.debug("[CORE_USER_AUTH] 인증 요청 — userId={}", userId);
-
-            Map<String, Object> userInfo = accountRepository.authenticateUser(userId, password);
-
+            Map<String, Object> info = accountRepository.authenticateUser(userId, password);
             log.debug("[CORE_USER_AUTH] 인증 성공 — userId={}", userId);
-
-            return JsonCommandResponse.builder()
-                    .command(command)
-                    .success(true)
-                    .message("인증 성공")
-                    .payload(userInfo)
-                    .build();
-
+            writer.writeC("Y", 1);
+            writer.writeK("", 200);
+            writer.writeC(str(info, "userId"), 20);
+            writer.writeK(str(info, "userName"), 60);
+            writer.writeK(str(info, "userGrade"), 6);
+            writer.writeC(str(info, "lastLoginDtime"), 14);
         } catch (Exception e) {
             log.warn("[CORE_USER_AUTH] 인증 실패 — {}", e.getMessage());
-            return JsonCommandResponse.builder()
-                    .command(command)
-                    .success(false)
-                    .error(e.getMessage())
-                    .build();
+            writer = new FixedMessageWriter();
+            writer.writeC("N", 1);
+            writer.writeK(e.getMessage(), 200);
+            writer.writeC("", 20);
+            writer.writeK("", 60);
+            writer.writeK("", 6);
+            writer.writeC("", 14);
         }
+        return writer.toBytes();
     }
 
-    /**
-     * payload에서 필수 문자열 값을 추출한다. null이거나 빈 값이면 예외를 던진다.
-     *
-     * @param payload 요청 payload
-     * @param key     추출할 키
-     * @return 문자열 값
-     * @throws IllegalArgumentException 값이 없거나 빈 문자열인 경우
-     */
-    private String getRequiredString(Map<String, Object> payload, String key) {
-        Object value = payload.get(key);
-        if (value == null || value.toString().isBlank()) {
-            throw new IllegalArgumentException("필수 파라미터 누락: " + key);
-        }
-        return value.toString();
+    private String str(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v != null ? v.toString() : "";
     }
 }

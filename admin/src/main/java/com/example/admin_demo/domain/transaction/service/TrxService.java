@@ -12,6 +12,7 @@ import com.example.admin_demo.domain.transaction.dto.TrxWithMessagesResponse;
 import com.example.admin_demo.domain.transaction.mapper.TrxHistoryMapper;
 import com.example.admin_demo.domain.transaction.mapper.TrxMapper;
 import com.example.admin_demo.domain.trxmessage.dto.TrxMessageResponse;
+import com.example.admin_demo.global.aop.WorkListRecord;
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.exception.DuplicateException;
@@ -90,6 +91,7 @@ public class TrxService {
      * Create new TRX
      */
     @Transactional
+    @WorkListRecord(workId = "Trx", crudType = "C", pkExpression = "#requestDTO.trxId", workName = "거래")
     public TrxCreateResponse createTrx(TrxCreateRequest requestDTO) {
         // 중복 체크
         int count = trxMapper.countByTrxId(requestDTO.getTrxId());
@@ -132,6 +134,7 @@ public class TrxService {
      * Update TRX
      */
     @Transactional
+    @WorkListRecord(workId = "Trx", crudType = "U", pkExpression = "#trxId", workName = "거래")
     public TrxResponse updateTrx(String trxId, TrxUpdateRequest dto) {
         int affected = trxMapper.updateTrx(trxId, dto);
         if (affected == 0) {
@@ -144,6 +147,7 @@ public class TrxService {
      * Delete TRX
      */
     @Transactional
+    @WorkListRecord(workId = "Trx", crudType = "D", pkExpression = "#trxId", workName = "거래")
     public void deleteTrx(String trxId) {
         // 존재 여부 확인
         int count = trxMapper.countByTrxId(trxId);

@@ -82,4 +82,14 @@ public interface BatchAppMapper {
             @Param("batchCycleFilter") String batchCycleFilter,
             @Param("sortBy") String sortBy,
             @Param("sortDirection") String sortDirection);
+
+    /**
+     * FWK_BATCH_APP.CRON_TEXT 단독 업데이트.
+     * 스케줄 변경 API에서 전체 배치앱 정보를 갱신하지 않고 Cron 표현식만 변경할 때 사용한다.
+     */
+    void updateCronText(
+            @Param("batchAppId") String batchAppId,
+            @Param("cronText") String cronText,
+            @Param("lastUpdateDtime") String lastUpdateDtime,
+            @Param("lastUpdateUserId") String lastUpdateUserId);
 }

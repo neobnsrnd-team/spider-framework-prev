@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal">
+
+    <!-- 결재요청 모달 (결재명/설명 입력 + 결재자 검색 → 결재요청) -->
+    <div class="modal fade" id="workApprovalModal" tabindex="-1" aria-labelledby="workApprovalModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="workApprovalModalLabel">
+                        <i class="bi bi-check2-circle"></i> 결재요청
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        결재 정보를 입력하고 결재자를 선택하세요.
+                        <span id="wlApprovalSelectedCount" class="fw-medium text-body"></span>
+                    </p>
+
+                    <!-- 결재명 -->
+                    <div class="mb-2">
+                        <label for="wlApprovalName" class="form-label form-label-sm fw-medium mb-1">결재명 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" id="wlApprovalName"
+                               placeholder="결재명을 입력하세요" maxlength="100">
+                    </div>
+
+                    <!-- 결재 설명 -->
+                    <div class="mb-3">
+                        <label for="wlApprovalDesc" class="form-label form-label-sm fw-medium mb-1">결재 설명</label>
+                        <textarea class="form-control form-control-sm" id="wlApprovalDesc"
+                                  rows="2" placeholder="설명을 입력하세요 (선택)" maxlength="500"></textarea>
+                    </div>
+
+                    <!-- 결재자 검색 -->
+                    <div class="mb-1">
+                        <label class="form-label form-label-sm fw-medium mb-1">결재자 <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="text" class="form-control" id="wlApprovalKeyword"
+                                   placeholder="사용자 ID 또는 이름" maxlength="50"
+                                   onkeydown="if(event.key==='Enter') WorkApprovalModal._search()">
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="WorkApprovalModal._search()">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+
+                        <!-- 선택된 결재자 표시 -->
+                        <div id="wlApprovalSelectedUser" class="mb-2" style="display:none;">
+                            <span class="badge text-bg-success">
+                                <i class="bi bi-person-check-fill me-1"></i>
+                                <span id="wlApprovalSelectedUserLabel"></span>
+                            </span>
+                        </div>
+
+                        <!-- 검색 결과 목록 -->
+                        <div id="wlApprovalUserList" class="border rounded" style="max-height: 200px; overflow-y: auto;">
+                            <div class="text-center text-muted small py-3">검색어를 입력하세요.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> 취소
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm" id="btnWlApprovalConfirm" disabled>
+                        <i class="bi bi-check2-circle"></i> 결재요청
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            window.WorkApprovalModal = {
+                _workSeqs: [],
+                _selectedUserId: null,
+                _selectedUserName: null,
+
+                open: function (workSeqs, defaultName) {
+                    this._workSeqs = workSeqs;
+                    this._selectedUserId = null;
+                    this._selectedUserName = null;
+
+                    // 입력 초기화
+                    $('#wlApprovalName').val(defaultName || '');
+                    $('#wlApprovalDesc').val('');
+                    $('#wlApprovalKeyword').val('');
+                    $('#wlApprovalUserList').html('<div class="text-center text-muted small py-3">검색어를 입력하세요.</div>');
+                    $('#wlApprovalSelectedUser').hide();
+                    $('#btnWlApprovalConfirm').prop('disabled', true);
+                    $('#wlApprovalSelectedCount').text(workSeqs.length + '개 항목');
+
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('workApprovalModal')).show();
+                    document.getElementById('workApprovalModal')
+                        .addEventListener('shown.bs.modal', function handler() {
+                            document.getElementById('wlApprovalName').focus();
+                            this.removeEventListener('shown.bs.modal', handler);
+                        });
+                },
+
+                _search: function () {
+                    var keyword = $('#wlApprovalKeyword').val().trim();
+                    if (!keyword) {
+                        Toast.warning('검색어를 입력해주세요.');
+                        return;
+                    }
+                    this._selectedUserId = null;
+                    this._selectedUserName = null;
+                    $('#wlApprovalSelectedUser').hide();
+                    $('#btnWlApprovalConfirm').prop('disabled', true);
+                    var $list = $('#wlApprovalUserList');
+                    $list.html('<div class="text-center text-muted small py-3">검색 중...</div>');
+
+                    $.ajax({
+                        url: API_BASE_URL + '/users/search',
+                        data: { keyword: keyword },
+                        success: function (res) {
+                            if (res.success) WorkApprovalModal._renderUserList(res.data || []);
+                            else Toast.error(res.message || '사용자 검색 실패');
+                        },
+                        error: function () { Toast.error('사용자 검색 중 오류가 발생했습니다.'); }
+                    });
+                },
+
+                _renderUserList: function (users) {
+                    var $list = $('#wlApprovalUserList');
+                    if (!users.length) {
+                        $list.html('<div class="text-center text-muted small py-3">검색 결과가 없습니다.</div>');
+                        return;
+                    }
+                    var html = '';
+                    users.forEach(function (u) {
+                        html +=
+                            '<div class="d-flex align-items-center px-3 py-2 border-bottom wl-approval-item" style="cursor:pointer;"' +
+                            '     data-user-id="' + _wlEsc(u.userId) + '"' +
+                            '     data-user-name="' + _wlEsc(u.userName) + '"' +
+                            '     onclick="WorkApprovalModal._selectUser(this, \'' + _wlEsc(u.userId) + '\', \'' + _wlEsc(u.userName) + '\')">' +
+                            '  <i class="bi bi-circle me-2 small text-muted wl-approval-icon"></i>' +
+                            '  <span class="small">' + _wlEsc(u.userName) +
+                            '    <span class="text-muted ms-1 fs-xs">' + _wlEsc(u.userId) + '</span>' +
+                            '  </span>' +
+                            '</div>';
+                    });
+                    $list.html(html);
+                },
+
+                _selectUser: function (el, userId, userName) {
+                    $('.wl-approval-item').removeClass('bg-primary-subtle');
+                    $('.wl-approval-icon').removeClass('bi-record-circle-fill text-primary').addClass('bi-circle text-muted');
+                    $(el).addClass('bg-primary-subtle');
+                    $(el).find('.wl-approval-icon').removeClass('bi-circle text-muted').addClass('bi-record-circle-fill text-primary');
+
+                    this._selectedUserId = userId;
+                    this._selectedUserName = userName;
+                    $('#wlApprovalSelectedUserLabel').text(userName + ' (' + userId + ')');
+                    $('#wlApprovalSelectedUser').show();
+                    // 결재명이 있고 결재자가 선택됐을 때 버튼 활성화
+                    this._syncConfirmBtn();
+                },
+
+                _syncConfirmBtn: function () {
+                    var nameOk = !!$('#wlApprovalName').val().trim();
+                    var userOk = !!this._selectedUserId;
+                    $('#btnWlApprovalConfirm').prop('disabled', !(nameOk && userOk));
+                },
+
+                _confirm: function () {
+                    var approvalName = $('#wlApprovalName').val().trim();
+                    var approvalDesc = $('#wlApprovalDesc').val().trim();
+                    if (!approvalName) { Toast.warning('결재명을 입력해주세요.'); return; }
+                    if (!this._selectedUserId) { Toast.warning('결재자를 선택해주세요.'); return; }
+
+                    WorkListPage.requestApproval(
+                        this._workSeqs, approvalName, approvalDesc, this._selectedUserId);
+                    bootstrap.Modal.getInstance(
+                        document.getElementById('workApprovalModal')).hide();
+                }
+            };
+
+            // 결재명 입력 시 확인 버튼 활성 상태 동기화
+            $(document).off('input', '#wlApprovalName').on('input', '#wlApprovalName', function () {
+                WorkApprovalModal._syncConfirmBtn();
+            });
+
+            $(document).off('click', '#btnWlApprovalConfirm').on('click', '#btnWlApprovalConfirm', function () {
+                WorkApprovalModal._confirm();
+            });
+        })();
+    </script>
+</div>
+</body>
+</html>

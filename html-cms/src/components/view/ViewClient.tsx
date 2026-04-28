@@ -604,7 +604,10 @@ export default function ViewClient({ html, viewMode, bank, embed }: Props) {
             });
 
             // 카드 너비·스냅 정렬 (모드별 다름)
-            track.querySelectorAll<HTMLElement>('[data-card-item]').forEach((card) => {
+            // mobile: 카드 1개이면 여백 없이 100%, 2개 이상이면 92%로 다음 카드 살짝 노출
+            const cardItems = track.querySelectorAll<HTMLElement>('[data-card-item]');
+            const isSingle = cardItems.length === 1;
+            cardItems.forEach((card) => {
                 if (mode === 'web') {
                     card.style.flex = '0 0 min(480px,46vw)';
                     card.style.width = 'min(480px,46vw)';
@@ -616,8 +619,9 @@ export default function ViewClient({ html, viewMode, bank, embed }: Props) {
                     card.style.width = 'min(440px,78vw)';
                     card.style.scrollSnapAlign = 'start';
                 } else {
-                    card.style.flex = '0 0 92%';
-                    card.style.width = '92%';
+                    const w = isSingle ? '100%' : '92%';
+                    card.style.flex = `0 0 ${w}`;
+                    card.style.width = w;
                     card.style.scrollSnapAlign = 'center';
                 }
             });

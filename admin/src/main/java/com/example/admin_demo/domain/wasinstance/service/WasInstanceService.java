@@ -1,6 +1,9 @@
 package com.example.admin_demo.domain.wasinstance.service;
 
 import com.example.admin_demo.domain.batch.mapper.WasExecBatchMapper;
+import com.example.admin_demo.domain.property.dto.PropertyResponse;
+import com.example.admin_demo.domain.property.mapper.PropertyMapper;
+import com.example.admin_demo.domain.wasinstance.dto.PoolStatusResponse;
 import com.example.admin_demo.domain.wasinstance.dto.WasInstanceBatchSaveRequest;
 import com.example.admin_demo.domain.wasinstance.dto.WasInstanceRequest;
 import com.example.admin_demo.domain.wasinstance.dto.WasInstanceResponse;
@@ -16,13 +19,20 @@ import com.example.admin_demo.global.util.ExcelColumnDefinition;
 import com.example.admin_demo.global.util.ExcelExportUtil;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Service
@@ -33,6 +43,17 @@ public class WasInstanceService {
     private final WasInstanceMapper wasInstanceMapper;
     private final WasPropertyService wasPropertyService;
     private final WasExecBatchMapper wasExecBatchMapper;
+    private final RestTemplate restTemplate;
+    private final PropertyMapper propertyMapper;
+
+    @Value("${reload.management.default-port:50005}")
+    private int defaultManagementPort;
+
+    @Value("${reload.management.default-ip:localhost}")
+    private String defaultManagementIp;
+
+    @Value("${reload.management.property-group:was_config}")
+    private String propertyGroup;
 
     public List<WasInstanceResponse> getAllInstances() {
         log.info("Fetching all WAS instances");
@@ -205,5 +226,108 @@ public class WasInstanceService {
         } catch (IOException e) {
             throw new InternalException("엑셀 파일 생성 중 오류가 발생했습니다", e);
         }
+    }
+
+    /**
+     * AP 서버 소켓 풀 현황 조회.
+     * spider-link {@code GET /api/internal/pool/status}를 호출하여 반환한다.
+     */
+    public PoolStatusResponse getPoolStatus(String instanceId) {
+        WasInstanceResponse instance = wasInstanceMapper.selectResponseById(instanceId);
+        if (instance == null) {
+            throw new NotFoundException("instanceId: " + instanceId);
+        }
+
+        String managementIp = resolveManagementProperty(instanceId, "MANAGEMENT_SERVER_IP", defaultManagementIp);
+        int managementPort = resolveManagementPort(instanceId);
+        String url = String.format("http://%s:%d/api/internal/pool/status", managementIp, managementPort);
+
+        log.info("풀 현황 조회: instanceId={}, url={}", instanceId, url);
+
+        try {
+            ResponseEntity<Map<String, Object>> response =
+                    restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                Map<String, Object> body = response.getBody();
+                return PoolStatusResponse.builder()
+                        .instanceId(instanceId)
+                        .instanceName(instance.getInstanceName())
+                        .success(true)
+                        .pools(parsePools(body.get("pools")))
+                        .build();
+            }
+
+            return PoolStatusResponse.builder()
+                    .instanceId(instanceId)
+                    .instanceName(instance.getInstanceName())
+                    .success(false)
+                    .errorMessage("응답 상태: " + response.getStatusCode())
+                    .build();
+
+        } catch (RestClientException e) {
+            String errorMsg = String.format(
+                    "%s 서버에 연결 중 오류가 발생하였습니다.[host=%s,port=%d]", instanceId, managementIp, managementPort);
+            log.error("풀 현황 조회 통신 오류: {}", errorMsg, e);
+            return PoolStatusResponse.builder()
+                    .instanceId(instanceId)
+                    .instanceName(instance.getInstanceName())
+                    .success(false)
+                    .errorMessage(errorMsg)
+                    .build();
+        }
+    }
+
+    private Map<String, PoolStatusResponse.PoolInfo> parsePools(Object poolsObj) {
+        if (!(poolsObj instanceof Map<?, ?> rawPools)) {
+            return Collections.emptyMap();
+        }
+        Map<String, PoolStatusResponse.PoolInfo> result = new LinkedHashMap<>();
+        rawPools.forEach((key, value) -> {
+            if (!(value instanceof Map<?, ?> poolMap)) return;
+            result.put(
+                    String.valueOf(key),
+                    PoolStatusResponse.PoolInfo.builder()
+                            .host(poolMap.get("host") != null ? String.valueOf(poolMap.get("host")) : "")
+                            .port(toPoolInt(poolMap.get("port")))
+                            .active(toPoolInt(poolMap.get("active")))
+                            .idle(toPoolInt(poolMap.get("idle")))
+                            .total(toPoolInt(poolMap.get("total")))
+                            .maxActive(toPoolInt(poolMap.get("maxActive")))
+                            .build());
+        });
+        return result;
+    }
+
+    private int toPoolInt(Object obj) {
+        if (obj instanceof Number n) return n.intValue();
+        return 0;
+    }
+
+    private int resolveManagementPort(String instanceId) {
+        String value = resolveManagementProperty(instanceId, "MANAGEMENT_SERVER_PORT", null);
+        if (value != null) {
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                log.debug("Management port 파싱 실패, 기본값 사용: instanceId={}", instanceId, e);
+            }
+        }
+        return defaultManagementPort;
+    }
+
+    private String resolveManagementProperty(String instanceId, String suffix, String defaultValue) {
+        try {
+            String propertyId = instanceId + "." + suffix;
+            PropertyResponse property = propertyMapper.selectResponseById(propertyGroup, propertyId);
+            if (property != null
+                    && property.getDefaultValue() != null
+                    && !property.getDefaultValue().isBlank()) {
+                return property.getDefaultValue();
+            }
+        } catch (Exception e) {
+            log.warn("Management property 조회 실패, 기본값 사용: instanceId={}, suffix={}", instanceId, suffix, e);
+        }
+        return defaultValue;
     }
 }

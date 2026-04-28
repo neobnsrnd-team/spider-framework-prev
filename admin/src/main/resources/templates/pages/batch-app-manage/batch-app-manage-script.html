@@ -108,6 +108,7 @@
                 const retryIcon = getYnIcon(app.retryableYn);
                 const perWasIcon = getYnIcon(app.perWasYn);
                 const importantText = getImportantText(app.importantType);
+                const slaText = app.slaSeconds != null ? app.slaSeconds + '초' : '-';
 
                 const row = $(`
                     <tr data-batch-app-index="${index}" class="cursor-pointer">
@@ -119,6 +120,7 @@
                         <td class="text-center">${retryIcon}</td>
                         <td class="text-center">${perWasIcon}</td>
                         <td class="text-center">${importantText}</td>
+                        <td class="text-center">${slaText}</td>
                         <td class="text-center">
                             ${hasBatchAppWrite ? `<button class="btn btn-sm btn-outline-primary btn-manual-run"
                                     data-batch-app-id="${HtmlUtils.escape(app.batchAppId)}"

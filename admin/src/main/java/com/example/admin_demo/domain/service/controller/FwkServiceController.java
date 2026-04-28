@@ -88,7 +88,9 @@ public class FwkServiceController {
     @PreAuthorize("hasAuthority('FWK_SERVICE:W')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String serviceId) {
         log.info("DELETE /api/fwk-services/{}", serviceId);
-        fwkServiceService.delete(serviceId);
+        // serviceType은 WorkList 이력 적재 시 workId로 사용된다.
+        String serviceType = fwkServiceService.getById(serviceId).getServiceType();
+        fwkServiceService.delete(serviceId, serviceType);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 

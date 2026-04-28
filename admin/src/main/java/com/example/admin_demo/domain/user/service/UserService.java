@@ -6,6 +6,7 @@ import com.example.admin_demo.domain.user.dto.ProfileUpdateRequest;
 import com.example.admin_demo.domain.user.dto.UserCreateRequest;
 import com.example.admin_demo.domain.user.dto.UserResponse;
 import com.example.admin_demo.domain.user.dto.UserSearchRequest;
+import com.example.admin_demo.domain.user.dto.UserSimpleResponse;
 import com.example.admin_demo.domain.user.dto.UserUpdateRequest;
 import com.example.admin_demo.domain.user.dto.UserWithRoleResponse;
 import com.example.admin_demo.domain.user.mapper.UserMapper;
@@ -350,5 +351,10 @@ public class UserService {
             case "3" -> "정지";
             default -> stateCode;
         };
+    }
+
+    /** 권한이양 대상 사용자 검색 — userId·userName LIKE, 최대 20건. */
+    public List<UserSimpleResponse> searchForTransfer(String keyword) {
+        return userMapper.searchForTransfer(keyword);
     }
 }

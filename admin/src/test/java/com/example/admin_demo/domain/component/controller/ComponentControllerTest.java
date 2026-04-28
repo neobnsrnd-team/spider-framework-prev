@@ -260,6 +260,8 @@ class ComponentControllerTest {
         @WithMockUser(authorities = "COMPONENT:W")
         @DisplayName("[삭제] 존재하는 ID 삭제 시 200을 반환해야 한다")
         void delete_found_returns200() throws Exception {
+            given(componentService.getById("CMP-001")).willReturn(buildResponse("CMP-001"));
+
             mockMvc.perform(delete(BASE_URL + "/CMP-001").with(csrf())).andExpect(status().isOk());
         }
 
@@ -267,9 +269,10 @@ class ComponentControllerTest {
         @WithMockUser(authorities = "COMPONENT:W")
         @DisplayName("[삭제] 존재하지 않는 ID 삭제 시 404를 반환해야 한다")
         void delete_notFound_returns404() throws Exception {
+            given(componentService.getById("NOT-EXIST")).willReturn(buildResponse("NOT-EXIST"));
             willThrow(new NotFoundException("componentId: NOT-EXIST"))
                     .given(componentService)
-                    .delete("NOT-EXIST");
+                    .delete(anyString(), anyString());
 
             mockMvc.perform(delete(BASE_URL + "/NOT-EXIST").with(csrf())).andExpect(status().isNotFound());
         }

@@ -48,4 +48,7 @@ public class ManagementContext implements Serializable, HasCommand {
 
     /** 오류 메시지 (실패 시 채워짐, 예외 클래스명 + 메시지 포맷 권장) */
     private String errorMessage;
+
+    /** Cron 표현식 (SCHEDULE_CRON_UPDATE 커맨드 시 새 스케줄 값) */
+    private String cronText;
 }

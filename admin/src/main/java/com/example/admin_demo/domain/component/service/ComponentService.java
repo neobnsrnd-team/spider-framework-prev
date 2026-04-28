@@ -5,6 +5,7 @@ import com.example.admin_demo.domain.component.dto.ComponentResponse;
 import com.example.admin_demo.domain.component.dto.ComponentSearchRequest;
 import com.example.admin_demo.domain.component.dto.ComponentUpdateRequest;
 import com.example.admin_demo.domain.component.mapper.ComponentMapper;
+import com.example.admin_demo.global.aop.WorkListRecord;
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.exception.DuplicateException;
@@ -58,6 +59,11 @@ public class ComponentService {
     }
 
     /** 컴포넌트 등록 (파라미터 배치 등록 포함) */
+    @WorkListRecord(
+            workIdExpression = "#dto.componentType",
+            crudType = "C",
+            pkExpression = "#dto.componentId",
+            workName = "컴포넌트")
     @Transactional
     public ComponentResponse create(ComponentCreateRequest dto) {
         try {
@@ -72,6 +78,11 @@ public class ComponentService {
     }
 
     /** 컴포넌트 수정 (파라미터 DELETE → batch INSERT) */
+    @WorkListRecord(
+            workIdExpression = "#dto.componentType",
+            crudType = "U",
+            pkExpression = "#componentId",
+            workName = "컴포넌트")
     @Transactional
     public ComponentResponse update(String componentId, ComponentUpdateRequest dto) {
         if (componentMapper.countById(componentId) == 0) {
@@ -85,9 +96,16 @@ public class ComponentService {
         return getById(componentId);
     }
 
-    /** 컴포넌트 삭제 (FK 제약 상 파라미터 먼저 삭제) */
+    /** 컴포넌트 삭제 (FK 제약 상 파라미터 먼저 삭제).
+     * componentType은 WorkListRecord 이력 적재에 사용된다 (컨트롤러에서 조회 후 전달).
+     */
+    @WorkListRecord(
+            workIdExpression = "#componentType",
+            crudType = "D",
+            pkExpression = "#componentId",
+            workName = "컴포넌트")
     @Transactional
-    public void delete(String componentId) {
+    public void delete(String componentId, String componentType) {
         if (componentMapper.countById(componentId) == 0) {
             throw new NotFoundException("componentId: " + componentId);
         }

@@ -1,5 +1,6 @@
 package com.example.spiderlink.domain.messageinstance;
 
+import com.example.spiderlink.domain.messageinstance.dto.MessageInstanceInsertRequest;
 import com.example.spidercommon.infra.tcp.model.CommandRequest;
 import com.example.spidercommon.infra.tcp.model.HasCommand;
 import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
@@ -9,13 +10,13 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * spider-link 전문 거래 이력 기록기.
  *
  * <p>SpiderTcpServer(서버 수신·응답)와 TcpClient(클라이언트 송신·수신) 양방향에서
- * {@code FWK_MESSAGE_INSTANCE} 테이블에 전문 이력을 기록한다.</p>
+ * {@link MessageInstanceInsertRequest}를 생성하여 {@link MessageLogQueue}에 적재한다.
+ * 실제 DB INSERT는 큐 컨슈머 스레드가 비동기로 처리하므로 TCP 처리 스레드가 블로킹되지 않는다.</p>
  *
  * <p>DB 기록 실패 시 경고 로그만 출력하고 비즈니스 로직에 영향을 주지 않는다.</p>
  *
@@ -28,7 +29,7 @@ public class MessageInstanceRecorder {
 
     private static final DateTimeFormatter DTIME_FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
-    private final JdbcTemplate jdbcTemplate;
+    private final MessageLogQueue queue;
     private final ObjectMapper objectMapper;
     /** spring.application.name — ORG_ID 및 INSTANCE_ID 구성에 사용 */
     private final String appName;
@@ -43,7 +44,7 @@ public class MessageInstanceRecorder {
     public void recordServerRequest(String trxId, Object request, int port) {
         String command = command(request);
         String trackingNo = trackingNo(request, trxId);
-        insert(trxId, "I", "REQ", command, trackingNo, userId(request), toJson(request), true, port);
+        enqueue(trxId, "I", "REQ", command, trackingNo, userId(request), toJson(request), true, appName, port);
     }
 
     /**
@@ -58,7 +59,7 @@ public class MessageInstanceRecorder {
         String command = command(request);
         String trackingNo = trackingNo(request, trxId);
         boolean success = response instanceof JsonCommandResponse r ? r.isSuccess() : true;
-        insert(trxId, "O", "RES", command, trackingNo, userId(request), toJson(response), success, port);
+        enqueue(trxId, "O", "RES", command, trackingNo, userId(request), toJson(response), success, appName, port);
     }
 
     /**
@@ -72,9 +73,10 @@ public class MessageInstanceRecorder {
      * @param uri       요청 URI (예: /api/auth/login)
      * @param data      요청 바디 JSON 문자열
      * @param port      서버 포트
+     * @param userId    요청 사용자 ID (JWT 미인증 구간은 "GUEST")
      */
-    public void recordHttpRequest(String requestId, String uri, String data, int port) {
-        insertHttp(requestId, "I", "REQ", uri, data, true, port);
+    public void recordHttpRequest(String requestId, String uri, String data, int port, String userId) {
+        enqueueHttp(requestId, "I", "REQ", uri, data, true, port, userId);
     }
 
     /**
@@ -87,35 +89,10 @@ public class MessageInstanceRecorder {
      * @param data       응답 바디 JSON 문자열
      * @param success    HTTP 응답 성공 여부 (2xx → true)
      * @param port       서버 포트
+     * @param userId     요청 사용자 ID
      */
-    public void recordHttpResponse(String requestId, String uri, String data, boolean success, int port) {
-        insertHttp(requestId, "O", "RES", uri, data, success, port);
-    }
-
-    /** HTTP 로그 전용 insert — CHANNEL_TYPE=HTTP, MESSAGE_ID=URI, USER_ID=SYSTEM (HTTP 구간은 userId 컨텍스트 없음) */
-    private void insertHttp(String requestId, String ioType, String reqResType,
-                            String uri, String data, boolean success, int port) {
-        try {
-            String dtime = LocalDateTime.now().format(DTIME_FMT);
-            String instanceId = appName + ":" + port;
-            jdbcTemplate.update(
-                    "INSERT INTO FWK_MESSAGE_INSTANCE (" +
-                    "  MESSAGE_SNO, TRX_ID, ORG_ID, IO_TYPE, REQ_RES_TYPE, MESSAGE_ID," +
-                    "  TRX_TRACKING_NO, LOG_DTIME, LAST_LOG_DTIME, LAST_RT_CODE," +
-                    "  INSTANCE_ID, RETRY_TRX_YN, MESSAGE_DATA, TRX_DTIME, CHANNEL_TYPE, URI, SUCCESS_YN, USER_ID" +
-                    ") VALUES (" +
-                    "  FWK_MESSAGE_INSTANCE_SEQ.NEXTVAL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?" +
-                    ")",
-                    requestId, appName, ioType, reqResType, uri,
-                    requestId, dtime, dtime,
-                    success ? "SUCCESS" : "FAIL",
-                    instanceId, "N",
-                    data, dtime, "HTTP", uri,
-                    success ? "Y" : "N", "SYSTEM"
-            );
-        } catch (Exception e) {
-            log.warn("[MessageInstanceRecorder] HTTP 로그 기록 실패 — uri={}: {}", uri, e.getMessage());
-        }
+    public void recordHttpResponse(String requestId, String uri, String data, boolean success, int port, String userId) {
+        enqueueHttp(requestId, "O", "RES", uri, data, success, port, userId);
     }
 
     /**
@@ -127,7 +104,7 @@ public class MessageInstanceRecorder {
      * @param port    대상 포트
      */
     public void recordClientRequest(String trxId, JsonCommandRequest request, String host, int port) {
-        insert(trxId, "O", "REQ", request.getCommand(), request.getRequestId(),
+        enqueue(trxId, "O", "REQ", request.getCommand(), request.getRequestId(),
                 userId(request), toJson(request), true, host, port);
     }
 
@@ -142,41 +119,59 @@ public class MessageInstanceRecorder {
      */
     public void recordClientResponse(String trxId, JsonCommandRequest request,
                                      JsonCommandResponse response, String host, int port) {
-        insert(trxId, "I", "RES", request.getCommand(), request.getRequestId(),
+        enqueue(trxId, "I", "RES", request.getCommand(), request.getRequestId(),
                 userId(request), toJson(response), response.isSuccess(), host, port);
     }
 
-    /** 서버 포트 기준 INSTANCE_ID 생성 후 insert 위임 */
-    private void insert(String trxId, String ioType, String reqResType,
-                        String command, String trackingNo, String userId, String data,
-                        boolean success, int port) {
-        insert(trxId, ioType, reqResType, command, trackingNo, userId, data, success, appName, port);
+    /** TCP 전문 이력 DTO 생성 후 큐에 적재 */
+    private void enqueue(String trxId, String ioType, String reqResType,
+                         String command, String trackingNo, String userId, String data,
+                         boolean success, String host, int port) {
+        String dtime = LocalDateTime.now().format(DTIME_FMT);
+        queue.put(MessageInstanceInsertRequest.builder()
+                .trxId(trxId)
+                .orgId(appName)
+                .ioType(ioType)
+                .reqResType(reqResType)
+                .messageId(command)
+                .trxTrackingNo(trackingNo)
+                .userId(userId)
+                .logDtime(dtime)
+                .lastLogDtime(dtime)
+                .lastRtCode(success ? "SUCCESS" : "FAIL")
+                .instanceId(host + ":" + port)
+                .retryTrxYn("N")
+                .messageData(data)
+                .trxDtime(dtime)
+                .channelType("TCP")
+                .uri(command)
+                .successYn(success ? "Y" : "N")
+                .build());
     }
 
-    private void insert(String trxId, String ioType, String reqResType,
-                        String command, String trackingNo, String userId, String data,
-                        boolean success, String host, int port) {
-        try {
-            String dtime = LocalDateTime.now().format(DTIME_FMT);
-            String instanceId = host + ":" + port;
-            jdbcTemplate.update(
-                    "INSERT INTO FWK_MESSAGE_INSTANCE (" +
-                    "  MESSAGE_SNO, TRX_ID, ORG_ID, IO_TYPE, REQ_RES_TYPE, MESSAGE_ID," +
-                    "  TRX_TRACKING_NO, USER_ID, LOG_DTIME, LAST_LOG_DTIME, LAST_RT_CODE," +
-                    "  INSTANCE_ID, RETRY_TRX_YN, MESSAGE_DATA, TRX_DTIME, CHANNEL_TYPE, URI, SUCCESS_YN" +
-                    ") VALUES (" +
-                    "  FWK_MESSAGE_INSTANCE_SEQ.NEXTVAL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?" +
-                    ")",
-                    trxId, appName, ioType, reqResType, command,
-                    trackingNo, userId, dtime, dtime,
-                    success ? "SUCCESS" : "FAIL",
-                    instanceId, "N",
-                    data, dtime, "TCP", command,
-                    success ? "Y" : "N"
-            );
-        } catch (Exception e) {
-            log.warn("[MessageInstanceRecorder] DB 기록 실패 — command={}: {}", command, e.getMessage());
-        }
+    /** HTTP 전문 이력 DTO 생성 후 큐에 적재 */
+    private void enqueueHttp(String requestId, String ioType, String reqResType,
+                             String uri, String data, boolean success, int port, String userId) {
+        String dtime = LocalDateTime.now().format(DTIME_FMT);
+        queue.put(MessageInstanceInsertRequest.builder()
+                .trxId(requestId)
+                .orgId(appName)
+                .ioType(ioType)
+                .reqResType(reqResType)
+                .messageId(uri)
+                .trxTrackingNo(requestId)
+                .userId(userId)
+                .logDtime(dtime)
+                .lastLogDtime(dtime)
+                .lastRtCode(success ? "SUCCESS" : "FAIL")
+                .instanceId(appName + ":" + port)
+                .retryTrxYn("N")
+                .messageData(data)
+                .trxDtime(dtime)
+                .channelType("HTTP")
+                .uri(uri)
+                .successYn(success ? "Y" : "N")
+                .build());
     }
 
     private String command(Object request) {

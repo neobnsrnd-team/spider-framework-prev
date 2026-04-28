@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal">
+
+    <!-- 그룹 이동 모달 (체크박스 선택 → 대상 그룹 선택 → 확인) -->
+    <div class="modal fade" id="workGroupMoveModal" tabindex="-1" aria-labelledby="workGroupMoveModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="workGroupMoveModalLabel">
+                        <i class="bi bi-folder-symlink"></i> 그룹 이동
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="small text-muted mb-2">
+                        이동할 그룹을 선택하세요.
+                        <span id="wgMoveSelectedCount" class="fw-medium text-body"></span>
+                    </p>
+                    <div id="wgMoveGroupList" class="border rounded" style="max-height: 280px; overflow-y: auto;">
+                        <div class="text-center text-muted small py-3">로딩 중...</div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> 취소
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnWgMoveConfirm" disabled>
+                        <i class="bi bi-folder-symlink"></i> 이동
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            window.WorkGroupMoveModal = {
+                _workSeqs: [],
+                _selectedGroupId: null,
+
+                open: function (workSeqs) {
+                    this._workSeqs = workSeqs;
+                    this._selectedGroupId = null;  // null = 미선택 상태 (''=전체와 구분)
+                    $('#btnWgMoveConfirm').prop('disabled', true);
+                    $('#wgMoveSelectedCount').text(workSeqs.length + '개 항목');
+                    this._loadGroups();
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('workGroupMoveModal')).show();
+                },
+
+                _loadGroups: function () {
+                    var self = this;
+                    var userId = document.getElementById('currentUserId').value;
+                    $.ajax({
+                        url: API_BASE_URL + '/work-groups',
+                        data: { userId: userId },
+                        success: function (res) {
+                            if (res.success) self._renderGroupList(res.data || []);
+                            else Toast.error(res.message || '그룹 조회 실패');
+                        },
+                        error: function () { Toast.error('그룹 조회 중 오류가 발생했습니다.'); }
+                    });
+                },
+
+                _renderGroupList: function (groups) {
+                    var $list = $('#wgMoveGroupList');
+                    // 전체(그룹 미지정)는 항상 상단에 표시 — 항목을 특정 그룹 없이 기본 그룹으로 되돌릴 때 사용
+                    var html =
+                        '<div class="d-flex align-items-center px-3 py-2 border-bottom wg-move-item" style="cursor:pointer;"' +
+                        '     data-group-id=""' +
+                        '     onclick="WorkGroupMoveModal._selectGroup(this, \'\')">' +
+                        '  <i class="bi bi-circle me-2 small text-muted wg-move-icon"></i>' +
+                        '  <span class="small text-muted"><i class="bi bi-collection me-1"></i>전체 (그룹 미지정)</span>' +
+                        '</div>';
+                    if (!groups.length) {
+                        $list.html(html);
+                        return;
+                    }
+                    groups.forEach(function (g) {
+                        html +=
+                            '<div class="d-flex align-items-center px-3 py-2 border-bottom wg-move-item" style="cursor:pointer;"' +
+                            '     data-group-id="' + _wlEsc(g.groupId) + '"' +
+                            '     onclick="WorkGroupMoveModal._selectGroup(this, \'' + _wlEsc(g.groupId) + '\')">' +
+                            '  <i class="bi bi-circle me-2 small text-muted wg-move-icon"></i>' +
+                            '  <span class="small">' + _wlEsc(g.groupName) +
+                            '    <span class="text-muted ms-1 fs-xs">' + _wlEsc(g.groupId) + '</span>' +
+                            '  </span>' +
+                            '</div>';
+                    });
+                    $list.html(html);
+                },
+
+                _selectGroup: function (el, groupId) {
+                    // 선택 하이라이트
+                    $('.wg-move-item').removeClass('bg-primary-subtle');
+                    $('.wg-move-icon').removeClass('bi-record-circle-fill text-primary').addClass('bi-circle text-muted');
+                    $(el).addClass('bg-primary-subtle');
+                    $(el).find('.wg-move-icon').removeClass('bi-circle text-muted').addClass('bi-record-circle-fill text-primary');
+
+                    this._selectedGroupId = groupId;
+                    $('#btnWgMoveConfirm').prop('disabled', false);
+                },
+
+                _confirm: function () {
+                    // null = 미선택, '' = 전체(그룹 미지정) → userId+'001'로 이동
+                    if (this._selectedGroupId === null) {
+                        Toast.warning('이동할 그룹을 선택해주세요.');
+                        return;
+                    }
+                    var targetGroupId = this._selectedGroupId === ''
+                        ? document.getElementById('currentUserId').value + '001'
+                        : this._selectedGroupId;
+                    var self = this;
+                    WorkListPage.moveGroup(this._workSeqs, targetGroupId, function () {
+                        bootstrap.Modal.getInstance(
+                            document.getElementById('workGroupMoveModal')).hide();
+                    });
+                }
+            };
+
+            $(document).off('click', '#btnWgMoveConfirm').on('click', '#btnWgMoveConfirm', function () {
+                WorkGroupMoveModal._confirm();
+            });
+        })();
+    </script>
+</div>
+</body>
+</html>

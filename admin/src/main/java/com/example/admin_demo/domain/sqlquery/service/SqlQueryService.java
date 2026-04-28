@@ -9,6 +9,7 @@ import com.example.admin_demo.domain.sqlquery.dto.SqlQueryTestRequest;
 import com.example.admin_demo.domain.sqlquery.dto.SqlQueryTestResponse;
 import com.example.admin_demo.domain.sqlquery.dto.SqlQueryUpdateRequest;
 import com.example.admin_demo.domain.sqlquery.mapper.SqlQueryMapper;
+import com.example.admin_demo.global.aop.WorkListRecord;
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.exception.DuplicateException;
@@ -80,6 +81,7 @@ public class SqlQueryService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "SQL_QUERY", crudType = "C", pkExpression = "#dto.queryId", workName = "SQL쿼리관리")
     public SqlQueryResponse create(SqlQueryCreateRequest dto) {
         validateSqlText(dto.getSqlQuery());
         validateSqlText(dto.getSqlQuery2());
@@ -92,6 +94,7 @@ public class SqlQueryService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "SQL_QUERY", crudType = "U", pkExpression = "#queryId", workName = "SQL쿼리관리")
     public SqlQueryResponse update(String queryId, SqlQueryUpdateRequest dto) {
         if (sqlQueryMapper.countByQueryId(queryId) == 0) {
             throw new NotFoundException("queryId: " + queryId);
@@ -103,6 +106,7 @@ public class SqlQueryService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "SQL_QUERY", crudType = "D", pkExpression = "#queryId", workName = "SQL쿼리관리")
     public void delete(String queryId) {
         if (sqlQueryMapper.countByQueryId(queryId) == 0) {
             throw new NotFoundException("queryId: " + queryId);

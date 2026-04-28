@@ -37,8 +37,14 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Install spider-common to local Maven repository
+        run: mvn -B install -DskipTests --file ../spider-common/pom.xml
+
       - name: Install spider-link to local Maven repository
         run: mvn -B install -DskipTests --file ../spider-link/pom.xml
+
+      - name: Install spider-batch to local Maven repository
+        run: mvn -B install -DskipTests --file ../spider-batch/pom.xml
 
       - name: Build with Maven
         run: mvn -B compile --file pom.xml
@@ -239,8 +245,14 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Install spider-common to local Maven repository
+        run: mvn -B install -DskipTests --file ../spider-common/pom.xml
+
       - name: Install spider-link to local Maven repository
         run: mvn -B install -DskipTests --file ../spider-link/pom.xml
+
+      - name: Install spider-batch to local Maven repository
+        run: mvn -B install -DskipTests --file ../spider-batch/pom.xml
 
       - name: Build and generate JaCoCo report
         run: mvn -B test jacoco:report --file pom.xml

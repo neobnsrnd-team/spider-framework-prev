@@ -179,7 +179,9 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ApiResponse<Void>> buildResponse(BaseException ex) {
         ErrorType errorType = ex.getErrorType();
         HttpStatus status = errorType.getHttpStatus();
-        return ResponseEntity.status(status).body(ApiResponse.error(errorType.getMessage(), status.value()));
+        // detailMessage가 있으면 우선 사용 — 비즈니스 맥락에 맞는 안내 메시지 전달
+        String message = ex.getDetailMessage() != null ? ex.getDetailMessage() : errorType.getMessage();
+        return ResponseEntity.status(status).body(ApiResponse.error(message, status.value()));
     }
 
     private void publishErrorEvent(Exception ex, HttpServletRequest request) {

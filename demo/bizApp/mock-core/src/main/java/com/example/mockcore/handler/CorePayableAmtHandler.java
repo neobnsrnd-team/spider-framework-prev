@@ -1,10 +1,10 @@
 package com.example.mockcore.handler;
 
 import com.example.bizcommon.BizCommands;
+import com.example.mockcore.infra.FixedMessageReader;
+import com.example.mockcore.infra.FixedMessageWriter;
+import com.example.mockcore.infra.LegacyCoreHandler;
 import com.example.mockcore.repository.AccountRepository;
-import com.example.spidercommon.infra.tcp.handler.CommandHandler;
-import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
-import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,65 +14,56 @@ import java.util.Map;
 /**
  * 즉시결제 가능금액 조회 커맨드 핸들러 ({@code CORE_PAYABLE_AMT}).
  *
- * <p>userId, cardId를 수신하여 payableAmount(미결제 잔액 합계), creditLimit(카드 한도금액)을 반환한다.</p>
+ * <p>REQ: COMMAND(C,20) + REQUEST_ID(C,36) + userId(C,20) + cardId(C,20)
+ * RES: SUCCESS(C,1) + ERROR_MSG(K,200) + payableAmount(N,15) + creditLimit(N,15)</p>
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class CorePayableAmtHandler implements CommandHandler<JsonCommandRequest, JsonCommandResponse> {
+public class CorePayableAmtHandler implements LegacyCoreHandler {
 
     private final AccountRepository accountRepository;
 
     @Override
-    public boolean supports(String command) {
-        return BizCommands.CORE_PAYABLE_AMT.equals(command);
+    public String getCommand() {
+        return BizCommands.CORE_PAYABLE_AMT;
     }
 
     @Override
-    public JsonCommandResponse handle(String command, JsonCommandRequest request) {
-        Map<String, Object> payload = request.getPayload();
+    public byte[] handle(byte[] requestBytes) {
+        FixedMessageReader reader = new FixedMessageReader(requestBytes);
+        reader.skip(20); // COMMAND
+        reader.skip(36); // REQUEST_ID
+        String userId = reader.readC(20);
+        String cardId = reader.readC(20);
 
+        log.debug("[CORE_PAYABLE_AMT] 가능금액 조회 — userId={}, cardId={}", userId, cardId);
+
+        FixedMessageWriter writer = new FixedMessageWriter();
         try {
-            String userId = getRequiredString(payload, "userId");
-            String cardId = getRequiredString(payload, "cardId");
-
-            log.debug("[CORE_PAYABLE_AMT] 결제가능금액 조회 요청 — userId={}, cardId={}", userId, cardId);
-
             Map<String, Object> result = accountRepository.findPayableAmount(userId, cardId);
-
-            log.debug("[CORE_PAYABLE_AMT] 조회 성공 — userId={}, cardId={}, payableAmount={}",
-                    userId, cardId, result.get("payableAmount"));
-
-            return JsonCommandResponse.builder()
-                    .command(command)
-                    .success(true)
-                    .message("결제가능금액 조회 성공")
-                    .payload(result)
-                    .build();
-
+            long payableAmount = toLong(result.get("payableAmount"));
+            long creditLimit   = toLong(result.get("creditLimit"));
+            writer.writeC("Y", 1);
+            writer.writeK("", 200);
+            writer.writeN(payableAmount, 15);
+            writer.writeN(creditLimit, 15);
         } catch (Exception e) {
             log.warn("[CORE_PAYABLE_AMT] 조회 실패 — {}", e.getMessage());
-            return JsonCommandResponse.builder()
-                    .command(command)
-                    .success(false)
-                    .error(e.getMessage())
-                    .build();
+            writer = new FixedMessageWriter();
+            writer.writeC("N", 1);
+            writer.writeK(e.getMessage(), 200);
+            writer.writeN(0L, 15);
+            writer.writeN(0L, 15);
         }
+        return writer.toBytes();
     }
 
-    /**
-     * payload에서 필수 문자열 값을 추출한다. null이거나 빈 값이면 예외를 던진다.
-     *
-     * @param payload 요청 payload
-     * @param key     추출할 키
-     * @return 문자열 값
-     * @throws IllegalArgumentException 값이 없거나 빈 문자열인 경우
-     */
-    private String getRequiredString(Map<String, Object> payload, String key) {
-        Object value = payload.get(key);
-        if (value == null || value.toString().isBlank()) {
-            throw new IllegalArgumentException("필수 파라미터 누락: " + key);
+    private long toLong(Object val) {
+        if (val instanceof Number n) return n.longValue();
+        if (val != null) {
+            try { return Long.parseLong(val.toString()); } catch (NumberFormatException ignored) {}
         }
-        return value.toString();
+        return 0L;
     }
 }

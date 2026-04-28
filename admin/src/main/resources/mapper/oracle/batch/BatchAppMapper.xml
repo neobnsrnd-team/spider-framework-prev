@@ -24,7 +24,7 @@
             BATCH_APP_ID, BATCH_APP_NAME, BATCH_APP_FILE_NAME, BATCH_APP_DESC,
             PRE_BATCH_APP_ID, BATCH_CYCLE, CRON_TEXT, RETRYABLE_YN, PER_WAS_YN,
             IMPORTANT_TYPE, PROPERTIES, TRX_ID, ORG_ID, IO_TYPE,
-            LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
+            LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID, SLA_SECONDS
         ) VALUES (
             #{dto.batchAppId, jdbcType=VARCHAR},
             #{dto.batchAppName, jdbcType=VARCHAR},
@@ -41,7 +41,8 @@
             #{dto.orgId, jdbcType=VARCHAR},
             #{dto.ioType, jdbcType=VARCHAR},
             #{lastUpdateDtime, jdbcType=VARCHAR},
-            #{lastUpdateUserId, jdbcType=VARCHAR}
+            #{lastUpdateUserId, jdbcType=VARCHAR},
+            #{dto.slaSeconds, jdbcType=NUMERIC}
         )
     </insert>
 
@@ -63,7 +64,8 @@
             ORG_ID = #{dto.orgId, jdbcType=VARCHAR},
             IO_TYPE = #{dto.ioType, jdbcType=VARCHAR},
             LAST_UPDATE_DTIME = #{lastUpdateDtime, jdbcType=VARCHAR},
-            LAST_UPDATE_USER_ID = #{lastUpdateUserId, jdbcType=VARCHAR}
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId, jdbcType=VARCHAR},
+            SLA_SECONDS = #{dto.slaSeconds, jdbcType=NUMERIC}
         WHERE BATCH_APP_ID = #{batchAppId}
     </update>
 
@@ -99,7 +101,8 @@
         b.ORG_ID             AS orgId,
         b.IO_TYPE            AS ioType,
         b.LAST_UPDATE_DTIME  AS lastUpdateDtime,
-        b.LAST_UPDATE_USER_ID AS lastUpdateUserId
+        b.LAST_UPDATE_USER_ID AS lastUpdateUserId,
+        b.SLA_SECONDS        AS slaSeconds
     </sql>
 
     <!-- BatchApp 테이블 FROM 절 -->
@@ -231,5 +234,13 @@
         <include refid="orderByBatchApp"/>
     </select>
 
+    <!-- Cron 표현식 단독 업데이트 — 스케줄 변경 API 전용 -->
+    <update id="updateCronText">
+        UPDATE FWK_BATCH_APP
+           SET CRON_TEXT             = #{cronText, jdbcType=VARCHAR},
+               LAST_UPDATE_DTIME     = #{lastUpdateDtime},
+               LAST_UPDATE_USER_ID   = #{lastUpdateUserId}
+         WHERE BATCH_APP_ID = #{batchAppId}
+    </update>
 
 </mapper>

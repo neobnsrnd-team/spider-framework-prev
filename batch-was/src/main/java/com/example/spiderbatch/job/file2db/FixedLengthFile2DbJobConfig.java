@@ -2,6 +2,7 @@ package com.example.spiderbatch.job.file2db;
 
 import com.example.spiderbatch.job.common.BatchJobParametersValidator;
 import com.example.spiderbatch.job.common.FixedLengthRecord;
+import com.example.spiderbatch.job.listener.BatchNotificationListener;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,6 +72,7 @@ public class FixedLengthFile2DbJobConfig {
     private String errorDir;
 
     private final DataSource dataSource;
+    private final BatchNotificationListener batchNotificationListener;
 
     // -------------------------------------------------------------------------
     // Job
@@ -89,6 +91,7 @@ public class FixedLengthFile2DbJobConfig {
 
         return new JobBuilder("fixedFile2db", jobRepository)
                 .validator(new BatchJobParametersValidator(true))
+                .listener(batchNotificationListener)
                 .start(fixedLengthFile2DbStep)
                     // 데이터 적재 Step 성공 시 → 성공 아카이브
                     .on("COMPLETED").to(fileArchiveSuccessStep)

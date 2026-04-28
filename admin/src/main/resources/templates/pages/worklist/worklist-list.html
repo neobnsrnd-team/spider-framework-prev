@@ -1,0 +1,57 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <div th:fragment="content">
+      <input type="hidden" id="currentUserId" th:value="${currentUserId}" />
+
+      <!-- 검색조건 헤더 -->
+      <div class="page-header">
+        <h4 class="page-title">
+          <i class="bi bi-exclamation-circle-fill text-danger"></i>
+          검색조건
+        </h4>
+      </div>
+
+      <!-- 검색 폼 -->
+      <div th:replace="~{pages/worklist/worklist-list-search :: search}"></div>
+
+      <!-- 리스트 헤더 -->
+      <div class="page-header mt-3">
+        <h4 class="page-title">
+          <i class="bi bi-exclamation-circle-fill text-danger"></i>
+          리스트
+        </h4>
+
+        <!-- Toolbar -->
+        <th:block th:replace="~{fragments/page-content-layout :: toolbar}" />
+      </div>
+
+      <!-- 테이블 컨테이너 (DataTable 컴포넌트로 동적 생성) -->
+      <div id="tableContainer"></div>
+
+      <!-- 페이지네이션 -->
+      <th:block th:replace="~{fragments/page-content-layout :: pagination}" />
+
+      <!-- 하단 버튼 -->
+      <div
+        th:replace="~{pages/worklist/worklist-list-buttons :: buttons}"
+      ></div>
+
+      <!-- 모달 -->
+      <div th:replace="~{pages/worklist/worklist-group-modal :: modal}"></div>
+      <div
+        th:replace="~{pages/worklist/worklist-group-move-modal :: modal}"
+      ></div>
+      <div
+        th:replace="~{pages/worklist/worklist-transfer-modal :: modal}"
+      ></div>
+      <div
+        th:replace="~{pages/worklist/worklist-approval-modal :: modal}"
+      ></div>
+      <div th:replace="~{pages/worklist/worklist-script-modal :: modal}"></div>
+
+      <!-- 스크립트 -->
+      <th:block th:replace="~{pages/worklist/worklist-list-script :: script}" />
+    </div>
+  </body>
+</html>

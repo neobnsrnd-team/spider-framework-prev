@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.admin_demo.domain.workgroup.mapper.WorkGroupMapper">
+
+    <resultMap id="WorkGroupResultMap"
+               type="com.example.admin_demo.domain.workgroup.dto.WorkGroupResponse">
+        <result property="groupId"           column="GROUP_ID"/>
+        <result property="groupName"         column="GROUP_NAME"/>
+        <result property="groupDesc"         column="GROUP_DESC"/>
+        <result property="lastUpdateDtime"   column="LAST_UPDATE_DTIME"/>
+        <result property="lastUpdateUserId"  column="LAST_UPDATE_USER_ID"/>
+    </resultMap>
+
+    <!-- userId 소속 그룹 전체 조회 (GROUP_ID LIKE userId||'%' 패턴) -->
+    <select id="findByUserId" parameterType="String" resultMap="WorkGroupResultMap">
+        SELECT GROUP_ID, GROUP_NAME, GROUP_DESC,
+               LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
+        FROM FWK_WORK_GROUP
+        WHERE GROUP_ID LIKE #{userId} || '%'
+          AND LENGTH(#{userId}) + 3 = LENGTH(GROUP_ID)
+        ORDER BY GROUP_ID ASC
+    </select>
+
+    <!-- groupId 기준 단건 조회 -->
+    <select id="findByGroupId" parameterType="String" resultMap="WorkGroupResultMap">
+        SELECT GROUP_ID, GROUP_NAME, GROUP_DESC,
+               LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
+        FROM FWK_WORK_GROUP
+        WHERE GROUP_ID = #{groupId}
+    </select>
+
+    <!-- 가장 최근 생성된 그룹 조회 (INSERT 직후 응답용) — ROWNUM 방식으로 Oracle 하위 버전 호환 -->
+    <select id="findLatestByUserId" parameterType="String" resultMap="WorkGroupResultMap">
+        SELECT * FROM (
+            SELECT GROUP_ID, GROUP_NAME, GROUP_DESC,
+                   LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
+            FROM FWK_WORK_GROUP
+            WHERE GROUP_ID LIKE #{userId} || '%'
+              AND LENGTH(#{userId}) + 3 = LENGTH(GROUP_ID)
+            ORDER BY GROUP_ID DESC
+        ) WHERE ROWNUM = 1
+    </select>
+
+    <!--
+        그룹 생성: GROUP_ID = userId + LPAD(현재최대seq+1, 3, '0')
+        기존 그룹이 없으면 seq=1 → userId001
+    -->
+    <insert id="insert" parameterType="map">
+        INSERT INTO FWK_WORK_GROUP (GROUP_ID, GROUP_NAME, GROUP_DESC,
+                                    LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID)
+        VALUES (
+            (SELECT #{userId} || LPAD(
+                NVL(MAX(TO_NUMBER(SUBSTR(GROUP_ID, LENGTH(#{userId}) + 1))), 0) + 1,
+                3, '0')
+             FROM FWK_WORK_GROUP
+             WHERE GROUP_ID LIKE #{userId} || '%'
+               AND LENGTH(#{userId}) + 3 = LENGTH(GROUP_ID)),
+            #{groupName},
+            #{groupDesc},
+            TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'),
+            #{userId}
+        )
+    </insert>
+
+    <!-- 그룹명·설명 수정 -->
+    <update id="update" parameterType="com.example.admin_demo.domain.workgroup.dto.WorkGroupUpdateRequest">
+        UPDATE FWK_WORK_GROUP
+        SET GROUP_NAME          = #{groupName},
+            GROUP_DESC          = #{groupDesc},
+            LAST_UPDATE_DTIME   = TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+        WHERE GROUP_ID = #{groupId}
+    </update>
+
+    <!-- 그룹 삭제: FWK_WORK_LIST에 참조된 그룹은 삭제 불가 -->
+    <delete id="delete" parameterType="String">
+        DELETE FROM FWK_WORK_GROUP
+        WHERE GROUP_ID = #{groupId}
+          AND GROUP_ID NOT IN (
+              SELECT DISTINCT GROUP_ID FROM FWK_WORK_LIST WHERE GROUP_ID = #{groupId}
+          )
+    </delete>
+
+</mapper>

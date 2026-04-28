@@ -1,14 +1,17 @@
 package com.example.spiderbatch.job.db2foreign;
 
 import com.example.spiderbatch.job.AbstractDb2ForeignJob;
+import com.example.spiderbatch.job.common.BatchJobParametersValidator;
 import com.example.spiderbatch.job.common.CardUsage;
 import com.example.spiderbatch.job.common.CardUsageQuery;
+import com.example.spiderbatch.job.listener.BatchNotificationListener;
 import java.util.Map;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.Order;
@@ -35,6 +38,7 @@ import org.springframework.web.client.RestTemplate;
 public class Db2ForeignJobConfig extends AbstractDb2ForeignJob<CardUsage> {
 
     private final DataSource dataSource;
+    private final BatchNotificationListener batchNotificationListener;
 
     /** WAS 포트를 application.yml에서 읽어 Mock URL 구성에 사용 */
     @Value("${server.port:8081}")
@@ -58,7 +62,11 @@ public class Db2ForeignJobConfig extends AbstractDb2ForeignJob<CardUsage> {
 
     @Bean(name = "db2foreign")
     public Job db2ForeignJob(JobRepository jobRepository, Step db2ForeignStep) {
-        return buildJob(jobRepository, db2ForeignStep);
+        return new JobBuilder("db2foreign", jobRepository)
+                .validator(new BatchJobParametersValidator())
+                .listener(batchNotificationListener)
+                .start(db2ForeignStep)
+                .build();
     }
 
     @Bean
