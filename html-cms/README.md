@@ -190,3 +190,5 @@ public/
 자세한 기술 내용은 [docs/reference/기술-개요.md](docs/reference/기술-개요.md) 참고.
 
 
+# 참고 URL
+https://omniscient-poultry-94a.notion.site/Springware-CMS-HTML-33607fbbb0738045a8cadb0cd5997226?source=copy_link
