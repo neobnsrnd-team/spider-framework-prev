@@ -257,6 +257,8 @@ class FwkServiceControllerTest {
         @WithMockUser(authorities = "FWK_SERVICE:W")
         @DisplayName("[삭제] 존재하는 ID 삭제 시 200을 반환해야 한다")
         void delete_found_returns200() throws Exception {
+            given(fwkServiceService.getById("SVC-001")).willReturn(buildDetailResponse("SVC-001"));
+
             mockMvc.perform(delete(BASE_URL + "/SVC-001").with(csrf())).andExpect(status().isOk());
         }
 
@@ -264,6 +266,7 @@ class FwkServiceControllerTest {
         @WithMockUser(authorities = "FWK_SERVICE:W")
         @DisplayName("[삭제] 존재하지 않는 ID 삭제 시 404를 반환해야 한다")
         void delete_notFound_returns404() throws Exception {
+            given(fwkServiceService.getById("NOT-EXIST")).willReturn(buildDetailResponse("NOT-EXIST"));
             willThrow(new NotFoundException("serviceId: NOT-EXIST"))
                     .given(fwkServiceService)
                     .delete(anyString(), anyString());
