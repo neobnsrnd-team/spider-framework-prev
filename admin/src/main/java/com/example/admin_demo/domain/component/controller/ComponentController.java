@@ -66,7 +66,9 @@ public class ComponentController {
     @PreAuthorize("hasAuthority('COMPONENT:W')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String componentId) {
         log.info("DELETE /api/components/{}", componentId);
-        componentService.delete(componentId);
+        // componentType은 WorkList 이력 적재 시 workId로 사용된다.
+        String componentType = componentService.getById(componentId).getComponentType();
+        componentService.delete(componentId, componentType);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

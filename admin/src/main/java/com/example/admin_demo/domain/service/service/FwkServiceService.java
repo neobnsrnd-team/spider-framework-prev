@@ -9,6 +9,7 @@ import com.example.admin_demo.domain.service.dto.FwkServiceUseYnBulkRequest;
 import com.example.admin_demo.domain.service.dto.WorkSpaceResponse;
 import com.example.admin_demo.domain.service.mapper.FwkServiceMapper;
 import com.example.admin_demo.domain.service.mapper.FwkServiceRelationMapper;
+import com.example.admin_demo.global.aop.WorkListRecord;
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.exception.DuplicateException;
@@ -87,6 +88,11 @@ public class FwkServiceService {
     }
 
     /** 서비스 등록 */
+    @WorkListRecord(
+            workIdExpression = "#dto.serviceType",
+            crudType = "C",
+            pkExpression = "#dto.serviceId",
+            workName = "서비스")
     @Transactional
     public FwkServiceDetailResponse create(FwkServiceCreateRequest dto) {
         try {
@@ -98,6 +104,11 @@ public class FwkServiceService {
     }
 
     /** 서비스 수정 */
+    @WorkListRecord(
+            workIdExpression = "#dto.serviceType",
+            crudType = "U",
+            pkExpression = "#serviceId",
+            workName = "서비스")
     @Transactional
     public FwkServiceDetailResponse update(String serviceId, FwkServiceUpdateRequest dto) {
         if (fwkServiceMapper.countById(serviceId) == 0) {
@@ -111,9 +122,11 @@ public class FwkServiceService {
      * 서비스 삭제 (3계층 FK 순서 준수).
      *
      * <p>삭제 순서: FWK_RELATION_PARAM → FWK_SERVICE_RELATION → FWK_SERVICE
+     * serviceType은 WorkListRecord 이력 적재에 사용된다 (컨트롤러에서 조회 후 전달).
      */
+    @WorkListRecord(workIdExpression = "#serviceType", crudType = "D", pkExpression = "#serviceId", workName = "서비스")
     @Transactional
-    public void delete(String serviceId) {
+    public void delete(String serviceId, String serviceType) {
         if (fwkServiceMapper.countById(serviceId) == 0) {
             throw new NotFoundException("serviceId: " + serviceId);
         }

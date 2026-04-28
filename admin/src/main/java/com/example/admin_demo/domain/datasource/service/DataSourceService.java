@@ -5,6 +5,7 @@ import com.example.admin_demo.domain.datasource.dto.DataSourceResponse;
 import com.example.admin_demo.domain.datasource.dto.DataSourceSearchRequest;
 import com.example.admin_demo.domain.datasource.dto.DataSourceUpdateRequest;
 import com.example.admin_demo.domain.datasource.mapper.DataSourceMapper;
+import com.example.admin_demo.global.aop.WorkListRecord;
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.exception.DuplicateException;
@@ -71,6 +72,7 @@ public class DataSourceService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "SQL_CONF", crudType = "C", pkExpression = "#dto.dbId", workName = "데이터소스관리")
     public DataSourceResponse create(DataSourceCreateRequest dto) {
         try {
             dataSourceMapper.insert(dto, AuditUtil.now(), AuditUtil.currentUserId());
@@ -86,6 +88,7 @@ public class DataSourceService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "SQL_CONF", crudType = "U", pkExpression = "#dbId", workName = "데이터소스관리")
     public DataSourceResponse update(String dbId, DataSourceUpdateRequest dto) {
         if (dataSourceMapper.countByDbId(dbId) == 0) {
             throw new NotFoundException("dbId: " + dbId);
@@ -134,6 +137,7 @@ public class DataSourceService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "SQL_CONF", crudType = "D", pkExpression = "#dbId", workName = "데이터소스관리")
     public void delete(String dbId) {
         if (dataSourceMapper.countByDbId(dbId) == 0) {
             throw new NotFoundException("dbId: " + dbId);

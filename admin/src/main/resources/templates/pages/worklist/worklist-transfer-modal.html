@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal">
+
+    <!-- 권한이양 모달 (체크박스 선택 → 대상 사용자 검색 → 확인) -->
+    <div class="modal fade" id="workTransferModal" tabindex="-1" aria-labelledby="workTransferModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="workTransferModalLabel">
+                        <i class="bi bi-arrow-right-circle"></i> 권한이양
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="small text-muted mb-2">
+                        이양받을 사용자를 검색하세요.
+                        <span id="wlTransferSelectedCount" class="fw-medium text-body"></span>
+                    </p>
+
+                    <!-- 검색 입력 -->
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="text" class="form-control" id="wlTransferKeyword"
+                               placeholder="사용자 ID 또는 이름" maxlength="50"
+                               onkeydown="if(event.key==='Enter') WorkTransferModal._search()">
+                        <button class="btn btn-outline-secondary" type="button" id="btnWlTransferSearch"
+                                onclick="WorkTransferModal._search()">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+
+                    <!-- 검색 결과 목록 -->
+                    <div id="wlTransferUserList" class="border rounded" style="max-height: 260px; overflow-y: auto;">
+                        <div class="text-center text-muted small py-3">검색어를 입력하세요.</div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> 취소
+                    </button>
+                    <button type="button" class="btn btn-warning btn-sm" id="btnWlTransferConfirm" disabled>
+                        <i class="bi bi-arrow-right-circle"></i> 이양
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            window.WorkTransferModal = {
+                _workSeqs: [],
+                _selectedUserId: null,
+
+                open: function (workSeqs) {
+                    this._workSeqs = workSeqs;
+                    this._selectedUserId = null;
+                    $('#wlTransferKeyword').val('');
+                    $('#wlTransferUserList').html('<div class="text-center text-muted small py-3">검색어를 입력하세요.</div>');
+                    $('#btnWlTransferConfirm').prop('disabled', true);
+                    $('#wlTransferSelectedCount').text(workSeqs.length + '개 항목');
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('workTransferModal')).show();
+                    // 모달 열리면 검색창 포커스
+                    document.getElementById('workTransferModal')
+                        .addEventListener('shown.bs.modal', function handler() {
+                            document.getElementById('wlTransferKeyword').focus();
+                            this.removeEventListener('shown.bs.modal', handler);
+                        });
+                },
+
+                _search: function () {
+                    var keyword = $('#wlTransferKeyword').val().trim();
+                    if (!keyword) {
+                        Toast.warning('검색어를 입력해주세요.');
+                        return;
+                    }
+                    this._selectedUserId = null;
+                    $('#btnWlTransferConfirm').prop('disabled', true);
+                    var $list = $('#wlTransferUserList');
+                    $list.html('<div class="text-center text-muted small py-3">검색 중...</div>');
+
+                    $.ajax({
+                        url: API_BASE_URL + '/users/search',
+                        data: { keyword: keyword },
+                        success: function (res) {
+                            if (res.success) WorkTransferModal._renderUserList(res.data || []);
+                            else Toast.error(res.message || '사용자 검색 실패');
+                        },
+                        error: function () { Toast.error('사용자 검색 중 오류가 발생했습니다.'); }
+                    });
+                },
+
+                _renderUserList: function (users) {
+                    var currentUserId = document.getElementById('currentUserId').value;
+                    var $list = $('#wlTransferUserList');
+                    if (!users.length) {
+                        $list.html('<div class="text-center text-muted small py-3">검색 결과가 없습니다.</div>');
+                        return;
+                    }
+                    var html = '';
+                    users.forEach(function (u) {
+                        // 본인 계정은 이양 대상에서 제외
+                        if (u.userId === currentUserId) return;
+                        html +=
+                            '<div class="d-flex align-items-center px-3 py-2 border-bottom wl-transfer-item" style="cursor:pointer;"' +
+                            '     data-user-id="' + _wlEsc(u.userId) + '"' +
+                            '     onclick="WorkTransferModal._selectUser(this, \'' + _wlEsc(u.userId) + '\')">' +
+                            '  <i class="bi bi-circle me-2 small text-muted wl-transfer-icon"></i>' +
+                            '  <span class="small">' + _wlEsc(u.userName) +
+                            '    <span class="text-muted ms-1 fs-xs">' + _wlEsc(u.userId) + '</span>' +
+                            '  </span>' +
+                            '</div>';
+                    });
+                    $list.html(html || '<div class="text-center text-muted small py-3">검색 결과가 없습니다.</div>');
+                },
+
+                _selectUser: function (el, userId) {
+                    $('.wl-transfer-item').removeClass('bg-primary-subtle');
+                    $('.wl-transfer-icon').removeClass('bi-record-circle-fill text-primary').addClass('bi-circle text-muted');
+                    $(el).addClass('bg-primary-subtle');
+                    $(el).find('.wl-transfer-icon').removeClass('bi-circle text-muted').addClass('bi-record-circle-fill text-primary');
+
+                    this._selectedUserId = userId;
+                    $('#btnWlTransferConfirm').prop('disabled', false);
+                },
+
+                _confirm: function () {
+                    if (!this._selectedUserId) {
+                        Toast.warning('이양받을 사용자를 선택해주세요.');
+                        return;
+                    }
+                    WorkListPage.transferAuthority(this._workSeqs, this._selectedUserId);
+                    bootstrap.Modal.getInstance(
+                        document.getElementById('workTransferModal')).hide();
+                }
+            };
+
+            $(document).off('click', '#btnWlTransferConfirm').on('click', '#btnWlTransferConfirm', function () {
+                WorkTransferModal._confirm();
+            });
+        })();
+    </script>
+</div>
+</body>
+</html>

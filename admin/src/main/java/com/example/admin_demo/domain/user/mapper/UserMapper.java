@@ -3,6 +3,7 @@ package com.example.admin_demo.domain.user.mapper;
 import com.example.admin_demo.domain.user.dto.ProfileUpdateRequest;
 import com.example.admin_demo.domain.user.dto.UserCreateRequest;
 import com.example.admin_demo.domain.user.dto.UserResponse;
+import com.example.admin_demo.domain.user.dto.UserSimpleResponse;
 import com.example.admin_demo.domain.user.dto.UserUpdateRequest;
 import com.example.admin_demo.domain.user.dto.UserWithRoleResponse;
 import com.example.admin_demo.global.auth.dto.CmsApproverResponse;
@@ -216,4 +217,7 @@ public interface UserMapper {
             @Param("userStateCodeFilter") String userStateCodeFilter,
             @Param("sortBy") String sortBy,
             @Param("sortDirection") String sortDirection);
+
+    /** 권한이양 대상 사용자 검색 — userId·userName LIKE, 최대 20건. */
+    List<UserSimpleResponse> searchForTransfer(@Param("keyword") String keyword);
 }

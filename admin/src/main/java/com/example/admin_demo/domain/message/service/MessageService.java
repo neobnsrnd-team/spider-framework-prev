@@ -13,6 +13,7 @@ import com.example.admin_demo.domain.message.mapper.MessageMapper;
 import com.example.admin_demo.domain.messagefield.dto.FieldListResponse;
 import com.example.admin_demo.domain.messagefield.dto.MessageFieldResponse;
 import com.example.admin_demo.domain.messageparsing.dto.MessageResponse;
+import com.example.admin_demo.global.aop.WorkListRecord;
 import com.example.admin_demo.global.common.enums.MessageType;
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
@@ -146,6 +147,11 @@ public class MessageService {
     }
 
     @Transactional
+    @WorkListRecord(
+            workId = "Message",
+            crudType = "C",
+            pkExpression = "#requestDTO.orgId + '@' + #requestDTO.messageId",
+            workName = "전문")
     public MessageResponse createMessage(MessageCreateRequest requestDTO) {
         log.info("Creating Message: orgId={}, messageId={}", requestDTO.getOrgId(), requestDTO.getMessageId());
 
@@ -168,6 +174,7 @@ public class MessageService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "Message", crudType = "U", pkExpression = "#orgId + '@' + #messageId", workName = "전문")
     public MessageResponse updateMessage(String orgId, String messageId, MessageUpdateRequest requestDTO) {
         log.info("Updating Message: orgId={}, messageId={}", orgId, messageId);
 
@@ -187,6 +194,7 @@ public class MessageService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "Message", crudType = "D", pkExpression = "#orgId + '@' + #messageId", workName = "전문")
     public void deleteMessage(String orgId, String messageId) {
         log.info("Deleting Message: orgId={}, messageId={}", orgId, messageId);
 

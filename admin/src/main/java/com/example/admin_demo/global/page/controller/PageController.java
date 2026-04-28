@@ -288,6 +288,13 @@ public class PageController {
         return resolveView(request, "pages/was-status-monitor/was-status-monitor :: content", model);
     }
 
+    // ── 내 작업함 ── worklist (FWK_WORK_LIST)
+
+    @GetMapping("/my-work")
+    public String myWorkList(HttpServletRequest request, Model model) {
+        return resolveView(request, "pages/worklist/worklist-list :: content", model);
+    }
+
     // ── 이력/감사 ── access_user_id, user_page_log, trx_stop_his
 
     @GetMapping("/stop-transaction-accessors")

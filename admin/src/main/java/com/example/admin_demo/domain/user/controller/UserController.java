@@ -3,6 +3,7 @@ package com.example.admin_demo.domain.user.controller;
 import com.example.admin_demo.domain.user.dto.UserCreateRequest;
 import com.example.admin_demo.domain.user.dto.UserResponse;
 import com.example.admin_demo.domain.user.dto.UserSearchRequest;
+import com.example.admin_demo.domain.user.dto.UserSimpleResponse;
 import com.example.admin_demo.domain.user.dto.UserUpdateRequest;
 import com.example.admin_demo.domain.user.dto.UserWithRoleResponse;
 import com.example.admin_demo.domain.user.service.UserService;
@@ -20,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
@@ -163,5 +165,14 @@ public class UserController {
     @GetMapping("/check/email")
     public ResponseEntity<ApiResponse<Boolean>> checkEmailExists(@RequestParam String email) {
         return ResponseEntity.ok(ApiResponse.success(userService.existsByEmail(email)));
+    }
+
+    /** 권한이양 대상 사용자 검색 — userId·userName LIKE, 최대 20건. */
+    // WORK_TASK:R 권한으로도 접근 가능 — 권한이양 대상 사용자 검색용
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyAuthority('USER:R', 'WORK_TASK:R')")
+    public ResponseEntity<ApiResponse<List<UserSimpleResponse>>> searchForTransfer(
+            @RequestParam(required = false, defaultValue = "") String keyword) {
+        return ResponseEntity.ok(ApiResponse.success(userService.searchForTransfer(keyword)));
     }
 }

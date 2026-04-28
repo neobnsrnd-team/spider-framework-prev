@@ -1,0 +1,39 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!-- 나의 작업함 하단 버튼 -->
+    <div
+      th:fragment="buttons"
+      class="bottom-actions"
+      th:if="${userAuthorities != null and userAuthorities.contains('WORK_TASK:W')}"
+    >
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm"
+        id="btnGroupManage"
+      >
+        <i class="bi bi-folder2-open"></i> 그룹 관리
+      </button>
+      <button
+        type="button"
+        class="btn btn-outline-primary btn-sm"
+        id="btnGroupMove"
+      >
+        <i class="bi bi-folder-symlink"></i> 그룹 이동
+      </button>
+      <button
+        type="button"
+        class="btn btn-outline-warning btn-sm"
+        id="btnTransfer"
+      >
+        <i class="bi bi-arrow-right-circle"></i> 권한이양
+      </button>
+      <!-- 필요시, 결재요청 주석 해제 -->
+      <!--     
+    <button type="button" class="btn btn-outline-success btn-sm" id="btnApproval">
+        <i class="bi bi-check2-circle"></i> 결재요청
+    </button>
+     -->
+    </div>
+  </body>
+</html>

@@ -15,6 +15,9 @@ menu-resource:
     v3_access_user_id:
       R: ACCESS_USER:R
       W: ACCESS_USER:W
+    v3_approval_workspace:
+      R: WORK_TASK:R
+      W: WORK_TASK:W
     v3_user_page_log:
       R: USER_ACCESS_HIS:R
     v3_neb_code_group_manage:

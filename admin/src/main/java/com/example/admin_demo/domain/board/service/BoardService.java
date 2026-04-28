@@ -10,6 +10,7 @@ import com.example.admin_demo.domain.menu.dto.MenuResponse;
 import com.example.admin_demo.domain.menu.mapper.MenuMapper;
 import com.example.admin_demo.domain.menu.mapper.UserMenuMapper;
 import com.example.admin_demo.domain.user.mapper.UserMapper;
+import com.example.admin_demo.global.aop.WorkListRecord;
 import com.example.admin_demo.global.common.enums.AuthCode;
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
@@ -84,6 +85,7 @@ public class BoardService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "Board_Service", crudType = "C", pkExpression = "#requestDTO.boardId", workName = "게시판")
     public BoardResponse createBoard(BoardCreateRequest requestDTO, String userId) {
         if (boardMapper.countById(requestDTO.getBoardId()) > 0) {
             throw new DuplicateException("boardId: " + requestDTO.getBoardId());
@@ -163,6 +165,7 @@ public class BoardService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "Board_Service", crudType = "U", pkExpression = "#boardId", workName = "게시판")
     public BoardResponse updateBoard(String boardId, BoardUpdateRequest requestDTO, String userId) {
         if (boardMapper.countById(boardId) == 0) {
             throw new NotFoundException("boardId: " + boardId);
@@ -175,6 +178,7 @@ public class BoardService {
     }
 
     @Transactional
+    @WorkListRecord(workId = "Board_Service", crudType = "D", pkExpression = "#boardId", workName = "게시판")
     public void deleteBoard(String boardId) {
         if (boardMapper.countById(boardId) == 0) {
             throw new NotFoundException("boardId: " + boardId);
