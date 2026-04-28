@@ -337,8 +337,6 @@ function parseSlides(blockEl: HTMLElement): CardSlide[] {
             const innerStyle = innerCard?.getAttribute('style') || '';
             const innerWidthMatch = innerStyle.match(/(?:^|;)width:min\(100%,(\d+)px\)/i);
             const heightMatch = innerStyle.match(/(?:^|;)min-height:(\d+)px/i);
-            const liveWidth = innerCard?.getBoundingClientRect().width || item.getBoundingClientRect().width || 0;
-            const liveHeight = innerCard?.getBoundingClientRect().height || 0;
             const widthPx = Number.parseInt(widthMatch?.[1] || innerWidthMatch?.[1] || '', 10);
             const heightPx = Number.parseInt(heightMatch?.[1] || '', 10);
             const copyable = !!item.querySelector('[data-card-copy]') || !!fallback.copyable;
