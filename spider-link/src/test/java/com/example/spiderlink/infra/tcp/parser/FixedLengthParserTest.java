@@ -38,9 +38,9 @@ class FixedLengthParserTest {
         // when
         Map<String, Object> result = parser.parse(structure, bytes);
 
-        // then
-        assertThat(result.get("trxId")).isEqualTo("DEMO_AUTH_LOGIN     ");
-        assertThat(result.get("userId")).isEqualTo("user01    ");
+        // then — trailing 공백 제거됨 (참고소스 FixedLengthMessageParser 동일)
+        assertThat(result.get("trxId")).isEqualTo("DEMO_AUTH_LOGIN");
+        assertThat(result.get("userId")).isEqualTo("user01");
         assertThat(result.get("amt")).isEqualTo("0000001000");
     }
 
@@ -116,7 +116,7 @@ class FixedLengthParserTest {
         Map<String, Object> result = parser.parse(structure, bytes);
 
         // then
-        assertThat(result.get("userId")).isEqualTo("user01    ");
+        assertThat(result.get("userId")).isEqualTo("user01");
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> items = (List<Map<String, Object>>) result.get("items");
@@ -150,9 +150,9 @@ class FixedLengthParserTest {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> codes = (List<Map<String, Object>>) result.get("codes");
         assertThat(codes).hasSize(3);
-        assertThat(codes.get(0).get("code")).isEqualTo("AAA  ");
-        assertThat(codes.get(1).get("code")).isEqualTo("BBB  ");
-        assertThat(codes.get(2).get("code")).isEqualTo("CCC  ");
+        assertThat(codes.get(0).get("code")).isEqualTo("AAA");
+        assertThat(codes.get(1).get("code")).isEqualTo("BBB");
+        assertThat(codes.get(2).get("code")).isEqualTo("CCC");
     }
 
     @Test

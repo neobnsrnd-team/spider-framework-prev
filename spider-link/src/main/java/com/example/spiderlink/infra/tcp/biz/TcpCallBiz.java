@@ -38,6 +38,10 @@ public class TcpCallBiz implements Biz {
     @Value("${tcp.ext.port:19100}")
     private int port;
 
+    /** 기관 ID — FWK_MESSAGE 전문 구조 조회 키 (application.yml app.org-id) */
+    @Value("${app.org-id:DEMO}")
+    private String orgId;
+
     /**
      * 외부시스템으로 TCP 전문을 송신하고 응답 페이로드를 반환한다.
      *
@@ -56,7 +60,7 @@ public class TcpCallBiz implements Biz {
 
         log.debug("[TcpCallBiz] TCP 호출: host={}:{}, command={}", host, port, methodName);
 
-        JsonCommandResponse response = tcpClient.sendJson(host, port, req);
+        JsonCommandResponse response = tcpClient.send(host, port, orgId, req);
         if (!response.isSuccess()) {
             throw new RuntimeException("외부시스템 TCP 호출 실패: command=" + methodName
                     + ", error=" + response.getError());

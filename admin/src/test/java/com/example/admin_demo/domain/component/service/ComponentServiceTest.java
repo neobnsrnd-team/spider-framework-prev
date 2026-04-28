@@ -223,7 +223,7 @@ class ComponentServiceTest {
         void exists_deletesParamsThenComponent() {
             given(componentMapper.countById("CMP-001")).willReturn(1);
 
-            componentService.delete("CMP-001");
+            componentService.delete("CMP-001", "TYPE-A");
 
             then(componentMapper).should().deleteParamsByComponentId("CMP-001");
             then(componentMapper).should().deleteById("CMP-001");
@@ -234,7 +234,8 @@ class ComponentServiceTest {
         void notExists_throwsNotFoundException() {
             given(componentMapper.countById("NOT-EXIST")).willReturn(0);
 
-            assertThatThrownBy(() -> componentService.delete("NOT-EXIST")).isInstanceOf(NotFoundException.class);
+            assertThatThrownBy(() -> componentService.delete("NOT-EXIST", "TYPE-A"))
+                    .isInstanceOf(NotFoundException.class);
         }
     }
 
