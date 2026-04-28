@@ -60,8 +60,11 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
     /** Biz 타입 컴포넌트 리플렉션 호출 시 스프링 빈 조회용 */
     private final ApplicationContext applicationContext;
 
-    /** 시작 시 FWK_LISTENER_TRX_MESSAGE에서 등록된 커맨드 목록 캐싱 — DB 조회 최소화 */
-    private Set<String> supportedCommands = new HashSet<>();
+    /**
+     * 시작 시 FWK_LISTENER_TRX_MESSAGE에서 등록된 커맨드 목록 캐싱 — DB 조회 최소화.
+     * volatile: refreshCommands()가 TCP 워커 스레드와 다른 스레드에서 참조를 교체하므로 가시성 보장 필요
+     */
+    private volatile Set<String> supportedCommands = new HashSet<>();
 
     @PostConstruct
     void init() {

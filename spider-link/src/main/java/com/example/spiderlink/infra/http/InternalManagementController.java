@@ -76,8 +76,9 @@ public class InternalManagementController {
             }
         } catch (Exception e) {
             log.error("[InternalManagementController] reload 처리 중 오류: gubun={}, error={}", gubun, e.getMessage(), e);
+            // e.getMessage()가 null일 수 있으므로(NPE 등) 고정 메시지 반환 — 상세는 서버 로그로만 확인
             return ResponseEntity.internalServerError()
-                    .body(Map.of("success", false, "message", e.getMessage()));
+                    .body(Map.of("success", false, "message", "Internal Server Error"));
         }
     }
 
