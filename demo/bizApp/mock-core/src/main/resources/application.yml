@@ -19,7 +19,6 @@ tcp:
   server:
     port: ${TCP_SERVER_PORT}
     handler-pool-size: ${TCP_SERVER_HANDLER_POOL_SIZE}
-    queue-capacity: ${TCP_SERVER_QUEUE_CAPACITY}
 
 logging:
   level:

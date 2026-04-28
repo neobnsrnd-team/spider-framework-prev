@@ -18,6 +18,8 @@ interface BannerImage {
 
 interface Props {
     blockEl: HTMLElement;
+    /** ContentBuilder openContentEditor 세 번째 인자 — 호출 시 ContentBuilder가 현재 DOM을 스냅샷하여 내부 HTML 갱신 */
+    cbOnChange?: (() => void) | null;
     onClose: () => void;
 }
 
@@ -51,11 +53,8 @@ function parseHideDays(el: HTMLElement): number {
 
 const FONT = "-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Gothic Neo',sans-serif";
 
-export default function PopupBannerEditor({ blockEl, onClose }: Props) {
-    const [images, setImages] = useState<BannerImage[]>(() => {
-        const parsed = parseImages(blockEl);
-        return parsed.length > 0 ? parsed : [{ url: '', link: '#', alt: '' }];
-    });
+export default function PopupBannerEditor({ blockEl, cbOnChange, onClose }: Props) {
+    const [images, setImages] = useState<BannerImage[]>(() => parseImages(blockEl));
     const [hideDays, setHideDays] = useState<number>(() => parseHideDays(blockEl));
 
     // ── 이미지 필드 변경 ─────────────────────────────────────────────────
@@ -100,11 +99,17 @@ export default function PopupBannerEditor({ blockEl, onClose }: Props) {
             alt: img.alt.trim(),
         }));
 
-        // data 속성 업데이트 후 런타임 reinit — 플러그인 mount()를 다시 실행해 미리보기 갱신
+        // popup-banner 요소는 data-cb-type만 있고 data-component-id가 없으므로
+        // replaceWith 방식은 ContentBuilder 내부 참조를 갱신하지 못한다.
+        // 올바른 방식:
+        //   1) 속성 갱신 (DOM에 즉시 반영)
+        //   2) cbOnChange() — ContentBuilder에 변경을 알려 내부 HTML 스냅샷 갱신
+        //      → debouncedReinit의 applyBehavior() 가 구 스냅샷으로 DOM을 복원하는 것을 방지
+        //   3) reinitialize() — Runtime이 즉시 unmount → mount 실행 (300ms debounce 없음)
         blockEl.setAttribute('data-images', JSON.stringify(validated));
         blockEl.setAttribute('data-hide-days', String(hideDays));
-        window.builderReinit?.();
-
+        cbOnChange?.();
+        void window.builderRuntime?.reinitialize();
         onClose();
     }
 

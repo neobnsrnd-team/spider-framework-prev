@@ -14,4 +14,10 @@ public class CmsDeployPageRequest {
 
     /** 검색어 (페이지명 또는 작성자명) */
     private String search;
+
+    /** 정렬 기준 */
+    private String sortBy;
+
+    /** 정렬 방향 (ASC / DESC) */
+    private String sortDirection;
 }

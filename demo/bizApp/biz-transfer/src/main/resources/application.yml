@@ -16,17 +16,35 @@ spring:
       maximum-pool-size: 2
       minimum-idle: 1
 
+mybatis:
+  # classpath*: 로 spider-link JAR 내부 XML까지 탐색
+  mapper-locations: classpath*:mapper/oracle/**/*.xml
+
 tcp:
   server:
     port: ${TCP_SERVER_PORT}
     handler-pool-size: ${TCP_SERVER_HANDLER_POOL_SIZE}
     queue-capacity: ${TCP_SERVER_QUEUE_CAPACITY}
+  ext:
+    # MetaDrivenCommandHandler B-type TcpCallBiz 가 호출할 외부시스템 (mock-core)
+    # TCP_EXT_HOST 미설정 시 기존 MOCK_CORE_HOST 로 폴백하여 .env 호환성 유지
+    host: ${TCP_EXT_HOST:${MOCK_CORE_HOST:localhost}}
+    port: ${TCP_EXT_PORT:${MOCK_CORE_PORT:19300}}
 
-mock:
-  core:
-    host: ${MOCK_CORE_HOST}
-    port: ${MOCK_CORE_PORT}
+app:
+  org-id: ${APP_ORG_ID:DEMO}
+
+mybatis:
+  # spider-link JAR 내부의 XML 매퍼 파일 위치를 명시한다 (spider-link에서 optional로 선언되어 자동 적용 안 됨)
+  mapper-locations: classpath:mapper/oracle/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: VARCHAR
+    lazy-loading-enabled: false
+    cache-enabled: false
+    auto-mapping-behavior: PARTIAL
 
 logging:
   level:
     com.example.biztransfer: DEBUG
+    com.example.spiderlink: DEBUG

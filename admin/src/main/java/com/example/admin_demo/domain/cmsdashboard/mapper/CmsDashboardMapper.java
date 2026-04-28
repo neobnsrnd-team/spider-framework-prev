@@ -41,6 +41,9 @@ public interface CmsDashboardMapper {
      */
     List<CmsTemplateResponse> findTemplateList();
 
+    /** 단건 템플릿 조회 — 생성 시 레이아웃 일치 여부 검증용 */
+    CmsTemplateResponse findTemplateById(@Param("templateId") String templateId);
+
     /**
      * 템플릿 존재 여부 확인 — createPage 시 templateId 유효성 검증용.
      * PAGE_TYPE = 'TEMPLATE' AND USE_YN = 'Y' 인 페이지인지 확인한다.

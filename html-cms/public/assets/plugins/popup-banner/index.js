@@ -79,8 +79,11 @@ export default {
     editor: {
         openContentEditor(element, builder, onChange) {
             // 설정 버튼 클릭 → CustomEvent dispatch → EditClient.tsx에서 PopupBannerEditor 모달 오픈
+            // onChange: ContentBuilder에 변경 사실을 알려 내부 HTML 스냅샷을 갱신하는 콜백
+            //   PopupBannerEditor가 setAttribute 후 onChange()를 호출해야
+            //   applyBehavior() 시 ContentBuilder가 구 스냅샷으로 DOM을 복원하지 않는다.
             document.dispatchEvent(
-                new CustomEvent('spw:popup-banner:edit', { detail: { element } })
+                new CustomEvent('spw:popup-banner:edit', { detail: { element, onChange } })
             );
             // ContentBuilder가 appendChild할 수 있도록 빈 container 반환 (숨김)
             const container = document.createElement('div');
@@ -101,8 +104,10 @@ export default {
         if (existingSheet) existingSheet.remove();
 
         // 뷰어 모드: 동일 페이지 첫 번째 팝업만 활성화
+        // ContentBuilderRuntime은 data-cb-type 속성으로 플러그인을 식별하며 data-component-id를 부여하지 않으므로
+        // data-cb-type 선택자를 사용해야 팝업 배너 요소를 올바르게 찾을 수 있다.
         if (!isEditor) {
-            const allBanners = document.querySelectorAll('[data-component-id^="popup-banner"]');
+            const allBanners = document.querySelectorAll('[data-cb-type="popup-banner"]');
             if (allBanners[0] !== element) return {};
             // "N일간 보지 않기" 기간 내이면 미표시 (미리보기 모드에서는 항상 표시)
             if (!isPreviewMode() && isHiddenUntil(pageId)) return {};

@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.example.admin_demo.domain.sqlquery.dto.SqlQueryResponse;
 import com.example.admin_demo.domain.sqlquery.service.SqlQueryService;
+import com.example.admin_demo.global.client.SpiderLinkReloadClient;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.exception.DuplicateException;
 import com.example.admin_demo.global.exception.NotFoundException;
@@ -45,6 +46,9 @@ class SqlQueryControllerTest {
 
     @MockitoBean
     private SqlQueryService sqlQueryService;
+
+    @MockitoBean
+    private SpiderLinkReloadClient spiderLinkReloadClient;
 
     // ─── GET /api/sql-queries/page ──────────────────────────────────
 

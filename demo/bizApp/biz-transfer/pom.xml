@@ -42,6 +42,13 @@
             <artifactId>biz-common</artifactId>
         </dependency>
 
+        <!-- MyBatis — spider-link MessageMetaMapper 스캔·실행에 필요 (spider-link에서 optional로 선언되어 transitive 미전달) -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>3.0.3</version>
+        </dependency>
+
         <!-- JDBC + Oracle — FWK_MESSAGE_INSTANCE 전문 이력 기록 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -56,6 +63,13 @@
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ucp</artifactId>
             <scope>runtime</scope>
+        </dependency>
+
+        <!-- MyBatis — @MapperScan 어노테이션 + MetaDrivenCommandHandler 매퍼 스캔 (spider-link에서 optional이라 전이 안 됨) -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>3.0.3</version>
         </dependency>
 
         <!-- Lombok — 컴파일 시점에만 사용 -->
