@@ -9,15 +9,17 @@ test.describe('InfoCardSlideEditor', () => {
         await page.waitForLoadState('domcontentloaded');
     });
 
-    test('shows current card width and height as default values', async ({ page }) => {
+    test('shows empty card width and height by default', async ({ page }) => {
         await page.getByTestId('open-info-card-slide-editor').click();
         await expect(page.getByTestId('info-card-slide-editor')).toBeVisible();
 
         const widthValue = await page.getByTestId('card-width-0').inputValue();
         const heightValue = await page.getByTestId('card-height-0').inputValue();
 
-        expect(Number(widthValue)).toBeGreaterThan(0);
-        expect(Number(heightValue)).toBeGreaterThan(0);
+        // liveWidth/liveHeight fallback 제거 — 명시적으로 입력하지 않으면 빈 값
+        // (렌더링 너비를 자동 저장하면 inner div에 고정 px가 박혀 100% 확장을 막는 부작용 있었음)
+        expect(widthValue).toBe('');
+        expect(heightValue).toBe('');
     });
 
     test('reflects latest canvas text when reopening the editor', async ({ page }) => {
