@@ -2,6 +2,7 @@ package com.example.spiderlink.config;
 
 import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
 import com.example.spiderlink.domain.messageinstance.MessageLogQueue;
+import com.example.spiderlink.infra.tcp.client.pool.SocketPoolManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -16,10 +17,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * spider-link 공통 자동 설정.
  *
  * <p>소비 모듈에 {@link JdbcTemplate} 빈이 존재할 때만 활성화되며,
- * {@link MessageLogQueue}와 {@link MessageInstanceRecorder}를 자동으로 빈으로 등록한다.</p>
+ * {@link SocketPoolManager}, {@link MessageLogQueue}, {@link MessageInstanceRecorder}를
+ * 자동으로 빈으로 등록한다.</p>
  *
- * <p>{@code MessageLogQueue}는 {@link org.springframework.context.SmartLifecycle}을 구현하므로
- * Spring Context 시작 시 컨슈머 스레드가 자동 기동되고, 종료 시 큐를 드레인한 뒤 정상 종료된다.</p>
+ * <p>{@code MessageLogQueue}와 {@link SocketPoolManager}는
+ * {@link org.springframework.context.SmartLifecycle}을 구현하므로
+ * Spring Context 시작 시 자동 기동되고, 종료 시 정상 종료된다.</p>
  *
  * <p>이 클래스는 {@code META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports}에
  * 등록되어 Spring Boot 자동 설정 메커니즘으로 로드된다.</p>
@@ -30,6 +33,19 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @ConditionalOnClass(JdbcTemplate.class)
 @Import(SpiderLinkMessageConfig.class)
 public class SpiderLinkAutoConfiguration {
+
+    /**
+     * 소켓 커넥션 풀 매니저 빈.
+     *
+     * <p>(host:port) 단위로 소켓을 재사용하여 TCP 연결 오버헤드를 줄인다.
+     * SmartLifecycle 구현체로 Context 종료 시 모든 유휴 소켓이 자동 닫힌다.</p>
+     *
+     * @return SocketPoolManager 빈
+     */
+    @Bean
+    public SocketPoolManager socketPoolManager() {
+        return new SocketPoolManager();
+    }
 
     /**
      * 전문 이력 비동기 큐 빈.
