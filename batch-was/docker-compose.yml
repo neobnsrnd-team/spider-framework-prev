@@ -1,8 +1,17 @@
 version: '3.8'
 
-# 모니터링 스택 (Prometheus + Grafana)
+# 모니터링 스택 (Prometheus + Grafana) + Redis 분산 락
 # batch-was 앱 자체는 로컬/별도 서버에서 실행 — host.docker.internal:8081 로 스크랩
 services:
+  redis:
+    image: redis:7.2-alpine
+    container_name: spider-batch-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    # TODO: 운영 환경에서는 Redis Sentinel 또는 Redis Cluster로 HA 구성 필요
+    #       단일 Redis는 SPOF — 장애 시 자동 페일오버 불가
+
   prometheus:
     image: prom/prometheus:v2.50.1
     container_name: spider-batch-prometheus

@@ -5,7 +5,10 @@ import com.example.admin_demo.domain.batch.dto.BatchAppDetailResponse;
 import com.example.admin_demo.domain.batch.dto.BatchAppResponse;
 import com.example.admin_demo.domain.batch.dto.BatchAppSearchRequest;
 import com.example.admin_demo.domain.batch.dto.BatchAppUpdateRequest;
+import com.example.admin_demo.domain.batch.dto.ScheduleCronUpdateRequest;
+import com.example.admin_demo.domain.batch.dto.ScheduleTriggerRequest;
 import com.example.admin_demo.domain.batch.service.BatchAppService;
+import com.example.admin_demo.domain.batch.service.BatchExecService;
 import com.example.admin_demo.global.dto.ApiResponse;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.util.ExcelExportUtil;
@@ -33,6 +36,7 @@ import org.springframework.web.bind.annotation.*;
 public class BatchAppController {
 
     private final BatchAppService batchAppService;
+    private final BatchExecService batchExecService;
 
     // ==================== 조회 API ====================
 
@@ -192,5 +196,40 @@ public class BatchAppController {
         log.info("DELETE /api/batch/apps/{}/was/instance/{} - Removing instance", batchAppId, instanceId);
         batchAppService.removeInstanceFromBatchApp(batchAppId, instanceId);
         return ResponseEntity.ok(ApiResponse.success("WAS 인스턴스가 삭제되었습니다", null));
+    }
+
+    // ==================== 스케줄 관리 API ====================
+
+    /**
+     * 스케줄 즉시 실행.
+     * 지정 WAS 인스턴스의 Quartz Job을 즉시 트리거한다.
+     * POST /api/batch/apps/{batchAppId}/schedule/trigger
+     */
+    @PostMapping("/{batchAppId}/schedule/trigger")
+    @PreAuthorize("hasAuthority('BATCH_APP:W')")
+    public ResponseEntity<ApiResponse<Void>> triggerSchedule(
+            @PathVariable String batchAppId, @Valid @RequestBody ScheduleTriggerRequest request) {
+
+        log.info("POST /api/batch/apps/{}/schedule/trigger - instanceId={}", batchAppId, request.getInstanceId());
+        batchExecService.triggerSchedule(batchAppId, request.getInstanceId(), request.getBatchDate());
+        return ResponseEntity.ok(ApiResponse.success("스케줄 즉시 실행이 요청되었습니다", null));
+    }
+
+    /**
+     * 스케줄 Cron 표현식 변경.
+     * DB(FWK_BATCH_APP.CRON_TEXT)를 업데이트하고 모든 배정 WAS 인스턴스에 스케줄 재등록 커맨드를 전송한다.
+     * PUT /api/batch/apps/{batchAppId}/schedule/cron
+     */
+    @PutMapping("/{batchAppId}/schedule/cron")
+    @PreAuthorize("hasAuthority('BATCH_APP:W')")
+    public ResponseEntity<ApiResponse<Void>> updateScheduleCron(
+            @PathVariable String batchAppId, @Valid @RequestBody ScheduleCronUpdateRequest request) {
+
+        log.info("PUT /api/batch/apps/{}/schedule/cron - cron={}", batchAppId, request.getCronText());
+        // 1. DB 업데이트
+        batchAppService.updateCronText(batchAppId, request.getCronText());
+        // 2. 모든 배정 인스턴스에 Quartz 재스케줄 TCP 전송
+        batchExecService.updateScheduleCron(batchAppId, request.getCronText());
+        return ResponseEntity.ok(ApiResponse.success("Cron 스케줄이 변경되었습니다", null));
     }
 }
