@@ -102,6 +102,27 @@ COMMIT;
 
 
 -- =============================================================
+-- 5-1. FWK_ROLE_MENU — 나의 작업함 메뉴 역할 권한 등록
+-- =============================================================
+-- ADMIN 역할: 쓰기 권한 (R+W 포함)
+INSERT INTO FWK_ROLE_MENU (ROLE_ID, MENU_ID, AUTH_CODE) VALUES ('ADMIN', 'v3_approval_workspace', 'W');
+-- itdev 역할: 쓰기 권한 (IT 개발팀도 작업함 사용)
+INSERT INTO FWK_ROLE_MENU (ROLE_ID, MENU_ID, AUTH_CODE) VALUES ('itdev', 'v3_approval_workspace', 'W');
+
+COMMIT;
+
+
+-- =============================================================
+-- 5-2. FWK_USER_WORK_GROUP / FWK_USER_WORK_TASK 잘못 생성된 테이블 삭제
+-- =============================================================
+-- ⚠️  이전 분석 오류로 생성된 테이블. 미사용 확인 후 삭제.
+DROP TABLE FWK_USER_WORK_GROUP;
+DROP TABLE FWK_USER_WORK_TASK;
+
+COMMIT;
+
+
+-- =============================================================
 -- 6. GROUP_ID 컬럼 크기 변경 (VARCHAR2(20) → VARCHAR2(30))
 -- =============================================================
 -- ⚠️  USER_ID 최대 20자 + '001' = 23자 → ORA-12899 방지를 위해 여유있게 30자로 확장
