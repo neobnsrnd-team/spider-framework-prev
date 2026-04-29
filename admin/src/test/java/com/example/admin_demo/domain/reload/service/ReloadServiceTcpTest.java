@@ -31,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
@@ -75,10 +74,11 @@ class ReloadServiceTcpTest {
     @DisplayName("COMM_TYPE=TCP이면 TcpClient를 사용하고 RestTemplate은 호출되지 않는다")
     void COMM_TYPE이_TCP이면_TcpClient를_사용한다() throws IOException {
         // given — 인스턴스 조회
-        given(wasInstanceMapper.selectResponseById("biz-auth")).willReturn(WasInstanceResponse.builder()
-                .instanceId("biz-auth")
-                .instanceName("BizAuth WAS")
-                .build());
+        given(wasInstanceMapper.selectResponseById("biz-auth"))
+                .willReturn(WasInstanceResponse.builder()
+                        .instanceId("biz-auth")
+                        .instanceName("BizAuth WAS")
+                        .build());
 
         // given — FWK_PROPERTY: COMM_TYPE=TCP, IP/PORT는 기본값 사용
         given(propertyMapper.selectResponseById(eq("was_config"), eq("biz-auth.COMM_TYPE")))
@@ -90,7 +90,10 @@ class ReloadServiceTcpTest {
 
         // given — TcpClient 성공 응답
         given(tcpClient.sendJson(anyString(), anyInt(), any(JsonCommandRequest.class)))
-                .willReturn(JsonCommandResponse.builder().success(true).message("완료").build());
+                .willReturn(JsonCommandResponse.builder()
+                        .success(true)
+                        .message("완료")
+                        .build());
 
         ReloadExecuteRequest request = ReloadExecuteRequest.builder()
                 .reloadType("log_config_level")
@@ -113,10 +116,11 @@ class ReloadServiceTcpTest {
     @Test
     @DisplayName("COMM_TYPE=TCP일 때 TcpClient payload에 gubun과 additionalParams가 포함된다")
     void TCP_요청_payload_검증() throws IOException {
-        given(wasInstanceMapper.selectResponseById("biz-auth")).willReturn(WasInstanceResponse.builder()
-                .instanceId("biz-auth")
-                .instanceName("BizAuth WAS")
-                .build());
+        given(wasInstanceMapper.selectResponseById("biz-auth"))
+                .willReturn(WasInstanceResponse.builder()
+                        .instanceId("biz-auth")
+                        .instanceName("BizAuth WAS")
+                        .build());
         given(propertyMapper.selectResponseById(eq("was_config"), eq("biz-auth.COMM_TYPE")))
                 .willReturn(PropertyResponse.builder().defaultValue("TCP").build());
         given(propertyMapper.selectResponseById(eq("was_config"), eq("biz-auth.MANAGEMENT_SERVER_IP")))
@@ -145,10 +149,11 @@ class ReloadServiceTcpTest {
     @Test
     @DisplayName("COMM_TYPE=TCP일 때 TcpClient IOException이 발생하면 실패 결과가 반환된다")
     void TCP_IOException이면_실패_결과() throws IOException {
-        given(wasInstanceMapper.selectResponseById("biz-auth")).willReturn(WasInstanceResponse.builder()
-                .instanceId("biz-auth")
-                .instanceName("BizAuth WAS")
-                .build());
+        given(wasInstanceMapper.selectResponseById("biz-auth"))
+                .willReturn(WasInstanceResponse.builder()
+                        .instanceId("biz-auth")
+                        .instanceName("BizAuth WAS")
+                        .build());
         given(propertyMapper.selectResponseById(eq("was_config"), eq("biz-auth.COMM_TYPE")))
                 .willReturn(PropertyResponse.builder().defaultValue("TCP").build());
         given(propertyMapper.selectResponseById(eq("was_config"), eq("biz-auth.MANAGEMENT_SERVER_IP")))
@@ -172,10 +177,11 @@ class ReloadServiceTcpTest {
     @Test
     @DisplayName("COMM_TYPE 프로퍼티가 없으면 RestTemplate을 사용하고 TcpClient는 호출되지 않는다")
     void COMM_TYPE이_없으면_HTTP를_사용한다() throws IOException {
-        given(wasInstanceMapper.selectResponseById("biz-demo")).willReturn(WasInstanceResponse.builder()
-                .instanceId("biz-demo")
-                .instanceName("BizDemo WAS")
-                .build());
+        given(wasInstanceMapper.selectResponseById("biz-demo"))
+                .willReturn(WasInstanceResponse.builder()
+                        .instanceId("biz-demo")
+                        .instanceName("BizDemo WAS")
+                        .build());
 
         // COMM_TYPE 프로퍼티 없음 → null 반환 → 기본값 "HTTP" 적용
         given(propertyMapper.selectResponseById(eq("was_config"), anyString())).willReturn(null);
@@ -196,10 +202,11 @@ class ReloadServiceTcpTest {
     @Test
     @DisplayName("COMM_TYPE=HTTP이면 RestTemplate을 사용한다")
     void COMM_TYPE이_HTTP이면_RestTemplate을_사용한다() throws IOException {
-        given(wasInstanceMapper.selectResponseById("biz-demo")).willReturn(WasInstanceResponse.builder()
-                .instanceId("biz-demo")
-                .instanceName("BizDemo WAS")
-                .build());
+        given(wasInstanceMapper.selectResponseById("biz-demo"))
+                .willReturn(WasInstanceResponse.builder()
+                        .instanceId("biz-demo")
+                        .instanceName("BizDemo WAS")
+                        .build());
         given(propertyMapper.selectResponseById(eq("was_config"), eq("biz-demo.COMM_TYPE")))
                 .willReturn(PropertyResponse.builder().defaultValue("HTTP").build());
         given(propertyMapper.selectResponseById(eq("was_config"), eq("biz-demo.MANAGEMENT_SERVER_IP")))
@@ -224,10 +231,11 @@ class ReloadServiceTcpTest {
     @Test
     @DisplayName("HTTP 응답 success=false이면 실패 결과가 반환된다")
     void HTTP_응답_success_false이면_실패_결과() throws IOException {
-        given(wasInstanceMapper.selectResponseById("biz-demo")).willReturn(WasInstanceResponse.builder()
-                .instanceId("biz-demo")
-                .instanceName("BizDemo WAS")
-                .build());
+        given(wasInstanceMapper.selectResponseById("biz-demo"))
+                .willReturn(WasInstanceResponse.builder()
+                        .instanceId("biz-demo")
+                        .instanceName("BizDemo WAS")
+                        .build());
         given(propertyMapper.selectResponseById(eq("was_config"), anyString())).willReturn(null);
         given(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(), any(ParameterizedTypeReference.class)))
                 .willReturn(ResponseEntity.ok(Map.of("success", false, "message", "처리 실패")));

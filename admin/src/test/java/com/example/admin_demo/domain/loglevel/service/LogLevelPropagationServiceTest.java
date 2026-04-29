@@ -72,10 +72,11 @@ class LogLevelPropagationServiceTest {
                 .level(null) // null → 부모 상속
                 .build();
 
-        given(reloadService.executeReload(any())).willReturn(ReloadResultResponse.builder()
-                .reloadType("log_config_level")
-                .results(List.of())
-                .build());
+        given(reloadService.executeReload(any()))
+                .willReturn(ReloadResultResponse.builder()
+                        .reloadType("log_config_level")
+                        .results(List.of())
+                        .build());
 
         logLevelPropagationService.propagate(request);
 
@@ -96,10 +97,11 @@ class LogLevelPropagationServiceTest {
                 .level("   ")
                 .build();
 
-        given(reloadService.executeReload(any())).willReturn(ReloadResultResponse.builder()
-                .reloadType("log_config_level")
-                .results(List.of())
-                .build());
+        given(reloadService.executeReload(any()))
+                .willReturn(ReloadResultResponse.builder()
+                        .reloadType("log_config_level")
+                        .results(List.of())
+                        .build());
 
         logLevelPropagationService.propagate(request);
 
@@ -121,10 +123,11 @@ class LogLevelPropagationServiceTest {
                 .additivity("Y")
                 .build();
 
-        given(reloadService.executeReload(any())).willReturn(ReloadResultResponse.builder()
-                .reloadType("log_config_additivity")
-                .results(List.of())
-                .build());
+        given(reloadService.executeReload(any()))
+                .willReturn(ReloadResultResponse.builder()
+                        .reloadType("log_config_additivity")
+                        .results(List.of())
+                        .build());
 
         logLevelPropagationService.propagate(request);
 
@@ -147,7 +150,8 @@ class LogLevelPropagationServiceTest {
 
         assertThatThrownBy(() -> logLevelPropagationService.propagate(request))
                 .isInstanceOf(InvalidInputException.class)
-                .satisfies(e -> assertThat(((InvalidInputException) e).getDetailMessage()).contains("additivity"));
+                .satisfies(e -> assertThat(((InvalidInputException) e).getDetailMessage())
+                        .contains("additivity"));
 
         verify(reloadService, never()).executeReload(any());
     }
@@ -165,7 +169,8 @@ class LogLevelPropagationServiceTest {
 
         assertThatThrownBy(() -> logLevelPropagationService.propagate(request))
                 .isInstanceOf(InvalidInputException.class)
-                .satisfies(e -> assertThat(((InvalidInputException) e).getDetailMessage()).contains("batch_reload"));
+                .satisfies(e -> assertThat(((InvalidInputException) e).getDetailMessage())
+                        .contains("batch_reload"));
 
         verify(reloadService, never()).executeReload(any());
     }

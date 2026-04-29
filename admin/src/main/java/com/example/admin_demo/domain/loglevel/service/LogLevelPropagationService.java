@@ -105,7 +105,11 @@ public class LogLevelPropagationService {
         Map<String, String> params = new HashMap<>();
         params.put("logName", logName);
         params.put("additivity", additivity);
-        log.info("[Reload] Additivity 자동 Reload: group={}, logName={}, additivity={}", defaultGroup, logName, additivity);
+        log.info(
+                "[Reload] Additivity 자동 Reload: group={}, logName={}, additivity={}",
+                defaultGroup,
+                logName,
+                additivity);
         return reloadService.executeReloadForGroup(defaultGroup, ReloadType.LOG_ADDITIVITY.getCode(), params);
     }
 

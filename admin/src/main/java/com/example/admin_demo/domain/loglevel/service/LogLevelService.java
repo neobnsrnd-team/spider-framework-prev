@@ -96,31 +96,14 @@ public class LogLevelService {
     }
 
     /**
-     * 이름 계층을 역으로 올라가며 가장 가까운 조상 로거의 effective level을 반환합니다.
+     * 부모 로거의 effective level을 반환합니다.
      * ROOT는 부모가 없으므로 null을 반환합니다.
      */
     private String resolveParentEffectiveLevel(Logger logger) {
-        LoggerContext ctx = getLoggerContext();
-        String name = logger.getName();
-        if (Logger.ROOT_LOGGER_NAME.equals(name)) {
+        if (Logger.ROOT_LOGGER_NAME.equals(logger.getName())) {
             return null;
         }
-        // 이름에 점이 없으면 바로 ROOT가 부모
-        int lastDot = name.lastIndexOf('.');
-        if (lastDot < 0) {
-            return ctx.getLogger(Logger.ROOT_LOGGER_NAME).getEffectiveLevel().toString();
-        }
-        // 점 단위로 잘라올라가며 이미 생성된 조상 로거를 탐색
-        String parentName = name.substring(0, lastDot);
-        while (!Logger.ROOT_LOGGER_NAME.equals(parentName)) {
-            Logger ancestor = ctx.exists(parentName);
-            if (ancestor != null) {
-                return ancestor.getEffectiveLevel().toString();
-            }
-            int dot = parentName.lastIndexOf('.');
-            parentName = dot >= 0 ? parentName.substring(0, dot) : Logger.ROOT_LOGGER_NAME;
-        }
-        return ctx.getLogger(Logger.ROOT_LOGGER_NAME).getEffectiveLevel().toString();
+        return logger.getParent().getEffectiveLevel().toString();
     }
 
     private String collectAppenderNames(Logger logger) {
