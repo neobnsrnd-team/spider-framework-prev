@@ -1,0 +1,30 @@
+# ============================================
+# MySQL Database Configuration
+# ============================================
+# Sensitive values are loaded from environment variables.
+# See .env.example for required variables.
+# ============================================
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://localhost:3306/spider?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+# MyBatis Configuration
+mybatis:
+  mapper-locations: classpath:mapper/mysql/**/*.xml
+  type-handlers-package: com.example.spider_admin.global.common.handler
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: NULL
+    lazy-loading-enabled: false
+    cache-enabled: true
+    auto-mapping-behavior: PARTIAL
