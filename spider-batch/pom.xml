@@ -81,7 +81,14 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- spider-link: TCP 서버 인프라 & ManagementContext -->
+        <!-- spider-common: TCP 프로토콜 모델(ManagementContext), 관리 명령 처리 -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>spider-common</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <!-- spider-link: TCP 서버 인프라 -->
         <dependency>
             <groupId>com.example</groupId>
             <artifactId>spider-link</artifactId>

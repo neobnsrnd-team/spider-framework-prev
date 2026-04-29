@@ -26,14 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
  * }
  * }</pre>
  *
- * <p>보안: {@link com.example.spiderlink.config.WebMvcConfig}의 인터셉터가
+ * <p>보안: {@link com.example.spidercommon.config.WebMvcConfig}의 인터셉터가
  * {@code /api/internal/**} 경로를 허용 IP(기본: localhost)로만 제한한다.</p>
  *
- * <p>주의: {@code @ConditionalOnBean}을 사용하지 않는다.
- * 해당 애노테이션은 컴포넌트 스캔 중 평가되어 auto-configuration에서 등록되는
- * {@link SocketPoolManager} 빈을 아직 인식하지 못하는 타이밍 문제가 있다.
- * spider-link를 사용하는 모든 앱에서 {@code SpiderLinkAutoConfiguration}이
- * {@link SocketPoolManager}를 항상 등록하므로 조건이 불필요하다.</p>
+ * <p>{@link com.example.spiderlink.config.SpiderLinkServletAutoConfiguration}에서
+ * {@code @Bean}으로 등록된다. spider-link를 라이브러리로 사용하는 소비 WAS에서
+ * 컴포넌트 스캔 없이 자동으로 활성화된다.</p>
  */
 @RestController
 @RequestMapping("/api/internal/pool")

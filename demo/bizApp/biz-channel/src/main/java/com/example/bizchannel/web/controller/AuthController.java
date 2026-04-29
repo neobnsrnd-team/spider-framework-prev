@@ -2,7 +2,7 @@ package com.example.bizchannel.web.controller;
 
 import com.example.bizchannel.client.BizClient;
 import com.example.bizcommon.BizCommands;
-import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

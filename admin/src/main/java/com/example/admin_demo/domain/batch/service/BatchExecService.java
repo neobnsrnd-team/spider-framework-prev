@@ -12,7 +12,7 @@ import com.example.admin_demo.global.exception.InvalidInputException;
 import com.example.admin_demo.global.exception.NotFoundException;
 import com.example.admin_demo.global.util.AuditUtil;
 import com.example.admin_demo.infra.tcp.adapter.BatchManagementAdapter;
-import com.example.spiderlink.infra.tcp.model.ManagementContext;
+import com.example.spidercommon.infra.tcp.model.ManagementContext;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;

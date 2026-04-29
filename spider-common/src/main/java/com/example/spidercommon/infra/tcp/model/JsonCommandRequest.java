@@ -1,4 +1,4 @@
-package com.example.spiderlink.infra.tcp.model;
+package com.example.spidercommon.infra.tcp.model;
 
 import java.util.Map;
 import lombok.Data;

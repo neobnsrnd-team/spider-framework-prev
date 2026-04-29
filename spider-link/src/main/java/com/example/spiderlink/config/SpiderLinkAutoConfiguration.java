@@ -1,17 +1,23 @@
 package com.example.spiderlink.config;
 
+import com.example.spiderlink.domain.management.executor.MessageStructureExecutor;
+import com.example.spiderlink.domain.management.executor.RequestAppMappingExecutor;
 import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
 import com.example.spiderlink.domain.messageinstance.MessageLogQueue;
 import com.example.spiderlink.infra.tcp.client.pool.SocketPoolManager;
+import com.example.spiderlink.infra.tcp.handler.MetaDrivenCommandHandler;
+import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.lang.Nullable;
 
 /**
  * spider-link 공통 자동 설정.
@@ -25,7 +31,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * Spring Context 시작 시 자동 기동되고, 종료 시 정상 종료된다.</p>
  *
  * <p>이 클래스는 {@code META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports}에
- * 등록되어 Spring Boot 자동 설정 메커니즘으로 로드된다.</p>
+ * 등록되어 Spring Boot 자동 설정 메커니즘으로 로드되며, spider-link를 의존하는 모든 WAS에 자동 적용된다.</p>
+ *
+ * <p>관리/인프라 빈(LogLevelApplier, ManagementReloadCommandHandler 등)은
+ * spider-common의 {@code SpiderCommonAutoConfiguration}에서 등록된다.</p>
+ *
+ * <p>등록되는 빈 목록:</p>
+ * <ul>
+ *   <li>{@link MessageInstanceRecorder} — JdbcTemplate이 존재하는 경우에만 등록</li>
+ *   <li>{@link RequestAppMappingExecutor} — MetaDrivenCommandHandler가 존재하는 경우에만 등록</li>
+ *   <li>{@link MessageStructureExecutor} — 항상 등록 (MessageStructurePool 없으면 supports=false)</li>
+ * </ul>
  */
 // JdbcTemplateAutoConfiguration 이후에 실행해야 JdbcTemplate 빈이 이미 등록된 상태에서
 // @ConditionalOnBean(JdbcTemplate.class) 조건을 올바르게 평가할 수 있다
@@ -76,10 +92,36 @@ public class SpiderLinkAutoConfiguration {
      */
     @Bean
     @ConditionalOnBean(JdbcTemplate.class)
+    @ConditionalOnMissingBean
     public MessageInstanceRecorder messageInstanceRecorder(
             MessageLogQueue queue,
             ObjectMapper objectMapper,
             @Value("${spring.application.name:unknown}") String appName) {
         return new MessageInstanceRecorder(queue, objectMapper, appName);
+    }
+
+    /**
+     * FWK_LISTENER_TRX_MESSAGE 커맨드 캐시 갱신 실행기.
+     *
+     * <p>MetaDrivenCommandHandler 빈이 등록된 WAS에서만 활성화된다.
+     * ManagementReloadHttpController(spider-common)가 이 실행기를 자동으로 주입받아
+     * {@code gubun=request_app_mapping} 명령을 처리한다.</p>
+     */
+    @Bean
+    @ConditionalOnBean(MetaDrivenCommandHandler.class)
+    public RequestAppMappingExecutor requestAppMappingExecutor(MetaDrivenCommandHandler handler) {
+        return new RequestAppMappingExecutor(handler);
+    }
+
+    /**
+     * FWK_MESSAGE 전문 구조 캐시 초기화 실행기.
+     *
+     * <p>MessageStructurePool이 없으면(고정길이 전문 미사용) supports()가 false를 반환하여
+     * ManagementReloadHttpController에서 자동으로 건너뛴다.</p>
+     */
+    @Bean
+    public MessageStructureExecutor messageStructureExecutor(
+            @Nullable MessageStructurePool messageStructurePool) {
+        return new MessageStructureExecutor(messageStructurePool);
     }
 }

@@ -3,7 +3,7 @@ package com.example.admin_demo.infra.tcp.adapter;
 import com.example.admin_demo.domain.wasinstance.dto.WasInstanceResponse;
 import com.example.admin_demo.domain.wasinstance.mapper.WasInstanceMapper;
 import com.example.admin_demo.infra.tcp.client.TcpClient;
-import com.example.spiderlink.infra.tcp.model.ManagementContext;
+import com.example.spidercommon.infra.tcp.model.ManagementContext;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

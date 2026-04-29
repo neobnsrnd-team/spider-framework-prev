@@ -1,10 +1,10 @@
 package com.example.spiderlink.config;
 
 import com.example.spiderlink.infra.tcp.codec.JsonMessageCodec;
-import com.example.spiderlink.infra.tcp.handler.CommandDispatcher;
+import com.example.spidercommon.infra.tcp.handler.CommandDispatcher;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.example.spiderlink.infra.tcp.handler.MetaDrivenCommandHandler;
-import com.example.spiderlink.infra.tcp.model.JsonCommandRequest;
-import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;

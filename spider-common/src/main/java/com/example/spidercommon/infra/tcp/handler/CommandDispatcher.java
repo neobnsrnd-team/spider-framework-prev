@@ -1,6 +1,6 @@
-package com.example.spiderlink.infra.tcp.handler;
+package com.example.spidercommon.infra.tcp.handler;
 
-import com.example.spiderlink.infra.tcp.model.HasCommand;
+import com.example.spidercommon.infra.tcp.model.HasCommand;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

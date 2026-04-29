@@ -247,7 +247,14 @@
 		</dependency>
 		-->
 
-		<!-- spider-link 공통 연계엔진 라이브러리 (ManagementContext, TCP 인프라 공유) -->
+		<!-- spider-common: TCP 프로토콜 모델(ManagementContext), 관리 명령 처리 공유 -->
+		<dependency>
+			<groupId>com.example</groupId>
+			<artifactId>spider-common</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+
+		<!-- spider-link 공통 연계엔진 라이브러리 (TCP 인프라, 메시지 엔진) -->
 		<dependency>
 			<groupId>com.example</groupId>
 			<artifactId>spider-link</artifactId>

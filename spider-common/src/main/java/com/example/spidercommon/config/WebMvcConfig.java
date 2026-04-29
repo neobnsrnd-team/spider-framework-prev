@@ -1,4 +1,4 @@
-package com.example.spiderlink.config;
+package com.example.spidercommon.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;

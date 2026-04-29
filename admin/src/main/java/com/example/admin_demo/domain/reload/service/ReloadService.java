@@ -7,9 +7,14 @@ import com.example.admin_demo.domain.reload.dto.ReloadResultResponse;
 import com.example.admin_demo.domain.reload.dto.ReloadResultResponse.WasReloadResult;
 import com.example.admin_demo.domain.reload.dto.ReloadTypeResponse;
 import com.example.admin_demo.domain.reload.enums.ReloadType;
+import com.example.admin_demo.domain.wasgroup.mapper.WasGroupMapper;
 import com.example.admin_demo.domain.wasinstance.dto.WasInstanceResponse;
 import com.example.admin_demo.domain.wasinstance.mapper.WasInstanceMapper;
 import com.example.admin_demo.global.exception.InternalException;
+import com.example.admin_demo.infra.tcp.client.TcpClient;
+import com.example.admin_demo.infra.tcp.model.JsonCommandRequest;
+import com.example.admin_demo.infra.tcp.model.JsonCommandResponse;
+import java.io.IOException;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +27,15 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * 운영정보 Reload Service 구현체
+ * 운영정보 Reload Service 구현체.
+ *
+ * <p>WAS 인스턴스별 통신 방식(COMM_TYPE)을 FWK_PROPERTY에서 조회하여
+ * HTTP 또는 TCP 중 적합한 전송 방식을 자동 선택한다.</p>
+ *
+ * <ul>
+ *   <li>HTTP: {@link RestTemplate}으로 {@code /api/management/reload}에 POST 요청</li>
+ *   <li>TCP:  {@link TcpClient#sendJson}으로 {@code MANAGEMENT_RELOAD} 커맨드 전송</li>
+ * </ul>
  */
 @Slf4j
 @Service
@@ -31,8 +44,10 @@ import org.springframework.web.client.RestTemplate;
 public class ReloadService {
 
     private final WasInstanceMapper wasInstanceMapper;
+    private final WasGroupMapper wasGroupMapper;
     private final PropertyMapper propertyMapper;
     private final RestTemplate restTemplate;
+    private final TcpClient tcpClient;
 
     @Value("${reload.management.default-port:50005}")
     private int defaultManagementPort;
@@ -55,6 +70,35 @@ public class ReloadService {
                         .description(type.getDetail())
                         .build())
                 .toList();
+    }
+
+    /**
+     * 지정된 WAS 그룹에 속한 모든 인스턴스에 Reload 명령을 전송한다.
+     *
+     * <p>ASIS의 {@code ReloadUtil.reload(ALL_WAS_CONFIG, map)} 역할.
+     * {@code reload.default-was-group} 프로퍼티로 대상 그룹을 결정하며,
+     * 그룹에 인스턴스가 없으면 빈 결과를 반환한다.</p>
+     *
+     * @param groupId          WAS 그룹 ID (FWK_WAS_GROUP_INSTANCE)
+     * @param reloadType       Reload 종류 코드
+     * @param additionalParams 추가 파라미터 (logName, level 등)
+     * @return 그룹 내 각 WAS별 Reload 결과
+     */
+    public ReloadResultResponse executeReloadForGroup(
+            String groupId, String reloadType, Map<String, String> additionalParams) {
+        List<String> instanceIds = wasGroupMapper.selectInstanceIdsByGroupId(groupId);
+        if (instanceIds.isEmpty()) {
+            log.warn("그룹 '{}' 에 등록된 WAS 인스턴스가 없습니다.", groupId);
+            return ReloadResultResponse.builder()
+                    .reloadType(reloadType)
+                    .results(Collections.emptyList())
+                    .build();
+        }
+        return executeReload(ReloadExecuteRequest.builder()
+                .reloadType(reloadType)
+                .instanceIds(instanceIds)
+                .additionalParams(additionalParams)
+                .build());
     }
 
     public ReloadResultResponse executeReload(ReloadExecuteRequest request) {
@@ -89,26 +133,96 @@ public class ReloadService {
 
         String managementIp = resolveManagementProperty(instanceId, "MANAGEMENT_SERVER_IP", defaultManagementIp);
         int managementPort = resolveManagementPort(instanceId);
-        String url = String.format("http://%s:%d%s", managementIp, managementPort, managementEndpoint);
+        // 기본값 HTTP — biz-auth 처럼 TCP 전용 WAS는 FWK_PROPERTY에 COMM_TYPE=TCP 로 등록한다
+        String commType = resolveManagementProperty(instanceId, "COMM_TYPE", "HTTP");
 
+        Map<String, String> body = new HashMap<>();
+        body.put("gubun", reloadType.getCode());
+        if (!additionalParams.isEmpty()) {
+            body.putAll(additionalParams);
+        }
+
+        log.info(
+                "Reload 요청: instanceId={}, commType={}, host={}:{}, gubun={}, params={}",
+                instanceId,
+                commType,
+                managementIp,
+                managementPort,
+                reloadType.getCode(),
+                additionalParams);
+
+        if ("TCP".equalsIgnoreCase(commType)) {
+            return executeReloadViaTcp(instanceId, instance, managementIp, managementPort, body);
+        }
+        String url = String.format("http://%s:%d%s", managementIp, managementPort, managementEndpoint);
+        return executeReloadViaHttp(instanceId, instance, managementIp, managementPort, url, body);
+    }
+
+    /**
+     * TCP 채널로 {@code MANAGEMENT_RELOAD} 커맨드를 전송한다.
+     *
+     * <p>biz-auth처럼 HTTP 서버가 없는 WAS(web-application-type=none)에서 사용한다.
+     * payload에 gubun 및 추가 파라미터를 담아 전송하며,
+     * spider-link의 {@code ManagementReloadCommandHandler}가 수신하여 처리한다.</p>
+     */
+    private WasReloadResult executeReloadViaTcp(
+            String instanceId,
+            WasInstanceResponse instance,
+            String managementIp,
+            int managementPort,
+            Map<String, String> body) {
+        try {
+            Map<String, Object> tcpPayload = new HashMap<>(body);
+            JsonCommandRequest tcpReq = JsonCommandRequest.builder()
+                    .command("MANAGEMENT_RELOAD")
+                    .payload(tcpPayload)
+                    .build();
+            JsonCommandResponse tcpResp = tcpClient.sendJson(managementIp, managementPort, tcpReq);
+
+            if (tcpResp.isSuccess()) {
+                log.info("Reload(TCP) 성공: instanceId={}", instanceId);
+                return WasReloadResult.builder()
+                        .instanceId(instanceId)
+                        .instanceName(instance.getInstanceName())
+                        .success(true)
+                        .build();
+            }
+            String errorMsg = tcpResp.getError() != null ? tcpResp.getError() : tcpResp.getMessage();
+            log.warn("Reload(TCP) 실패 응답: instanceId={}, error={}", instanceId, errorMsg);
+            return WasReloadResult.builder()
+                    .instanceId(instanceId)
+                    .instanceName(instance.getInstanceName())
+                    .success(false)
+                    .errorMessage(errorMsg)
+                    .build();
+
+        } catch (IOException e) {
+            String errorMsg = String.format(
+                    "%s TCP 서버에 연결 중 오류가 발생하였습니다.[host=%s,port=%d]", instanceId, managementIp, managementPort);
+            log.error("Reload(TCP) 통신 오류: {}", errorMsg, e);
+            return WasReloadResult.builder()
+                    .instanceId(instanceId)
+                    .instanceName(instance.getInstanceName())
+                    .success(false)
+                    .errorMessage(errorMsg)
+                    .build();
+        }
+    }
+
+    /**
+     * HTTP로 관리 엔드포인트({@code /api/management/reload})에 POST 요청을 전송한다.
+     */
+    private WasReloadResult executeReloadViaHttp(
+            String instanceId,
+            WasInstanceResponse instance,
+            String managementIp,
+            int managementPort,
+            String url,
+            Map<String, String> body) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-
-            Map<String, String> body = new HashMap<>();
-            body.put("gubun", reloadType.getCode());
-            if (additionalParams != null && !additionalParams.isEmpty()) {
-                body.putAll(additionalParams);
-            }
-
             HttpEntity<Map<String, String>> httpEntity = new HttpEntity<>(body, headers);
-
-            log.info(
-                    "Reload 요청: instanceId={}, url={}, gubun={}, params={}",
-                    instanceId,
-                    url,
-                    reloadType.getCode(),
-                    additionalParams);
 
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                     url, HttpMethod.POST, httpEntity, new ParameterizedTypeReference<Map<String, Object>>() {});
@@ -121,21 +235,20 @@ public class ReloadService {
                         responseBody.get("message") != null ? String.valueOf(responseBody.get("message")) : null;
 
                 if (success) {
-                    log.info("Reload 성공: instanceId={}", instanceId);
+                    log.info("Reload(HTTP) 성공: instanceId={}", instanceId);
                     return WasReloadResult.builder()
                             .instanceId(instanceId)
                             .instanceName(instance.getInstanceName())
                             .success(true)
                             .build();
-                } else {
-                    log.warn("Reload 실패 응답: instanceId={}, message={}", instanceId, message);
-                    return WasReloadResult.builder()
-                            .instanceId(instanceId)
-                            .instanceName(instance.getInstanceName())
-                            .success(false)
-                            .errorMessage(message)
-                            .build();
                 }
+                log.warn("Reload(HTTP) 실패 응답: instanceId={}, message={}", instanceId, message);
+                return WasReloadResult.builder()
+                        .instanceId(instanceId)
+                        .instanceName(instance.getInstanceName())
+                        .success(false)
+                        .errorMessage(message)
+                        .build();
             }
 
             return WasReloadResult.builder()
@@ -148,8 +261,7 @@ public class ReloadService {
         } catch (RestClientException e) {
             String errorMsg = String.format(
                     "%s 서버에 연결 중 오류가 발생하였습니다.[host=%s,port=%d]", instanceId, managementIp, managementPort);
-            log.error("Reload 통신 오류: {}", errorMsg, e);
-
+            log.error("Reload(HTTP) 통신 오류: {}", errorMsg, e);
             return WasReloadResult.builder()
                     .instanceId(instanceId)
                     .instanceName(instance.getInstanceName())

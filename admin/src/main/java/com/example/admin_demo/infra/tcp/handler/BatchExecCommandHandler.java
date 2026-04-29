@@ -3,7 +3,7 @@ package com.example.admin_demo.infra.tcp.handler;
 import com.example.admin_demo.infra.tcp.adapter.BatchManagementAdapter;
 import com.example.admin_demo.infra.tcp.model.JsonCommandRequest;
 import com.example.admin_demo.infra.tcp.model.JsonCommandResponse;
-import com.example.spiderlink.infra.tcp.model.ManagementContext;
+import com.example.spidercommon.infra.tcp.model.ManagementContext;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

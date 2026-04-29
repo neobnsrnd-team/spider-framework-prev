@@ -271,7 +271,13 @@ public class PageController {
         return resolveView(request, "pages/error-code/error-code :: content", model);
     }
 
-    // ── 모니터링 ── system_biz_reg, was_status, was_status_monitor
+    // ── 모니터링 ── system_biz_reg, was_status, was_status_monitor, log_level_manage
+
+    @GetMapping("/log-levels")
+    @PreAuthorize("hasAuthority('LOG_LEVEL:R')")
+    public String logLevels(HttpServletRequest request, Model model) {
+        return resolveView(request, "pages/log-level-manage/log-level-manage :: content", model);
+    }
 
     @GetMapping("/monitors")
     public String monitors(HttpServletRequest request, Model model) {

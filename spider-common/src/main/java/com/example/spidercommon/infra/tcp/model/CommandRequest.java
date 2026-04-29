@@ -1,4 +1,4 @@
-package com.example.spiderlink.infra.tcp.model;
+package com.example.spidercommon.infra.tcp.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

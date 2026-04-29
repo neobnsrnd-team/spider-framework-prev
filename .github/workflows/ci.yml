@@ -37,6 +37,9 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Install spider-common to local Maven repository
+        run: mvn -B install -DskipTests --file ../spider-common/pom.xml
+
       - name: Install spider-link to local Maven repository
         run: mvn -B install -DskipTests --file ../spider-link/pom.xml
 
@@ -241,6 +244,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
+
+      - name: Install spider-common to local Maven repository
+        run: mvn -B install -DskipTests --file ../spider-common/pom.xml
 
       - name: Install spider-link to local Maven repository
         run: mvn -B install -DskipTests --file ../spider-link/pom.xml

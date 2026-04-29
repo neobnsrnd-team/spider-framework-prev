@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Log Level Search Fragment -->
+<div th:fragment="search" class="card border p-2 mb-3">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+        <label class="form-label mb-0 small fw-medium fs-xs">Log Name</label>
+        <input type="text" id="logNameFilter" class="form-control form-control-sm flex-fixed-200"
+               placeholder="부분 일치"
+               onkeypress="if(event.key === 'Enter') { window.LogLevelManage.search(); }">
+
+        <label class="form-label mb-0 small fw-medium fs-xs">Level</label>
+        <select id="levelFilter" class="form-select form-select-sm flex-fixed-100"
+                onkeypress="if(event.key === 'Enter') { window.LogLevelManage.search(); }">
+            <option value="">전체</option>
+            <option value="ERROR">ERROR</option>
+            <option value="WARN">WARN</option>
+            <option value="INFO">INFO</option>
+            <option value="DEBUG">DEBUG</option>
+            <option value="TRACE">TRACE</option>
+            <option value="OFF">OFF</option>
+            <option value="__INHERITED__">상속</option>
+        </select>
+
+        <!-- Spacer -->
+        <div class="flex-grow-1"></div>
+
+        <select id="limitRows" class="form-select form-select-sm sp-limit-select">
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+        </select>
+        <label class="form-label mb-0 small fw-medium ms-1 me-2 fs-xs">건씩</label>
+
+        <button id="btnSearch" class="btn btn-primary btn-sm"
+                onclick="window.LogLevelManage.search()">
+            <i class="bi bi-search"></i> 조회
+        </button>
+    </div>
+</div>
+</body>
+</html>
