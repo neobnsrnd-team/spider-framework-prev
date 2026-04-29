@@ -1,6 +1,6 @@
 # Spider-Framework
 
-안전하고 유연한 금융 서비스를 위한 SPA + Spring Boot 기반 미들웨어 프레임워크.
+안전하고 유연한 금융 서비스를 위한 React SPA + Spring Boot MSA 기반 금융 서비스 프레임워크
 
 ## 목차
 
