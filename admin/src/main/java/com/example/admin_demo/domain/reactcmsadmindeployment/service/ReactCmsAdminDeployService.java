@@ -10,6 +10,7 @@ import com.example.admin_demo.domain.reactcmsadmindeployment.mapper.ReactCmsAdmi
 import com.example.admin_demo.global.dto.PageRequest;
 import com.example.admin_demo.global.dto.PageResponse;
 import com.example.admin_demo.global.exception.InternalException;
+import com.example.admin_demo.global.exception.InvalidInputException;
 import com.example.admin_demo.global.exception.NotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -19,10 +20,13 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /** React CMS Admin 배포 관리 서비스 */
 @Slf4j
@@ -30,6 +34,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReactCmsAdminDeployService {
+
+    /** ../와 같은 경로 탐색 문자 차단 — 영문자·숫자·하이픈·언더스코어만 허용 */
+    private static final Pattern SAFE_PAGE_ID = Pattern.compile("^[a-zA-Z0-9_-]+$");
 
     private final ReactCmsAdminDeployMapper reactCmsAdminDeployMapper;
     private final CmsDeployProperties deployProperties;
@@ -50,7 +57,7 @@ public class ReactCmsAdminDeployService {
             if (item.getInstanceIp() == null || item.getInstancePort() == null) return;
             if (localInstanceId.equals(item.getInstanceId())) {
                 // 로컬 TypeScript 배포: demo/front Vite 뷰어 라우트로 연결
-                item.setDeployedUrl("http://" + item.getInstanceIp() + ":" + item.getInstancePort()
+                item.setDeployedUrl(protocol + "://" + item.getInstanceIp() + ":" + item.getInstancePort()
                         + "/react-cms/viewer/" + item.getPageId());
             } else {
                 item.setDeployedUrl(protocol + "://" + item.getInstanceIp() + ":" + item.getInstancePort()
@@ -78,6 +85,8 @@ public class ReactCmsAdminDeployService {
      */
     @Transactional
     public void push(String pageId, String userId) {
+        validatePageId(pageId);
+
         if (reactCmsAdminDeployMapper.existsApprovedPage(pageId) == 0) {
             throw new NotFoundException("승인된 React 페이지를 찾을 수 없습니다. pageId=" + pageId);
         }
@@ -87,33 +96,44 @@ public class ReactCmsAdminDeployService {
             throw new InternalException("배포할 코드가 없습니다. CMS 빌더에서 페이지를 저장한 뒤 다시 시도해주세요.");
         }
 
-        long fileSize = writeLocalFiles(pageId, pageDesc);
-
-        int nextVersion = reactCmsAdminDeployMapper.findMaxDeployVersion(pageId) + 1;
-        String fileId = pageId + "_v" + nextVersion + ".tsx";
+        // fileId는 실제 저장 파일명과 일치 — 이력 조회 시 파일 시스템과 혼선 방지
+        String fileId = pageId + ".tsx";
+        long fileSize = pageDesc.getBytes(StandardCharsets.UTF_8).length;
         String fileCrcValue = computeSha256Prefix(pageDesc);
 
         reactCmsAdminDeployMapper.insertDeployHistory(
                 localProperties.getInstanceId(), fileId, fileSize, fileCrcValue, userId);
 
+        // 파일 쓰기는 DB 커밋 후 실행 — 커밋 전 파일 생성 시 DB 롤백과 불일치 방지
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                writeLocalFiles(pageId, pageDesc);
+            }
+        });
+
         log.info("React CMS 로컬 배포 완료: pageId={}, userId={}, fileId={}", pageId, userId, fileId);
     }
 
-    /** 컴포넌트 파일과 컨테이너 파일을 로컬 디렉토리에 저장하고 컴포넌트 파일 크기(bytes)를 반환 */
-    private long writeLocalFiles(String pageId, String pageDesc) {
+    /** pageId가 안전한 형식인지 검증 (Path Traversal 방지) */
+    private void validatePageId(String pageId) {
+        if (pageId == null || !SAFE_PAGE_ID.matcher(pageId).matches()) {
+            throw new InvalidInputException("유효하지 않은 pageId 형식입니다: " + pageId);
+        }
+    }
+
+    /** 컴포넌트 파일과 컨테이너 파일을 로컬 디렉토리에 저장 */
+    private void writeLocalFiles(String pageId, String pageDesc) {
         try {
             // 컴포넌트 파일: PAGE_DESC(generateJSX 결과) 그대로 저장
             Path componentDir = resolveDir(localProperties.getComponentDir());
-            byte[] componentBytes = pageDesc.getBytes(StandardCharsets.UTF_8);
-            Files.write(componentDir.resolve(pageId + ".tsx"), componentBytes);
+            Files.write(componentDir.resolve(pageId + ".tsx"), pageDesc.getBytes(StandardCharsets.UTF_8));
 
             // 컨테이너 파일: demo/front 라우팅을 위한 re-export 래퍼
             Path containerDir = resolveDir(localProperties.getContainerDir());
             String containerCode = "// Auto-generated container for " + pageId + " — do not edit manually\n"
                     + "export { default } from \"@/reactcms/generated/" + pageId + "\";\n";
             Files.writeString(containerDir.resolve(pageId + ".tsx"), containerCode, StandardCharsets.UTF_8);
-
-            return componentBytes.length;
         } catch (IOException e) {
             throw new InternalException("배포 파일 저장 중 오류가 발생했습니다: " + e.getMessage(), e);
         }

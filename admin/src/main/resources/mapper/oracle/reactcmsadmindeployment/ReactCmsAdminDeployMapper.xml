@@ -26,32 +26,32 @@
         </where>
     </sql>
 
+    <!--
+        LATERAL JOIN으로 페이지별 최신 배포 이력 1건만 조회.
+        FILE_ID LIKE p.PAGE_ID || '%' — 전방 일치(leading wildcard 없음)로 인덱스 활용 가능.
+    -->
     <select id="findApprovedPageList" resultType="com.example.admin_demo.domain.reactcmsadmindeployment.dto.ReactCmsAdminDeployPageResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
-                    p.PAGE_ID                                                       AS pageId,
-                    p.PAGE_NAME                                                     AS pageName,
-                    p.CREATE_USER_NAME                                              AS createUserName,
-                    TO_CHAR(p.BEGINNING_DATE, 'YYYY-MM-DD')                        AS beginningDate,
-                    TO_CHAR(p.EXPIRED_DATE,   'YYYY-MM-DD')                        AS expiredDate,
-                    <!-- 하드코딩 대신 서비스 레이어에서 application.yml 설정값(protocol, path-prefix)으로 URL 조합 -->
-                    CASE WHEN lh.FILE_ID IS NOT NULL THEN si.INSTANCE_ID END        AS instanceId,
-                    CASE WHEN lh.FILE_ID IS NOT NULL THEN si.INSTANCE_IP END        AS instanceIp,
-                    CASE WHEN lh.FILE_ID IS NOT NULL THEN si.INSTANCE_PORT END      AS instancePort
+                    p.PAGE_ID                                AS pageId,
+                    p.PAGE_NAME                              AS pageName,
+                    p.CREATE_USER_NAME                       AS createUserName,
+                    TO_CHAR(p.BEGINNING_DATE, 'YYYY-MM-DD') AS beginningDate,
+                    TO_CHAR(p.EXPIRED_DATE,   'YYYY-MM-DD') AS expiredDate,
+                    <!-- 서비스 레이어에서 application.yml 설정값(protocol, path-prefix)으로 URL 조합 -->
+                    si.INSTANCE_ID                           AS instanceId,
+                    si.INSTANCE_IP                           AS instanceIp,
+                    si.INSTANCE_PORT                         AS instancePort
                 FROM SPW_CMS_PAGE p
-                LEFT JOIN (
-                    SELECT
-                        REGEXP_REPLACE(FILE_ID, '_v\d+\.(html|tsx)$', '') AS PAGE_ID,
-                        FILE_ID,
-                        INSTANCE_ID,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY REGEXP_REPLACE(FILE_ID, '_v\d+\.(html|tsx)$', '')
-                            ORDER BY LAST_MODIFIED_DTIME DESC
-                        ) AS RN
+                LEFT JOIN LATERAL (
+                    SELECT FILE_ID, INSTANCE_ID
                     FROM FWK_CMS_FILE_SEND_HIS
-                    WHERE FILE_ID LIKE '%_v%.html' OR FILE_ID LIKE '%_v%.tsx'
-                ) lh ON lh.PAGE_ID = p.PAGE_ID AND lh.RN = 1
+                    WHERE FILE_ID LIKE p.PAGE_ID || '%.html'
+                       OR FILE_ID LIKE p.PAGE_ID || '%.tsx'
+                    ORDER BY LAST_MODIFIED_DTIME DESC
+                    FETCH FIRST 1 ROW ONLY
+                ) lh ON 1=1
                 LEFT JOIN FWK_CMS_SERVER_INSTANCE si ON lh.INSTANCE_ID = si.INSTANCE_ID
                 <include refid="approvedPageConditions"/>
                 ORDER BY p.LAST_MODIFIED_DTIME DESC NULLS LAST
@@ -68,11 +68,12 @@
 
     <!-- ==================== 배포 이력 조회 ==================== -->
 
+    <!-- FILE_ID LIKE #{req.pageId} || '%' — 전방 일치로 인덱스 활용 가능 -->
     <sql id="historySearchConditions">
         <where>
             <if test="req.pageId != null and req.pageId != ''">
-                (h.FILE_ID LIKE #{req.pageId} || '_v%.html'
-                OR h.FILE_ID LIKE #{req.pageId} || '_v%.tsx')
+                (h.FILE_ID LIKE #{req.pageId} || '%.html'
+                OR h.FILE_ID LIKE #{req.pageId} || '%.tsx')
             </if>
         </where>
     </sql>
@@ -123,19 +124,15 @@
     <!-- ==================== 배포 버전 관리 ==================== -->
 
     <!--
-        pageId 기준 최대 배포 버전 번호 조회.
-        FILE_ID 패턴: {pageId}_v{n}.html 또는 {pageId}_v{n}.tsx
-        이력이 없으면 0을 반환해 호출부에서 +1하여 첫 버전(1)으로 사용.
+        pageId 기준 누적 배포 횟수 조회.
+        FILE_ID LIKE #{pageId} || '%' — 전방 일치로 인덱스 활용 가능.
+        이력이 없으면 0을 반환한다.
     -->
     <select id="findMaxDeployVersion" resultType="int">
-        SELECT NVL(MAX(
-            TO_NUMBER(REGEXP_REPLACE(
-                REGEXP_SUBSTR(FILE_ID, '_v\d+\.(html|tsx)$'),
-                '[^0-9]', ''
-            ))
-        ), 0)
+        SELECT COUNT(*)
         FROM FWK_CMS_FILE_SEND_HIS
-        WHERE FILE_ID LIKE #{pageId} || '_v%'
+        WHERE FILE_ID LIKE #{pageId} || '%.tsx'
+           OR FILE_ID LIKE #{pageId} || '%.html'
     </select>
 
     <!--
