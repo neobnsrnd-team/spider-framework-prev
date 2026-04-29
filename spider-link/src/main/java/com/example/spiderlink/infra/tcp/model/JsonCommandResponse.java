@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Admin ↔ spider-link ↔ demo/backend 구간 TCP 통신 응답 모델.
+ * Admin ↔ AP 서버 구간 TCP 통신 응답 모델.
  *
  * <p>4바이트 길이 프리픽스(int, big-endian) + UTF-8 JSON 바이트열로 전송된다.</p>
  */

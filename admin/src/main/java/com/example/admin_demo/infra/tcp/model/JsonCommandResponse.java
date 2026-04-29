@@ -7,9 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Admin ↔ demo/backend 간 TCP 통신 응답 모델.
+ * Admin ↔ biz-channel 간 TCP 통신 응답 모델.
  *
- * <p>JSON 직렬화 방식을 사용한다 (Node.js 호환).</p>
+ * <p>JSON 직렬화 방식을 사용한다.</p>
  */
 @Data
 @Builder

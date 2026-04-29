@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
  * <p>두 가지 프로토콜을 지원한다:</p>
  * <ul>
  *   <li>ObjectStream: Admin ↔ batch-was 구간 (Java 직렬화, 타입 안전)</li>
- *   <li>JSON: Admin ↔ demo/backend 구간 (4바이트 길이 프리픽스 + UTF-8 JSON)</li>
+ *   <li>JSON: Admin ↔ biz-channel 구간 (4바이트 길이 프리픽스 + UTF-8 JSON)</li>
  * </ul>
  *
  * <p>소켓 옵션은 레퍼런스(spiderlink_Admin ManagementClientWorker)를 준수한다:</p>
@@ -85,11 +85,11 @@ public class TcpClient {
     }
 
     /**
-     * demo/backend TCP 서버에 JsonCommandRequest를 JSON 형식으로 전송하고 응답을 수신한다.
+     * biz-channel 내장 TCP 서버에 JsonCommandRequest를 JSON 형식으로 전송하고 응답을 수신한다.
      * 전송 포맷: [4바이트 길이(int)] + [UTF-8 JSON 바이트열]
      *
      * @param host 대상 호스트
-     * @param port 대상 포트 (기본 9997)
+     * @param port 대상 포트 (기본 19400)
      * @param req  전송할 JsonCommandRequest
      * @return 응답 JsonCommandResponse
      */

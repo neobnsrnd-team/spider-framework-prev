@@ -8,8 +8,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * spider-link 연계엔진 실행 진입점.
  *
- * <p>demo/backend 전문 처리 TCP 서버(port 9995)를 내장하여 기동한다.
- * demo/backend가 Spring Boot으로 전환되면 이 standalone 프로세스는 제거 예정.</p>
+ * <p>Admin ↔ AP 서버 간 TCP 중계 및 전문 처리를 담당하는 standalone 프로세스.
+ * 각 AP 서버(biz-channel, biz-auth, biz-transfer)는 spider-link를 라이브러리로 내장하여 직접 운영하므로,
+ * 이 standalone 프로세스는 레거시 호환 용도로만 유지된다.</p>
  */
 @SpringBootApplication
 // Spring DevTools RestartClassLoader 환경에서 @Mapper 인터페이스가 스캔에서 누락되는 현상 방지

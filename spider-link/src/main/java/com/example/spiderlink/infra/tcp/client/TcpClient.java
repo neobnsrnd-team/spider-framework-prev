@@ -23,7 +23,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
- * spider-link → demo/backend TCP 소켓 클라이언트.
+ * spider-link → AP 서버 TCP 소켓 클라이언트 (standalone 모드용).
  *
  * <p>프로토콜: 4바이트 길이 프리픽스(int, big-endian) + UTF-8 JSON 바이트열.
  * Admin의 TcpClient.sendJson()과 동일한 포맷을 사용한다.</p>

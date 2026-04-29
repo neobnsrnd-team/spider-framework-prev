@@ -26,13 +26,13 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * 긴급공지 배포 관리 서비스
  *
  * <p>배포 라이프사이클(DRAFT → DEPLOYED → ENDED)을 관리하고,
- * Demo Backend에 TCP 통신을 통해 배포 상태를 동기화한다.
+ * biz-channel에 TCP 통신을 통해 배포 상태를 동기화한다.
  *
  * <p>흐름:
  * <ol>
  *   <li>쓰기 트랜잭션 진입 시 DEPLOY_STATUS 행을 SELECT FOR UPDATE로 잠금 (TOCTOU 방지)</li>
  *   <li>Admin DB 업데이트 (FWK_PROPERTY DEPLOY_STATUS 변경) + 이력 스냅샷 삽입</li>
- *   <li>트랜잭션 커밋 후 Demo Backend TCP 호출 (비치명적 — 실패 시 재기동 후 복구됨)</li>
+ *   <li>트랜잭션 커밋 후 biz-channel TCP 호출 (비치명적 — 실패 시 재기동 후 복구됨)</li>
  * </ol>
  *
  * <p>기존 HTTP REST 전송 방식은 주석으로 보존되어 있다 (롤백 대비).</p>
@@ -48,7 +48,7 @@ public class EmergencyNoticeDeployService {
 
     private static final String STATUS_ENDED = "ENDED";
 
-    /** TCP 커맨드 상수 — demo/backend와 약속된 식별자 */
+    /** TCP 커맨드 상수 — biz-channel과 약속된 식별자 */
     private static final String CMD_NOTICE_SYNC = "NOTICE_SYNC";
 
     private static final String CMD_NOTICE_END = "NOTICE_END";
@@ -61,7 +61,7 @@ public class EmergencyNoticeDeployService {
     private final EmergencyNoticeDeployMapper emergencyNoticeDeployMapper;
     private final EmergencyNoticeMapper emergencyNoticeMapper;
 
-    /** Admin ↔ demo/backend 간 TCP 통신 어댑터 (JSON 프로토콜) */
+    /** Admin ↔ biz-channel 간 TCP 통신 어댑터 (JSON 프로토콜) */
     private final DemoBackendAdapter demoBackendAdapter;
 
     // 기존 HTTP 호출 설정(레거시) — TCP 전환 이후 미사용
@@ -266,7 +266,7 @@ public class EmergencyNoticeDeployService {
      * 구성된 페이로드를 Demo Backend에 TCP(JSON 프로토콜)로 전송한다.
      * 커밋 후 {@link #registerAfterCommit}에서 호출된다.
      * Demo Backend 비가용 시 경고 로그만 출력하고 진행한다
-     * (재기동 시 demo/backend의 restoreNoticeState()로 복구).
+     * (재기동 시 biz-channel의 restoreNoticeState()로 복구).
      */
     private void doSyncToDemoBackend(Map<String, Object> body) {
         try {

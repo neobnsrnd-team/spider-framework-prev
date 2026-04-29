@@ -7,9 +7,9 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 /**
- * Admin ↔ demo/backend 간 TCP 통신 요청 모델.
+ * Admin ↔ biz-channel 간 TCP 통신 요청 모델.
  *
- * <p>JSON 직렬화 방식을 사용한다 (Node.js 호환).
+ * <p>JSON 직렬화 방식을 사용한다.
  * 4바이트 길이 프리픽스(int) + UTF-8 JSON 바이트열로 전송된다.</p>
  *
  * <p>공통 요청 스키마는 {@link CommandRequest}에서 상속한다
