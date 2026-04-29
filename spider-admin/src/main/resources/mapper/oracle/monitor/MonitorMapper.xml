@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.monitor.mapper.MonitorMapper">
+<mapper namespace="com.example.spideradmin.domain.monitor.mapper.MonitorMapper">
 
     <!-- 생성 -->
     <insert id="insertMonitor">
@@ -59,7 +59,7 @@
 
 
     <!-- Monitor DTO ResultMap (DTO용 - String 타입) -->
-    <resultMap id="MonitorResponseResultMap" type="com.example.admin_demo.domain.monitor.dto.MonitorResponse">
+    <resultMap id="MonitorResponseResultMap" type="com.example.spideradmin.domain.monitor.dto.MonitorResponse">
         <id property="monitorId" column="MONITOR_ID"/>
         <result property="monitorName" column="MONITOR_NAME"/>
         <result property="monitorQuery" column="MONITOR_QUERY"/>

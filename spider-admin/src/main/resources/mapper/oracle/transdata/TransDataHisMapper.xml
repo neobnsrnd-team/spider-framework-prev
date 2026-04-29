@@ -7,7 +7,7 @@
     - tranSeq 기준 상세 이력 조회
     - resultType으로 DTO 직접 매핑
 -->
-<mapper namespace="com.example.admin_demo.domain.transdata.mapper.TransDataHisMapper">
+<mapper namespace="com.example.spideradmin.domain.transdata.mapper.TransDataHisMapper">
 
     <!-- ==================== 공통 SQL 조각 ==================== -->
 
@@ -41,7 +41,7 @@
 
     <!-- tranSeq 기준 상세 이력 조회 -->
     <select id="findByTranSeq"
-            resultType="com.example.admin_demo.domain.transdata.dto.TransDataHisResponse">
+            resultType="com.example.spideradmin.domain.transdata.dto.TransDataHisResponse">
         SELECT
             h.TRAN_SEQ       AS tranSeq,
             h.TRAN_ID        AS tranId,
@@ -58,7 +58,7 @@
 
     <!-- tranSeq 기준 상세 이력 페이지네이션 + 필터 검색 -->
     <select id="findByTranSeqWithSearch"
-            resultType="com.example.admin_demo.domain.transdata.dto.TransDataHisResponse">
+            resultType="com.example.spideradmin.domain.transdata.dto.TransDataHisResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -88,7 +88,7 @@
 
     <!-- 이행 상세 이력 실패 상세 단건 조회 -->
     <select id="findFailDetail"
-            resultType="com.example.admin_demo.domain.transdata.dto.TransDataHisFailResponse">
+            resultType="com.example.spideradmin.domain.transdata.dto.TransDataHisFailResponse">
         SELECT
             h.TRAN_SEQ          AS tranSeq,
             h.TRAN_ID           AS tranId,

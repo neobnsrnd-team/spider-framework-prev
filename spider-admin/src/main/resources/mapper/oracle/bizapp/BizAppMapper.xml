@@ -2,11 +2,11 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.bizapp.mapper.BizAppMapper">
+<mapper namespace="com.example.spideradmin.domain.bizapp.mapper.BizAppMapper">
 
     <!-- 단건 조회 (FWK_CODE JOIN으로 queNameDisplay 포함) -->
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.bizapp.dto.BizAppResponse">
+            resultType="com.example.spideradmin.domain.bizapp.dto.BizAppResponse">
         SELECT
             TRIM(b.BIZ_APP_ID)          AS bizAppId,
             TRIM(b.BIZ_APP_NAME)        AS bizAppName,
@@ -90,7 +90,7 @@
 
     <!-- ResultMap: QUE_NAME_DISPLAY 컬럼 → queNameDisplay 매핑 -->
     <resultMap id="BizAppWithCodeResultMap"
-               type="com.example.admin_demo.domain.bizapp.dto.BizAppResponse">
+               type="com.example.spideradmin.domain.bizapp.dto.BizAppResponse">
         <id property="bizAppId" column="BIZ_APP_ID"/>
         <result property="bizAppName" column="BIZ_APP_NAME"/>
         <result property="bizAppDesc" column="BIZ_APP_DESC"/>

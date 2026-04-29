@@ -2,12 +2,12 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.component.mapper.ComponentMapper">
+<mapper namespace="com.example.spideradmin.domain.component.mapper.ComponentMapper">
 
     <!-- ==================== 단건 조회 ==================== -->
 
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.component.dto.ComponentResponse">
+            resultType="com.example.spideradmin.domain.component.dto.ComponentResponse">
         SELECT
             TRIM(c.COMPONENT_ID)            AS componentId,
             TRIM(c.COMPONENT_NAME)          AS componentName,
@@ -105,7 +105,7 @@
     <!-- ==================== 목록 조회 (ROWNUM 페이지네이션) ==================== -->
 
     <select id="findAllWithSearch"
-            resultType="com.example.admin_demo.domain.component.dto.ComponentResponse">
+            resultType="com.example.spideradmin.domain.component.dto.ComponentResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -154,7 +154,7 @@
     <!-- ==================== 파라미터 조회 ==================== -->
 
     <select id="findParamsByComponentId"
-            resultType="com.example.admin_demo.domain.component.dto.ComponentParamResponse">
+            resultType="com.example.spideradmin.domain.component.dto.ComponentParamResponse">
         SELECT
             COMPONENT_ID        AS componentId,
             PARAM_SEQ_NO        AS paramSeqNo,

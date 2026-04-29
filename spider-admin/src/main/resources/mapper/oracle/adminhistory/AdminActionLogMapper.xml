@@ -6,7 +6,7 @@
     AdminActionLog Mapper (FWK_USER_ACCESS_HIS)
     - INSERT / SELECT 모두 FWK_USER_ACCESS_HIS 테이블 사용
 -->
-<mapper namespace="com.example.admin_demo.domain.adminhistory.mapper.AdminActionLogMapper">
+<mapper namespace="com.example.spideradmin.domain.adminhistory.mapper.AdminActionLogMapper">
 
     <!-- ==================== INSERT ==================== -->
 
@@ -74,7 +74,7 @@
     </sql>
 
     <!-- 페이징 조회 -->
-    <select id="searchLogs" resultType="com.example.admin_demo.domain.adminhistory.dto.AdminActionLogResponse">
+    <select id="searchLogs" resultType="com.example.spideradmin.domain.adminhistory.dto.AdminActionLogResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -95,7 +95,7 @@
     </select>
 
     <!-- 엑셀 내보내기 (페이징 없음) -->
-    <select id="findAllForExport" resultType="com.example.admin_demo.domain.adminhistory.dto.AdminActionLogResponse">
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.adminhistory.dto.AdminActionLogResponse">
         SELECT
         <include refid="selectColumns"/>
         <include refid="fromTable"/>

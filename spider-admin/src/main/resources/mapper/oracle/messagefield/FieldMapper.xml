@@ -7,11 +7,11 @@
     - insert / update / delete / 단건 조회
     - Entity 없이 DTO 직접 반환
 -->
-<mapper namespace="com.example.admin_demo.domain.messagefield.mapper.FieldMapper">
+<mapper namespace="com.example.spideradmin.domain.messagefield.mapper.FieldMapper">
 
     <!-- 단건 조회 (MessageFieldResponse DTO 직접 반환) -->
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.messagefield.dto.MessageFieldResponse">
+            resultType="com.example.spideradmin.domain.messagefield.dto.MessageFieldResponse">
         SELECT
             mf.ORG_ID AS orgId,
             mf.MESSAGE_ID AS messageId,
@@ -211,7 +211,7 @@
 
     <!-- 전문 ID에 해당하는 필드 목록 조회 (순번 오름차순, DTO 직접 반환) -->
     <select id="findByMessageId"
-            resultType="com.example.admin_demo.domain.messagefield.dto.MessageFieldResponse">
+            resultType="com.example.spideradmin.domain.messagefield.dto.MessageFieldResponse">
         SELECT <include refid="fieldColumnsAsDto"/>
         <include refid="fromMessageField"/>
         WHERE mf.ORG_ID = #{orgId}

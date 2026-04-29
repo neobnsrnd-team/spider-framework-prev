@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.workgroup.mapper.WorkGroupMapper">
+<mapper namespace="com.example.spideradmin.domain.workgroup.mapper.WorkGroupMapper">
 
     <resultMap id="WorkGroupResultMap"
-               type="com.example.admin_demo.domain.workgroup.dto.WorkGroupResponse">
+               type="com.example.spideradmin.domain.workgroup.dto.WorkGroupResponse">
         <result property="groupId"           column="GROUP_ID"/>
         <result property="groupName"         column="GROUP_NAME"/>
         <result property="groupDesc"         column="GROUP_DESC"/>
@@ -65,7 +65,7 @@
     </insert>
 
     <!-- 그룹명·설명 수정 -->
-    <update id="update" parameterType="com.example.admin_demo.domain.workgroup.dto.WorkGroupUpdateRequest">
+    <update id="update" parameterType="com.example.spideradmin.domain.workgroup.dto.WorkGroupUpdateRequest">
         UPDATE FWK_WORK_GROUP
         SET GROUP_NAME          = #{groupName},
             GROUP_DESC          = #{groupDesc},

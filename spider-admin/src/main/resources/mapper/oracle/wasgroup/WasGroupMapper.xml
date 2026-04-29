@@ -2,11 +2,11 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.wasgroup.mapper.WasGroupMapper">
+<mapper namespace="com.example.spideradmin.domain.wasgroup.mapper.WasGroupMapper">
 
     <!-- ==================== WAS Group CRUD ==================== -->
 
-    <select id="selectResponseById" resultType="com.example.admin_demo.domain.wasgroup.dto.WasGroupResponse">
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.wasgroup.dto.WasGroupResponse">
         SELECT WAS_GROUP_ID AS "wasGroupId",
                WAS_GROUP_NAME AS "wasGroupName",
                WAS_GROUP_DESC AS "wasGroupDesc"
@@ -20,7 +20,7 @@
         WHERE WAS_GROUP_ID = #{wasGroupId}
     </select>
 
-    <select id="selectAll" resultType="com.example.admin_demo.domain.wasgroup.dto.WasGroupResponse">
+    <select id="selectAll" resultType="com.example.spideradmin.domain.wasgroup.dto.WasGroupResponse">
         SELECT WAS_GROUP_ID AS "wasGroupId",
                WAS_GROUP_NAME AS "wasGroupName",
                WAS_GROUP_DESC AS "wasGroupDesc"
@@ -108,7 +108,7 @@
     <!-- ==================== Query (merged) ==================== -->
 
 
-    <select id="findBySearchPaging" resultType="com.example.admin_demo.domain.wasgroup.dto.WasGroupResponse">
+    <select id="findBySearchPaging" resultType="com.example.spideradmin.domain.wasgroup.dto.WasGroupResponse">
         <bind name="orderColumn" value="
             (sortBy == 'wasGroupId') ? 'g.WAS_GROUP_ID' :
             (sortBy == 'wasGroupName') ? 'g.WAS_GROUP_NAME' :
@@ -161,7 +161,7 @@
 
     <!-- ==================== 엑셀 내보내기 (페이징 없음) ==================== -->
 
-    <select id="findAllForExport" resultType="com.example.admin_demo.domain.wasgroup.dto.WasGroupResponse">
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.wasgroup.dto.WasGroupResponse">
         <bind name="orderColumn" value="
             (sortBy == 'wasGroupId') ? 'g.WAS_GROUP_ID' :
             (sortBy == 'wasGroupName') ? 'g.WAS_GROUP_NAME' :

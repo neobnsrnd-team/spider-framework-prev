@@ -8,7 +8,7 @@
     - FWK_CMS_FILE_SEND_HIS    : 배포 이력 SELECT
     - FWK_CMS_SERVER_INSTANCE  : 배포 이력 조회 및 미리보기 URL 구성 시 서버 정보 JOIN
 -->
-<mapper namespace="com.example.admin_demo.domain.reactcmsadmindeployment.mapper.ReactCmsAdminDeployMapper">
+<mapper namespace="com.example.spideradmin.domain.reactcmsadmindeployment.mapper.ReactCmsAdminDeployMapper">
 
     <!-- ==================== 배포 대상 페이지 목록 ==================== -->
 
@@ -30,7 +30,8 @@
         LATERAL JOIN으로 페이지별 최신 배포 이력 1건만 조회.
         FILE_ID LIKE p.PAGE_ID || '%' — 전방 일치(leading wildcard 없음)로 인덱스 활용 가능.
     -->
-    <select id="findApprovedPageList" resultType="com.example.admin_demo.domain.reactcmsadmindeployment.dto.ReactCmsAdminDeployPageResponse">
+    <select id="findApprovedPageList" resultType="com.example.spideradmin.domain.reactcmsadmindeployment.dto.ReactCmsAdminDeployPageResponse">
+    <select id="findApprovedPageList" resultType="com.example.spideradmin.domain.reactcmsadmindeployment.dto.ReactCmsAdminDeployPageResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -78,7 +79,7 @@
         </where>
     </sql>
 
-    <select id="findHistoryList" resultType="com.example.admin_demo.domain.reactcmsadmindeployment.dto.ReactCmsAdminDeployHistoryResponse">
+    <select id="findHistoryList" resultType="com.example.spideradmin.domain.reactcmsadmindeployment.dto.ReactCmsAdminDeployHistoryResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT

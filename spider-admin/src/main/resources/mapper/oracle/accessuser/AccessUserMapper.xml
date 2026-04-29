@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.accessuser.mapper.AccessUserMapper">
+<mapper namespace="com.example.spideradmin.domain.accessuser.mapper.AccessUserMapper">
 
     <!--
         중지거래 접근허용자 Mapper
@@ -64,7 +64,7 @@
     <!-- ========== 복합 PK로 단건 조회 (응답 DTO) ========== -->
 
     <select id="selectResponseByPk"
-            resultType="com.example.admin_demo.domain.accessuser.dto.AccessUserResponse">
+            resultType="com.example.spideradmin.domain.accessuser.dto.AccessUserResponse">
         SELECT
             <include refid="accessUserResponseColumns"/>
         <include refid="fromAccessUser"/>
@@ -101,7 +101,7 @@
     <!-- ========== 전체 목록 조회 ========== -->
 
     <select id="findAll"
-            resultType="com.example.admin_demo.domain.accessuser.dto.AccessUserResponse">
+            resultType="com.example.spideradmin.domain.accessuser.dto.AccessUserResponse">
         SELECT
             <include refid="accessUserResponseColumns"/>
         <include refid="fromAccessUser"/>
@@ -125,7 +125,7 @@
     <!-- ========== 검색 조건에 맞는 목록 조회 (네이티브 ROWNUM 페이징) ========== -->
 
     <select id="findAllWithSearch"
-            resultType="com.example.admin_demo.domain.accessuser.dto.AccessUserResponse">
+            resultType="com.example.spideradmin.domain.accessuser.dto.AccessUserResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT

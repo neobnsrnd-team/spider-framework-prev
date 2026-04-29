@@ -3,10 +3,10 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.gwsystem.mapper.SystemMapper">
+<mapper namespace="com.example.spideradmin.domain.gwsystem.mapper.SystemMapper">
 
     <select id="selectResponseBySystem"
-            resultType="com.example.admin_demo.domain.gwsystem.dto.SystemResponse">
+            resultType="com.example.spideradmin.domain.gwsystem.dto.SystemResponse">
         SELECT
             s.GW_ID              AS gwId,
             s.SYSTEM_ID          AS systemId,
@@ -93,7 +93,7 @@
 
 
     <select id="findByGateway"
-            resultType="com.example.admin_demo.domain.gwsystem.dto.SystemResponse">
+            resultType="com.example.spideradmin.domain.gwsystem.dto.SystemResponse">
         SELECT <include refid="systemColumns"/>
         <include refid="fromSystem"/>
         WHERE s.GW_ID = #{gwId}
@@ -101,7 +101,7 @@
     </select>
 
     <select id="findBySearchPaging"
-            resultType="com.example.admin_demo.domain.gwsystem.dto.SystemResponse">
+            resultType="com.example.spideradmin.domain.gwsystem.dto.SystemResponse">
         SELECT * FROM (
             SELECT
                 <include refid="systemColumns"/>,

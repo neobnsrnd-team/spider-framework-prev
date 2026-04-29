@@ -7,7 +7,7 @@
     - 단건 조회 (존재 확인용)
     - READ-ONLY 도메인이므로 insert/update/delete 없음
 -->
-<mapper namespace="com.example.admin_demo.domain.transdata.mapper.TransDataTimesMapper">
+<mapper namespace="com.example.spideradmin.domain.transdata.mapper.TransDataTimesMapper">
 
     <!-- ==================== Common definitions ==================== -->
 
@@ -66,7 +66,7 @@
     <!-- ==================== 검색 페이징 조회 ==================== -->
 
     <select id="findAllWithSearch"
-            resultType="com.example.admin_demo.domain.transdata.dto.TransDataTimesResponse">
+            resultType="com.example.spideradmin.domain.transdata.dto.TransDataTimesResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -98,7 +98,7 @@
     <!-- ==================== 엑셀 내보내기용 전체 조회 ==================== -->
 
     <select id="findAllForExport"
-            resultType="com.example.admin_demo.domain.transdata.dto.TransDataTimesResponse">
+            resultType="com.example.spideradmin.domain.transdata.dto.TransDataTimesResponse">
         SELECT
             t.TRAN_SEQ       AS tranSeq,
             t.USER_ID        AS userId,
@@ -133,7 +133,7 @@
 
     <!-- tranSeq 기준 이행 기본 정보 조회 -->
     <select id="findDetailByTranSeq"
-            resultType="com.example.admin_demo.domain.transdata.dto.TransDataDetailResponse">
+            resultType="com.example.spideradmin.domain.transdata.dto.TransDataDetailResponse">
         SELECT
             t.TRAN_SEQ    AS tranSeq,
             t.TRAN_RESULT AS tranResult,

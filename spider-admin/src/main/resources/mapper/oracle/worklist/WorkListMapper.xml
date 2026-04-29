@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.worklist.mapper.WorkListMapper">
+<mapper namespace="com.example.spideradmin.domain.worklist.mapper.WorkListMapper">
 
     <resultMap id="WorkListResultMap"
-               type="com.example.admin_demo.domain.worklist.dto.WorkListResponse">
+               type="com.example.spideradmin.domain.worklist.dto.WorkListResponse">
         <result property="workSeq"            column="WORK_SEQ"/>
         <result property="workId"             column="WORK_ID"/>
         <result property="workOriId"          column="WORK_ORI_ID"/>

@@ -7,7 +7,7 @@
     - 트랜잭션-메시지 매핑 변경 이력 관리
     - 버전 관리 및 이력 생성
 -->
-<mapper namespace="com.example.admin_demo.domain.trxmessage.mapper.TrxMessageHistoryMapper">
+<mapper namespace="com.example.spideradmin.domain.trxmessage.mapper.TrxMessageHistoryMapper">
 
     <!-- 다음 버전 번호 조회 -->
     <select id="getNextVersion" resultType="int">

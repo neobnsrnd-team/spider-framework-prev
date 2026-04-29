@@ -7,11 +7,11 @@
     - CRUD + Query 작업 담당
     - Entity 없이 DTO 직접 반환 (resultType + AS alias)
 -->
-<mapper namespace="com.example.admin_demo.domain.batch.mapper.BatchAppMapper">
+<mapper namespace="com.example.spideradmin.domain.batch.mapper.BatchAppMapper">
 
     <!-- ==================== 단건 조회 (ResponseDTO 직접 반환) ==================== -->
 
-    <select id="selectResponseById" resultType="com.example.admin_demo.domain.batch.dto.BatchAppResponse">
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.batch.dto.BatchAppResponse">
         SELECT <include refid="baseColumnsAliased"/>
         <include refid="fromBatchApp"/>
         WHERE b.BATCH_APP_ID = #{batchAppId}
@@ -165,7 +165,7 @@
 
     <!-- ==================== 비페이징 목록 조회 ==================== -->
 
-    <select id="findAll" resultType="com.example.admin_demo.domain.batch.dto.BatchAppResponse">
+    <select id="findAll" resultType="com.example.spideradmin.domain.batch.dto.BatchAppResponse">
         SELECT <include refid="baseColumnsAliased"/>
         <include refid="fromBatchApp"/>
         ORDER BY b.BATCH_APP_ID
@@ -173,7 +173,7 @@
 
     <!-- ==================== 페이징 목록 조회 ==================== -->
 
-    <select id="findAllPaged" resultType="com.example.admin_demo.domain.batch.dto.BatchAppResponse">
+    <select id="findAllPaged" resultType="com.example.spideradmin.domain.batch.dto.BatchAppResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT <include refid="baseColumnsAliased"/>
@@ -192,7 +192,7 @@
 
     <!-- ==================== 검색 페이징 조회 ==================== -->
 
-    <select id="findAllWithSearch" resultType="com.example.admin_demo.domain.batch.dto.BatchAppResponse">
+    <select id="findAllWithSearch" resultType="com.example.spideradmin.domain.batch.dto.BatchAppResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT DISTINCT <include refid="baseColumnsAliased"/>
@@ -223,7 +223,7 @@
 
     <!-- ==================== 엑셀 내보내기 (페이징 없음) ==================== -->
 
-    <select id="findAllForExport" resultType="com.example.admin_demo.domain.batch.dto.BatchAppResponse">
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.batch.dto.BatchAppResponse">
         SELECT DISTINCT <include refid="baseColumnsAliased"/>
         <include refid="fromBatchApp"/>
         <if test="instanceIdFilter != null and instanceIdFilter != ''">

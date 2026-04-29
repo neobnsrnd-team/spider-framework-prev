@@ -2,21 +2,21 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.service.mapper.FwkServiceRelationMapper">
+<mapper namespace="com.example.spideradmin.domain.service.mapper.FwkServiceRelationMapper">
 
     <!--
         resultMap: FWK_SERVICE_RELATION + FWK_COMPONENT + FWK_COMPONENT_PARAM + FWK_RELATION_PARAM
         4테이블 조인으로 1:N 구조(relation → params)를 표현하기 위해 resultMap 사용.
     -->
     <resultMap id="RelationResultMap"
-               type="com.example.admin_demo.domain.service.dto.FwkServiceRelationResponse">
+               type="com.example.spideradmin.domain.service.dto.FwkServiceRelationResponse">
         <id     property="serviceId"     column="serviceId"/>
         <id     property="serviceSeqNo"  column="serviceSeqNo"/>
         <result property="componentId"   column="componentId"/>
         <result property="componentName" column="componentName"/>
         <result property="bizGroupId"    column="bizGroupId"/>
         <collection property="params"
-                    ofType="com.example.admin_demo.domain.service.dto.FwkServiceRelationParamResponse">
+                    ofType="com.example.spideradmin.domain.service.dto.FwkServiceRelationParamResponse">
             <id     property="paramSeqNo"  column="paramSeqNo"/>
             <result property="paramKey"    column="paramKey"/>
             <result property="paramDesc"   column="paramDesc"/>

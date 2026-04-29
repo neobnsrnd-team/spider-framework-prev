@@ -8,7 +8,7 @@
     - 상태 전이: WORK → PENDING → APPROVED / REJECTED
     - updateState: request/approve/reject 공통, WHERE 가드로 race 방지
 -->
-<mapper namespace="com.example.admin_demo.domain.cmsasset.mapper.CmsAssetMapper">
+<mapper namespace="com.example.spideradmin.domain.cmsasset.mapper.CmsAssetMapper">
 
     <!-- ==================== 공통 컬럼 / 조건 ==================== -->
 
@@ -113,7 +113,7 @@
 
     <!-- ==================== 현업 본인 목록 ==================== -->
 
-    <select id="findMyList" resultType="com.example.admin_demo.domain.cmsasset.dto.CmsAssetListResponse">
+    <select id="findMyList" resultType="com.example.spideradmin.domain.cmsasset.dto.CmsAssetListResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -142,7 +142,7 @@
 
     <!-- ==================== 결재자 승인 관리 목록 ==================== -->
 
-    <select id="findApprovalList" resultType="com.example.admin_demo.domain.cmsasset.dto.CmsAssetListResponse">
+    <select id="findApprovalList" resultType="com.example.spideradmin.domain.cmsasset.dto.CmsAssetListResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -193,7 +193,7 @@
 
     <!-- ==================== 상세 (모달 프리뷰) ==================== -->
 
-    <select id="findDetailById" resultType="com.example.admin_demo.domain.cmsasset.dto.CmsAssetDetailResponse">
+    <select id="findDetailById" resultType="com.example.spideradmin.domain.cmsasset.dto.CmsAssetDetailResponse">
         SELECT
             a.ASSET_ID                                                  AS assetId,
             a.ASSET_NAME                                                AS assetName,

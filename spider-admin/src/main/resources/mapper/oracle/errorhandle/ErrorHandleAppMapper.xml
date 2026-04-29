@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.errorhandle.mapper.ErrorHandleAppMapper">
+<mapper namespace="com.example.spideradmin.domain.errorhandle.mapper.ErrorHandleAppMapper">
 
     <!-- ========== 응답 DTO용 AS 컬럼 목록 ========== -->
 
@@ -23,7 +23,7 @@
     <!-- ========== 복합 PK로 단건 조회 (응답 DTO) ========== -->
 
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.errorhandle.dto.ErrorHandleAppResponse">
+            resultType="com.example.spideradmin.domain.errorhandle.dto.ErrorHandleAppResponse">
         SELECT
             <include refid="errorHandleAppResponseColumns"/>
         FROM FWK_ERROR_HANDLE_APP
@@ -33,7 +33,7 @@
     <!-- ========== 핸들러 이름 포함 조회 (조인) ========== -->
 
     <select id="selectByErrorCodeWithHandleAppName"
-            resultType="com.example.admin_demo.domain.errorhandle.dto.ErrorHandleAppResponse">
+            resultType="com.example.spideradmin.domain.errorhandle.dto.ErrorHandleAppResponse">
         SELECT eha.ERROR_CODE      AS errorCode,
                eha.HANDLE_APP_ID   AS handleAppId,
                eha.USER_PARAM_VALUE AS userParamValue,

@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.orgcode.mapper.OrgCodeMapper">
+<mapper namespace="com.example.spideradmin.domain.orgcode.mapper.OrgCodeMapper">
 
     <insert id="insert">
         INSERT INTO FWK_ORG_CODE (ORG_ID, CODE_GROUP_ID, CODE, ORG_CODE, PRIORITY)
@@ -31,7 +31,7 @@
     <!-- ==================== Common (merged) ==================== -->
 
 
-    <resultMap id="OrgCodeResponseResultMap" type="com.example.admin_demo.domain.orgcode.dto.OrgCodeResponse">
+    <resultMap id="OrgCodeResponseResultMap" type="com.example.spideradmin.domain.orgcode.dto.OrgCodeResponse">
         <result property="orgId"        column="ORG_ID"/>
         <result property="orgName"      column="ORG_NAME"/>
         <result property="codeGroupId"  column="CODE_GROUP_ID"/>
@@ -42,7 +42,7 @@
         <result property="priority"     column="PRIORITY"/>
     </resultMap>
 
-    <resultMap id="OrgCodePopupResponseResultMap" type="com.example.admin_demo.domain.orgcode.dto.OrgCodePopupResponse">
+    <resultMap id="OrgCodePopupResponseResultMap" type="com.example.spideradmin.domain.orgcode.dto.OrgCodePopupResponse">
         <result property="code"            column="CODE"/>
         <result property="codeName"        column="CODE_NAME"/>
         <result property="orgCode"         column="ORG_CODE"/>
@@ -120,7 +120,7 @@
 
 
     <!-- 엑셀 Export: 페이징 없이 전체 조회 -->
-    <select id="findAllForExport" resultType="com.example.admin_demo.domain.orgcode.dto.OrgCodeResponse">
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.orgcode.dto.OrgCodeResponse">
         <bind name="orderColumn"
               value="sortBy == 'codeGroupId'   ? 'oc.CODE_GROUP_ID'
                    : sortBy == 'codeGroupName' ? 'cg.CODE_GROUP_NAME'

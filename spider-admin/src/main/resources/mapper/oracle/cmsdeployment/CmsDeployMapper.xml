@@ -8,7 +8,7 @@
     - FWK_CMS_FILE_SEND_HIS    : 배포 이력 INSERT / SELECT
     - FWK_CMS_SERVER_INSTANCE  : 배포 이력 조회 및 미리보기 URL 구성 시 서버 정보 JOIN
 -->
-<mapper namespace="com.example.admin_demo.domain.cmsdeployment.mapper.CmsDeployMapper">
+<mapper namespace="com.example.spideradmin.domain.cmsdeployment.mapper.CmsDeployMapper">
 
     <!-- ==================== 배포 대상 페이지 목록 ==================== -->
 
@@ -51,7 +51,7 @@
         </choose>
     </sql>
 
-    <select id="findApprovedPageList" resultType="com.example.admin_demo.domain.cmsdeployment.dto.CmsDeployPageResponse">
+    <select id="findApprovedPageList" resultType="com.example.spideradmin.domain.cmsdeployment.dto.CmsDeployPageResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -110,7 +110,7 @@
         </where>
     </sql>
 
-    <select id="findHistoryList" resultType="com.example.admin_demo.domain.cmsdeployment.dto.CmsDeployHistoryResponse">
+    <select id="findHistoryList" resultType="com.example.spideradmin.domain.cmsdeployment.dto.CmsDeployHistoryResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -191,7 +191,7 @@
     </select>
 
     <!-- ALIVE_YN='Y' 서버 인스턴스 목록 — 만료 배포 순차 전송 대상 -->
-    <select id="findAliveServerInstances" resultType="com.example.admin_demo.domain.cmsdeployment.dto.CmsServerInstanceResponse">
+    <select id="findAliveServerInstances" resultType="com.example.spideradmin.domain.cmsdeployment.dto.CmsServerInstanceResponse">
         SELECT
             INSTANCE_ID     AS instanceId,
             INSTANCE_IP     AS instanceIp,

@@ -7,7 +7,7 @@
     - INSERT: FWK_TRANS_DATA_TIMES, FWK_TRANS_DATA_HIS
     - TRAN_SEQ 채번
 -->
-<mapper namespace="com.example.admin_demo.domain.transdata.mapper.TransDataGenerationMapper">
+<mapper namespace="com.example.spideradmin.domain.transdata.mapper.TransDataGenerationMapper">
 
     <!-- TRAN_SEQ 채번 (yyyyMMddHHmmss) -->
     <select id="selectNextTranSeq" resultType="string">
@@ -49,7 +49,7 @@
 
 
     <!-- 거래 목록 조회 (FWK_TRX + FWK_TRX_MESSAGE + FWK_ORG JOIN) -->
-    <select id="findTrxList" resultType="com.example.admin_demo.domain.transdata.dto.TransDataSourceResponse">
+    <select id="findTrxList" resultType="com.example.spideradmin.domain.transdata.dto.TransDataSourceResponse">
         SELECT
             t.TRX_ID AS id,
             t.TRX_NAME AS name,
@@ -78,7 +78,7 @@
     </select>
 
     <!-- 전문 목록 조회 -->
-    <select id="findMessageList" resultType="com.example.admin_demo.domain.transdata.dto.TransDataSourceResponse">
+    <select id="findMessageList" resultType="com.example.spideradmin.domain.transdata.dto.TransDataSourceResponse">
         SELECT
             m.MESSAGE_ID AS id,
             m.MESSAGE_NAME AS name,
@@ -106,7 +106,7 @@
     </select>
 
     <!-- 코드그룹 목록 조회 -->
-    <select id="findCodeGroupList" resultType="com.example.admin_demo.domain.transdata.dto.TransDataSourceResponse">
+    <select id="findCodeGroupList" resultType="com.example.spideradmin.domain.transdata.dto.TransDataSourceResponse">
         SELECT
             cg.CODE_GROUP_ID AS id,
             cg.CODE_GROUP_NAME AS name,
@@ -131,7 +131,7 @@
     </select>
 
     <!-- WebApp 목록 조회 -->
-    <select id="findWebappList" resultType="com.example.admin_demo.domain.transdata.dto.TransDataSourceResponse">
+    <select id="findWebappList" resultType="com.example.spideradmin.domain.transdata.dto.TransDataSourceResponse">
         SELECT
             a.MENU_URL  AS id,
             a.MENU_NAME AS name,
@@ -157,7 +157,7 @@
 
 
     <!-- 서비스 목록 조회 -->
-    <select id="findServiceList" resultType="com.example.admin_demo.domain.transdata.dto.TransDataSourceResponse">
+    <select id="findServiceList" resultType="com.example.spideradmin.domain.transdata.dto.TransDataSourceResponse">
         SELECT
             s.SERVICE_ID AS id,
             s.SERVICE_NAME AS name,
@@ -182,7 +182,7 @@
     </select>
 
     <!-- 오류코드 목록 조회 -->
-    <select id="findErrorList" resultType="com.example.admin_demo.domain.transdata.dto.TransDataSourceResponse">
+    <select id="findErrorList" resultType="com.example.spideradmin.domain.transdata.dto.TransDataSourceResponse">
         SELECT
             e.ERROR_CODE AS id,
             e.ERROR_TITLE AS name,
@@ -208,7 +208,7 @@
 
 
     <!-- Component 목록 조회 -->
-    <select id="findComponentList" resultType="com.example.admin_demo.domain.transdata.dto.TransDataSourceResponse">
+    <select id="findComponentList" resultType="com.example.spideradmin.domain.transdata.dto.TransDataSourceResponse">
         SELECT
             c.COMPONENT_ID         AS id,
             c.COMPONENT_NAME       AS name,
@@ -236,7 +236,7 @@
     </select>
 
     <!-- 프로퍼티 목록 조회 -->
-    <select id="findPropertyList" resultType="com.example.admin_demo.domain.transdata.dto.TransDataSourceResponse">
+    <select id="findPropertyList" resultType="com.example.spideradmin.domain.transdata.dto.TransDataSourceResponse">
         SELECT
             p.PROPERTY_ID AS id,
             p.PROPERTY_NAME AS name,

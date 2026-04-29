@@ -136,7 +136,7 @@ jobs:
             'logging:' \
             '  level:' \
             '    root: WARN' \
-            '    com.example.spider_admin: INFO' \
+            '    com.example.spideradmin: INFO' \
             'file:' \
             '  upload-dir: /tmp/uploads' \
             'xml-property:' \

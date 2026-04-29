@@ -7,7 +7,7 @@
     - resultType="java.util.LinkedHashMap" : 컬럼 순서 보장
     - SELECT 컬럼 순서가 INSERT 컬럼 순서와 동일
 -->
-<mapper namespace="com.example.admin_demo.domain.transdata.mapper.TransDataSqlDownloadMapper">
+<mapper namespace="com.example.spideradmin.domain.transdata.mapper.TransDataSqlDownloadMapper">
 
     <select id="selectTrxById" resultType="java.util.LinkedHashMap">
         SELECT HOLIDAY_TRX_YN, TRX_ID, OPER_MODE_TYPE, HOLIDAY_TRX_END_TIME,

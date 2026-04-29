@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.code.mapper.CodeMapper">
+<mapper namespace="com.example.spideradmin.domain.code.mapper.CodeMapper">
 
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.code.dto.CodeResponse">
+            resultType="com.example.spideradmin.domain.code.dto.CodeResponse">
         SELECT
             CODE_GROUP_ID AS codeGroupId, CODE AS code, CODE_NAME AS codeName,
             CODE_DESC AS codeDesc, SORT_ORDER AS sortOrder, USE_YN AS useYn,
@@ -98,7 +98,7 @@
     </sql>
 
     <select id="findAllWithGroup"
-            resultType="com.example.admin_demo.domain.code.dto.CodeWithGroupResponse">
+            resultType="com.example.spideradmin.domain.code.dto.CodeWithGroupResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -153,7 +153,7 @@
     </select>
 
     <select id="findByIdWithGroup"
-            resultType="com.example.admin_demo.domain.code.dto.CodeWithGroupResponse">
+            resultType="com.example.spideradmin.domain.code.dto.CodeWithGroupResponse">
         SELECT
             c.CODE_GROUP_ID   AS codeGroupId,
             c.CODE            AS code,
@@ -171,7 +171,7 @@
     </select>
 
     <select id="findByCodeGroupId"
-            resultType="com.example.admin_demo.domain.code.dto.CodeResponse">
+            resultType="com.example.spideradmin.domain.code.dto.CodeResponse">
         SELECT
             CODE_GROUP_ID AS codeGroupId, CODE AS code, CODE_NAME AS codeName,
             CODE_DESC AS codeDesc, SORT_ORDER AS sortOrder, USE_YN AS useYn,
@@ -185,7 +185,7 @@
     <!-- ==================== 엑셀 내보내기 (페이징 없음) ==================== -->
 
     <select id="findAllForExport"
-            resultType="com.example.admin_demo.domain.code.dto.CodeWithGroupResponse">
+            resultType="com.example.spideradmin.domain.code.dto.CodeWithGroupResponse">
         SELECT
             c.CODE_GROUP_ID   AS codeGroupId,
             c.CODE            AS code,

@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.worklist.mapper.FwkSettlementMapper">
+<mapper namespace="com.example.spideradmin.domain.worklist.mapper.FwkSettlementMapper">
 
     <!--
         APPROVAL_ID 채번.

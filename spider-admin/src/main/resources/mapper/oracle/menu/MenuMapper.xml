@@ -7,7 +7,7 @@
     - Entity 제거 후 MenuResponse 직접 반환
     - resultType 사용, typeHandler 제거
 -->
-<mapper namespace="com.example.admin_demo.domain.menu.mapper.MenuMapper">
+<mapper namespace="com.example.spideradmin.domain.menu.mapper.MenuMapper">
 
     <!-- ==================== SQL Fragment 정의 ==================== -->
 
@@ -74,7 +74,7 @@
 
     <!-- ==================== 단건 조회 ==================== -->
 
-    <select id="selectResponseById" resultType="com.example.admin_demo.domain.menu.dto.MenuResponse">
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
         SELECT <include refid="baseColumns"/>
         <include refid="fromMenu"/>
         WHERE m.MENU_ID = #{menuId}
@@ -151,14 +151,14 @@
     <!-- ==================== 목록 조회 ==================== -->
 
     <!-- 전체 메뉴 목록 조회 -->
-    <select id="findAll" resultType="com.example.admin_demo.domain.menu.dto.MenuResponse">
+    <select id="findAll" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
         SELECT <include refid="baseColumns"/>
         <include refid="fromMenu"/>
         <include refid="defaultOrderBy"/>
     </select>
 
     <!-- 활성화된 메뉴 목록 조회 -->
-    <select id="findAllActive" resultType="com.example.admin_demo.domain.menu.dto.MenuResponse">
+    <select id="findAllActive" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
         SELECT <include refid="baseColumns"/>
         <include refid="fromMenu"/>
         WHERE m.USE_YN = 'Y' AND m.DISPLAY_YN = 'Y'
@@ -167,7 +167,7 @@
     </select>
 
     <!-- 상위 메뉴 ID로 하위 메뉴 목록 조회 -->
-    <select id="findByPriorMenuId" resultType="com.example.admin_demo.domain.menu.dto.MenuResponse">
+    <select id="findByPriorMenuId" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
         SELECT <include refid="baseColumns"/>
         <include refid="fromMenu"/>
         WHERE m.PRIOR_MENU_ID = #{priorMenuId}
@@ -177,7 +177,7 @@
     <!-- ==================== 검색 조회 ==================== -->
 
     <!-- 검색 조건으로 메뉴 목록 조회 (페이징 + hasChildren 포함) -->
-    <select id="findAllWithSearchPaging" resultType="com.example.admin_demo.domain.menu.dto.MenuResponse">
+    <select id="findAllWithSearchPaging" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
         SELECT * FROM (
             SELECT
                 <include refid="columnsWithHasChildren"/>,
@@ -218,7 +218,7 @@
 
     <!-- ==================== 엑셀 내보내기 (페이징 없음) ==================== -->
 
-    <select id="findAllForExport" resultType="com.example.admin_demo.domain.menu.dto.MenuResponse">
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
         SELECT
             <include refid="columnsWithHasChildren"/>
         <include refid="fromMenu"/>
@@ -245,7 +245,7 @@
 
     <!-- ==================== 사이드바용 전체 메뉴 계층 조회 ==================== -->
 
-    <select id="findAllHierarchy" resultType="com.example.admin_demo.domain.menu.dto.MenuResponse">
+    <select id="findAllHierarchy" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
         SELECT
             m.MENU_ID       AS "menuId",
             m.MENU_NAME     AS "menuName",
@@ -268,7 +268,7 @@
 
     <!-- ==================== 계층 조회: 메뉴 ID 목록 기반 ==================== -->
 
-    <select id="findMenuHierarchyByMenuIds" resultType="com.example.admin_demo.domain.menu.dto.MenuResponse">
+    <select id="findMenuHierarchyByMenuIds" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
         WITH ASSIGNED_MENUS AS (
             SELECT MENU_ID FROM (
                 <foreach item="item" collection="menuIds" separator=" UNION ALL ">

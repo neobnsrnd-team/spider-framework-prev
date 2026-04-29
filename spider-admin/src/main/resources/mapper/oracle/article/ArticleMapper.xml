@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.article.mapper.ArticleMapper">
+<mapper namespace="com.example.spideradmin.domain.article.mapper.ArticleMapper">
 
     <!-- ==================== SQL fragments ==================== -->
 
@@ -48,12 +48,12 @@
 
     <!-- ==================== Read ==================== -->
 
-    <select id="selectResponseById" resultType="com.example.admin_demo.domain.article.dto.ArticleResponse">
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.article.dto.ArticleResponse">
         SELECT <include refid="articleDtoColumns"/>
         FROM FWK_ARTICLE WHERE ARTICLE_SEQ = #{articleSeq}
     </select>
 
-    <select id="selectRepliesByRefArticleSeq" resultType="com.example.admin_demo.domain.article.dto.ArticleResponse">
+    <select id="selectRepliesByRefArticleSeq" resultType="com.example.spideradmin.domain.article.dto.ArticleResponse">
         SELECT <include refid="articleDtoColumns"/>
         FROM FWK_ARTICLE
         WHERE REF_ARTICLE_SEQ = #{refArticleSeq}
@@ -163,13 +163,13 @@
     <!-- ==================== Query operations ==================== -->
 
     <!-- 전체 게시글 목록 조회 -->
-    <select id="findAll" resultType="com.example.admin_demo.domain.article.dto.ArticleListResponse">
+    <select id="findAll" resultType="com.example.spideradmin.domain.article.dto.ArticleListResponse">
         SELECT <include refid="articleListColumns"/>
         FROM FWK_ARTICLE ORDER BY REGIST_DTIME DESC
     </select>
 
     <!-- 게시판별 게시글 목록 조회 -->
-    <select id="findByBoardId" resultType="com.example.admin_demo.domain.article.dto.ArticleListResponse">
+    <select id="findByBoardId" resultType="com.example.spideradmin.domain.article.dto.ArticleListResponse">
         SELECT <include refid="articleListColumns"/>
         FROM FWK_ARTICLE
         WHERE BOARD_ID = #{boardId}
@@ -177,7 +177,7 @@
     </select>
 
     <!-- 게시판별 게시글 목록 조회 (ROW_NUMBER 페이징) -->
-    <select id="findByBoardIdWithPaging" resultType="com.example.admin_demo.domain.article.dto.ArticleListResponse">
+    <select id="findByBoardIdWithPaging" resultType="com.example.spideradmin.domain.article.dto.ArticleListResponse">
         SELECT * FROM (
             SELECT A.*, ROW_NUMBER() OVER (ORDER BY A.topYn DESC, A.articleSeq DESC) AS RN
             FROM (
@@ -220,7 +220,7 @@
     </sql>
 
     <!-- 카테고리 + 검색 통합 조회 (ROW_NUMBER 페이징 + 정렬) -->
-    <select id="findByBoardIdAndCategory" resultType="com.example.admin_demo.domain.article.dto.ArticleListResponse">
+    <select id="findByBoardIdAndCategory" resultType="com.example.spideradmin.domain.article.dto.ArticleListResponse">
         <bind name="orderColumn" value="
             sortBy == 'title'      ? 'title' :
             sortBy == 'writerName' ? 'writerName' :
@@ -250,7 +250,7 @@
 
     <!-- ==================== Article User ==================== -->
 
-    <select id="selectArticleUserById" resultType="com.example.admin_demo.domain.article.dto.ArticleUserResponse">
+    <select id="selectArticleUserById" resultType="com.example.spideradmin.domain.article.dto.ArticleUserResponse">
         SELECT USER_ID     AS userId,
                BOARD_ID    AS boardId,
                ARTICLE_SEQ AS articleSeq,
@@ -259,7 +259,7 @@
         WHERE USER_ID = #{userId} AND BOARD_ID = #{boardId} AND ARTICLE_SEQ = #{articleSeq}
     </select>
 
-    <select id="selectAllArticleUsers" resultType="com.example.admin_demo.domain.article.dto.ArticleUserResponse">
+    <select id="selectAllArticleUsers" resultType="com.example.spideradmin.domain.article.dto.ArticleUserResponse">
         SELECT USER_ID     AS userId,
                BOARD_ID    AS boardId,
                ARTICLE_SEQ AS articleSeq,
@@ -283,7 +283,7 @@
         WHERE USER_ID = #{userId} AND BOARD_ID = #{boardId} AND ARTICLE_SEQ = #{articleSeq}
     </delete>
 
-    <select id="selectArticleUsersByUserId" resultType="com.example.admin_demo.domain.article.dto.ArticleUserResponse">
+    <select id="selectArticleUsersByUserId" resultType="com.example.spideradmin.domain.article.dto.ArticleUserResponse">
         SELECT USER_ID     AS userId,
                BOARD_ID    AS boardId,
                ARTICLE_SEQ AS articleSeq,
@@ -293,7 +293,7 @@
         ORDER BY LAST_UPDATE_DTIME DESC
     </select>
 
-    <select id="selectArticleUsersByBoardId" resultType="com.example.admin_demo.domain.article.dto.ArticleUserResponse">
+    <select id="selectArticleUsersByBoardId" resultType="com.example.spideradmin.domain.article.dto.ArticleUserResponse">
         SELECT USER_ID     AS userId,
                BOARD_ID    AS boardId,
                ARTICLE_SEQ AS articleSeq,
@@ -303,7 +303,7 @@
         ORDER BY LAST_UPDATE_DTIME DESC
     </select>
 
-    <select id="selectArticleUsersByUserIdAndBoardId" resultType="com.example.admin_demo.domain.article.dto.ArticleUserResponse">
+    <select id="selectArticleUsersByUserIdAndBoardId" resultType="com.example.spideradmin.domain.article.dto.ArticleUserResponse">
         SELECT USER_ID     AS userId,
                BOARD_ID    AS boardId,
                ARTICLE_SEQ AS articleSeq,
@@ -313,7 +313,7 @@
         ORDER BY LAST_UPDATE_DTIME DESC
     </select>
 
-    <select id="selectArticleUsersByArticleSeq" resultType="com.example.admin_demo.domain.article.dto.ArticleUserResponse">
+    <select id="selectArticleUsersByArticleSeq" resultType="com.example.spideradmin.domain.article.dto.ArticleUserResponse">
         SELECT USER_ID     AS userId,
                BOARD_ID    AS boardId,
                ARTICLE_SEQ AS articleSeq,

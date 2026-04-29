@@ -7,7 +7,7 @@
     - BATCH_APP과 WAS_INSTANCE의 교차 테이블 CRUD 담당
     - Entity 없이 개별 @Param + DTO 직접 반환
 -->
-<mapper namespace="com.example.admin_demo.domain.batch.mapper.WasExecBatchMapper">
+<mapper namespace="com.example.spideradmin.domain.batch.mapper.WasExecBatchMapper">
 
     <!-- ==================== 기본 CRUD ==================== -->
 
@@ -38,14 +38,14 @@
 
     <!-- ==================== 조회 (DTO 직접 반환) ==================== -->
 
-    <select id="selectByBatchAppIdWithDetails" resultType="com.example.admin_demo.domain.batch.dto.WasExecBatchResponse">
+    <select id="selectByBatchAppIdWithDetails" resultType="com.example.spideradmin.domain.batch.dto.WasExecBatchResponse">
         SELECT <include refid="wasExecBatchWithInstanceColumnsAliased"/>
         <include refid="fromWasExecBatchWithInstance"/>
         WHERE web.BATCH_APP_ID = #{batchAppId}
         ORDER BY wi.INSTANCE_ID
     </select>
 
-    <select id="selectById" resultType="com.example.admin_demo.domain.batch.dto.WasExecBatchResponse">
+    <select id="selectById" resultType="com.example.spideradmin.domain.batch.dto.WasExecBatchResponse">
         SELECT <include refid="wasExecBatchWithInstanceColumnsAliased"/>
         <include refid="fromWasExecBatchWithInstance"/>
         WHERE web.BATCH_APP_ID = #{batchAppId} AND web.INSTANCE_ID = #{instanceId}

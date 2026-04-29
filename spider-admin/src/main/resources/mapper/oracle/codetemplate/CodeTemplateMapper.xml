@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.codetemplate.mapper.CodeTemplateMapper">
+<mapper namespace="com.example.spideradmin.domain.codetemplate.mapper.CodeTemplateMapper">
 
     <select id="selectById"
-            resultType="com.example.admin_demo.domain.codetemplate.dto.CodeTemplateResponse">
+            resultType="com.example.spideradmin.domain.codetemplate.dto.CodeTemplateResponse">
         SELECT TEMPLATE_ID         AS templateId,
                TEMPLATE_NAME       AS templateName,
                TEMPLATE_TYPE       AS templateType,
@@ -97,7 +97,7 @@
     </sql>
 
     <select id="findAllWithSearch"
-            resultType="com.example.admin_demo.domain.codetemplate.dto.CodeTemplateResponse">
+            resultType="com.example.spideradmin.domain.codetemplate.dto.CodeTemplateResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT TEMPLATE_ID         AS templateId,
@@ -127,7 +127,7 @@
     </select>
 
     <select id="findAllForExport"
-            resultType="com.example.admin_demo.domain.codetemplate.dto.CodeTemplateResponse">
+            resultType="com.example.spideradmin.domain.codetemplate.dto.CodeTemplateResponse">
         SELECT TEMPLATE_ID         AS templateId,
                TEMPLATE_NAME       AS templateName,
                TEMPLATE_TYPE       AS templateType,
@@ -144,7 +144,7 @@
     </select>
 
     <select id="findAllActive"
-            resultType="com.example.admin_demo.domain.codetemplate.dto.CodeTemplateResponse">
+            resultType="com.example.spideradmin.domain.codetemplate.dto.CodeTemplateResponse">
         SELECT TEMPLATE_ID         AS templateId,
                TEMPLATE_NAME       AS templateName,
                TEMPLATE_TYPE       AS templateType,

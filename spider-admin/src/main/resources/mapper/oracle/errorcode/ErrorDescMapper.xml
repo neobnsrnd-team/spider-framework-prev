@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.errorcode.mapper.ErrorDescMapper">
+<mapper namespace="com.example.spideradmin.domain.errorcode.mapper.ErrorDescMapper">
 
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.errorcode.dto.ErrorDescResponse">
+            resultType="com.example.spideradmin.domain.errorcode.dto.ErrorDescResponse">
         SELECT ERROR_CODE AS errorCode,
                LOCALE_CODE AS localeCode,
                ERROR_TITLE AS errorTitle,
@@ -24,7 +24,7 @@
     </select>
 
     <select id="selectByErrorCode"
-            resultType="com.example.admin_demo.domain.errorcode.dto.ErrorDescResponse">
+            resultType="com.example.spideradmin.domain.errorcode.dto.ErrorDescResponse">
         SELECT ERROR_CODE AS errorCode,
                LOCALE_CODE AS localeCode,
                ERROR_TITLE AS errorTitle,

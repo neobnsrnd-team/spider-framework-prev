@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.batch.mapper.BatchHisPartitionMapper">
+<mapper namespace="com.example.spideradmin.domain.batch.mapper.BatchHisPartitionMapper">
 
     <!-- 파티션 개수 조회 (파티셔닝 적용 여부 확인) -->
     <select id="countPartitions" resultType="int">

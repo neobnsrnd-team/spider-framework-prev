@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.org.mapper.OrgMapper">
+<mapper namespace="com.example.spideradmin.domain.org.mapper.OrgMapper">
 
     <!-- ==================== 공통 SQL fragments ==================== -->
 
@@ -23,7 +23,7 @@
     <!-- ==================== Command ==================== -->
 
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.org.dto.OrgResponse">
+            resultType="com.example.spideradmin.domain.org.dto.OrgResponse">
         SELECT
             <include refid="orgResponseColumns"/>
         <include refid="fromOrg"/>
@@ -72,7 +72,7 @@
     <!-- ==================== Query ==================== -->
 
     <!-- 전체 기관 목록 조회 (select box용) -->
-    <select id="findAll" resultType="com.example.admin_demo.domain.org.dto.OrgResponse">
+    <select id="findAll" resultType="com.example.spideradmin.domain.org.dto.OrgResponse">
         SELECT
             ORG_ID       AS orgId,
             ORG_NAME     AS orgName,
@@ -85,14 +85,14 @@
     </select>
 
     <!-- 전체 기관 목록 조회 (OrgResponse) -->
-    <select id="findAllResponse" resultType="com.example.admin_demo.domain.org.dto.OrgResponse">
+    <select id="findAllResponse" resultType="com.example.spideradmin.domain.org.dto.OrgResponse">
         SELECT
             <include refid="orgResponseColumns"/>
         <include refid="fromOrg"/>
         ORDER BY o.ORG_ID
     </select>
 
-    <select id="findBySearchPaging" resultType="com.example.admin_demo.domain.org.dto.OrgResponse">
+    <select id="findBySearchPaging" resultType="com.example.spideradmin.domain.org.dto.OrgResponse">
         <bind name="orderColumn" value="
             (sortBy == 'orgId') ? 'o.ORG_ID' :
             (sortBy == 'orgName') ? 'o.ORG_NAME' :
@@ -146,7 +146,7 @@
         </where>
     </select>
 
-    <select id="findAllForExport" resultType="com.example.admin_demo.domain.org.dto.OrgResponse">
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.org.dto.OrgResponse">
         <bind name="orderColumn" value="
             (sortBy == 'orgId') ? 'o.ORG_ID' :
             (sortBy == 'orgName') ? 'o.ORG_NAME' :

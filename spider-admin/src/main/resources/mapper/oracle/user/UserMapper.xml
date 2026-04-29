@@ -7,11 +7,11 @@
     - insert / update / delete / 단건 조회
     - 목록 조회, 검색, 페이징
 -->
-<mapper namespace="com.example.admin_demo.domain.user.mapper.UserMapper">
+<mapper namespace="com.example.spideradmin.domain.user.mapper.UserMapper">
 
     <!-- 인증용 단건 조회 (Security 레이어 전용, Entity 의존 없음) -->
     <select id="selectAuthInfoById"
-            resultType="com.example.admin_demo.global.security.dto.UserAuthInfo">
+            resultType="com.example.spideradmin.global.security.dto.UserAuthInfo">
         SELECT
             u.USER_ID         AS userId,
             u.USER_NAME       AS userName,
@@ -24,7 +24,7 @@
 
     <!-- 단건 조회 (ResponseDTO 직접 반환) -->
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.user.dto.UserResponse">
+            resultType="com.example.spideradmin.domain.user.dto.UserResponse">
         SELECT
             u.USER_ID             AS userId,
             u.USER_NAME           AS userName,
@@ -232,7 +232,7 @@
 
     <!-- 검색 조건 목록 조회 (네이티브 ROWNUM 페이징) -->
     <select id="findAllWithSearch"
-            resultType="com.example.admin_demo.domain.user.dto.UserWithRoleResponse">
+            resultType="com.example.spideradmin.domain.user.dto.UserWithRoleResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -275,7 +275,7 @@
 
     <!-- 사용자 ID로 조회 (상세 / 로그인용 / 프로필) -->
     <select id="findByUserIdWithRole"
-            resultType="com.example.admin_demo.domain.user.dto.UserWithRoleResponse">
+            resultType="com.example.spideradmin.domain.user.dto.UserWithRoleResponse">
         SELECT
             u.USER_ID            AS userId,
             u.USER_NAME          AS userName,
@@ -297,7 +297,7 @@
 
     <!-- CMS 결재자 목록 조회 (v3_cms_admin_approvals 쓰기 권한 보유 활성 사용자) -->
     <select id="findCmsApprovers"
-            resultType="com.example.admin_demo.global.auth.dto.CmsApproverResponse">
+            resultType="com.example.spideradmin.global.auth.dto.CmsApproverResponse">
         SELECT DISTINCT
             u.USER_ID   AS userId,
             u.USER_NAME AS userName
@@ -324,7 +324,7 @@
 
     <!-- React CMS 결재자 목록 조회 (v3_react_cms_admin_approvals 쓰기 권한 보유 활성 사용자) -->
     <select id="findReactCmsApprovers"
-            resultType="com.example.admin_demo.global.auth.dto.CmsApproverResponse">
+            resultType="com.example.spideradmin.global.auth.dto.CmsApproverResponse">
         SELECT DISTINCT
             u.USER_ID   AS userId,
             u.USER_NAME AS userName
@@ -352,7 +352,7 @@
     <!-- ==================== 엑셀 내보내기 (페이징 없음) ==================== -->
 
     <select id="findAllForExport"
-            resultType="com.example.admin_demo.domain.user.dto.UserWithRoleResponse">
+            resultType="com.example.spideradmin.domain.user.dto.UserWithRoleResponse">
         SELECT
         <include refid="userWithRoleColumns"/>
         <include refid="fromUserWithRole"/>
@@ -379,7 +379,7 @@
 
     <!-- 권한이양 대상 사용자 검색 — userId 또는 userName LIKE, 최대 20건 -->
     <select id="searchForTransfer" parameterType="String"
-            resultType="com.example.admin_demo.domain.user.dto.UserSimpleResponse">
+            resultType="com.example.spideradmin.domain.user.dto.UserSimpleResponse">
         SELECT * FROM (
             SELECT USER_ID AS userId, USER_NAME AS userName
             FROM FWK_USER

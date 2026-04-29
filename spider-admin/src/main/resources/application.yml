@@ -140,7 +140,7 @@ log:
 logging:
   level:
     root: INFO
-    com.example.spider_admin: INFO # 상세 로그 필요 시 DEBUG
+    com.example.spideradmin: INFO # 상세 로그 필요 시 DEBUG
     org.mybatis: INFO # SQL 확인 필요 시 DEBUG
 
 # Menu Configuration

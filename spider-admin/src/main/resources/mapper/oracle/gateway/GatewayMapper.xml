@@ -3,10 +3,10 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.gateway.mapper.GatewayMapper">
+<mapper namespace="com.example.spideradmin.domain.gateway.mapper.GatewayMapper">
 
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.gateway.dto.GatewayResponse">
+            resultType="com.example.spideradmin.domain.gateway.dto.GatewayResponse">
         SELECT
             g.GW_ID       AS gwId,
             g.GW_NAME     AS gwName,
@@ -79,7 +79,7 @@
 
 
     <select id="findBySearchPaging"
-            resultType="com.example.admin_demo.domain.gateway.dto.GatewayResponse">
+            resultType="com.example.spideradmin.domain.gateway.dto.GatewayResponse">
         <bind name="orderColumn" value="
             (sortBy == 'gwId') ? 'g.GW_ID' :
             (sortBy == 'gwName') ? 'g.GW_NAME' :
@@ -129,7 +129,7 @@
 
     <!-- 엑셀 내보내기용 전체 조회 (페이징 없음) -->
     <select id="findAllForExport"
-            resultType="com.example.admin_demo.domain.gateway.dto.GatewayResponse">
+            resultType="com.example.spideradmin.domain.gateway.dto.GatewayResponse">
         <bind name="orderColumn" value="
             (sortBy == 'gwId') ? 'g.GW_ID' :
             (sortBy == 'gwName') ? 'g.GW_NAME' :

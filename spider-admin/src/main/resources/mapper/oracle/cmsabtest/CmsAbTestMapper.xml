@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.cmsabtest.mapper.CmsAbTestMapper">
+<mapper namespace="com.example.spideradmin.domain.cmsabtest.mapper.CmsAbTestMapper">
 
     <sql id="statsJoin">
         LEFT JOIN (
@@ -89,7 +89,7 @@
         </choose>
     </sql>
 
-    <select id="findApprovedPages" resultType="com.example.admin_demo.domain.cmsabtest.dto.CmsAbPageResponse">
+    <select id="findApprovedPages" resultType="com.example.spideradmin.domain.cmsabtest.dto.CmsAbPageResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -109,7 +109,7 @@
         <include refid="approvedPageSearchConditions"/>
     </select>
 
-    <select id="findAbGroupPages" resultType="com.example.admin_demo.domain.cmsabtest.dto.CmsAbPageResponse">
+    <select id="findAbGroupPages" resultType="com.example.spideradmin.domain.cmsabtest.dto.CmsAbPageResponse">
         SELECT
             <include refid="approvedPageColumns"/>
         FROM SPW_CMS_PAGE p
@@ -130,7 +130,7 @@
         ORDER BY p.AB_GROUP_ID NULLS LAST, p.PAGE_NAME
     </select>
 
-    <select id="findApprovedPageOptions" resultType="com.example.admin_demo.domain.cmsabtest.dto.CmsAbPageResponse">
+    <select id="findApprovedPageOptions" resultType="com.example.spideradmin.domain.cmsabtest.dto.CmsAbPageResponse">
         SELECT
             <include refid="approvedPageOptionColumns"/>
         FROM SPW_CMS_PAGE p
@@ -149,7 +149,7 @@
         ORDER BY p.AB_GROUP_ID NULLS LAST, p.PAGE_NAME
     </select>
 
-    <select id="findGroupPages" resultType="com.example.admin_demo.domain.cmsabtest.dto.CmsAbGroupPageResponse">
+    <select id="findGroupPages" resultType="com.example.spideradmin.domain.cmsabtest.dto.CmsAbGroupPageResponse">
         SELECT
             p.PAGE_ID             AS pageId,
             p.PAGE_NAME           AS pageName,

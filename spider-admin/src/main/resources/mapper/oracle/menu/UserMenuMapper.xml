@@ -7,7 +7,7 @@
     - Entity 제거 후 DTO 직접 반환
     - resultType 사용, typeHandler 제거
 -->
-<mapper namespace="com.example.admin_demo.domain.menu.mapper.UserMenuMapper">
+<mapper namespace="com.example.spideradmin.domain.menu.mapper.UserMenuMapper">
 
     <!-- ==================== 존재 확인 ==================== -->
 
@@ -51,7 +51,7 @@
 
     <!-- ==================== 단건 조회 (Response DTO) ==================== -->
 
-    <select id="selectResponseById" resultType="com.example.admin_demo.domain.menu.dto.UserMenuResponse">
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.menu.dto.UserMenuResponse">
         SELECT
             um.USER_ID            AS "userId",
             um.MENU_ID            AS "menuId",
@@ -67,7 +67,7 @@
 
     <!-- ==================== 목록 조회 (Response DTO) ==================== -->
 
-    <select id="selectByUserIdWithDetails" resultType="com.example.admin_demo.domain.menu.dto.UserMenuResponse">
+    <select id="selectByUserIdWithDetails" resultType="com.example.spideradmin.domain.menu.dto.UserMenuResponse">
         SELECT
             um.USER_ID            AS "userId",
             um.MENU_ID            AS "menuId",
@@ -82,7 +82,7 @@
         ORDER BY m.SORT_ORDER
     </select>
 
-    <select id="selectFavoriteMenusByUserId" resultType="com.example.admin_demo.domain.menu.dto.UserMenuResponse">
+    <select id="selectFavoriteMenusByUserId" resultType="com.example.spideradmin.domain.menu.dto.UserMenuResponse">
         SELECT
             um.USER_ID            AS "userId",
             um.MENU_ID            AS "menuId",
@@ -97,7 +97,7 @@
         ORDER BY um.FAVOR_MENU_ORDER
     </select>
 
-    <select id="selectByMenuId" resultType="com.example.admin_demo.domain.menu.dto.UserMenuResponse">
+    <select id="selectByMenuId" resultType="com.example.spideradmin.domain.menu.dto.UserMenuResponse">
         SELECT
             um.USER_ID            AS "userId",
             um.MENU_ID            AS "menuId",
@@ -111,7 +111,7 @@
         WHERE um.MENU_ID = #{menuId}
     </select>
 
-    <select id="selectByUserIdAndAuthCode" resultType="com.example.admin_demo.domain.menu.dto.UserMenuResponse">
+    <select id="selectByUserIdAndAuthCode" resultType="com.example.spideradmin.domain.menu.dto.UserMenuResponse">
         SELECT
             um.USER_ID            AS "userId",
             um.MENU_ID            AS "menuId",

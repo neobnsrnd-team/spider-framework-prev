@@ -7,7 +7,7 @@
     - SPW_CMS_PAGE          : 승인 관리 목록 조회, 승인, 반려, 공개 상태 변경, 롤백
     - SPW_CMS_PAGE_HISTORY  : 이력 스냅샷 INSERT / SELECT
 -->
-<mapper namespace="com.example.admin_demo.domain.reactcmsadminapproval.mapper.ReactCmsAdminApprovalMapper">
+<mapper namespace="com.example.spideradmin.domain.reactcmsadminapproval.mapper.ReactCmsAdminApprovalMapper">
 
     <!-- ==================== 승인 관리 목록 ==================== -->
 
@@ -82,7 +82,7 @@
         </choose>
     </sql>
 
-    <select id="findPageList" resultType="com.example.admin_demo.domain.reactcmsadminapproval.dto.ReactCmsAdminApprovalListResponse">
+    <select id="findPageList" resultType="com.example.spideradmin.domain.reactcmsadminapproval.dto.ReactCmsAdminApprovalListResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -195,7 +195,7 @@
         WHERE PAGE_ID = #{pageId}
     </insert>
 
-    <select id="findHistoryList" resultType="com.example.admin_demo.domain.reactcmsadminapproval.dto.ReactCmsAdminApprovalHistoryResponse">
+    <select id="findHistoryList" resultType="com.example.spideradmin.domain.reactcmsadminapproval.dto.ReactCmsAdminApprovalHistoryResponse">
         SELECT
             h.VERSION                                               AS version,
             h.APPROVE_STATE                                         AS approveState,

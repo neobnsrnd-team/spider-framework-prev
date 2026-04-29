@@ -57,7 +57,7 @@
                                 <label class="form-label mb-0 small fw-medium">이행결과</label>
                                 <select id="modalSearchTranResult" class="form-select form-select-sm w-100px">
                                     <option value="">전체</option>
-                                    <option th:each="result : ${T(com.example.admin_demo.domain.transdata.enums.TranResult).values()}"
+                                    <option th:each="result : ${T(com.example.spideradmin.domain.transdata.enums.TranResult).values()}"
                                             th:value="${result.code}"
                                             th:text="${result.description}">
                                     </option>
@@ -67,7 +67,7 @@
                                 <label class="form-label mb-0 small fw-medium">이행유형</label>
                                 <select id="modalSearchTranType" class="form-select form-select-sm w-120">
                                     <option value="">전체</option>
-                                    <option th:each="type : ${T(com.example.admin_demo.domain.transdata.enums.TranType).values()}"
+                                    <option th:each="type : ${T(com.example.spideradmin.domain.transdata.enums.TranType).values()}"
                                             th:value="${type.code}"
                                             th:text="${type.description}">
                                     </option>

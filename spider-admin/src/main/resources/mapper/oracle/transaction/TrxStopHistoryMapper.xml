@@ -7,7 +7,7 @@
     - 거래중지/시작 시 이력 INSERT 전용
     - 조회는 monitor 도메인의 TrxStopHistoryQueryMapper가 담당
 -->
-<mapper namespace="com.example.admin_demo.domain.transaction.mapper.TrxStopHistoryMapper">
+<mapper namespace="com.example.spideradmin.domain.transaction.mapper.TrxStopHistoryMapper">
 
     <insert id="insert">
         INSERT INTO FWK_TRX_STOP_HISTORY (
@@ -59,7 +59,7 @@
 
     <!-- TrxStopHistoryWithTrxNameResponseDTO ResultMap (JOIN용) -->
     <resultMap id="TrxStopHistoryWithTrxNameResultMap"
-               type="com.example.admin_demo.domain.transaction.dto.TrxStopHistoryWithTrxNameResponse">
+               type="com.example.spideradmin.domain.transaction.dto.TrxStopHistoryWithTrxNameResponse">
         <result property="gubunType" column="GUBUN_TYPE"/>
         <result property="trxId" column="TRX_ID"/>
         <result property="trxName" column="TRX_NAME"/>

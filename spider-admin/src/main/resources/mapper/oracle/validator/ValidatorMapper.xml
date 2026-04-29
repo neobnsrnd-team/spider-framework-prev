@@ -7,11 +7,11 @@
     - insert / update / delete / 단건 조회 (존재 확인용)
     - 목록 조회, 검색 등 Query 전용 SQL은 ValidatorQueryMapper에서 처리
 -->
-<mapper namespace="com.example.admin_demo.domain.validator.mapper.ValidatorMapper">
+<mapper namespace="com.example.spideradmin.domain.validator.mapper.ValidatorMapper">
 
     <!-- 단건 조회 (ResponseDTO 직접 반환) -->
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.validator.dto.ValidatorResponse">
+            resultType="com.example.spideradmin.domain.validator.dto.ValidatorResponse">
         SELECT
             TRIM(v.VALIDATOR_ID) AS validatorId,
             TRIM(v.VALIDATOR_NAME) AS validatorName,
@@ -74,7 +74,7 @@
     <!-- ==================== SQL Fragment 정의 ==================== -->
 
     <!-- Validator + Code JOIN ResultMap (DTO 직접 매핑) -->
-    <resultMap id="ValidatorWithCodeResultMap" type="com.example.admin_demo.domain.validator.dto.ValidatorResponse">
+    <resultMap id="ValidatorWithCodeResultMap" type="com.example.spideradmin.domain.validator.dto.ValidatorResponse">
         <id property="validatorId" column="VALIDATOR_ID"/>
         <result property="validatorName" column="VALIDATOR_NAME"/>
         <result property="validatorDesc" column="VALIDATOR_DESC"/>

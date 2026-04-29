@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.listenertrx.mapper.ListenerConnectorMappingMapper">
+<mapper namespace="com.example.spideradmin.domain.listenertrx.mapper.ListenerConnectorMappingMapper">
 
     <sql id="listenerConnectorMappingColumns">
         lcm.LISTENER_GW_ID      AS listenerGwId,
@@ -18,7 +18,7 @@
         FROM FWK_LISTENER_CONNECTOR_MAPPING lcm
     </sql>
 
-    <select id="selectResponseByPk" resultType="com.example.admin_demo.domain.listenertrx.dto.ListenerConnectorMappingResponse">
+    <select id="selectResponseByPk" resultType="com.example.spideradmin.domain.listenertrx.dto.ListenerConnectorMappingResponse">
         SELECT <include refid="listenerConnectorMappingColumns"/>
         <include refid="fromListenerConnectorMapping"/>
         WHERE lcm.LISTENER_GW_ID = #{listenerGwId}
@@ -91,13 +91,13 @@
     <!-- ==================== Query (merged) ==================== -->
 
 
-    <select id="findAll" resultType="com.example.admin_demo.domain.listenertrx.dto.ListenerConnectorMappingResponse">
+    <select id="findAll" resultType="com.example.spideradmin.domain.listenertrx.dto.ListenerConnectorMappingResponse">
         SELECT <include refid="listenerConnectorMappingColumns"/>
         <include refid="fromListenerConnectorMapping"/>
         ORDER BY lcm.LISTENER_GW_ID, lcm.LISTENER_SYSTEM_ID, lcm.IDENTIFIER
     </select>
 
-    <select id="findBySearchPaging" resultType="com.example.admin_demo.domain.listenertrx.dto.ListenerConnectorMappingResponse">
+    <select id="findBySearchPaging" resultType="com.example.spideradmin.domain.listenertrx.dto.ListenerConnectorMappingResponse">
         <bind name="orderColumn" value="
             (sortBy == 'listenerGwId') ? 'lcm.LISTENER_GW_ID' :
             (sortBy == 'listenerSystemId') ? 'lcm.LISTENER_SYSTEM_ID' :
@@ -157,7 +157,7 @@
         </where>
     </select>
 
-    <select id="findAllForExport" resultType="com.example.admin_demo.domain.listenertrx.dto.ListenerConnectorMappingResponse">
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.listenertrx.dto.ListenerConnectorMappingResponse">
         <bind name="orderColumn" value="
             (sortBy == 'listenerGwId') ? 'lcm.LISTENER_GW_ID' :
             (sortBy == 'listenerSystemId') ? 'lcm.LISTENER_SYSTEM_ID' :

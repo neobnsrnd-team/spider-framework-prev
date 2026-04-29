@@ -7,7 +7,7 @@
     - insert: 당발 대응답 테스트 데이터 생성
     - 목록 조회, 검색 등 Query 전용 SQL은 MessageTestQueryMapper에서 처리
 -->
-<mapper namespace="com.example.admin_demo.domain.proxyresponse.mapper.ProxyTestdataMapper">
+<mapper namespace="com.example.spideradmin.domain.proxyresponse.mapper.ProxyTestdataMapper">
 
     <!-- 당발 대응답 테스트 생성 -->
     <insert id="insertMessageTest">
@@ -146,7 +146,7 @@
 
     <!-- ==================== 목록 조회 ==================== -->
     <!-- MessageTestListResultMap -->
-    <resultMap id="MessageTestListResultMap" type="com.example.admin_demo.domain.proxyresponse.dto.ProxyTestdataListResponse">
+    <resultMap id="MessageTestListResultMap" type="com.example.spideradmin.domain.proxyresponse.dto.ProxyTestdataListResponse">
         <id property="testSno" column="TEST_SNO"/>
         <result property="orgId" column="ORG_ID"/>
         <result property="orgName" column="ORG_NAME"/>
@@ -310,7 +310,7 @@
 
     <!-- ==================== 거래조회 모달 ==================== -->
 
-    <resultMap id="TrxMessageSearchResponseMap" type="com.example.admin_demo.domain.proxyresponse.dto.ProxyTestdataTrxSearchResponse">
+    <resultMap id="TrxMessageSearchResponseMap" type="com.example.spideradmin.domain.proxyresponse.dto.ProxyTestdataTrxSearchResponse">
         <result property="orgId" column="ORG_ID"/>
         <result property="orgName" column="ORG_NAME"/>
         <result property="trxId" column="TRX_ID"/>
@@ -349,7 +349,7 @@
 
     <!-- ==================== 상세 조회 ==================== -->
 
-    <resultMap id="MessageTestDetailResultMap" type="com.example.admin_demo.domain.proxyresponse.dto.ProxyTestdataDetailResponse">
+    <resultMap id="MessageTestDetailResultMap" type="com.example.spideradmin.domain.proxyresponse.dto.ProxyTestdataDetailResponse">
         <id property="testSno" column="TEST_SNO"/>
         <result property="orgId" column="ORG_ID"/>
         <result property="orgName" column="ORG_NAME"/>
@@ -383,7 +383,7 @@
 
     <!-- ==================== 거래-전문 매핑 조회 ==================== -->
 
-<resultMap id="MessageTestMsgIdsResultMap" type="com.example.admin_demo.domain.proxyresponse.dto.ProxyTestdataMsgIdsResponse">
+<resultMap id="MessageTestMsgIdsResultMap" type="com.example.spideradmin.domain.proxyresponse.dto.ProxyTestdataMsgIdsResponse">
     <result property="messageId" column="MESSAGE_ID"/>
     <result property="stdMessageId" column="STD_MESSAGE_ID"/>
 </resultMap>
@@ -407,7 +407,7 @@
 
     <!-- ==================== 전문 필드 조회 (기관 + 표준 JOIN) ==================== -->
 
-    <resultMap id="MessageTestFieldResultMap" type="com.example.admin_demo.domain.proxyresponse.dto.ProxyTestdataFieldResponse">
+    <resultMap id="MessageTestFieldResultMap" type="com.example.spideradmin.domain.proxyresponse.dto.ProxyTestdataFieldResponse">
         <result property="messageId" column="MESSAGE_ID"/>
         <result property="messageFieldId" column="MESSAGE_FIELD_ID"/>
         <result property="messageFieldName" column="MESSAGE_FIELD_NAME"/>
@@ -468,7 +468,7 @@
 
     <!-- ==================== 대응답 설정 ==================== -->
 
-    <resultMap id="ProxySettingListResultMap" type="com.example.admin_demo.domain.proxyresponse.dto.ProxySettingListResponse">
+    <resultMap id="ProxySettingListResultMap" type="com.example.spideradmin.domain.proxyresponse.dto.ProxySettingListResponse">
         <result property="testSno" column="TEST_SNO"/>
         <result property="testName" column="TEST_NAME"/>
         <result property="proxyValue" column="PROXY_VALUE"/>

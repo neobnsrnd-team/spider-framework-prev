@@ -7,7 +7,7 @@
     - SPW_CMS_PAGE  : 승인 관리 목록, 승인, 반려, 공개 상태, 노출 기간, 롤백
     - SPW_CMS_PAGE_HISTORY : 이력 스냅샷 INSERT / SELECT
 -->
-<mapper namespace="com.example.admin_demo.domain.cmsapproval.mapper.CmsApprovalMapper">
+<mapper namespace="com.example.spideradmin.domain.cmsapproval.mapper.CmsApprovalMapper">
 
     <!-- ==================== 승인 관리 목록 ==================== -->
 
@@ -85,7 +85,7 @@
         </choose>
     </sql>
 
-    <select id="findPageList" resultType="com.example.admin_demo.domain.cmsapproval.dto.CmsApprovalPageResponse">
+    <select id="findPageList" resultType="com.example.spideradmin.domain.cmsapproval.dto.CmsApprovalPageResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -212,7 +212,7 @@
         WHERE PAGE_ID = #{pageId}
     </insert>
 
-    <select id="findHistoryList" resultType="com.example.admin_demo.domain.cmsapproval.dto.CmsApprovalHistoryResponse">
+    <select id="findHistoryList" resultType="com.example.spideradmin.domain.cmsapproval.dto.CmsApprovalHistoryResponse">
         SELECT
             h.VERSION                                               AS version,
             h.APPROVE_STATE                                         AS approveState,
@@ -225,7 +225,7 @@
 
     <!-- resultType=map 사용 시 PAGE_HTML(CLOB)이 java.sql.Clob 으로 반환되어 String 캐스트 시 ClassCastException 발생 → 전용 DTO 사용 -->
     <select id="findHistoryByVersion"
-            resultType="com.example.admin_demo.domain.cmsapproval.dto.CmsApprovalRollbackHistoryResponse">
+            resultType="com.example.spideradmin.domain.cmsapproval.dto.CmsApprovalRollbackHistoryResponse">
         SELECT
             h.PAGE_HTML  AS pageHtml,
             h.FILE_PATH  AS filePath

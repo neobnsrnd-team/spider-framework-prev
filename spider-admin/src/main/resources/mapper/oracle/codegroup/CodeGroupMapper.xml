@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.codegroup.mapper.CodeGroupMapper">
+<mapper namespace="com.example.spideradmin.domain.codegroup.mapper.CodeGroupMapper">
 
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.codegroup.dto.CodeGroupResponse">
+            resultType="com.example.spideradmin.domain.codegroup.dto.CodeGroupResponse">
         SELECT cg.CODE_GROUP_ID      AS codeGroupId,
                cg.CODE_GROUP_NAME    AS codeGroupName,
                cg.CODE_GROUP_DESC    AS codeGroupDesc,
@@ -71,14 +71,14 @@
 
 
     <resultMap id="CodeGroupWithCodesResultMap"
-               type="com.example.admin_demo.domain.codegroup.dto.CodeGroupWithCodesResponse">
+               type="com.example.spideradmin.domain.codegroup.dto.CodeGroupWithCodesResponse">
         <id property="codeGroupId" column="CODE_GROUP_ID"/>
         <result property="codeGroupName" column="CODE_GROUP_NAME"/>
         <result property="codeGroupDesc" column="CODE_GROUP_DESC"/>
         <result property="lastUpdateDtime" column="LAST_UPDATE_DTIME"/>
         <result property="lastUpdateUserId" column="LAST_UPDATE_USER_ID"/>
         <result property="bizGroupId" column="BIZ_GROUP_ID"/>
-        <collection property="codes" ofType="com.example.admin_demo.domain.code.dto.CodeResponse"
+        <collection property="codes" ofType="com.example.spideradmin.domain.code.dto.CodeResponse"
                     notNullColumn="CODE">
             <result property="codeGroupId" column="C_CODE_GROUP_ID"/>
             <result property="code" column="CODE"/>
@@ -93,7 +93,7 @@
     </resultMap>
 
     <select id="findAllWithCodeCount"
-            resultType="com.example.admin_demo.domain.codegroup.dto.CodeGroupResponse">
+            resultType="com.example.spideradmin.domain.codegroup.dto.CodeGroupResponse">
         SELECT
             cg.CODE_GROUP_ID      AS codeGroupId,
             cg.CODE_GROUP_NAME    AS codeGroupName,
@@ -124,7 +124,7 @@
     </sql>
 
     <select id="findAllWithCodeCountAndSearch"
-            resultType="com.example.admin_demo.domain.codegroup.dto.CodeGroupResponse">
+            resultType="com.example.spideradmin.domain.codegroup.dto.CodeGroupResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -185,7 +185,7 @@
     </select>
 
     <select id="findByBizGroupId"
-            resultType="com.example.admin_demo.domain.codegroup.dto.CodeGroupResponse">
+            resultType="com.example.spideradmin.domain.codegroup.dto.CodeGroupResponse">
         SELECT CODE_GROUP_ID AS codeGroupId, CODE_GROUP_NAME AS codeGroupName,
                CODE_GROUP_DESC AS codeGroupDesc, LAST_UPDATE_DTIME AS lastUpdateDtime,
                LAST_UPDATE_USER_ID AS lastUpdateUserId, BIZ_GROUP_ID AS bizGroupId
@@ -194,7 +194,7 @@
     </select>
 
     <select id="findAllForExport"
-            resultType="com.example.admin_demo.domain.codegroup.dto.CodeGroupResponse">
+            resultType="com.example.spideradmin.domain.codegroup.dto.CodeGroupResponse">
         SELECT
             cg.CODE_GROUP_ID       AS codeGroupId,
             cg.CODE_GROUP_NAME     AS codeGroupName,

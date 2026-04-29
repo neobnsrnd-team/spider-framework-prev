@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.emergencynotice.mapper.EmergencyNoticeDeployMapper">
+<mapper namespace="com.example.spideradmin.domain.emergencynotice.mapper.EmergencyNoticeDeployMapper">
 
     <!--
         배포 상태는 FWK_PROPERTY 'notice' 그룹의 별도 행으로 관리한다. (key-value 방식)
@@ -17,7 +17,7 @@
         스칼라 서브쿼리로 함께 조회한다.
         DEPLOY_STATUS 행이 없으면 null을 반환하여 초기 데이터 미실행을 감지할 수 있다.
     -->
-    <select id="selectDeployStatus" resultType="com.example.admin_demo.domain.emergencynotice.dto.EmergencyNoticeDeployStatusResponse">
+    <select id="selectDeployStatus" resultType="com.example.spideradmin.domain.emergencynotice.dto.EmergencyNoticeDeployStatusResponse">
         SELECT p.DEFAULT_VALUE AS deployStatus,
                (SELECT q.DEFAULT_VALUE FROM FWK_PROPERTY q
                 WHERE  q.PROPERTY_GROUP_ID = 'notice'
@@ -49,7 +49,7 @@
         OFFSET/FETCH NEXT 구문은 12c JDBC 드라이버 버전에 따라 ORA-00933이 발생하므로
         모든 Oracle 버전에서 동작하는 ROWNUM 이중 서브쿼리를 사용한다.
     -->
-    <select id="selectHistory" resultType="com.example.admin_demo.domain.emergencynotice.dto.EmergencyNoticeHistoryResponse">
+    <select id="selectHistory" resultType="com.example.spideradmin.domain.emergencynotice.dto.EmergencyNoticeHistoryResponse">
         SELECT version, reason, lastUpdateDtime, lastUpdateUserId,
                titleKo, contentKo, titleEn, contentEn, closeableYn, hideTodayYn
         FROM (
@@ -110,7 +110,7 @@
         DEPLOY_STATUS 행을 잠가 동시 요청이 같은 상태를 읽고 중복 배포·종료하는 TOCTOU 경쟁을 방지한다.
         반드시 쓰기(@Transactional) 트랜잭션 내에서만 호출해야 한다.
     -->
-    <select id="selectDeployStatusForUpdate" resultType="com.example.admin_demo.domain.emergencynotice.dto.EmergencyNoticeDeployStatusResponse">
+    <select id="selectDeployStatusForUpdate" resultType="com.example.spideradmin.domain.emergencynotice.dto.EmergencyNoticeDeployStatusResponse">
         SELECT p.DEFAULT_VALUE AS deployStatus,
                (SELECT q.DEFAULT_VALUE FROM FWK_PROPERTY q
                 WHERE  q.PROPERTY_GROUP_ID = 'notice'

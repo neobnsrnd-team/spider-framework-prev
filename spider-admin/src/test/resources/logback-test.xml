@@ -8,7 +8,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.example.admin_demo" level="INFO"/>
+    <logger name="com.example.spideradmin" level="INFO"/>
 
     <root level="WARN">
         <appender-ref ref="CONSOLE"/>

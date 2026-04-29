@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.transport.mapper.TransportMapper">
+<mapper namespace="com.example.spideradmin.domain.transport.mapper.TransportMapper">
 
     <select id="countByPk" resultType="int">
         SELECT COUNT(*)
@@ -70,7 +70,7 @@
 
 
     <select id="findBySearchPaging"
-            resultType="com.example.admin_demo.domain.transport.dto.TransportResponse">
+            resultType="com.example.spideradmin.domain.transport.dto.TransportResponse">
         <bind name="orderColumn" value="
             (sortBy == 'orgId') ? 't.ORG_ID' :
             (sortBy == 'trxType') ? 't.TRX_TYPE' :
@@ -124,7 +124,7 @@
     </select>
 
     <select id="findByGatewayId"
-            resultType="com.example.admin_demo.domain.transport.dto.TransportResponse">
+            resultType="com.example.spideradmin.domain.transport.dto.TransportResponse">
         SELECT
             <include refid="transportColumns"/>
         <include refid="fromTransport"/>
@@ -132,7 +132,7 @@
         ORDER BY t.ORG_ID, t.TRX_TYPE, t.IO_TYPE, t.REQ_RES_TYPE
     </select>
 
-    <select id="findTrxTypeOptions" resultType="com.example.admin_demo.domain.transport.dto.TrxTypeOptionResponse">
+    <select id="findTrxTypeOptions" resultType="com.example.spideradmin.domain.transport.dto.TrxTypeOptionResponse">
         SELECT DISTINCT
             t.TRX_TYPE AS trxType,
             NVL(
@@ -164,7 +164,7 @@
 
     <!-- 엑셀 내보내기용 전체 조회 (페이징 없음) -->
     <select id="findAllForExport"
-            resultType="com.example.admin_demo.domain.transport.dto.TransportResponse">
+            resultType="com.example.spideradmin.domain.transport.dto.TransportResponse">
         <bind name="orderColumn" value="
             (sortBy == 'orgId') ? 't.ORG_ID' :
             (sortBy == 'trxType') ? 't.TRX_TYPE' :

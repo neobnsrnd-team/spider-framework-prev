@@ -8,7 +8,7 @@
     - Trx JOIN 없이 순수 TrxMessage 테이블만 조회
     - 목록 조회, 검색 등 Query 전용 SQL은 TrxMessageQueryMapper에서 처리
 -->
-<mapper namespace="com.example.admin_demo.domain.trxmessage.mapper.TrxMessageMapper">
+<mapper namespace="com.example.spideradmin.domain.trxmessage.mapper.TrxMessageMapper">
 
     <!-- 수정 (동적 SET) -->
     <update id="updateTrxMessage">
@@ -115,7 +115,7 @@
     </sql>
 
     <!-- 검색 조회 (네이티브 ROWNUM 페이징) -->
-    <select id="findAllWithTrxAndSearch" resultType="com.example.admin_demo.domain.trxmessage.dto.TrxMessageWithTrxResponse">
+    <select id="findAllWithTrxAndSearch" resultType="com.example.spideradmin.domain.trxmessage.dto.TrxMessageWithTrxResponse">
         <choose>
             <when test="deduplicate">
                 SELECT * FROM (
@@ -238,7 +238,7 @@
     </select>
 
     <!-- trxId와 ioType으로 모든 메시지 조회 (Trx 상세 정보 포함) -->
-    <select id="findAllByTrxIdAndIoTypeWithTrx" resultType="com.example.admin_demo.domain.trxmessage.dto.TrxMessageWithTrxResponse">
+    <select id="findAllByTrxIdAndIoTypeWithTrx" resultType="com.example.spideradmin.domain.trxmessage.dto.TrxMessageWithTrxResponse">
         SELECT <include refid="columnsWithTrxAsAliases"/>
         <include refid="fromTrxMessageWithTrx"/>
         WHERE tm.TRX_ID = #{trxId}
@@ -282,7 +282,7 @@
     </sql>
 
     <!-- 전문 목록 조회 (네이티브 ROWNUM 페이징) -->
-    <select id="browseMessagesWithPaging" resultType="com.example.admin_demo.domain.trxmessage.dto.MessageBrowseResponse">
+    <select id="browseMessagesWithPaging" resultType="com.example.spideradmin.domain.trxmessage.dto.MessageBrowseResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT

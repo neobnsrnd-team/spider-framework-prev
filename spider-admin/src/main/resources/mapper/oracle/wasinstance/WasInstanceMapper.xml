@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.wasinstance.mapper.WasInstanceMapper">
+<mapper namespace="com.example.spideradmin.domain.wasinstance.mapper.WasInstanceMapper">
 
     <sql id="wasInstanceColumns">
         INSTANCE_ID AS "instanceId",
@@ -15,7 +15,7 @@
         OPER_MODE_TYPE AS "operModeType"
     </sql>
 
-    <select id="selectResponseById" resultType="com.example.admin_demo.domain.wasinstance.dto.WasInstanceResponse">
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.wasinstance.dto.WasInstanceResponse">
         SELECT <include refid="wasInstanceColumns"/>
         FROM FWK_WAS_INSTANCE
         WHERE INSTANCE_ID = #{instanceId}
@@ -27,13 +27,13 @@
         WHERE INSTANCE_ID = #{instanceId}
     </select>
 
-    <select id="selectAll" resultType="com.example.admin_demo.domain.wasinstance.dto.WasInstanceResponse">
+    <select id="selectAll" resultType="com.example.spideradmin.domain.wasinstance.dto.WasInstanceResponse">
         SELECT <include refid="wasInstanceColumns"/>
         FROM FWK_WAS_INSTANCE
         ORDER BY INSTANCE_ID
     </select>
 
-    <select id="selectAllSimple" resultType="com.example.admin_demo.domain.wasproperty.dto.WasInstanceSimpleResponse">
+    <select id="selectAllSimple" resultType="com.example.spideradmin.domain.wasproperty.dto.WasInstanceSimpleResponse">
         SELECT INSTANCE_ID as "instanceId",
                INSTANCE_NAME as "instanceName"
         FROM FWK_WAS_INSTANCE
@@ -82,7 +82,7 @@
     <!-- ==================== Query (merged) ==================== -->
 
 
-    <select id="findBySearchPaging" resultType="com.example.admin_demo.domain.wasinstance.dto.WasInstanceResponse">
+    <select id="findBySearchPaging" resultType="com.example.spideradmin.domain.wasinstance.dto.WasInstanceResponse">
         <bind name="orderColumn" value="
             (sortBy == 'instanceId') ? 'i.INSTANCE_ID' :
             (sortBy == 'instanceName') ? 'i.INSTANCE_NAME' :
@@ -148,7 +148,7 @@
 
     <!-- ==================== 엑셀 내보내기 (페이징 없음) ==================== -->
 
-    <select id="findAllForExport" resultType="com.example.admin_demo.domain.wasinstance.dto.WasInstanceResponse">
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.wasinstance.dto.WasInstanceResponse">
         <bind name="orderColumn" value="
             (sortBy == 'instanceId') ? 'i.INSTANCE_ID' :
             (sortBy == 'instanceName') ? 'i.INSTANCE_NAME' :

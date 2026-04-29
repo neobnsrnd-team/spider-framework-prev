@@ -2,11 +2,11 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.errorhistory.mapper.ErrorHisMapper">
+<mapper namespace="com.example.spideradmin.domain.errorhistory.mapper.ErrorHisMapper">
 
     <!-- 복합키로 응답 DTO 조회 -->
     <select id="selectResponseById"
-            resultType="com.example.admin_demo.domain.errorhistory.dto.ErrorHisResponse">
+            resultType="com.example.spideradmin.domain.errorhistory.dto.ErrorHisResponse">
         SELECT ERROR_CODE AS errorCode,
                ERROR_SER_NO AS errorSerNo,
                CUST_USER_ID AS custUserId,
@@ -37,7 +37,7 @@
 
 
     <!-- ErrorHisResponseDTO ResultMap (조인 정보 포함) -->
-    <resultMap id="ErrorHisResponseDTOResultMap" type="com.example.admin_demo.domain.errorhistory.dto.ErrorHisResponse">
+    <resultMap id="ErrorHisResponseDTOResultMap" type="com.example.spideradmin.domain.errorhistory.dto.ErrorHisResponse">
         <result property="errorCode" column="ERROR_CODE"/>
         <result property="errorSerNo" column="ERROR_SER_NO"/>
         <result property="custUserId" column="CUST_USER_ID"/>

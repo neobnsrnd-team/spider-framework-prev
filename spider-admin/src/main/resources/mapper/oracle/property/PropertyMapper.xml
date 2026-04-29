@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.admin_demo.domain.property.mapper.PropertyMapper">
+<mapper namespace="com.example.spideradmin.domain.property.mapper.PropertyMapper">
 
     <!-- 프로퍼티 일괄 등록 (Oracle DUAL 패턴) - PropertyCreateRequest 기반 -->
     <insert id="insertBatch">
@@ -29,7 +29,7 @@
     </insert>
 
     <!-- 프로퍼티 단건 조회 (ResponseDTO) -->
-    <select id="selectResponseById" resultType="com.example.admin_demo.domain.property.dto.PropertyResponse">
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.property.dto.PropertyResponse">
         SELECT
             PROPERTY_GROUP_ID AS propertyGroupId,
             PROPERTY_ID AS propertyId,
@@ -110,7 +110,7 @@
     <!-- ==================== Query (merged) ==================== -->
 
 
-    <resultMap id="PropertyGroupResultMap" type="com.example.admin_demo.domain.property.dto.PropertyGroupResponse">
+    <resultMap id="PropertyGroupResultMap" type="com.example.spideradmin.domain.property.dto.PropertyGroupResponse">
         <result property="propertyGroupId" column="PROPERTY_GROUP_ID"/>
         <result property="propertyGroupName" column="PROPERTY_GROUP_NAME"/>
         <result property="propertyCount" column="PROPERTY_COUNT"/>
@@ -205,7 +205,7 @@
         ORDER BY p.PROPERTY_GROUP_ID
     </select>
 
-    <resultMap id="PropertyResponseResultMap" type="com.example.admin_demo.domain.property.dto.PropertyResponse">
+    <resultMap id="PropertyResponseResultMap" type="com.example.spideradmin.domain.property.dto.PropertyResponse">
         <result property="propertyGroupId" column="PROPERTY_GROUP_ID"/>
         <result property="propertyId" column="PROPERTY_ID"/>
         <result property="propertyName" column="PROPERTY_NAME"/>
