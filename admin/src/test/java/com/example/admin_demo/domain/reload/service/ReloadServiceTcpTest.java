@@ -40,6 +40,11 @@ import org.springframework.web.client.RestTemplate;
 @DisplayName("ReloadService HTTP/TCP 분기 테스트")
 class ReloadServiceTcpTest {
 
+    private static final String FIELD_DEFAULT_PORT = "defaultManagementPort";
+    private static final String FIELD_DEFAULT_IP = "defaultManagementIp";
+    private static final String FIELD_ENDPOINT = "managementEndpoint";
+    private static final String FIELD_PROPERTY_GROUP = "propertyGroup";
+
     @Mock
     private WasInstanceMapper wasInstanceMapper;
 
@@ -58,10 +63,10 @@ class ReloadServiceTcpTest {
     @BeforeEach
     void setUpValues() {
         // @Value 필드는 Spring 컨텍스트 없이는 주입되지 않으므로 직접 설정
-        ReflectionTestUtils.setField(reloadService, "defaultManagementPort", 50005);
-        ReflectionTestUtils.setField(reloadService, "defaultManagementIp", "localhost");
-        ReflectionTestUtils.setField(reloadService, "managementEndpoint", "/api/management/reload");
-        ReflectionTestUtils.setField(reloadService, "propertyGroup", "was_config");
+        ReflectionTestUtils.setField(reloadService, FIELD_DEFAULT_PORT, 50005);
+        ReflectionTestUtils.setField(reloadService, FIELD_DEFAULT_IP, "localhost");
+        ReflectionTestUtils.setField(reloadService, FIELD_ENDPOINT, "/api/management/reload");
+        ReflectionTestUtils.setField(reloadService, FIELD_PROPERTY_GROUP, "was_config");
     }
 
     // ─── TCP 분기 ─────────────────────────────────────────────────────

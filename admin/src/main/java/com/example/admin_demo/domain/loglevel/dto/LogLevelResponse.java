@@ -30,6 +30,6 @@ public class LogLevelResponse {
     /** Additivity 여부 (Y: 상위 로거에도 전파, N: 이 로거에서만 처리) */
     private String additivity;
 
-    /** 연결된 Appender 이름 목록 (쉼표 구분) */
+    /** 연결된 Appender 구현 클래스 경로 목록 (쉼표 구분, 예: ch.qos.logback.core.ConsoleAppender) */
     private String appender;
 }

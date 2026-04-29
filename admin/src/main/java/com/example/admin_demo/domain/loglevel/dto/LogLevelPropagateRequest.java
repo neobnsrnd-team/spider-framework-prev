@@ -1,5 +1,6 @@
 package com.example.admin_demo.domain.loglevel.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
@@ -46,4 +47,13 @@ public class LogLevelPropagateRequest {
 
     /** 변경할 Additivity — {@code gubun=log_config_additivity} 시 사용 (Y 또는 N) */
     private String additivity;
+
+    /** {@code gubun=log_config_additivity}일 때 additivity는 반드시 Y 또는 N이어야 한다. */
+    @AssertTrue(message = "gubun=log_config_additivity일 때 additivity는 Y 또는 N이어야 합니다.")
+    public boolean isAdditivityValid() {
+        if (!"log_config_additivity".equals(gubun)) {
+            return true;
+        }
+        return "Y".equals(additivity) || "N".equals(additivity);
+    }
 }

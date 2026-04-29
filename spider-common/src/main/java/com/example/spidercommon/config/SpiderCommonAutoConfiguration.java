@@ -65,8 +65,12 @@ public class SpiderCommonAutoConfiguration {
     /**
      * TCP 관리 명령 핸들러 빈.
      *
-     * <p>ManagementExecutor 빈이 하나 이상 존재할 때만 등록된다.
-     * TCP 서버가 없는 HTTP 전용 WAS에서도 빈이 생성되지만, CommandDispatcher에 등록되지 않으면
+     * <p>{@code @ConditionalOnBean(ManagementExecutor.class)} 조건은 같은 클래스에서
+     * {@link LogLevelExecutor}·{@link LogAdditivityExecutor}가 먼저 등록되므로 실질적으로 항상 충족된다.
+     * 이 조건은 소비 WAS가 spider-common을 사용하면서 Executor를 전혀 등록하지 않는 극단적 경우에 대한
+     * 안전 장치(safety guard)로 유지한다.</p>
+     *
+     * <p>TCP 서버가 없는 HTTP 전용 WAS에서도 빈이 생성되지만, CommandDispatcher에 등록되지 않으면
      * 실제로 호출되지 않으므로 불필요한 부작용은 없다.</p>
      *
      * @param executors Spring 컨텍스트에 등록된 모든 ManagementExecutor 구현체 목록
