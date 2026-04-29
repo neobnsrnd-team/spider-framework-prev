@@ -113,7 +113,7 @@ public class AuthController {
         // HttpLoggingInterceptor가 HTTP 수신 시 생성한 UUID — TCP 구간과 동일한 TRX_TRACKING_NO로 연결
         String requestId = (String) request.getAttribute("requestId");
 
-        log.info("[AuthController] 로그인 요청: userId={}", userId);
+        log.info("[AuthController] Login request: userId={}", userId);
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId);
@@ -132,7 +132,7 @@ public class AuthController {
 
             // isSuccess=true 이지만 payload가 null인 경우 방어 (인증AP 버그 또는 빈 응답)
             if (authResp.getPayload() == null) {
-                log.warn("[AuthController] 인증AP 응답 payload null: userId={}", userId);
+                log.warn("[AuthController] biz-auth response payload null: userId={}", userId);
                 return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                         .body(Map.of("error", "인증 서버 응답 오류"));
             }
@@ -166,11 +166,11 @@ public class AuthController {
             result.put("userGrade", userGrade);
             result.put("lastLogin", lastLogin);
 
-            log.info("[AuthController] 로그인 성공: userId={}", userId);
+            log.info("[AuthController] Login success: userId={}", userId);
             return ResponseEntity.ok(result);
 
         } catch (IOException e) {
-            log.error("[AuthController] 인증AP 통신 오류: {}", e.getMessage(), e);
+            log.error("[AuthController] biz-auth TCP error: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "인증 서버 통신 오류"));
         }
@@ -195,7 +195,7 @@ public class AuthController {
         String userId = (String) request.getAttribute("userId");
         // HttpLoggingInterceptor가 HTTP 수신 시 생성한 UUID
         String requestId = (String) request.getAttribute("requestId");
-        log.debug("[AuthController] 사용자 정보 조회: userId={}", userId);
+        log.debug("[AuthController] Get user info: userId={}", userId);
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId);
@@ -210,7 +210,7 @@ public class AuthController {
 
             // isSuccess=true 이지만 payload가 null인 경우 방어
             if (authResp.getPayload() == null) {
-                log.warn("[AuthController] 인증AP 응답 payload null (me): userId={}", userId);
+                log.warn("[AuthController] biz-auth response payload null (me): userId={}", userId);
                 return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                         .body(Map.of("error", "인증 서버 응답 오류"));
             }
@@ -227,7 +227,7 @@ public class AuthController {
             return ResponseEntity.ok(result);
 
         } catch (IOException e) {
-            log.error("[AuthController] 인증AP 통신 오류 (me): {}", e.getMessage(), e);
+            log.error("[AuthController] biz-auth TCP error (me): {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "인증 서버 통신 오류"));
         }
@@ -290,11 +290,11 @@ public class AuthController {
             result.put("accessToken", newAccessToken);
             // lastLogin 은 리프레시 응답에서는 포함하지 않음 (me API 에서 조회)
 
-            log.debug("[AuthController] 토큰 갱신 성공: userId={}", userId);
+            log.debug("[AuthController] Token refresh success: userId={}", userId);
             return ResponseEntity.ok(result);
 
         } catch (io.jsonwebtoken.JwtException e) {
-            log.warn("[AuthController] 리프레시 토큰 검증 실패: {}", e.getMessage());
+            log.warn("[AuthController] Refresh token validation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "리프레시 토큰이 만료되었거나 유효하지 않습니다."));
         }
@@ -320,7 +320,7 @@ public class AuthController {
             HttpServletResponse response) {
 
         String userId = (String) request.getAttribute("userId");
-        log.info("[AuthController] 로그아웃: userId={}", userId);
+        log.info("[AuthController] Logout: userId={}", userId);
 
         // 인메모리 리프레시 토큰 제거
         refreshTokenStore.remove(userId);
