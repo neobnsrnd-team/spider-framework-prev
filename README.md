@@ -145,7 +145,7 @@ spider-link ──► spider-batch ──► batch-was
 |------|------|------|------|
 | 1 | `spider-link` | `mvn install -f spider-link/pom.xml` | spider-batch·admin·bizApp 서버가 의존 |
 | 2 | `spider-batch` | `mvn install -f spider-batch/pom.xml` | batch-was가 의존 |
-| 3 | 나머지 | `mvn package -f <module>/pom.xml` | 위 두 라이브러리가 로컬 저장소에 있어야 빌드 가능 |
+| 3 | 나머지 | `mvn package -f <module>/pom.xml` | 위 두 라이브러리가 로컬 저장소에 있어야 빌드 가능 (환경변수 설정·상세 실행 방법은 각 프로젝트 README 참조) |
 
 > **CI/CD**: GitHub Actions(`ci.yml`)가 위 순서를 자동으로 보장한다.  
 > **로컬 최초 세팅 또는 라이브러리 변경 시**에는 위 순서대로 직접 `mvn install`을 실행해야 한다.
