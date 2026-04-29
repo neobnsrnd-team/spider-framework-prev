@@ -648,6 +648,7 @@ INSERT INTO FWK_USER_MENU (USER_ID, MENU_ID, AUTH_CODE, LAST_UPDATE_DTIME, LAST_
 INSERT INTO FWK_USER_MENU (USER_ID, MENU_ID, AUTH_CODE, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID) VALUES ('cmsAdmin01', 'v3_cms_admin_statistics', 'W', TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'), 'system');
 INSERT INTO FWK_USER_MENU (USER_ID, MENU_ID, AUTH_CODE, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID) VALUES ('cmsAdmin01', 'v3_cms_admin_components', 'W', TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'), 'system');
 INSERT INTO FWK_USER_MENU (USER_ID, MENU_ID, AUTH_CODE, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID) VALUES ('cmsAdmin01', 'v3_cms_admin_asset_approvals', 'W', TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'), 'system');
+INSERT INTO FWK_USER_MENU (USER_ID, MENU_ID, AUTH_CODE, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID) VALUES ('cmsAdmin01', 'v3_react_cms_admin_approvals', 'W', TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'), 'system');
 INSERT INTO FWK_USER_MENU (USER_ID, MENU_ID, AUTH_CODE, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID) VALUES ('cmsUser01', 'v3_cms_manage', 'W', TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'), 'system');
 INSERT INTO FWK_USER_MENU (USER_ID, MENU_ID, AUTH_CODE, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID) VALUES ('cmsUser01', 'v3_cms_dashboard', 'W', TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'), 'system');
 INSERT INTO FWK_USER_MENU (USER_ID, MENU_ID, AUTH_CODE, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID) VALUES ('cmsUser01', 'v3_cms_edit', 'W', TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'), 'system');
@@ -678,6 +679,31 @@ INSERT INTO FWK_CMS_SERVER_INSTANCE (
     'Y',
     'system'
 );
+
+-- React CMS 로컬 개발 서버 인스턴스 — 로컬 배포(local file deploy) 이력 기록에 사용
+-- ⚠ 개발자가 DB에서 직접 실행해야 합니다.
+INSERT INTO FWK_CMS_SERVER_INSTANCE (
+    INSTANCE_ID,
+    INSTANCE_NAME,
+    INSTANCE_DESC,
+    INSTANCE_IP,
+    INSTANCE_PORT,
+    SERVER_TYPE,
+    ALIVE_YN,
+    LAST_MODIFIER_ID,
+    CREATE_DTIME
+) VALUES (
+    'demo-local-react',
+    '데모 로컬 리액트 서버',
+    'React CMS demo/front 데모 로컬 리액트 서버 (localhost:5173)',
+    'localhost',
+    5173,
+    'WEB',
+    'Y',
+    'system' ,
+    TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+);
+COMMIT;
 
 
 -- ============================================================

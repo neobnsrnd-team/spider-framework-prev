@@ -43,9 +43,9 @@ public class ReactCmsDashboardController {
 
     private final ReactCmsDashboardService reactCmsDashboardService;
 
-    /** 내 페이지 목록 조회 (REACT-CMS:R) */
+    /** 내 페이지 목록 조회 (REACT_CMS:R) */
     @GetMapping("/api/react-cms-dashboard/pages")
-    @PreAuthorize("hasAuthority('REACT-CMS:R')")
+    @PreAuthorize("hasAuthority('REACT_CMS:R')")
     public ResponseEntity<ApiResponse<PageResponse<ReactCmsDashboardPageResponse>>> findMyPageList(
             @ModelAttribute ReactCmsDashboardListRequest req,
             @RequestParam(defaultValue = "1") int page,
@@ -59,20 +59,20 @@ public class ReactCmsDashboardController {
                 reactCmsDashboardService.findMyPageList(req, userDetails.getUserId(), pageRequest)));
     }
 
-    /** 승인 상태 조회 — react-cms 빌더가 편집 모드 진입 시 호출 (REACT-CMS:R) */
+    /** 승인 상태 조회 — react-cms 빌더가 편집 모드 진입 시 호출 (REACT_CMS:R) */
     @GetMapping("/api/react-cms-dashboard/pages/{pageId}/approval-status")
-    @PreAuthorize("hasAuthority('REACT-CMS:R')")
+    @PreAuthorize("hasAuthority('REACT_CMS:R')")
     public ResponseEntity<ApiResponse<ReactCmsApprovalStatusResponse>> findApprovalStatus(@PathVariable String pageId) {
 
         return ResponseEntity.ok(ApiResponse.success(reactCmsDashboardService.findApprovalStatus(pageId)));
     }
 
     /**
-     * 페이지 삭제 (REACT-CMS:W)
+     * 페이지 삭제 (REACT_CMS:W)
      * 이력 있으면 소프트(USE_YN='N'), 없으면 하드 삭제.
      */
     @DeleteMapping("/api/react-cms-dashboard/pages/{pageId}")
-    @PreAuthorize("hasAuthority('REACT-CMS:W')")
+    @PreAuthorize("hasAuthority('REACT_CMS:W')")
     public ResponseEntity<ApiResponse<Void>> deletePage(
             @PathVariable String pageId, @AuthenticationPrincipal CustomUserDetails userDetails) {
 
@@ -80,9 +80,9 @@ public class ReactCmsDashboardController {
         return ResponseEntity.ok(ApiResponse.success("페이지가 삭제되었습니다.", null));
     }
 
-    /** 승인 요청 — APPROVE_STATE → PENDING (REACT-CMS:W) */
+    /** 승인 요청 — APPROVE_STATE → PENDING (REACT_CMS:W) */
     @PatchMapping("/api/react-cms-dashboard/pages/{pageId}/approve-request")
-    @PreAuthorize("hasAuthority('REACT-CMS:W')")
+    @PreAuthorize("hasAuthority('REACT_CMS:W')")
     public ResponseEntity<ApiResponse<Void>> requestApproval(
             @PathVariable String pageId,
             @RequestBody ReactCmsDashboardApproveRequestDto req,

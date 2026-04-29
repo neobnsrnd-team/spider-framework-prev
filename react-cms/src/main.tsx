@@ -7,14 +7,20 @@
  *
  * 라우트 구성:
  *   - /not-authorized  : 권한 없는 사용자용 공개 페이지 (인증 가드 밖)
- *   - /                : admin 연동 모드 → CmsAuthGuard (REACT-CMS:R 검증)
+ *   - /                : admin 연동 모드 → CmsAuthGuard (REACT_CMS:R 검증)
  *                        단독 실행 모드 → 인증 없이 바로 자식 라우트 렌더링
  *   - /builder         : CMS 에디터
  *   - /preview         : 페이지 미리보기
  */
 import { StrictMode, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider, Navigate, Outlet, useSearchParams } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+  Outlet,
+  useSearchParams,
+} from "react-router-dom";
 import { CMSApp } from "@cms-core";
 import type { CMSPage } from "@cms-core/types";
 import { CMSBuilder } from "@cms-core/CMSBuilder";
@@ -45,9 +51,15 @@ function BuilderPage() {
   const [searchParams] = useSearchParams();
   const pageId = searchParams.get("pageId");
 
-  const [initialPage, setInitialPage] = useState<CMSPage | undefined>(undefined);
-  const [initialPageName, setInitialPageName] = useState<string | undefined>(undefined);
-  const [approveState, setApproveState] = useState<string | undefined>(undefined);
+  const [initialPage, setInitialPage] = useState<CMSPage | undefined>(
+    undefined,
+  );
+  const [initialPageName, setInitialPageName] = useState<string | undefined>(
+    undefined,
+  );
+  const [approveState, setApproveState] = useState<string | undefined>(
+    undefined,
+  );
   const [rejectedReason, setRejectedReason] = useState<string | null>(null);
   const [loading, setLoading] = useState(!!pageId);
   const [error, setError] = useState<string | null>(null);
@@ -70,32 +82,39 @@ function BuilderPage() {
       : Promise.resolve(null);
 
     Promise.all([pageLoad, approvalLoad])
-      .then(([data, approvalData]: [
-        { page?: { PAGE_HTML?: string | null; PAGE_NAME?: string } | null },
-        { data?: { approveState?: string; rejectedReason?: string | null } } | null,
-      ]) => {
-        const row = data.page;
-        if (!row) {
-          setError("페이지를 찾을 수 없습니다.");
-          return;
-        }
-        // 재편집을 위해 pageId를 localStorage에 캐싱 — savePage.ts의 UPDATE 분기를 타도록 함
-        if (row.PAGE_NAME) {
-          localStorage.setItem(`${PAGE_ID_KEY_PREFIX}${row.PAGE_NAME}`, pageId);
-          setInitialPageName(row.PAGE_NAME);
-        }
-        if (row.PAGE_HTML) {
-          try {
-            setInitialPage(JSON.parse(row.PAGE_HTML) as CMSPage);
-          } catch {
-            setError("페이지 데이터를 불러올 수 없습니다.");
+      .then(
+        ([data, approvalData]: [
+          { page?: { PAGE_HTML?: string | null; PAGE_NAME?: string } | null },
+          {
+            data?: { approveState?: string; rejectedReason?: string | null };
+          } | null,
+        ]) => {
+          const row = data.page;
+          if (!row) {
+            setError("페이지를 찾을 수 없습니다.");
+            return;
           }
-        }
-        if (approvalData?.data) {
-          setApproveState(approvalData.data.approveState);
-          setRejectedReason(approvalData.data.rejectedReason ?? null);
-        }
-      })
+          // 재편집을 위해 pageId를 localStorage에 캐싱 — savePage.ts의 UPDATE 분기를 타도록 함
+          if (row.PAGE_NAME) {
+            localStorage.setItem(
+              `${PAGE_ID_KEY_PREFIX}${row.PAGE_NAME}`,
+              pageId,
+            );
+            setInitialPageName(row.PAGE_NAME);
+          }
+          if (row.PAGE_HTML) {
+            try {
+              setInitialPage(JSON.parse(row.PAGE_HTML) as CMSPage);
+            } catch {
+              setError("페이지 데이터를 불러올 수 없습니다.");
+            }
+          }
+          if (approvalData?.data) {
+            setApproveState(approvalData.data.approveState);
+            setRejectedReason(approvalData.data.rejectedReason ?? null);
+          }
+        },
+      )
       .catch(() => setError("페이지 불러오기 중 오류가 발생했습니다."))
       .finally(() => setLoading(false));
   }, [pageId]);
@@ -115,7 +134,9 @@ function BuilderPage() {
         <div className="flex gap-2">
           <button
             className="px-4 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors"
-            onClick={() => { window.location.href = window.location.pathname; }}
+            onClick={() => {
+              window.location.href = window.location.pathname;
+            }}
           >
             새 페이지 생성
           </button>
@@ -145,9 +166,10 @@ function BuilderPage() {
 // BASE_URL은 Vite가 vite.config.ts의 base 설정값으로 주입한다.
 // VITE_BASE=/react-cms/ 로 실행 시 '/react-cms/' — nginx 프록시를 거쳐 admin과 연동되는 모드.
 // 단독 개발 시 기본값 '/' → admin 연동 없이 builder/preview 직접 접근 허용.
-const basename = import.meta.env.BASE_URL !== "/"
-  ? import.meta.env.BASE_URL.replace(/\/$/, "")
-  : undefined;
+const basename =
+  import.meta.env.BASE_URL !== "/"
+    ? import.meta.env.BASE_URL.replace(/\/$/, "")
+    : undefined;
 
 const router = createBrowserRouter(
   [
@@ -158,7 +180,7 @@ const router = createBrowserRouter(
     },
     {
       path: "/",
-      // admin 연동 모드: CmsAuthGuard로 REACT-CMS:R 권한 검증 후 자식 라우트 렌더링
+      // admin 연동 모드: CmsAuthGuard로 REACT_CMS:R 권한 검증 후 자식 라우트 렌더링
       // 단독 실행 모드: 인증 없이 Outlet으로 바로 자식 라우트 렌더링
       element: isAdminMode ? <CmsAuthGuard /> : <Outlet />,
       children: [

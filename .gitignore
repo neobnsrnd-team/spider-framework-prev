@@ -2,6 +2,7 @@ HELP.md
 TASKS.md
 target/
 admin/.mvn/wrapper/maven-wrapper.jar
+admin/worklist-scripts
 !**/src/main/**/target/
 !**/src/test/**/target/
 docs/dev

@@ -11,8 +11,19 @@
  * - 일반 페이지: XxxRoute (예: LoginRoute)
  * - 모달 오버레이: XxxModal (예: HanaCardMenuModal)
  */
-import { useState, useEffect, useRef, useMemo, type ComponentType } from "react";
-import { useNavigate, useLocation, useSearchParams, useParams } from "react-router-dom";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  type ComponentType,
+} from "react";
+import {
+  useNavigate,
+  useLocation,
+  useSearchParams,
+  useParams,
+} from "react-router-dom";
 import type { NoticePayload } from "@/hooks/useEmergencyNotice";
 import { useAuth } from "@/contexts/AuthContext";
 import { axiosInstance } from "@/api/axiosInstance";
@@ -205,7 +216,9 @@ export function CardDashboardRoute() {
     if (!user?.userId || user.lastLogin) return;
     axiosInstance
       .get<{ lastLogin: string }>("/auth/me")
-      .then(({ data }) => { if (data.lastLogin) setLastLogin(data.lastLogin); })
+      .then(({ data }) => {
+        if (data.lastLogin) setLastLogin(data.lastLogin);
+      })
       .catch(() => {}); // 실패해도 화면 진입은 허용
   }, [user?.userId, user?.lastLogin, setLastLogin]);
 
@@ -450,7 +463,6 @@ function isPaymentUpcoming(
   const day = paymentDay ? Number(paymentDay) : 1; // paymentDay 없으면 1일로 보수적 처리
   return new Date(y, m - 1, day) >= today;
 }
-
 
 /** YYMMDD or YYYYMMDD → { dateFull, dateYM, dateMD } */
 function parseDueDate(raw: string) {
@@ -772,7 +784,13 @@ export function ImmediatePayRequestRoute() {
   const storedCard = sessionStorage.getItem("immediatePaySelectedCard");
   const card: CardInfo = storedCard
     ? (JSON.parse(storedCard) as CardInfo)
-    : { id: "", name: "", maskedNumber: "", paymentBank: "", paymentAccount: "" };
+    : {
+        id: "",
+        name: "",
+        maskedNumber: "",
+        paymentBank: "",
+        paymentAccount: "",
+      };
 
   // POC_카드사용내역에서 누적결제금액 < 이용금액인 건의 미결제 잔액 합산을 조회한다.
   const [payableAmount, setPayableAmount] = useState<number>(0);
@@ -880,7 +898,13 @@ export function ImmediatePayMethodRoute() {
   const storedAmountInfo = sessionStorage.getItem("immediatePayAmountInfo");
   const card: CardInfo = storedCard
     ? (JSON.parse(storedCard) as CardInfo)
-    : { id: "", name: "", maskedNumber: "", paymentBank: "", paymentAccount: "" };
+    : {
+        id: "",
+        name: "",
+        maskedNumber: "",
+        paymentBank: "",
+        paymentAccount: "",
+      };
   const { usageType, payAmount } = storedRequest
     ? (JSON.parse(storedRequest) as { usageType: string; payAmount: number })
     : { usageType: "lump", payAmount: 0 };
@@ -1017,7 +1041,8 @@ export function ImmediatePayMethodRoute() {
               // PIN 오류 외의 예외는 완료 화면으로 이동해 오류 내용을 표시한다.
               // 4xx(비즈니스 오류): 서버가 보낸 구체적인 사유를 그대로 노출한다.
               // 5xx(시스템 오류): 내부 오류를 사용자에게 노출하지 않고 일반 메시지를 사용한다.
-              const isBusinessError = status !== undefined && status >= 400 && status < 500;
+              const isBusinessError =
+                status !== undefined && status >= 400 && status < 500;
               const errorMessage = isBusinessError
                 ? (data?.error ?? "결제 처리 중 오류가 발생했습니다.")
                 : "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
@@ -1379,7 +1404,9 @@ export function ReactViewerRoute() {
     // src/generated/*.tsx 파일 전체를 지연 로드(lazy) 맵으로 확보
     // import.meta.glob은 Vite가 빌드 타임에 glob 패턴을 해석하므로 동적 경로 조합 불가
     // → 전체 맵을 먼저 만든 뒤 codeId로 키를 선택한다
-    const modules = import.meta.glob<{ default: ComponentType }>("/src/generated/*.tsx");
+    const modules = import.meta.glob<{ default: ComponentType }>(
+      "/src/generated/*.tsx",
+    );
     const key = `/src/generated/${codeId}.tsx`;
 
     if (!modules[key]) {
@@ -1391,7 +1418,10 @@ export function ReactViewerRoute() {
       .then((mod) => setComponent(() => mod.default))
       .catch((err) => {
         // 네트워크 오류와 파일 미존재를 구분하기 위해 에러를 기록한다
-        console.error(`[ReactViewer] 컴포넌트 로드 실패 — codeId=${codeId}`, err);
+        console.error(
+          `[ReactViewer] 컴포넌트 로드 실패 — codeId=${codeId}`,
+          err,
+        );
         setNotFound(true);
       });
   }, [codeId]);
@@ -1408,6 +1438,77 @@ export function ReactViewerRoute() {
       {notFound && (
         <div className="flex items-center justify-center min-h-[80vh] text-sm text-text-muted">
           승인된 컴포넌트를 찾을 수 없습니다. (codeId: {codeId})
+        </div>
+      )}
+
+      {!notFound && !Component && (
+        <div className="flex items-center justify-center min-h-[80vh] text-sm text-text-muted">
+          로딩 중...
+        </div>
+      )}
+
+      {Component && <Component />}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* React CMS 배포 페이지 뷰어                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Admin에서 배포한 React CMS 페이지 뷰어.
+ *
+ * /react-cms/viewer/:pageId 경로로 접근하며, 인증 없이 사용 가능하다.
+ * import.meta.glob으로 src/reactcms/containers/ 디렉토리의 .tsx 파일을 동적으로 탐색하여
+ * :pageId에 해당하는 컴포넌트를 렌더링한다.
+ *
+ * Vite HMR이 파일 추가를 감지하므로 Admin에서 배포 즉시 새 경로가 활성화된다.
+ */
+export function ReactCmsPageViewerRoute() {
+  const { pageId } = useParams<{ pageId: string }>();
+  const [Component, setComponent] = useState<ComponentType | null>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (!pageId) {
+      setNotFound(true);
+      return;
+    }
+
+    // src/reactcms/containers/*.tsx 파일 전체를 지연 로드(lazy) 맵으로 확보
+    const modules = import.meta.glob<{ default: ComponentType }>(
+      "/src/reactcms/containers/*.tsx",
+    );
+    const key = `/src/reactcms/containers/${pageId}.tsx`;
+
+    if (!modules[key]) {
+      setNotFound(true);
+      return;
+    }
+
+    modules[key]()
+      .then((mod) => setComponent(() => mod.default))
+      .catch((err) => {
+        console.error(
+          `[ReactCmsViewer] 컴포넌트 로드 실패 — pageId=${pageId}`,
+          err,
+        );
+        setNotFound(true);
+      });
+  }, [pageId]);
+
+  return (
+    <div className="min-h-screen bg-bg-base">
+      {/* <div className="flex items-center justify-center py-1 bg-green-50 border-b border-green-200">
+        <span className="text-xs text-green-600 font-medium">
+          React CMS 배포 페이지 뷰어 — {pageId}
+        </span>
+      </div> */}
+
+      {notFound && (
+        <div className="flex items-center justify-center min-h-[80vh] text-sm text-text-muted">
+          배포된 CMS 페이지를 찾을 수 없습니다. (pageId: {pageId})
         </div>
       )}
 

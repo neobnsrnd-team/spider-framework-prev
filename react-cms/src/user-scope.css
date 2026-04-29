@@ -8,4 +8,4 @@
  *   import userScopeCSS from "./user-scope.css?inline";
  *   <CMSApp stylesheetContent={userScopeCSS} />
  */
-@import "@cl/dist/styles.css";
+@import "@cl/styles.css";

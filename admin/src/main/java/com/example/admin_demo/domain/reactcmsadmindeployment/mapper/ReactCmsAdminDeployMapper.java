@@ -36,4 +36,24 @@ public interface ReactCmsAdminDeployMapper {
      * 0이면 미존재, 1이면 존재.
      */
     int existsApprovedPage(@Param("pageId") String pageId);
+
+    /**
+     * 승인된 React 페이지의 PAGE_DESC(사전 생성된 JSX 코드) 조회.
+     * 로컬 파일 배포 시 이 코드를 {pageId}.tsx 파일로 저장한다.
+     */
+    String findPageDescById(@Param("pageId") String pageId);
+
+    /**
+     * 특정 pageId에 대한 최대 배포 버전 번호 조회.
+     * FILE_ID 패턴 {pageId}_v{n}.(html|tsx) 에서 n의 최댓값을 반환하며, 이력이 없으면 0을 반환한다.
+     */
+    int findMaxDeployVersion(@Param("pageId") String pageId);
+
+    /** 배포 이력을 FWK_CMS_FILE_SEND_HIS 에 INSERT */
+    void insertDeployHistory(
+            @Param("instanceId") String instanceId,
+            @Param("fileId") String fileId,
+            @Param("fileSize") long fileSize,
+            @Param("fileCrcValue") String fileCrcValue,
+            @Param("lastModifierId") String lastModifierId);
 }

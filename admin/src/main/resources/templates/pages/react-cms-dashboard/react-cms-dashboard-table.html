@@ -1,29 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
-<body>
-<!-- React CMS 사용자 대시보드 테이블 프래그먼트 -->
-<div th:fragment="table" class="table-responsive">
-    <table class="table table-sm table-hover sp-data-grid" id="reactCmsDashboardTable" style="min-width: 840px;">
+  <body>
+    <!-- React CMS 사용자 대시보드 테이블 프래그먼트 -->
+    <div th:fragment="table" class="table-responsive">
+      <table
+        class="table table-sm table-hover sp-data-grid"
+        id="reactCmsDashboardTable"
+      >
         <thead class="table-light">
-            <tr>
-                <th class="sortable" data-sort="pageName">페이지명</th>
-                <th class="col-w-80">뷰모드</th>
-                <th class="col-w-100 sortable" data-sort="approveState">승인상태</th>
-                <th class="col-w-100 sortable" data-sort="beginningDate">노출시작일</th>
-                <th class="col-w-100 sortable" data-sort="expiredDate">노출종료일</th>
-                <th class="col-w-150 sortable" data-sort="lastModifiedDtime">최종수정일시</th>
-                <th class="col-w-90">승인요청</th>
-                <th class="col-w-80">삭제</th>
-            </tr>
+          <tr>
+            <th class="sortable" data-sort="pageName">페이지명</th>
+            <th class="col-w-120 sortable" data-sort="approveState">
+              승인상태
+            </th>
+            <th class="col-w-120 sortable" data-sort="beginningDate">
+              노출시작일
+            </th>
+            <th class="col-w-120 sortable" data-sort="expiredDate">
+              노출종료일
+            </th>
+            <th class="col-w-150 sortable" data-sort="lastModifiedDtime">
+              최종수정일시
+            </th>
+            <th class="col-w-120">승인요청</th>
+            <th class="col-w-80">삭제</th>
+          </tr>
         </thead>
         <tbody id="reactCmsDashboardTableBody">
-            <tr>
-                <td colspan="8" class="text-center py-4 text-body-secondary">
-                    조회 버튼을 클릭하여 데이터를 불러오세요.
-                </td>
-            </tr>
+          <tr>
+            <td colspan="7" class="text-center py-4 text-body-secondary">
+              조회 버튼을 클릭하여 데이터를 불러오세요.
+            </td>
+          </tr>
         </tbody>
-    </table>
-</div>
-</body>
+      </table>
+    </div>
+  </body>
 </html>

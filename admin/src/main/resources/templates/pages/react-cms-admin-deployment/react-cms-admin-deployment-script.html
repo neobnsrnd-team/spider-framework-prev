@@ -9,8 +9,7 @@
           currentPage: 1,
           totalItems: 0,
           itemsPerPage: 10,
-          canWrite:
-            /*[[${userAuthorities != null && userAuthorities.contains('REACT_CMS:W')}]]*/ false,
+          canWrite: /*[[${userAuthorities != null && userAuthorities.contains('REACT_CMS:W')}]]*/ false,
 
           load: function (page) {
             if (page !== undefined) this.currentPage = page;
@@ -37,40 +36,70 @@
 
           renderTable: function (rows) {
             const $tbody = $("#reactCmsAdminDeployPageTableBody");
-            const colspan = this.canWrite ? 6 : 5;
+            // 배포 컬럼은 쓰기 권한 보유 시 추가 — colspan 계산에 반영
+            const colspan = this.canWrite ? 8 : 7;
 
             if (!rows || rows.length === 0) {
               $tbody.html(
-                `<tr><td colspan="${colspan}" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>`
+                `<tr><td colspan="${colspan}" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>`,
               );
               return;
             }
 
             const html = rows
               .map((row) => {
-                const previewBtn = row.deployedUrl
-                  ? `<a href="${HtmlUtils.escape(row.deployedUrl)}" target="_blank" rel="noopener"
-                         class="btn btn-outline-info btn-xs"><i class="bi bi-box-arrow-up-right"></i> 보기</a>`
-                  : '<span class="text-body-secondary small">-</span>';
+                const pid = HtmlUtils.escape(row.pageId);
+                const pname = HtmlUtils.escape(row.pageName || "");
 
-                const deployBtn = this.canWrite
+                // 노출기간: beginningDate ~ expiredDate, 둘 다 없으면 "-"
+                const period =
+                  row.beginningDate || row.expiredDate
+                    ? `${HtmlUtils.escape(row.beginningDate || "-")} ~ ${HtmlUtils.escape(row.expiredDate || "-")}`
+                    : "-";
+
+                // 배포 컬럼 (쓰기 권한 보유 시만 렌더링) — XSS 방지: pageId를 data-* 속성에만 저장
+                const deployTd = this.canWrite
                   ? `<td class="text-center">
-                         <button class="btn btn-primary btn-xs"
-                                 onclick="ReactCmsAdminDeployPage.confirmPush('${HtmlUtils.escape(row.pageId)}', '${HtmlUtils.escape(row.pageName || "")}')">
+                         <button class="btn btn-primary btn-xs js-deploy-push"
+                                 data-page-id="${pid}" data-page-name="${pname}">
                              <i class="bi bi-send"></i> 배포
                          </button>
                      </td>`
                   : "";
 
+                // 배포 미리보기: react-cms 빌더 미리보기 페이지로 팝업 오픈
+                const previewBtn = `<button class="btn btn-outline-info btn-xs js-deploy-preview"
+                        data-page-id="${pid}">
+                    <i class="bi bi-box-arrow-up-right"></i> 보기
+                </button>`;
+
+                // 배포 URL: 이력이 있으면 링크 + 복사 버튼, 없으면 "-"
+                const escapedUrl = row.deployedUrl
+                  ? HtmlUtils.escape(row.deployedUrl)
+                  : "";
+                const deployedUrlTd = row.deployedUrl
+                  ? `<div class="d-flex flex-column gap-1">
+                         <a href="${escapedUrl}" target="_blank" rel="noopener"
+                            class="small text-break">${escapedUrl}</a>
+                         <button class="btn btn-outline-secondary btn-xs js-copy-url align-self-center"
+                                 data-url="${escapedUrl}"
+                                 title="URL 복사">
+                             URL 복사
+                         </button>
+                     </div>`
+                  : '<span class="text-body-secondary small">-</span>';
+
                 return `<tr>
-                    <td class="small">${HtmlUtils.escape(row.pageId)}</td>
-                    <td>${HtmlUtils.escape(row.pageName || "")}</td>
-                    <td>${HtmlUtils.escape(row.createUserName || "")}</td>
+                    <td class="small">${pid}</td>
+                    <td>${pname}</td>
+                    <td class="text-center">${HtmlUtils.escape(row.createUserName || "")}</td>
+                    <td class="text-center small">${period}</td>
+                    ${deployTd}
                     <td class="text-center">${previewBtn}</td>
-                    ${deployBtn}
+                    <td class="text-center">${deployedUrlTd}</td>
                     <td class="text-center">
-                        <button class="btn btn-outline-secondary btn-xs"
-                                onclick="ReactCmsAdminDeployPage.openHistoryModal('${HtmlUtils.escape(row.pageId)}', '${HtmlUtils.escape(row.pageName || "")}')">
+                        <button class="btn btn-outline-secondary btn-xs js-deploy-history"
+                                data-page-id="${pid}" data-page-name="${pname}">
                             <i class="bi bi-clock-history"></i> 이력
                         </button>
                     </td>
@@ -82,9 +111,7 @@
           },
 
           renderPagination: function () {
-            const totalPages = Math.ceil(
-              this.totalItems / this.itemsPerPage
-            );
+            const totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
             const pagination = $("#pagination");
             pagination.empty();
 
@@ -100,7 +127,7 @@
             const maxButtons = 5;
             let startPage = Math.max(
               1,
-              this.currentPage - Math.floor(maxButtons / 2)
+              this.currentPage - Math.floor(maxButtons / 2),
             );
             let endPage = Math.min(totalPages, startPage + maxButtons - 1);
             if (endPage - startPage + 1 < maxButtons) {
@@ -130,15 +157,15 @@
                 : (this.currentPage - 1) * this.itemsPerPage + 1;
             const end = Math.min(
               this.currentPage * this.itemsPerPage,
-              this.totalItems
+              this.totalItems,
             );
-            $("#pageInfo").text(`${start} - ${end} of ${this.totalItems} items`);
+            $("#pageInfo").text(
+              `${start} - ${end} of ${this.totalItems} items`,
+            );
           },
 
           changePage: function (page) {
-            const totalPages = Math.ceil(
-              this.totalItems / this.itemsPerPage
-            );
+            const totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
             if (page < 1 || page > totalPages) return;
             this.currentPage = page;
             this.load();
@@ -172,18 +199,29 @@
               .catch(() => Toast.error("배포 중 오류가 발생했습니다."));
           },
 
+          // ── 배포 미리보기 ──
+
+          openDeployPreview: function (pageId) {
+            const url =
+              "/react-cms/preview?pageType=REACT&pageId=" +
+              encodeURIComponent(pageId);
+            window.open(
+              url,
+              "reactCmsDeployPreview",
+              "width=430,height=860,scrollbars=yes,resizable=yes",
+            );
+          },
+
           // ── 배포이력 상세 모달 ──
 
           openHistoryModal: function (pageId, pageName) {
             $("#deployHistoryModalPageInfo").text(
-              `페이지: ${pageName} (${pageId})`
+              `페이지: ${pageName} (${pageId})`,
             );
             $("#deployHistoryModalTableBody").html(
-              '<tr><td colspan="5" class="text-center text-body-secondary">불러오는 중...</td></tr>'
+              '<tr><td colspan="5" class="text-center text-body-secondary">불러오는 중...</td></tr>',
             );
-            new bootstrap.Modal(
-              "#reactCmsAdminDeployHistoryModal"
-            ).show();
+            new bootstrap.Modal("#reactCmsAdminDeployHistoryModal").show();
 
             const params = new URLSearchParams({ pageId, page: 1, size: 50 });
             fetch("/api/react-cms-admin/deployments?" + params)
@@ -191,14 +229,14 @@
               .then((res) => {
                 if (!res.success) {
                   $("#deployHistoryModalTableBody").html(
-                    '<tr><td colspan="5" class="text-center text-danger">이력 조회 실패</td></tr>'
+                    '<tr><td colspan="5" class="text-center text-danger">이력 조회 실패</td></tr>',
                   );
                   return;
                 }
                 const rows = res.data.content;
                 if (!rows || rows.length === 0) {
                   $("#deployHistoryModalTableBody").html(
-                    '<tr><td colspan="5" class="text-center text-body-secondary">배포 이력이 없습니다.</td></tr>'
+                    '<tr><td colspan="5" class="text-center text-body-secondary">배포 이력이 없습니다.</td></tr>',
                   );
                   return;
                 }
@@ -212,14 +250,14 @@
                         <td>${HtmlUtils.escape(row.lastModifierId || "")}</td>
                         <td class="small">${ReactCmsAdminDeployPage.formatDtime(row.lastModifiedDtime)}</td>
                     </tr>
-                `
+                `,
                   )
                   .join("");
                 $("#deployHistoryModalTableBody").html(html);
               })
               .catch(() => {
                 $("#deployHistoryModalTableBody").html(
-                  '<tr><td colspan="5" class="text-center text-danger">이력 조회 중 오류가 발생했습니다.</td></tr>'
+                  '<tr><td colspan="5" class="text-center text-danger">이력 조회 중 오류가 발생했습니다.</td></tr>',
                 );
               });
           },
@@ -268,6 +306,34 @@
           $("#btnRefresh").on("click", function () {
             ReactCmsAdminDeployPage.load();
           });
+
+          // 이벤트 위임 — XSS 방지: onclick 인라인 대신 data-* 속성으로 pageId/pageName 전달
+          $(document)
+            .on("click", ".js-copy-url", function () {
+              const url = $(this).data("url");
+              const $btn = $(this);
+              navigator.clipboard
+                .writeText(url)
+                .then(() => Toast.success("URL이 복사되었습니다."))
+                .catch(() => Toast.error("URL 복사에 실패했습니다."));
+            })
+            .on("click", ".js-deploy-push", function () {
+              ReactCmsAdminDeployPage.confirmPush(
+                $(this).data("page-id"),
+                $(this).data("page-name"),
+              );
+            })
+            .on("click", ".js-deploy-preview", function () {
+              ReactCmsAdminDeployPage.openDeployPreview(
+                $(this).data("page-id"),
+              );
+            })
+            .on("click", ".js-deploy-history", function () {
+              ReactCmsAdminDeployPage.openHistoryModal(
+                $(this).data("page-id"),
+                $(this).data("page-name"),
+              );
+            });
         });
       </script>
     </th:block>
