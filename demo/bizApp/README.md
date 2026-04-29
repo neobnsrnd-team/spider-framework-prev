@@ -3,6 +3,23 @@
 하나카드 POC 시연용 금융 AP 서버군. `spider-link`를 라이브러리로 내장한 멀티모듈 Maven 프로젝트.
 채널AP(HTTP 게이트웨이), 인증AP, 이체AP, 계정계 Mock으로 구성되며, Admin이 TCP로 공지를 브로드캐스트하는 구조다.
 
+## 목차
+
+- [아키텍처](#아키텍처)
+- [모듈 구성](#모듈-구성)
+- [빌드 순서 및 사전 조건](#빌드-순서-및-사전-조건)
+- [모듈 상세](#모듈-상세)
+  - [biz-common](#biz-common)
+  - [mock-core](#mock-core)
+  - [biz-auth](#biz-auth)
+  - [biz-transfer](#biz-transfer)
+  - [biz-channel](#biz-channel)
+- [전체 기동 순서](#전체-기동-순서)
+- [의존관계](#의존관계)
+- [DB 스키마](#db-스키마)
+
+---
+
 ## 아키텍처
 
 ```

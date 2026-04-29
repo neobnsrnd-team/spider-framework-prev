@@ -1,9 +1,23 @@
 # spider-batch
 
 Spring Batch 기반 배치 오케스트레이션·이력관리·TCP 연동 **Maven 라이브러리**.
-내장 프로젝트(`pom.xml`에 의존성 추가)가 `JobProvider` SPI만 구현하면 배치 실행·이력·모니터링 기능이 자동 활성화된다.
+<br>내장 프로젝트(`pom.xml`에 의존성 추가)가 `JobProvider` SPI만 구현하면 배치 실행·이력·모니터링 기능이 자동 활성화된다.
 
-## Tech Stack
+## 목차
+
+- [기술 스택](#기술-스택)
+- [내장 방법](#내장-방법)
+- [SPI 확장점](#spi-확장점)
+- [AutoConfiguration 동작 방식](#autoconfiguration-동작-방식)
+- [API 엔드포인트](#api-엔드포인트)
+- [주요 설정](#주요-설정-applicationyml)
+- [Project Structure](#project-structure)
+- [빌드 & 설치](#빌드--설치)
+- [DB 테이블](#db-테이블)
+
+---
+
+## 기술 스택
 
 | Layer | Technology |
 |-------|-----------|
@@ -11,13 +25,15 @@ Spring Batch 기반 배치 오케스트레이션·이력관리·TCP 연동 **Mav
 | Batch | Spring Batch 5.x |
 | ORM | MyBatis 3 |
 | Database | Oracle (optional — 내장 프로젝트가 선택) |
-| TCP | spider-link (`SpiderTcpServer`, `ManagementContext`) |
+| TCP 서버 | spider-link (`SpiderTcpServer`) |
+| TCP 모델 | spider-common (`ManagementContext`, `CommandHandler`, `CommandDispatcher`) |
 | Build | Maven 3 (Wrapper), 라이브러리 JAR |
 
 ## 내장 방법
 
 ```xml
 <!-- 내장 프로젝트 pom.xml -->
+<!-- spider-common·spider-link는 spider-batch의 전이 의존성으로 자동 포함된다 -->
 <dependency>
     <groupId>com.example</groupId>
     <artifactId>spider-batch</artifactId>
@@ -202,10 +218,10 @@ src/main/java/com/example/spiderbatch/
 
 ## 빌드 & 설치
 
-다른 모듈에서 참조하기 전에 반드시 먼저 설치해야 한다. (spider-link가 선행 설치되어 있어야 함)
+다른 모듈에서 참조하기 전에 반드시 먼저 설치해야 한다. (spider-common과 spider-link가 선행 설치되어 있어야 함)
 
 ```bash
-# 사전 조건: spider-link가 로컬 저장소에 설치되어 있어야 함
+# 사전 조건: spider-common → spider-link 순서로 로컬 저장소에 설치되어 있어야 함
 cd spider-batch
 ./mvnw clean install
 ```
