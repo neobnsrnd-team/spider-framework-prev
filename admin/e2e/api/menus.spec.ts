@@ -4,14 +4,14 @@
  * 검증 범위:
  * - 페이지네이션 조회 (목록, 검색 필터)
  * - 단건 조회 (존재/미존재)
- * - 생성 (성공/중복 menuName/필수 필드 누락)
+ * - 생성 (성공/중복 menuId/필수 필드 누락)
  * - 수정 (성공/미존재)
  * - 삭제 (성공/미존재)
  * - 엑셀 내보내기
  *
  * 주의:
  * - createMenu 서비스는 priorMenuId 필수 (null/빈값 → 400)
- * - 중복 체크 기준은 menuName (menuId가 아님)
+ * - 중복 체크 기준은 menuId (menuName 중복은 허용)
  */
 
 import { test, expect } from '@playwright/test';
@@ -158,7 +158,7 @@ test.describe('POST /api/menus — 생성', () => {
         }
     });
 
-    test('중복 menuName으로 생성 시 HTTP 409를 반환해야 한다', async ({ request }) => {
+    test('중복 menuName이어도 menuId가 다르면 HTTP 201을 반환해야 한다', async ({ request }) => {
         if (!validParentMenuId) { test.skip(); return; }
         const id1 = uniqueId();
         const id2 = uniqueId();
@@ -168,14 +168,15 @@ test.describe('POST /api/menus — 생성', () => {
         expect(createRes.status()).toBe(201);
 
         try {
-            // 같은 menuName, 다른 menuId → 409
+            // 같은 menuName, 다른 menuId → menuName 중복은 허용되므로 201
             const res = await request.post('/api/menus', { data: buildCreateData(id2, sameName) });
 
-            expect(res.status()).toBe(409);
+            expect(res.status()).toBe(201);
             const body = await res.json();
-            expect(body.success).toBe(false);
+            expect(body.success).toBe(true);
         } finally {
             await request.delete(`/api/menus/${id1}`);
+            await request.delete(`/api/menus/${id2}`);
         }
     });
 
