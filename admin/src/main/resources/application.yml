@@ -23,7 +23,7 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 50MBㅇ
+      max-file-size: 50MB
       max-request-size: 150MB
 
   # Thymeleaf Configuration
