@@ -131,7 +131,7 @@
                 return `<tr>
                     <td>
                         <span class="clickable-cell"
-                              onclick="ReactCmsAdminApprovalPage.openPreview('${pid}')"
+                              onclick="ReactCmsAdminApprovalPage.openReactPreview('${pid}')"
                               title="미리보기">${HtmlUtils.escape(row.pageName)}</span>
                     </td>
                     <td class="text-center">${HtmlUtils.escape(row.viewMode || '')}</td>
@@ -209,10 +209,16 @@
             this.load(1);
         },
 
-        // ── CMS 페이지 미리보기 ──
+        // ── CMS 페이지 미리보기 (HTML CMS 런타임 서버) ──
         openPreview: function(pageId) {
             const url = REACT_CMS_PREVIEW_URL.replace(/\/$/, '') + '/cms/view?bank=' + encodeURIComponent(pageId) + '&preview=1';
             window.open(url, 'reactCmsPreview', 'width=1280,height=800,scrollbars=yes,resizable=yes');
+        },
+
+        // ── React CMS 페이지 프리뷰 (/react-cms/preview?pageType=REACT&pageId=xxx) ──
+        openReactPreview: function(pageId) {
+            const url = '/react-cms/preview?pageType=REACT&pageId=' + encodeURIComponent(pageId);
+            window.open(url, 'reactCmsBuilderPreview', 'width=1280,height=800,scrollbars=yes,resizable=yes');
         },
 
         // ── 승인 모달 ──

@@ -18,18 +18,25 @@
             id="filterSearch"
             class="form-control form-control-sm flex-fixed-200"
             placeholder="페이지명 또는 작성자"
-            onkeypress="if(event.key === 'Enter') ReactCmsAdminDeployPage.load(1)"
+            onkeypress="
+              if (event.key === 'Enter') ReactCmsAdminDeployPage.load(1);
+            "
           />
 
           <div class="flex-grow-1"></div>
 
-          <select id="limitRows" class="form-select form-select-sm sp-limit-select">
+          <select
+            id="limitRows"
+            class="form-select form-select-sm sp-limit-select"
+          >
             <option value="10" selected>10</option>
             <option value="20">20</option>
             <option value="50">50</option>
             <option value="100">100</option>
           </select>
-          <label class="form-label mb-0 small fw-medium ms-1 me-2 fs-xs">건씩</label>
+          <label class="form-label mb-0 small fw-medium ms-1 me-2 fs-xs"
+            >건씩</label
+          >
 
           <button
             class="btn btn-primary btn-sm"
@@ -59,11 +66,6 @@
         </div>
       </div>
 
-      <div class="alert alert-info py-2 small" role="alert">
-        <strong>React CMS 리소스 경계</strong>
-        이 화면은 승인완료(APPROVED) React 페이지의 배포 실행과 배포이력 조회만 제공합니다.
-      </div>
-
       <!-- 테이블 -->
       <div
         th:replace="~{pages/react-cms-admin-deployment/react-cms-admin-deployment-table :: table}"
@@ -73,7 +75,11 @@
       <div th:replace="~{fragments/page-content-layout :: pagination}"></div>
 
       <!-- ==================== 배포이력 상세 모달 ==================== -->
-      <div class="modal fade" id="reactCmsAdminDeployHistoryModal" tabindex="-1">
+      <div
+        class="modal fade"
+        id="reactCmsAdminDeployHistoryModal"
+        tabindex="-1"
+      >
         <div class="modal-dialog modal-xl">
           <div class="modal-content">
             <div class="modal-header">

@@ -12,19 +12,21 @@
             <th class="col-w-120">페이지 ID</th>
             <th>페이지명</th>
             <th class="col-w-100">작성자</th>
-            <th class="col-w-90">배포 미리보기</th>
+            <th class="col-w-180">노출기간</th>
             <th
               class="col-w-70"
               th:if="${userAuthorities != null && userAuthorities.contains('REACT_CMS:W')}"
             >
               배포
             </th>
-            <th class="col-w-80">배포이력 상세</th>
+            <th class="col-w-90">배포 미리보기</th>
+            <th class="col-w-200">배포 URL</th>
+            <th class="col-w-90">배포이력 상세</th>
           </tr>
         </thead>
         <tbody id="reactCmsAdminDeployPageTableBody">
           <tr>
-            <td colspan="6" class="text-center py-4 text-body-secondary">
+            <td colspan="8" class="text-center py-4 text-body-secondary">
               조회 버튼을 클릭하여 데이터를 불러오세요.
             </td>
           </tr>

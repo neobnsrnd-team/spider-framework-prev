@@ -3,7 +3,7 @@
  * @description CMSPage 데이터를 런타임에 렌더링하는 컴포넌트.
  * BlockRegistryContext / LayoutRendererContext / OverlayTemplatesContext를 소비합니다.
  */
-import { useContext, useLayoutEffect, useRef, useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Action, CMSOverlay, CMSPage } from "../types";
 import { BlockRegistryContext, LayoutRendererContext, OverlayTemplatesContext } from "../context";
@@ -123,14 +123,10 @@ function PageContent({ page }: { page: CMSPage }) {
   const { layoutType, layoutProps, blocks, overlays } = page;
   const handleAction = useActionHandler();
   const layoutRenderer = useContext(LayoutRendererContext);
-  const containerRef = useRef<HTMLDivElement>(null);  // portal 타깃 — HTMLDivElement | null
-  const [containerReady, setContainerReady] = useState(false);
-
-  // OverlayCanvas와 동일한 패턴 — 브라우저 페인트 전 동기 실행으로
-  // containerRef.current가 확정된 뒤에 OverlayRenderer가 마운트되도록 함.
-  useLayoutEffect(() => {
-    setContainerReady(true);
-  }, []);
+  // ref callback 패턴 — React가 DOM 연결/해제 시 직접 state를 업데이트하므로
+  // useLayoutEffect + containerReady 조합보다 StrictMode에서 안전하다.
+  // mount: setContainer(div), unmount: setContainer(null)
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   const blockGap = (layoutProps?.blockGap as string | undefined) ?? "none";
   const blockList = (
@@ -151,9 +147,9 @@ function PageContent({ page }: { page: CMSPage }) {
         {slots.footer}
       </div>
       {/* portal 타깃: UserScopeWrapper 안에 위치해 스코프 CSS가 적용되도록 함 */}
-      <div ref={containerRef} />
-      {containerReady && (
-        <OverlayRenderer overlays={overlays} handleAction={handleAction} container={containerRef.current} />
+      <div ref={setContainer} />
+      {container && (
+        <OverlayRenderer overlays={overlays} handleAction={handleAction} container={container} />
       )}
     </>
   );

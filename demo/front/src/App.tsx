@@ -38,7 +38,8 @@ function AppRoutes() {
   const isPublicPath =
     location.pathname === PATHS.LOGIN ||
     location.pathname.startsWith('/preview') ||
-    location.pathname.startsWith('/react/viewer')
+    location.pathname.startsWith('/react/viewer') ||
+    location.pathname.startsWith('/react-cms/viewer')
   if (!isLoggedIn && !isPublicPath) {
     return <Navigate to={PATHS.LOGIN} replace />
   }

@@ -194,6 +194,16 @@ cms:
     # CMS /cms/api/assets/{id}/deploy 엔드포인트 인증 토큰 — 페이지 배포와 동일한 CMS DEPLOY_SECRET 사용
     deploy-secret: ${CMS_DEPLOY_SECRET:}
 
+react:
+  deploy:
+    local:
+      # React CMS 페이지 배포 시 생성된 JSX 파일을 저장할 로컬 디렉토리 (admin 프로젝트 기준 상대 경로)
+      component-dir: ${REACT_DEPLOY_LOCAL_COMPONENT_DIR:../demo/front/src/reactcms/generated}
+      # demo/front 라우팅용 컨테이너 파일을 저장할 로컬 디렉토리
+      container-dir: ${REACT_DEPLOY_LOCAL_CONTAINER_DIR:../demo/front/src/reactcms/containers}
+      # 배포 이력 기록에 사용할 FWK_CMS_SERVER_INSTANCE.INSTANCE_ID
+      instance-id: ${REACT_DEPLOY_LOCAL_INSTANCE_ID:demo-local-react}
+
 # Scheduling Configuration (배치 이력 정리 스케줄러)
 scheduling:
   batch-his-cleanup:

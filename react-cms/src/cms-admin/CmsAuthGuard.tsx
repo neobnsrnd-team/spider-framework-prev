@@ -2,7 +2,7 @@
  * @file CmsAuthGuard.tsx
  * @description Spider Admin 권한 검증 레이아웃 가드.
  *
- * 마운트 시 `/__cms/api/me`를 호출해 REACT-CMS:R 권한을 확인한다.
+ * 마운트 시 `/__cms/api/me`를 호출해 REACT_CMS:R 권한을 확인한다.
  * - 로딩 중: 스피너 표시
  * - canRead=false: `/not-authorized`로 리다이렉트
  * - canRead=true: 자식 라우트 렌더링 (Outlet)
@@ -16,7 +16,7 @@ export default function CmsAuthGuard() {
 
   useEffect(() => {
     fetch(`${cmsBase}/api/me`, { credentials: "include" })
-      .then(r => r.json())
+      .then((r) => r.json())
       .then((data: { canRead?: boolean }) => {
         setAuthorized(data.canRead ?? false);
       })
