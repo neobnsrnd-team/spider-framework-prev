@@ -60,7 +60,7 @@ function parseContent(content: string): string {
   return content.replace(/_\$BR/g, "\n");
 }
 
-export function EmergencyNoticeBanner({ data, onClose, forceOpen = false, lang = navigator.language.startsWith("en") ? "EMERGENCY_EN" : "EMERGENCY_KO" }: EmergencyNoticeBannerProps) {
+export function EmergencyNoticeBanner({ data, onClose, forceOpen = false, lang = (typeof window !== 'undefined' && navigator.language.startsWith("en")) ? "EMERGENCY_EN" : "EMERGENCY_KO" }: EmergencyNoticeBannerProps) {
   const [hideToday, setHideToday] = useState(false);
 
   /* 닫기 버튼 허용 여부 — N이면 사용자가 모달을 닫을 수 없음 (critical 장애 시) */

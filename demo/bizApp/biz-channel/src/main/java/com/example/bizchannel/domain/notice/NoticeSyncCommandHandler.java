@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * <p>Admin → biz-channel 내장 TCP 서버로 수신된 공지 커맨드를
  * {@link NoticeManager}를 통해 SSE 브로드캐스트로 처리한다.</p>
  *
- * <p>수신 흐름: Admin(8080) → TCP:9997 → SpiderTcpServer → NoticeSyncCommandHandler → NoticeManager → SSE</p>
+ * <p>수신 흐름: Admin(8080) → TCP:19400 → SpiderTcpServer → NoticeSyncCommandHandler → NoticeManager → SSE</p>
  */
 @Slf4j
 @Component
@@ -46,7 +46,7 @@ public class NoticeSyncCommandHandler implements CommandHandler<JsonCommandReque
                     .message("OK")
                     .build();
         } catch (Exception e) {
-            log.error("[NoticeSyncCommandHandler] Failed to handle command={}, error={}", command, e.getMessage());
+            log.error("[NoticeSyncCommandHandler] Failed to handle command={}, error={}", command, e.getMessage(), e);
             return JsonCommandResponse.builder()
                     .command(command)
                     .success(false)

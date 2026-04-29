@@ -37,7 +37,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  *   biz.transfer.host: localhost
  *   biz.transfer.port: 19200
  *   admin.secret: admin-secret
- *   tcp.server.port: 9997          # Admin이 공지 커맨드를 전송하는 내장 TCP 포트
+ *   tcp.server.port: 19400          # Admin이 공지 커맨드를 전송하는 내장 TCP 포트
  * }</pre>
  */
 @Getter
