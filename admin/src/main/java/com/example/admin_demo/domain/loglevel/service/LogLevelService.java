@@ -103,7 +103,10 @@ public class LogLevelService {
         if (Logger.ROOT_LOGGER_NAME.equals(logger.getName())) {
             return null;
         }
-        return logger.getParent().getEffectiveLevel().toString();
+        String name = logger.getName();
+        int lastDot = name.lastIndexOf('.');
+        String parentName = lastDot >= 0 ? name.substring(0, lastDot) : Logger.ROOT_LOGGER_NAME;
+        return getLoggerContext().getLogger(parentName).getEffectiveLevel().toString();
     }
 
     private String collectAppenderNames(Logger logger) {
