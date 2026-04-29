@@ -60,8 +60,8 @@ public class ReactCmsAdminDeployService {
                 item.setDeployedUrl(protocol + "://" + item.getInstanceIp() + ":" + item.getInstancePort()
                         + "/react-cms/viewer/" + item.getPageId());
             } else {
-                item.setDeployedUrl(protocol + "://" + item.getInstanceIp() + ":" + item.getInstancePort()
-                        + pathPrefix + "/" + item.getPageId() + ".html");
+                item.setDeployedUrl(protocol + "://" + item.getInstanceIp() + ":" + item.getInstancePort() + pathPrefix
+                        + "/" + item.getPageId() + ".html");
             }
         });
 
