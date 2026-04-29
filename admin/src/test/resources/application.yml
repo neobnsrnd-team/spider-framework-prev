@@ -52,6 +52,10 @@ app:
 xml-property:
   directory: ${java.io.tmpdir}/xml-properties-test
 
+# Reload 설정 (테스트 환경용 더미 그룹 — 실제 WAS 없음)
+reload:
+  default-was-group: test-group
+
 # CMS (테스트 환경용 더미 URL — 실제 외부 서버 호출 없음)
 cms:
   user-url: http://localhost:3001/
