@@ -5,7 +5,7 @@ package com.example.spiderbatch.spi;
  * @description FWK_BATCH_HIS 이력 기록을 플러그인 방식으로 교체 가능하게 분리한 SPI 인터페이스.
  *
  * <p>기본 구현체({@code DefaultBatchHistoryRecorder})는 Oracle MyBatis 매퍼를 사용한다.
- * 소비자 프로젝트가 다른 저장소(다른 DB, 메시지 큐 등)를 사용하려면
+ * 내장 프로젝트에서 다른 저장소(다른 DB, 메시지 큐 등)를 사용하려면
  * 이 인터페이스를 구현한 Bean을 등록하면 자동으로 기본 구현체를 대체한다.</p>
  *
  * @example

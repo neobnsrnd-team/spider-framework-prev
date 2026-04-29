@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>수신 프로토콜: 4바이트 길이 프리픽스 + UTF-8 JSON (JsonCommandRequest)</p>
  *
- * <p>현재 호출자: demo/backend → Admin 전문 통신 (구현 진행 중).
+ * <p>현재 호출자: biz-channel → Admin 전문 통신 (구현 진행 중).
  * 이슈 #92(Kafka) 구현 시 Kafka consumer가 Admin TCP로 커맨드를 중계할 예정.</p>
  */
 @Slf4j

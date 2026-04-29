@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 /**
- * Admin ↔ spider-link ↔ demo/backend 구간 TCP 통신 요청 모델.
+ * Admin ↔ AP 서버 구간 TCP 통신 요청 모델.
  *
  * <p>4바이트 길이 프리픽스(int, big-endian) + UTF-8 JSON 바이트열로 전송된다.
  * Admin의 JsonCommandRequest와 동일한 JSON 스키마를 사용하므로

@@ -4,9 +4,9 @@ import java.util.List;
 
 /**
  * @file JobProvider.java
- * @description spider-batch 소비자 프로젝트가 배치 Job을 등록하는 표준 확장점.
+ * @description spider-batch 내장 프로젝트가 배치 Job을 등록하는 표준 확장점.
  *
- * <p>소비자는 이 인터페이스를 구현하고 Spring Bean으로 등록한다.
+ * <p>내장 프로젝트에서 이 인터페이스를 구현하고 Spring Bean으로 등록한다.
  * Spring Batch 5.x의 {@code JobRegistrySmartInitializingSingleton}이
  * 컨텍스트 내 모든 {@link Job} Bean을 {@code JobRegistry}에 자동 등록하므로,
  * 구현체의 Job Bean들은 선언만 해도 {@code BatchExecuteService}에서 이름으로 조회 가능하다.</p>

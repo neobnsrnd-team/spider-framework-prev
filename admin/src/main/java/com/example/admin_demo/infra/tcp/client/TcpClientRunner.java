@@ -16,8 +16,7 @@ import org.springframework.stereotype.Component;
  * 애플리케이션 기동 시 TCP 연결 샘플 동작 확인용 Runner.
  *
  * <p>dev 프로파일에서만 활성화된다.
- * spider-link(9996)에 PING을 전송하여 연결 상태를 확인한다.
- * spider-link가 demo/backend(9997)로 프록시하므로 전체 경로 확인이 가능하다.</p>
+ * biz-channel 내장 TCP 서버(19400)에 PING을 전송하여 연결 상태를 확인한다.</p>
  */
 @Slf4j
 @Component
@@ -27,11 +26,11 @@ public class TcpClientRunner implements ApplicationRunner {
 
     private final TcpClient tcpClient;
 
-    @Value("${tcp.demo-backend.host:localhost}")
-    private String demoHost;
+    @Value("${tcp.biz-channel.host:localhost}")
+    private String bizChannelHost;
 
-    @Value("${tcp.demo-backend.port:9996}")
-    private int demoPort;
+    @Value("${tcp.biz-channel.port:19400}")
+    private int bizChannelPort;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -49,7 +48,7 @@ public class TcpClientRunner implements ApplicationRunner {
                 .build();
 
         try {
-            JsonCommandResponse resp = tcpClient.sendJson(demoHost, demoPort, ping);
+            JsonCommandResponse resp = tcpClient.sendJson(bizChannelHost, bizChannelPort, ping);
             log.info(
                     "[TcpClientRunner] spider-link PING 응답: success={}, message={}",
                     resp.isSuccess(),

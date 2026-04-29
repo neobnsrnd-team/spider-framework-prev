@@ -1,8 +1,8 @@
 # ============================================
 # spider-link Application Configuration
 # ============================================
-# Spider link 연계엔진 — Admin과 demo/backend 간 TCP 중계 미들웨어
-# 통신 흐름: Admin(8080) --TCP(9996)--> spider-link --TCP(9997)--> demo/backend
+# Spider link 연계엔진 — Admin과 AP 서버 간 TCP 중계 미들웨어 (standalone 모드)
+# 각 AP 서버(biz-channel:19400, biz-auth:19100, biz-transfer:19200)는 spider-link를 내장하여 직접 운영
 # ============================================
 
 spring:
@@ -20,11 +20,11 @@ tcp:
     port: ${SPIDER_LINK_TCP_PORT:9996}
     # 동시 접속 급증 시 무제한 스레드 생성 방지용 핸들러 풀 크기
     handler-pool-size: ${SPIDER_LINK_HANDLER_POOL_SIZE:20}
-  # 프록시 대상 — demo/backend TCP 서버
-  demo-backend:
-    host: ${DEMO_BACKEND_TCP_HOST:localhost}
-    port: ${DEMO_BACKEND_TCP_PORT:9997}
-  # Demo 전문 처리 TCP 서버 — demo/backend가 이 포트로 전문을 전송한다
+  # 프록시 대상 — biz-channel 내장 TCP 서버 (레거시 standalone 모드용)
+  biz-channel:
+    host: ${BIZ_CHANNEL_TCP_HOST:localhost}
+    port: ${BIZ_CHANNEL_TCP_PORT:19400}
+  # Demo 전문 처리 TCP 서버 — standalone 모드에서 AP 서버가 이 포트로 전문을 전송한다
   demo-server:
     port: ${DEMO_SERVER_TCP_PORT:9995}
     handler-pool-size: ${DEMO_SERVER_HANDLER_POOL_SIZE:20}

@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * JSON TCP 프로토콜 코덱 (4바이트 길이 프리픽스 + UTF-8 JSON).
  *
- * <p>Admin ↔ demo/backend 구간에서 사용한다.</p>
+ * <p>Admin ↔ AP 서버 구간 JSON TCP 통신에서 사용한다.</p>
  */
 @RequiredArgsConstructor
 public class JsonMessageCodec implements MessageCodec<JsonCommandRequest, JsonCommandResponse> {

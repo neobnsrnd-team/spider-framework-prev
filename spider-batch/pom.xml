@@ -42,7 +42,7 @@
             <version>${mybatis-spring-boot.version}</version>
         </dependency>
 
-        <!-- Oracle JDBC — 소비자가 직접 JDBC 드라이버를 선택할 수 있도록 optional 처리 -->
+        <!-- Oracle JDBC — 내장 프로젝트가 직접 JDBC 드라이버를 선택할 수 있도록 optional 처리 -->
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc11</artifactId>
@@ -101,7 +101,7 @@
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
 
-        <!-- Email 알림: optional 처리 — 소비자가 spring-boot-starter-mail을 추가해야 실 발송 가능 -->
+        <!-- Email 알림: optional 처리 — 내장 프로젝트가 spring-boot-starter-mail을 추가해야 실 발송 가능 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>

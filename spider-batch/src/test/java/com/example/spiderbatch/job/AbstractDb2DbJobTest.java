@@ -23,7 +23,7 @@ class AbstractDb2DbJobTest {
     }
 
     @Test
-    @DisplayName("getPartitionStepName 재정의 — 소비자가 원하는 이름으로 변경 가능")
+    @DisplayName("getPartitionStepName 재정의 — 내장 프로젝트에서 원하는 이름으로 변경 가능")
     void getPartitionStepName_overridable() {
         AbstractDb2DbJob<Object> customJob = new AbstractDb2DbJob<>() {
             @Override

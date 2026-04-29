@@ -8,8 +8,7 @@ import lombok.experimental.SuperBuilder;
 /**
  * TCP 커맨드 요청 공통 추상 모델.
  *
- * <p>Admin ↔ spider-link 구간과 spider-link ↔ demo/backend 구간 모두
- * 동일한 JSON 스키마를 사용한다.</p>
+ * <p>Admin ↔ AP 서버 구간 전체에서 동일한 JSON 스키마를 사용한다.</p>
  *
  * @param <T> 페이로드 타입
  */
