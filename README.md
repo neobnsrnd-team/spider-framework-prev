@@ -1,42 +1,50 @@
-# POC HNC
+# [NEW] Spider-Framework
 
-하나카드 POC(Proof of Concept) 프로젝트 모노레포.
+안전하고 유연한 금융 서비스를 위한 SPA + Spring Boot 기반 Spider-Framework 프로젝트 모노레포.
 
-## 디렉터리 구조
+## 기술 스택
+
+| 구분 | 기술 |
+|------|------|
+| Backend | Java 17, Spring Boot 3.4, Spring Security 6, MyBatis 3 |
+| Batch | Spring Batch 5.x, Quartz 3.x |
+| Database | Oracle 11g+ |
+| Distributed Lock | Redisson 3.27 (Redis) |
+| TCP | 자체 구현 SpiderTcpServer (JSON / FixedLength / ObjectStream 프로토콜) |
+| Frontend | React, TypeScript, Vite |
+| Build | Maven 3 (Wrapper), npm |
+| CI/CD | GitHub Actions, SonarCloud |
+
+## 프로젝트 구조
 
 ```
-POC_HNC/
+Spider-Framework/
 │
-├── [Backend — Spring Boot 3.4 / Maven]
-│   ├── admin/           관리자 콘솔 서버 (메뉴·권한·사용자·플랫폼 운영, 긴급공지)
-│   │
-│   ├── spider-link/     공통 연계엔진 라이브러리 (SpiderTcpServer, MetaDrivenCommandHandler)
-│   │                    → 각 AP 서버에 내장되어 TCP 서버 인프라를 제공
-│   │
-│   ├── spider-batch/    배치 오케스트레이션 라이브러리 (Spring Batch 5.x 기반)
-│   │                    → batch-was에 내장되어 배치 실행·이력·TCP 연동을 제공
-│   │
-│   ├── batch-was/       배치 실행 WAS (spider-batch 내장, Quartz 스케줄러, Redis 분산락)
-│   │
-│   ├── reactPlatform/   리액트 코드 생성 & 결재 관리 서버
-│   │
-│   └── demo/
-│       ├── bizApp/      하나카드 POC 시연용 금융 AP 서버군 (spider-link 내장형)
-│       │   ├── biz-common/   커맨드 상수 공유 라이브러리
-│       │   ├── mock-core/    계정계 Mock (TCP 19300, 고정 길이 바이너리)
-│       │   ├── biz-auth/     인증AP (TCP 19100)
-│       │   ├── biz-transfer/ 이체AP (TCP 19200)
-│       │   └── biz-channel/  채널AP (HTTP 18080, TCP 19400)
-│       └── front/       시연용 프론트엔드 (React)
+├── admin/                   관리자 콘솔 (Spring Boot + Thymeleaf)
+│   └── e2e/                 Playwright E2E 테스트
 │
-├── [Frontend — React / TypeScript / Vite]
-│   ├── react-cms/           CMS 대시보드 UI
-│   ├── preview-app/         POC 시연 데모 앱 UI
-│   └── reactive-springware/ 리액트 컴포넌트 코드 생성 플랫폼 (디자인 토큰 포함)
+├── spider-link/             TCP 연계엔진 라이브러리 — 각 AP 서버에 내장
 │
-└── [설정]
-    ├── .github/             CI/CD (GitHub Actions), 이슈/PR 템플릿
-    └── CLAUDE.md            프로젝트 작업 규칙
+├── spider-batch/            배치 오케스트레이션 라이브러리 — batch-was에 내장
+│
+├── batch-was/               배치 실행 WAS (Quartz 스케줄러, Redis 분산락)
+│
+├── reactPlatform/           리액트 코드 생성 & 결재 관리 서버
+│
+├── demo/
+│   ├── bizApp/              금융 AP 서버군 (spider-link 내장형 멀티모듈)
+│   │   ├── biz-common/      커맨드 상수 공유 라이브러리
+│   │   ├── mock-core/       계정계 Mock (TCP 19300)
+│   │   ├── biz-auth/        인증AP (TCP 19100)
+│   │   ├── biz-transfer/    이체AP (TCP 19200)
+│   │   └── biz-channel/     채널AP (HTTP 18080, TCP 19400)
+│   └── front/               시연용 프론트엔드 (React + Vite)
+│
+├── react-cms/               CMS 대시보드 (React + Vite)
+├── preview-app/             POC 시연 데모 앱 (React + Vite)
+├── reactive-springware/     리액트 컴포넌트 코드 생성 플랫폼
+│
+└── .github/                 CI/CD (GitHub Actions), 이슈/PR 템플릿
 ```
 
 ## 프로젝트 역할 요약
@@ -49,6 +57,7 @@ POC_HNC/
 | `batch-was` | 배치 잡 실행 WAS (Quartz 스케줄러, Redis 분산락) |
 | `reactPlatform` | 리액트 컴포넌트 코드 자동 생성 + 결재 처리 |
 | `demo/bizApp` | 하나카드 POC 시연용 AP 서버군 (채널/인증/이체/계정계 Mock) |
+| `demo/front` | 시연용 프론트엔드 (React) |
 | `react-cms` | CMS 대시보드 프론트엔드 |
 | `preview-app` | POC 시연용 프론트엔드 |
 | `reactive-springware` | 디자인 토큰 기반 컴포넌트 코드 생성 플랫폼 |
@@ -60,7 +69,7 @@ POC_HNC/
 ```
 spider-link ──► spider-batch ──► batch-was
     │
-    └──────────────────────────► demo/bizApp (biz-auth, biz-transfer, biz-channel)
+    ├──────────────────────────► demo/bizApp (biz-auth, biz-transfer, biz-channel)
     └──────────────────────────► admin
 ```
 
@@ -80,7 +89,7 @@ spider-link ──► spider-batch ──► batch-was
     ├── TCP 9998  ──────────────────────► [batch-was: 8081]
     └── TCP 19400 ──────────────────────► [biz-channel: 18080]  ← 긴급공지
 
-[React 프론트엔드]
+[demo/front (React)]
     └── HTTP 18080 ──────────────────────► [biz-channel]
                                                ├── TCP 19100 ──► [biz-auth]
                                                │                     └── TCP 19300 ──► [mock-core]
