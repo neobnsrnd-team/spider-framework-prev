@@ -212,23 +212,35 @@
                 return '<div class="d-flex align-items-center flex-wrap gap-1">' + clBadge + htBadge + '</div>';
             }
 
-            /* 배포·배포종료·내용수정 — 공지 내용 미리보기 */
-            var title   = row.titleKo   || '';
+            /* 배포·배포종료·내용수정 — 한국어·영어 공지 내용 미리보기 */
+            var titleKo   = row.titleKo   || '';
+            var titleEn   = row.titleEn   || '';
             // _$BR 마커를 공백으로 치환하여 한 줄 미리보기로 표시
-            var content = (row.contentKo || '').replace(/_\$BR/g, ' ');
+            var contentKo = (row.contentKo || '').replace(/_\$BR/g, ' ');
+            var contentEn = (row.contentEn || '').replace(/_\$BR/g, ' ');
 
-            if (!title && !content) {
+            if (!titleKo && !contentKo && !titleEn && !contentEn) {
                 return '<span class="text-body-secondary small">(미작성)</span>';
             }
 
             var parts = [];
-            if (title) {
+            if (titleKo) {
                 parts.push('<span class="fw-semibold small text-body">'
-                    + HtmlUtils.escape(this.truncate(title, 30)) + '</span>');
+                    + '<span class="badge bg-secondary-subtle text-secondary-emphasis border me-1" style="font-size:0.65em;">KO</span>'
+                    + HtmlUtils.escape(this.truncate(titleKo, 28)) + '</span>');
             }
-            if (content) {
+            if (contentKo) {
                 parts.push('<span class="text-body-secondary small">'
-                    + HtmlUtils.escape(this.truncate(content, 50)) + '</span>');
+                    + HtmlUtils.escape(this.truncate(contentKo, 48)) + '</span>');
+            }
+            if (titleEn) {
+                parts.push('<span class="fw-semibold small text-body">'
+                    + '<span class="badge bg-info-subtle text-info-emphasis border me-1" style="font-size:0.65em;">EN</span>'
+                    + HtmlUtils.escape(this.truncate(titleEn, 28)) + '</span>');
+            }
+            if (contentEn) {
+                parts.push('<span class="text-body-secondary small">'
+                    + HtmlUtils.escape(this.truncate(contentEn, 48)) + '</span>');
             }
             return '<div class="d-flex flex-column gap-0">' + parts.join('') + '</div>';
         },

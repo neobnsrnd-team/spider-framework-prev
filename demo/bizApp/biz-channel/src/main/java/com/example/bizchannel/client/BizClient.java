@@ -68,7 +68,7 @@ public class BizClient {
                 .requestId(requestId)
                 .payload(payload)
                 .build();
-        log.debug("[BizClient] → 인증AP | command={} host={}:{} requestId={}", command, authHost, authPort, requestId);
+        log.debug("[BizClient] → biz-auth | command={} host={}:{} requestId={}", command, authHost, authPort, requestId);
         return tcpClient.sendJson(authHost, authPort, req);
     }
 
@@ -87,7 +87,7 @@ public class BizClient {
                 .requestId(requestId)
                 .payload(payload)
                 .build();
-        log.debug("[BizClient] → 이체AP | command={} host={}:{} requestId={}", command, transferHost, transferPort, requestId);
+        log.debug("[BizClient] → biz-transfer | command={} host={}:{} requestId={}", command, transferHost, transferPort, requestId);
         return tcpClient.sendJson(transferHost, transferPort, req);
     }
 }

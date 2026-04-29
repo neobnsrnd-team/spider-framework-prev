@@ -1,8 +1,8 @@
 package com.example.spiderbatch.tcp;
 
 import com.example.spiderbatch.scheduler.SchedulerManagementService;
-import com.example.spiderlink.infra.tcp.handler.CommandHandler;
-import com.example.spiderlink.infra.tcp.model.ManagementContext;
+import com.example.spidercommon.infra.tcp.handler.CommandHandler;
+import com.example.spidercommon.infra.tcp.model.ManagementContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

@@ -113,12 +113,12 @@ public class JwtAuthFilter implements Filter {
             // 이후 컨트롤러에서 request.getAttribute("userId") 로 참조
             httpReq.setAttribute("userId", userId);
 
-            log.debug("[JwtAuthFilter] 인증 성공: userId={}, path={}", userId, path);
+            log.debug("[JwtAuthFilter] Auth success: userId={}, path={}", userId, path);
             chain.doFilter(request, response);
 
         } catch (JwtException e) {
             // 서명 불일치, 토큰 만료, 형식 오류 등 모든 JWT 관련 예외
-            log.warn("[JwtAuthFilter] 토큰 검증 실패: path={}, error={}", path, e.getMessage());
+            log.warn("[JwtAuthFilter] Token validation failed: path={}, error={}", path, e.getMessage());
             sendUnauthorized(httpRes, "유효하지 않거나 만료된 토큰입니다.");
         }
     }

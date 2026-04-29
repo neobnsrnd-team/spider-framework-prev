@@ -48,6 +48,18 @@ public class EmergencyNoticeHistoryResponse {
     private String contentKo;
 
     /**
+     * 영어 공지 제목 (같은 VERSION의 EMERGENCY_EN 행 PROPERTY_DESC).
+     * 배포·배포종료·내용수정 구분의 상세 표시에 사용된다.
+     */
+    private String titleEn;
+
+    /**
+     * 영어 공지 내용 (같은 VERSION의 EMERGENCY_EN 행 DEFAULT_VALUE).
+     * _$BR 마커 포함 가능. 배포·배포종료·내용수정 구분의 상세 표시에 사용된다.
+     */
+    private String contentEn;
+
+    /**
      * 닫기 버튼 노출 여부 (같은 VERSION의 CLOSEABLE_YN 행 DEFAULT_VALUE, Y/N).
      * 설정 변경 구분의 상세 표시에 사용된다.
      */

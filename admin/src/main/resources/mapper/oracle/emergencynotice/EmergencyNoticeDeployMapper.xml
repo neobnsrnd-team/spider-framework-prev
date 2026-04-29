@@ -51,7 +51,7 @@
     -->
     <select id="selectHistory" resultType="com.example.admin_demo.domain.emergencynotice.dto.EmergencyNoticeHistoryResponse">
         SELECT version, reason, lastUpdateDtime, lastUpdateUserId,
-               titleKo, contentKo, closeableYn, hideTodayYn
+               titleKo, contentKo, titleEn, contentEn, closeableYn, hideTodayYn
         FROM (
             SELECT a.*, ROWNUM AS rnum
             FROM (
@@ -61,6 +61,8 @@
                        h_use.LAST_UPDATE_USER_ID AS lastUpdateUserId,
                        h_ko.PROPERTY_DESC        AS titleKo,
                        h_ko.DEFAULT_VALUE        AS contentKo,
+                       h_en.PROPERTY_DESC        AS titleEn,
+                       h_en.DEFAULT_VALUE        AS contentEn,
                        h_cl.DEFAULT_VALUE        AS closeableYn,
                        h_ht.DEFAULT_VALUE        AS hideTodayYn
                 FROM   FWK_PROPERTY_HISTORY h_use
@@ -68,6 +70,10 @@
                        ON h_ko.PROPERTY_GROUP_ID = 'notice'
                       AND h_ko.PROPERTY_ID       = 'EMERGENCY_KO'
                       AND h_ko.VERSION           = h_use.VERSION
+                LEFT JOIN FWK_PROPERTY_HISTORY h_en
+                       ON h_en.PROPERTY_GROUP_ID = 'notice'
+                      AND h_en.PROPERTY_ID       = 'EMERGENCY_EN'
+                      AND h_en.VERSION           = h_use.VERSION
                 LEFT JOIN FWK_PROPERTY_HISTORY h_cl
                        ON h_cl.PROPERTY_GROUP_ID = 'notice'
                       AND h_cl.PROPERTY_ID       = 'CLOSEABLE_YN'

@@ -53,7 +53,7 @@ public class CardController {
     public ResponseEntity<Map<String, Object>> getCards(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
         String requestId = (String) request.getAttribute("requestId");
-        log.debug("[CardController] 카드 목록 조회: userId={}", userId);
+        log.debug("[CardController] Get card list: userId={}", userId);
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId);
@@ -66,7 +66,7 @@ public class CardController {
             }
             return ResponseEntity.ok(resp.getPayload());
         } catch (IOException e) {
-            log.error("[CardController] 이체AP 통신 오류 (cards): {}", e.getMessage(), e);
+            log.error("[CardController] biz-transfer TCP error (cards): {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "이체 서버 통신 오류"));
         }
@@ -100,7 +100,7 @@ public class CardController {
 
         String userId = (String) request.getAttribute("userId");
         String requestId = (String) request.getAttribute("requestId");
-        log.debug("[CardController] 이용내역 조회: userId={}, cardId={}, period={}", userId, cardId, period);
+        log.debug("[CardController] Get transactions: userId={}, cardId={}, period={}", userId, cardId, period);
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId);
@@ -120,7 +120,7 @@ public class CardController {
             }
             return ResponseEntity.ok(resp.getPayload());
         } catch (IOException e) {
-            log.error("[CardController] 이체AP 통신 오류 (transactions): {}", e.getMessage(), e);
+            log.error("[CardController] biz-transfer TCP error (transactions): {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "이체 서버 통신 오류"));
         }
@@ -146,7 +146,7 @@ public class CardController {
 
         String userId = (String) request.getAttribute("userId");
         String requestId = (String) request.getAttribute("requestId");
-        log.debug("[CardController] 결제명세서 조회: userId={}, yearMonth={}, paymentDay={}", userId, yearMonth, paymentDay);
+        log.debug("[CardController] Get payment statement: userId={}, yearMonth={}, paymentDay={}", userId, yearMonth, paymentDay);
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId);
@@ -161,7 +161,7 @@ public class CardController {
             }
             return ResponseEntity.ok(resp.getPayload());
         } catch (IOException e) {
-            log.error("[CardController] 이체AP 통신 오류 (payment-statement): {}", e.getMessage(), e);
+            log.error("[CardController] biz-transfer TCP error (payment-statement): {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "이체 서버 통신 오류"));
         }
@@ -185,7 +185,7 @@ public class CardController {
 
         String userId = (String) request.getAttribute("userId");
         String requestId = (String) request.getAttribute("requestId");
-        log.debug("[CardController] 즉시결제 가능금액 조회: userId={}, cardId={}", userId, cardId);
+        log.debug("[CardController] Get payable amount: userId={}, cardId={}", userId, cardId);
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId);
@@ -199,7 +199,7 @@ public class CardController {
             }
             return ResponseEntity.ok(resp.getPayload());
         } catch (IOException e) {
-            log.error("[CardController] 이체AP 통신 오류 (payable-amount): {}", e.getMessage(), e);
+            log.error("[CardController] biz-transfer TCP error (payable-amount): {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "이체 서버 통신 오류"));
         }
@@ -225,7 +225,7 @@ public class CardController {
 
         String userId = (String) request.getAttribute("userId");
         String requestId = (String) request.getAttribute("requestId");
-        log.info("[CardController] 즉시결제 요청: userId={}, cardId={}", userId, cardId);
+        log.info("[CardController] Immediate pay request: userId={}, cardId={}", userId, cardId);
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId);
@@ -242,7 +242,7 @@ public class CardController {
             }
             return ResponseEntity.ok(resp.getPayload());
         } catch (IOException e) {
-            log.error("[CardController] 이체AP 통신 오류 (immediate-pay): {}", e.getMessage(), e);
+            log.error("[CardController] biz-transfer TCP error (immediate-pay): {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "이체 서버 통신 오류"));
         }
@@ -269,7 +269,7 @@ public class CardController {
             @PathVariable String cardId) {
 
         String userId = (String) request.getAttribute("userId");
-        log.info("[CardController] PIN 시도 초기화: userId={}, cardId={}", userId, cardId);
+        log.info("[CardController] Reset PIN attempts: userId={}, cardId={}", userId, cardId);
 
         // PIN 시도 횟수는 이체AP(biz-transfer) 내부에서 관리
         // 채널AP 는 현재 단순 OK 응답만 반환 (이체AP 연동은 추후 확장)
