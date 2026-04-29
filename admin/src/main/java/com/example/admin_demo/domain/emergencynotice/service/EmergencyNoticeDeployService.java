@@ -8,7 +8,7 @@ import com.example.admin_demo.domain.emergencynotice.mapper.EmergencyNoticeMappe
 import com.example.admin_demo.global.exception.InvalidInputException;
 import com.example.admin_demo.global.exception.NotFoundException;
 import com.example.admin_demo.global.util.AuditUtil;
-import com.example.admin_demo.infra.tcp.adapter.DemoBackendAdapter;
+import com.example.admin_demo.infra.tcp.adapter.BizChannelAdapter;
 import com.example.admin_demo.infra.tcp.model.JsonCommandRequest;
 import com.example.admin_demo.infra.tcp.model.JsonCommandResponse;
 import java.util.HashMap;
@@ -62,13 +62,13 @@ public class EmergencyNoticeDeployService {
     private final EmergencyNoticeMapper emergencyNoticeMapper;
 
     /** Admin ↔ biz-channel 간 TCP 통신 어댑터 (JSON 프로토콜) */
-    private final DemoBackendAdapter demoBackendAdapter;
+    private final BizChannelAdapter bizChannelAdapter;
 
     // 기존 HTTP 호출 설정(레거시) — TCP 전환 이후 미사용
     // private final RestTemplate restTemplate;
-    // @Value("${demo.backend.url:http://localhost:3001}")
-    // private String demoBackendUrl;
-    // @Value("${demo.backend.admin-secret:admin-secret}")
+    // @Value("${biz-channel.url:http://localhost:3001}")
+    // private String bizChannelUrl;
+    // @Value("${biz-channel.admin-secret:admin-secret}")
     // private String adminSecret;
 
     /**
@@ -104,7 +104,7 @@ public class EmergencyNoticeDeployService {
      *   <li>DEPLOY_STATUS 행을 SELECT FOR UPDATE로 잠금 — 동시 배포 요청 직렬화</li>
      *   <li>DEPLOY_STATUS='DEPLOYED', START_DTIME=now, END_DTIME=NULL 행 업데이트</li>
      *   <li>배포 이력 스냅샷 삽입</li>
-     *   <li>커밋 완료 후 Demo Backend에 TCP NOTICE_SYNC 커맨드 전송</li>
+     *   <li>커밋 완료 후 biz-channel에 TCP NOTICE_SYNC 커맨드 전송</li>
      * </ol>
      */
     @Transactional
@@ -123,9 +123,9 @@ public class EmergencyNoticeDeployService {
         log.info("긴급공지 배포 완료: userId={}, startDtime={}", userId, now);
 
         // 트랜잭션 내에서 페이로드를 조회한 뒤, 커밋 완료 후에 TCP 호출
-        // → DB 커밋 전에 Demo Backend가 호출되는 순서 역전 문제 방지
+        // → DB 커밋 전에 biz-channel이 호출되는 순서 역전 문제 방지
         Map<String, Object> payload = buildSyncPayload();
-        registerAfterCommit(() -> doSyncToDemoBackend(payload));
+        registerAfterCommit(() -> doSyncToBizChannel(payload));
     }
 
     /**
@@ -135,7 +135,7 @@ public class EmergencyNoticeDeployService {
      *   <li>DEPLOY_STATUS 행을 SELECT FOR UPDATE로 잠금</li>
      *   <li>DEPLOY_STATUS='ENDED', END_DTIME=now 행 업데이트</li>
      *   <li>배포 종료 이력 스냅샷 삽입</li>
-     *   <li>커밋 완료 후 Demo Backend에 TCP NOTICE_END 커맨드 전송</li>
+     *   <li>커밋 완료 후 biz-channel에 TCP NOTICE_END 커맨드 전송</li>
      * </ol>
      */
     @Transactional
@@ -154,13 +154,13 @@ public class EmergencyNoticeDeployService {
         log.info("긴급공지 배포 종료 완료: userId={}, endDtime={}", userId, now);
 
         // 커밋 완료 후 종료 신호 전송
-        registerAfterCommit(this::doEndDemoBackendNotice);
+        registerAfterCommit(this::doEndBizChannelNotice);
     }
 
     /**
      * 공지 노출 설정(닫기 버튼·체크박스)을 저장한다.
      *
-     * <p>배포 중(DEPLOYED) 상태라면 변경 즉시 Demo Backend에 재동기화하여
+     * <p>배포 중(DEPLOYED) 상태라면 변경 즉시 biz-channel에 재동기화하여
      * 실시간으로 반영한다. (critical 장애 시 즉각 차단 가능)
      *
      * @param closeableYn  닫기 버튼 노출 여부 (Y/N)
@@ -180,11 +180,11 @@ public class EmergencyNoticeDeployService {
 
         log.info("긴급공지 설정 변경: closeableYn={}, hideTodayYn={}, userId={}", closeableYn, hideTodayYn, userId);
 
-        // 배포 중이면 변경된 설정을 커밋 후 Demo Backend에 즉시 반영
+        // 배포 중이면 변경된 설정을 커밋 후 biz-channel에 즉시 반영
         // buildSyncPayload()는 업데이트 후 새 값을 읽으므로 변경 사항이 반영됨
         if (STATUS_DEPLOYED.equals(status.getDeployStatus())) {
             Map<String, Object> payload = buildSyncPayload();
-            registerAfterCommit(() -> doSyncToDemoBackend(payload));
+            registerAfterCommit(() -> doSyncToBizChannel(payload));
         }
     }
 
@@ -219,8 +219,8 @@ public class EmergencyNoticeDeployService {
 
     /**
      * 현재 트랜잭션이 커밋된 후 실행할 작업을 등록한다.
-     * DB 커밋이 완료된 시점에 외부 시스템(Demo Backend)을 호출하여
-     * "커밋 전 호출 → Demo Backend가 구 상태를 전달받는" 순서 역전을 방지한다.
+     * DB 커밋이 완료된 시점에 외부 시스템(biz-channel)을 호출하여
+     * "커밋 전 호출 → biz-channel이 구 상태를 전달받는" 순서 역전을 방지한다.
      */
     private void registerAfterCommit(Runnable task) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -232,7 +232,7 @@ public class EmergencyNoticeDeployService {
     }
 
     /**
-     * 현재 공지 내용·노출 설정을 DB에서 조회하여 Demo Backend 요청 페이로드를 구성한다.
+     * 현재 공지 내용·노출 설정을 DB에서 조회하여 biz-channel 요청 페이로드를 구성한다.
      * 트랜잭션 내에서 호출하므로 해당 트랜잭션의 최신 변경 사항(설정 업데이트 등)이 반영된다.
      */
     private Map<String, Object> buildSyncPayload() {
@@ -263,12 +263,12 @@ public class EmergencyNoticeDeployService {
     }
 
     /**
-     * 구성된 페이로드를 Demo Backend에 TCP(JSON 프로토콜)로 전송한다.
+     * 구성된 페이로드를 biz-channel에 TCP(JSON 프로토콜)로 전송한다.
      * 커밋 후 {@link #registerAfterCommit}에서 호출된다.
-     * Demo Backend 비가용 시 경고 로그만 출력하고 진행한다
+     * biz-channel 비가용 시 경고 로그만 출력하고 진행한다
      * (재기동 시 biz-channel의 restoreNoticeState()로 복구).
      */
-    private void doSyncToDemoBackend(Map<String, Object> body) {
+    private void doSyncToBizChannel(Map<String, Object> body) {
         try {
             JsonCommandRequest request = JsonCommandRequest.builder()
                     .command(CMD_NOTICE_SYNC)
@@ -276,20 +276,20 @@ public class EmergencyNoticeDeployService {
                     .payload(body)
                     .build();
 
-            // DemoBackendAdapter가 내부적으로 TcpClient.sendJson(4바이트 prefix + UTF-8 JSON)을 호출한다.
+            // BizChannelAdapter가 내부적으로 TcpClient.sendJson(4바이트 prefix + UTF-8 JSON)을 호출한다.
             // 예외를 던지지 않고 실패 시 success=false인 JsonCommandResponse를 반환한다.
-            JsonCommandResponse response = demoBackendAdapter.doProcess(CMD_NOTICE_SYNC, request);
+            JsonCommandResponse response = bizChannelAdapter.doProcess(CMD_NOTICE_SYNC, request);
 
             if (response != null && response.isSuccess()) {
-                log.info("Demo Backend 긴급공지 TCP 동기화 완료: message={}", response.getMessage());
+                log.info("biz-channel 긴급공지 TCP 동기화 완료: message={}", response.getMessage());
             } else {
-                // 비치명적: Admin DB는 이미 커밋됨 — Demo Backend 재기동 시 restoreNoticeState()로 자동 복구
+                // 비치명적: Admin DB는 이미 커밋됨 — biz-channel 재기동 시 restoreNoticeState()로 자동 복구
                 log.warn(
-                        "Demo Backend TCP 동기화 실패 (비치명적, 재기동 시 자동 복구): error={}",
+                        "biz-channel TCP 동기화 실패 (비치명적, 재기동 시 자동 복구): error={}",
                         response != null ? response.getError() : "응답 없음");
             }
         } catch (Exception e) {
-            log.warn("Demo Backend TCP 동기화 실패 (비치명적, 재기동 시 자동 복구): {}", e.getMessage());
+            log.warn("biz-channel TCP 동기화 실패 (비치명적, 재기동 시 자동 복구): {}", e.getMessage());
         }
 
         /* --------------------------------------------------------------------
@@ -300,21 +300,21 @@ public class EmergencyNoticeDeployService {
          *     headers.setContentType(MediaType.APPLICATION_JSON);
          *     headers.set(ADMIN_SECRET_HEADER, adminSecret);
          *
-         *     restTemplate.postForObject(demoBackendUrl + SYNC_PATH, new HttpEntity<>(body, headers), Void.class);
+         *     restTemplate.postForObject(bizChannelUrl + SYNC_PATH, new HttpEntity<>(body, headers), Void.class);
          *
-         *     log.info("Demo Backend 긴급공지 동기화 완료: url={}", demoBackendUrl + SYNC_PATH);
+         *     log.info("biz-channel 긴급공지 동기화 완료: url={}", bizChannelUrl + SYNC_PATH);
          * } catch (Exception e) {
-         *     log.warn("Demo Backend 동기화 실패 (비치명적, 재기동 시 자동 복구): {}", e.getMessage());
+         *     log.warn("biz-channel 동기화 실패 (비치명적, 재기동 시 자동 복구): {}", e.getMessage());
          * }
          * -------------------------------------------------------------------- */
     }
 
     /**
-     * Demo Backend에 TCP로 배포 종료 신호를 전송한다.
+     * biz-channel에 TCP로 배포 종료 신호를 전송한다.
      * 커밋 후 {@link #registerAfterCommit}에서 호출된다.
      * 실패 시 경고 로그만 출력하고 진행한다.
      */
-    private void doEndDemoBackendNotice() {
+    private void doEndBizChannelNotice() {
         try {
             JsonCommandRequest request = JsonCommandRequest.builder()
                     .command(CMD_NOTICE_END)
@@ -323,17 +323,17 @@ public class EmergencyNoticeDeployService {
                     .payload(new HashMap<>())
                     .build();
 
-            JsonCommandResponse response = demoBackendAdapter.doProcess(CMD_NOTICE_END, request);
+            JsonCommandResponse response = bizChannelAdapter.doProcess(CMD_NOTICE_END, request);
 
             if (response != null && response.isSuccess()) {
-                log.info("Demo Backend 긴급공지 TCP 종료 완료: message={}", response.getMessage());
+                log.info("biz-channel 긴급공지 TCP 종료 완료: message={}", response.getMessage());
             } else {
                 log.warn(
-                        "Demo Backend TCP 종료 신호 전송 실패 (비치명적): error={}",
+                        "biz-channel TCP 종료 신호 전송 실패 (비치명적): error={}",
                         response != null ? response.getError() : "응답 없음");
             }
         } catch (Exception e) {
-            log.warn("Demo Backend TCP 종료 신호 전송 실패 (비치명적): {}", e.getMessage());
+            log.warn("biz-channel TCP 종료 신호 전송 실패 (비치명적): {}", e.getMessage());
         }
 
         /* --------------------------------------------------------------------
@@ -344,11 +344,11 @@ public class EmergencyNoticeDeployService {
          *     headers.setContentType(MediaType.APPLICATION_JSON);
          *     headers.set(ADMIN_SECRET_HEADER, adminSecret);
          *
-         *     restTemplate.postForObject(demoBackendUrl + END_PATH, new HttpEntity<>(null, headers), Void.class);
+         *     restTemplate.postForObject(bizChannelUrl + END_PATH, new HttpEntity<>(null, headers), Void.class);
          *
-         *     log.info("Demo Backend 긴급공지 종료 완료: url={}", demoBackendUrl + END_PATH);
+         *     log.info("biz-channel 긴급공지 종료 완료: url={}", bizChannelUrl + END_PATH);
          * } catch (Exception e) {
-         *     log.warn("Demo Backend 종료 신호 전송 실패 (비치명적): {}", e.getMessage());
+         *     log.warn("biz-channel 종료 신호 전송 실패 (비치명적): {}", e.getMessage());
          * }
          * -------------------------------------------------------------------- */
     }

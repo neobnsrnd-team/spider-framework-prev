@@ -23,7 +23,7 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 50MB
+      max-file-size: 50MBㅇ
       max-request-size: 150MB
 
   # Thymeleaf Configuration
@@ -228,6 +228,6 @@ tcp:
   batch-was:
     port: ${BATCH_WAS_TCP_PORT:9998}
   # 대상은 biz-channel 내장 TCP 서버(19400) — spider-link를 내장한 biz-channel이 직접 수신
-  demo-backend:
+  biz-channel:
     host: ${BIZ_CHANNEL_TCP_HOST:localhost}
     port: ${BIZ_CHANNEL_TCP_PORT:19400}

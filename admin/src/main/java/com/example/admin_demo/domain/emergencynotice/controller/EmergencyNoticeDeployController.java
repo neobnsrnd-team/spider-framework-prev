@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 긴급공지 배포 관리 REST Controller
  *
  * <p>배포 라이프사이클(DRAFT → DEPLOYED → ENDED)을 제어하고,
- * Demo Backend에 SSE Push를 통해 배포 상태를 동기화한다.
+ * biz-channel에 TCP 커맨드를 통해 배포 상태를 동기화한다.
  */
 @RestController
 @RequestMapping("/api/emergency-notice-deploys")
@@ -73,7 +73,7 @@ public class EmergencyNoticeDeployController {
      * 공지 노출 설정 변경 (닫기 버튼·오늘 하루 보지 않기)
      * PATCH /api/emergency-notice-deploys/settings
      *
-     * <p>배포 중이면 변경 즉시 Demo Backend에 재동기화된다.
+     * <p>배포 중이면 변경 즉시 biz-channel에 재동기화된다.
      */
     @PatchMapping("/settings")
     @PreAuthorize("hasAuthority('EMERGENCY_NOTICE:W')")

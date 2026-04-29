@@ -175,7 +175,7 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
         }
     }
 
-    /** Oracle 대문자 컬럼명(USER_ID)을 camelCase(userId)로 변환 — demo/backend가 camelCase 키를 기대함 */
+    /** Oracle 대문자 컬럼명(USER_ID)을 camelCase(userId)로 변환 — biz-channel API가 camelCase 키를 기대함 */
     private Map<String, Object> toCamelCaseKeys(Map<String, Object> map) {
         if (map == null) return null;
         Map<String, Object> result = new LinkedHashMap<>();
