@@ -120,6 +120,9 @@ menu-resource:
     v3_system_biz_reg:
       R: MONITOR:R
       W: MONITOR:W
+    v3_log_level_manage:
+      R: LOG_LEVEL:R
+      W: LOG_LEVEL:W
     v3_system_oper_manage:
       R: RELOAD:R
       W: RELOAD:W

@@ -1,1 +1,2 @@
 com.example.spiderlink.config.SpiderLinkAutoConfiguration
+com.example.spiderlink.config.SpiderLinkServletAutoConfiguration

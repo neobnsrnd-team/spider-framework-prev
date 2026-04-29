@@ -1,6 +1,6 @@
-package com.example.spiderlink.infra.tcp.handler;
+package com.example.spidercommon.infra.tcp.handler;
 
-import com.example.spiderlink.infra.tcp.model.HasCommand;
+import com.example.spidercommon.infra.tcp.model.HasCommand;
 
 /**
  * TCP 커맨드 핸들러 인터페이스 (전략 패턴).

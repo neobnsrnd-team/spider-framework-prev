@@ -2,7 +2,7 @@ package com.example.admin_demo.infra.tcp.client;
 
 import com.example.admin_demo.infra.tcp.model.JsonCommandRequest;
 import com.example.admin_demo.infra.tcp.model.JsonCommandResponse;
-import com.example.spiderlink.infra.tcp.model.ManagementContext;
+import com.example.spidercommon.infra.tcp.model.ManagementContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -52,7 +52,7 @@ public class TcpClient {
      * ObjectStreamMessageCodec과 동일한 패턴을 사용하여 일관성 유지.
      */
     private static final String OBJECT_STREAM_FILTER =
-            "com.example.spiderlink.infra.tcp.model.ManagementContext;java.lang.*;java.util.*;!*";
+            "com.example.spidercommon.infra.tcp.model.ManagementContext;java.lang.*;java.util.*;!*";
 
     private final ObjectMapper objectMapper;
 

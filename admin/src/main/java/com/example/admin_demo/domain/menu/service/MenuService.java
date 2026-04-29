@@ -202,8 +202,8 @@ public class MenuService {
 
     @Transactional
     public MenuResponse createMenu(MenuCreateRequest menuDTO) {
-        if (menuMapper.countByMenuName(menuDTO.getMenuName()) > 0) {
-            throw new DuplicateException("menuName: " + menuDTO.getMenuName());
+        if (menuMapper.countById(menuDTO.getMenuId()) > 0) {
+            throw new DuplicateException("menuId: " + menuDTO.getMenuId());
         }
 
         if (menuDTO.getPriorMenuId() == null || menuDTO.getPriorMenuId().trim().isEmpty()) {
@@ -223,11 +223,6 @@ public class MenuService {
         MenuResponse existing = menuMapper.selectResponseById(menuId);
         if (existing == null) {
             throw new NotFoundException("menuId: " + menuId);
-        }
-
-        if (!existing.getMenuName().equals(menuDTO.getMenuName())
-                && menuMapper.countByMenuName(menuDTO.getMenuName()) > 0) {
-            throw new DuplicateException("menuName: " + menuDTO.getMenuName());
         }
 
         String now = AuditUtil.now();

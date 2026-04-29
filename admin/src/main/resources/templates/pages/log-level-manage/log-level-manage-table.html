@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Log Level Table Fragment -->
+<div th:fragment="table" class="mt-2" style="max-height: 70vh; overflow-y: auto; overflow-x: auto;">
+    <table class="table table-sm table-hover sp-data-grid" id="logLevelTable" style="min-width: 1000px;">
+        <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+            <tr>
+                <th style="width: 460px; max-width: 460px;">Log Name</th>
+                <th class="col-w-200">Level</th>
+                <th class="col-w-200">Additivity</th>
+                <th style="min-width: 150px;">Appender</th>
+            </tr>
+        </thead>
+        <tbody id="logLevelTableBody">
+            <tr>
+                <td colspan="4" class="text-center py-4 text-body-secondary">
+                    데이터를 불러오는 중입니다...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

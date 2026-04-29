@@ -1,4 +1,4 @@
-package com.example.spiderlink.infra.tcp.model;
+package com.example.spidercommon.infra.tcp.model;
 
 import java.io.Serializable;
 import lombok.AllArgsConstructor;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
  * Admin ↔ batch-was 간 TCP 통신 메시지 모델.
  *
  * <p>Java ObjectStream 바이너리 직렬화 시 양쪽이 동일한 클래스(패키지 포함)를 가져야 역직렬화가 성공한다.
- * spider-link 라이브러리로 이전하여 Admin, spider-batch 모두 이 공통 클래스를 참조한다.</p>
+ * spider-common 라이브러리로 이전하여 Admin, spider-batch 모두 이 공통 클래스를 참조한다.</p>
  *
  * <p>serialVersionUID를 명시하여 양쪽 클래스 호환성을 보장한다.</p>
  */

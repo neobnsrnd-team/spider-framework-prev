@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="content">
+    <!-- 쓰기 권한 여부를 JS 변수로 주입 -->
+    <script th:inline="javascript">
+        var hasLogLevelWrite = /*[[${userAuthorities != null and userAuthorities.contains('LOG_LEVEL:W')}]]*/ false;
+    </script>
+
+    <!-- 검색조건 섹션 헤더 -->
+    <div class="page-header">
+        <h4 class="page-title">
+            <i class="bi bi-exclamation-circle-fill text-danger"></i>
+            검색조건
+        </h4>
+    </div>
+
+    <!-- Search Box -->
+    <div th:replace="~{pages/log-level-manage/log-level-manage-search :: search}"></div>
+
+    <!-- 리스트 섹션 헤더 + Toolbar -->
+    <div class="d-flex align-items-center justify-content-between mt-3">
+        <div class="page-header mb-0">
+            <h4 class="page-title">
+                <i class="bi bi-exclamation-circle-fill text-danger"></i>
+                리스트
+            </h4>
+        </div>
+        <div th:replace="~{fragments/page-content-layout :: toolbar}"></div>
+    </div>
+
+    <!-- Table -->
+    <div th:replace="~{pages/log-level-manage/log-level-manage-table :: table}"></div>
+
+    <!-- Pagination -->
+    <div th:replace="~{fragments/page-content-layout :: pagination}"></div>
+
+    <!-- Script -->
+    <th:block th:replace="~{pages/log-level-manage/log-level-manage-script :: script}" />
+</div>
+</body>
+</html>

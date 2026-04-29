@@ -1,4 +1,4 @@
-package com.example.spiderlink.config;
+package com.example.spidercommon.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,7 +12,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * 내부 API 보안 인터셉터 — {@code /api/internal/**} 경로를 허용된 IP에서만 접근 가능하도록 제한한다.
  *
  * <p>허용 IP 목록은 {@code internal-api.allowed-ips} 프로퍼티로 관리한다.
- * Admin과 spider-link가 서로 다른 서버에 배포된 경우 Admin 서버 IP를 목록에 추가하면 된다.</p>
+ * Admin과 spider-common을 embed한 WAS가 서로 다른 서버에 배포된 경우
+ * Admin 서버 IP를 목록에 추가하면 된다.</p>
  *
  * <pre>{@code
  * # application.yml

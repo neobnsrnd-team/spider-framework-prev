@@ -53,6 +53,14 @@ public class JwtAuthFilter implements Filter {
     );
 
     /**
+     * JWT 인증을 건너뛸 공개 경로 prefix 목록.
+     * 해당 prefix로 시작하는 모든 하위 경로에 대해 인증을 면제한다.
+     */
+    private static final Set<String> PUBLIC_PATH_PREFIXES = Set.of(
+            "/api/management/"   // Admin 내부 관리 API (IP 기반 접근 제어로 보호)
+    );
+
+    /**
      * @param jwtSecret application.yml 의 jwt.secret 값 (HMAC-SHA256 서명 키)
      */
     public JwtAuthFilter(@Value("${jwt.secret}") String jwtSecret) {
@@ -122,7 +130,10 @@ public class JwtAuthFilter implements Filter {
      * @return 공개 경로이면 {@code true}
      */
     private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.contains(path);
+        if (PUBLIC_PATHS.contains(path)) {
+            return true;
+        }
+        return PUBLIC_PATH_PREFIXES.stream().anyMatch(path::startsWith);
     }
 
     /**

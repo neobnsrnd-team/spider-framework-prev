@@ -1,7 +1,7 @@
 package com.example.spiderlink.infra.tcp.codec;
 
-import com.example.spiderlink.infra.tcp.model.JsonCommandRequest;
-import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.example.spiderlink.infra.tcp.parser.FixedLengthParser;
 import com.example.spiderlink.infra.tcp.parser.MessageStructure;
 import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
