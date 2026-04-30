@@ -17,7 +17,7 @@
 	<artifactId>reactPlatform</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>reactPlatform</name>
-	<description>React Platform — 코드 생성 및 결재 관리 서버</description>
+	<description>Spider React Platform — 코드 생성 및 결재 관리 서버</description>
 	<packaging>jar</packaging>
 
 	<properties>
