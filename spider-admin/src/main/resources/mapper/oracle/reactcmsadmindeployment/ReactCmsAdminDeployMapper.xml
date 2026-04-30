@@ -27,10 +27,28 @@
     </sql>
 
     <!--
-        LATERAL JOIN으로 페이지별 최신 배포 이력 1건만 조회.
-        FILE_ID LIKE p.PAGE_ID || '%' — 전방 일치(leading wildcard 없음)로 인덱스 활용 가능.
+        WITH절 + ROW_NUMBER로 페이지별 최신 배포 이력 1건 조회.
+        Oracle ORA-01799(OUTER JOIN 조건에 서브쿼리 불가) 우회를 위해
+        INNER JOIN으로 이력을 먼저 집계한 뒤 LEFT JOIN으로 연결.
     -->
     <select id="findApprovedPageList" resultType="com.example.spideradmin.domain.reactcmsadmindeployment.dto.ReactCmsAdminDeployPageResponse">
+        WITH LATEST_DEPLOY AS (
+            /* 페이지별 최신 배포 이력 1건 추출 — INNER JOIN 후 ROW_NUMBER로 ORA-01799 우회 */
+            SELECT
+                p2.PAGE_ID    AS PAGE_ID_KEY,
+                h.INSTANCE_ID,
+                ROW_NUMBER() OVER (
+                    PARTITION BY p2.PAGE_ID
+                    ORDER BY h.LAST_MODIFIED_DTIME DESC NULLS LAST
+                ) AS RN
+            FROM SPW_CMS_PAGE p2
+            INNER JOIN FWK_CMS_FILE_SEND_HIS h
+                ON h.FILE_ID LIKE p2.PAGE_ID || '%.html'
+                OR h.FILE_ID LIKE p2.PAGE_ID || '%.tsx'
+            WHERE p2.PAGE_TYPE     = 'REACT'
+              AND p2.APPROVE_STATE = 'APPROVED'
+              AND p2.USE_YN        = 'Y'
+        )
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
@@ -44,15 +62,8 @@
                     si.INSTANCE_IP                           AS instanceIp,
                     si.INSTANCE_PORT                         AS instancePort
                 FROM SPW_CMS_PAGE p
-                LEFT JOIN LATERAL (
-                    SELECT FILE_ID, INSTANCE_ID
-                    FROM FWK_CMS_FILE_SEND_HIS
-                    WHERE FILE_ID LIKE p.PAGE_ID || '%.html'
-                       OR FILE_ID LIKE p.PAGE_ID || '%.tsx'
-                    ORDER BY LAST_MODIFIED_DTIME DESC
-                    FETCH FIRST 1 ROW ONLY
-                ) lh ON 1=1
-                LEFT JOIN FWK_CMS_SERVER_INSTANCE si ON lh.INSTANCE_ID = si.INSTANCE_ID
+                LEFT JOIN LATEST_DEPLOY ld ON ld.PAGE_ID_KEY = p.PAGE_ID AND ld.RN = 1
+                LEFT JOIN FWK_CMS_SERVER_INSTANCE si ON si.INSTANCE_ID = ld.INSTANCE_ID
                 <include refid="approvedPageConditions"/>
                 ORDER BY p.LAST_MODIFIED_DTIME DESC NULLS LAST
             ) INNER_QRY
