@@ -44,15 +44,17 @@
                     si.INSTANCE_IP                           AS instanceIp,
                     si.INSTANCE_PORT                         AS instancePort
                 FROM SPW_CMS_PAGE p
-                LEFT JOIN LATERAL (
-                    SELECT FILE_ID, INSTANCE_ID
-                    FROM FWK_CMS_FILE_SEND_HIS
-                    WHERE FILE_ID LIKE p.PAGE_ID || '%.html'
-                       OR FILE_ID LIKE p.PAGE_ID || '%.tsx'
-                    ORDER BY LAST_MODIFIED_DTIME DESC
-                    FETCH FIRST 1 ROW ONLY
-                ) lh ON 1=1
-                LEFT JOIN FWK_CMS_SERVER_INSTANCE si ON lh.INSTANCE_ID = si.INSTANCE_ID
+                LEFT JOIN FWK_CMS_SERVER_INSTANCE si
+                    ON si.INSTANCE_ID = (
+                        /* 페이지별 최신 배포 이력 1건의 INSTANCE_ID — ROWNUM 페이징으로 Oracle 11g+에서 동작 */
+                        SELECT INSTANCE_ID FROM (
+                            SELECT INSTANCE_ID
+                            FROM FWK_CMS_FILE_SEND_HIS
+                            WHERE FILE_ID LIKE p.PAGE_ID || '%.html'
+                               OR FILE_ID LIKE p.PAGE_ID || '%.tsx'
+                            ORDER BY LAST_MODIFIED_DTIME DESC
+                        ) WHERE ROWNUM = 1
+                    )
                 <include refid="approvedPageConditions"/>
                 ORDER BY p.LAST_MODIFIED_DTIME DESC NULLS LAST
             ) INNER_QRY
