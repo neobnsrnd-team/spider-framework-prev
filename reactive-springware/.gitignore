@@ -5,6 +5,11 @@ node_modules/
 dist/
 storybook-static/
 
+# component-library/dist/styles.css는 소비자 프로젝트가 직접 참조하므로 버전 관리
+!component-library/dist/
+component-library/dist/*
+!component-library/dist/styles.css
+
 # 환경 변수
 .env
 .env.local

@@ -322,7 +322,7 @@
         ORDER BY u.USER_NAME ASC, u.USER_ID ASC
     </select>
 
-    <!-- React CMS 결재자 목록 조회 (v3_react_cms_admin_approvals 쓰기 권한 보유 활성 사용자) -->
+    <!-- React CMS 결재자 목록 조회 (v3_react_cms_admin_approval 쓰기 권한 보유 활성 사용자) -->
     <select id="findReactCmsApprovers"
             resultType="com.example.spideradmin.global.auth.dto.CmsApproverResponse">
         SELECT DISTINCT
@@ -335,14 +335,14 @@
                   SELECT 1
                   FROM FWK_USER_MENU um
                   WHERE um.USER_ID = u.USER_ID
-                    AND um.MENU_ID = 'v3_react_cms_admin_approvals'
+                    AND um.MENU_ID = 'v3_react_cms_admin_approval'
                     AND um.AUTH_CODE = 'W'
               )
               OR EXISTS (
                   SELECT 1
                   FROM FWK_ROLE_MENU rm
                   WHERE rm.ROLE_ID = u.ROLE_ID
-                    AND rm.MENU_ID = 'v3_react_cms_admin_approvals'
+                    AND rm.MENU_ID = 'v3_react_cms_admin_approval'
                     AND rm.AUTH_CODE = 'W'
               )
           )

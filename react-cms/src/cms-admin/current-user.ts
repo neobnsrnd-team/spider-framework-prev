@@ -2,8 +2,9 @@
  * @file current-user.ts
  * @description Vite dev 서버(플러그인) 컨텍스트에서 현재 로그인 사용자를 조회하는 서버 사이드 모듈.
  *
- * 운영 환경에서는 Spider Admin API(`/api/auth/me`)를 호출해 사용자 정보를 파싱하고,
- * 개발 환경에서는 쿠키(`cms_bypass_role`) 값에 따라 역할을 고정 반환한다.
+ * Spider Admin API(`/api/auth/me`)를 호출해 사용자 정보를 파싱한다.
+ * 어드민 모드(npm run dev:proxy)에서만 동작하며, 단독 실행 모드(npm run dev)에서는
+ * 파일 시스템 저장을 사용하므로 이 모듈이 호출되지 않는다.
  *
  * 이 모듈은 Node.js(Vite 플러그인) 에서만 실행되므로 브라우저 API(`document.cookie` 등)를
  * 사용하지 않으며, HTTP 요청 헤더의 Cookie 문자열을 직접 파싱한다.
@@ -50,22 +51,6 @@ const GUEST_USER: CurrentUser = {
   authorities: [],
 };
 
-/** AUTH_BYPASS 모드 — cms_bypass_role=react-adm 쿠키 보유 시 */
-const BYPASS_ADMIN: CurrentUser = {
-  userId: "reactAdmin01",
-  userName: "React CMS 관리자",
-  roleId: "react-adm",
-  authorities: ["REACT_CMS:R", "REACT_CMS:W"],
-};
-
-/** AUTH_BYPASS 모드 — 기본값(쿠키 미설정 또는 react-user) */
-const BYPASS_USER: CurrentUser = {
-  userId: "reactUser01",
-  userName: "React CMS 제작자",
-  roleId: "react-user",
-  authorities: ["REACT_CMS:R", "REACT_CMS:W"],
-};
-
 export const CMS_ROLE = {
   SPIDER_ADMIN: "ADMIN",
   CMS_ADMIN: "react-adm",
@@ -81,48 +66,14 @@ export class UnauthorizedError extends Error {
   }
 }
 
-// ── 내부 헬퍼 ────────────────────────────────────────────────────────────────
-
-/**
- * Cookie 헤더 문자열에서 특정 쿠키 값을 파싱한다.
- * @param cookieHeader req.headers.cookie 문자열
- * @param name 쿠키 이름
- */
-function parseCookie(cookieHeader: string, name: string): string | undefined {
-  return cookieHeader
-    .split(";")
-    .map((c) => c.trim())
-    .find((c) => c.startsWith(`${name}=`))
-    ?.split("=")
-    .slice(1)
-    .join("=");
-}
-
-/**
- * AUTH_BYPASS 모드에서 쿠키 기반으로 역할을 분기한다.
- * cms_bypass_role=react-adm → BYPASS_ADMIN 기반
- * 그 외                     → BYPASS_USER 기반
- *
- * cms_bypass_user_id 쿠키가 있으면 userId/userName을 해당 값으로 덮어씌운다.
- * 개발 환경에서 실제 계정 ID로 저장·조회를 테스트할 때 사용한다.
- * 예) document.cookie = "cms_bypass_user_id=cmsUser01"
- */
-function getBypassUser(cookieHeader: string): CurrentUser {
-  const base = parseCookie(cookieHeader, "cms_bypass_role") === "react-adm"
-    ? BYPASS_ADMIN
-    : BYPASS_USER;
-
-  const overrideUserId = parseCookie(cookieHeader, "cms_bypass_user_id");
-  if (!overrideUserId) return base;
-
-  return { ...base, userId: overrideUserId, userName: overrideUserId };
-}
-
 // ── 공개 API ─────────────────────────────────────────────────────────────────
 
 /**
  * 현재 로그인 사용자를 조회한다.
  * Vite 플러그인(Node.js 서버) 컨텍스트에서만 호출되어야 한다.
+ *
+ * Spider Admin API(`/api/auth/me`)에 요청자의 쿠키를 전달해 사용자를 식별한다.
+ * SPIDER_ADMIN_API_URL 미설정 또는 인증 실패 시 GUEST_USER를 반환한다.
  *
  * @param cookieHeader HTTP 요청의 Cookie 헤더 문자열 (req.headers.cookie ?? '')
  * @returns CurrentUser — 인증 실패 또는 예외 발생 시 GUEST_USER 반환
@@ -130,11 +81,6 @@ function getBypassUser(cookieHeader: string): CurrentUser {
 export async function getCurrentUser(
   cookieHeader: string,
 ): Promise<CurrentUser> {
-  // 개발 우회 모드 — admin 미배포 환경 테스트용
-  if (authEnv.AUTH_BYPASS === "true") {
-    return getBypassUser(cookieHeader);
-  }
-
   if (!authEnv.SPIDER_ADMIN_API_URL) {
     // 환경변수 미설정 시 경고 후 GUEST 처리 (운영 환경에서는 반드시 설정해야 함)
     console.warn(
@@ -152,7 +98,7 @@ export async function getCurrentUser(
 
   try {
     const response = await fetch(`${baseUrl}/api/auth/me`, {
-      // 요청자의 쿠키(JWT 세션)를 Spider Admin에 그대로 전달해 사용자 식별
+      // 요청자의 쿠키(세션)를 Spider Admin에 그대로 전달해 사용자 식별
       headers: { cookie: cookieHeader },
       signal: controller.signal,
     });
@@ -175,7 +121,7 @@ export async function getCurrentUser(
       authorities: body.data.authorities ?? [],
     };
   } catch {
-    // 네트워크 오류·JSON 파싱 실패 등 예외 시 GUEST 처리
+    // 네트워크 오류·JSON 파싱 실패·타임아웃 등 예외 시 GUEST 처리
     return GUEST_USER;
   }
 }
