@@ -39,6 +39,14 @@
     --bs-btn-focus-shadow-rgb: var(--sp-primary-rgb);
 }
 
+/* Bootstrap btn-outline-info 는 Sass 컴파일 시 색상이 고정되므로
+   --sp-info 토큰 변경이 반영되도록 CSS 변수 수준에서 오버라이드 */
+.btn-outline-info {
+    --bs-btn-color: var(--sp-info); --bs-btn-border-color: var(--sp-info);
+    --bs-btn-hover-bg: var(--sp-info); --bs-btn-hover-border-color: var(--sp-info);
+    --bs-btn-active-bg: var(--sp-info); --bs-btn-active-border-color: var(--sp-info);
+}
+
 /* Button sizing: 프로젝트 전체 12-13px 기준 */
 .btn { --bs-btn-font-size: var(--sp-font-size-base); } /* 13px */
 .btn-sm { --bs-btn-font-size: var(--sp-font-size-sm); } /* 12px */
