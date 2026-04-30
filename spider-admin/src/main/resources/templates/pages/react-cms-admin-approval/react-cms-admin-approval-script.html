@@ -107,20 +107,20 @@
                 const expiredCls = this._isExpired(row.expiredDate) ? 'text-danger fw-bold' : '';
                 const pid        = HtmlUtils.escape(row.pageId);
 
-                // 공개여부 — 현재 상태 라벨 + 클릭 시 토글 (쓰기 권한자에게만 노출)
+                // 공개여부 — XSS 방지: pageId·isPublic을 data-* 속성에만 저장
                 const isPublicBtn = HAS_REACT_CMS_WRITE
-                    ? `<button class="btn btn-xs ${row.isPublic === 'Y' ? 'btn-primary' : 'btn-outline-secondary'}"
+                    ? `<button class="btn btn-xs js-approval-toggle-public ${row.isPublic === 'Y' ? 'btn-primary' : 'btn-outline-secondary'}"
                                title="${row.isPublic === 'Y' ? '클릭하여 비공개 전환' : '클릭하여 공개 전환'}"
-                               onclick="ReactCmsAdminApprovalPage.togglePublicState('${pid}', '${HtmlUtils.escape(row.isPublic)}')">
+                               data-page-id="${pid}" data-current-state="${HtmlUtils.escape(row.isPublic)}">
                                ${row.isPublic === 'Y' ? '공개' : '비공개'}
                        </button>`
                     : `<span class="badge ${row.isPublic === 'Y' ? 'bg-primary' : 'bg-secondary'}">${row.isPublic === 'Y' ? '공개' : '비공개'}</span>`;
 
-                // 결재 컬럼 — PENDING 상태 + 쓰기 권한일 때만 노출
+                // 결재 컬럼 — XSS 방지: pageId를 data-* 속성에만 저장
                 const tdApproval = (HAS_REACT_CMS_WRITE && row.approveState === 'PENDING')
                     ? `<div class="d-flex flex-column gap-1">
-                           <button class="btn btn-success btn-xs" onclick="ReactCmsAdminApprovalPage.openApproveModal('${pid}')">승인</button>
-                           <button class="btn btn-danger btn-xs"  onclick="ReactCmsAdminApprovalPage.openRejectModal('${pid}')">반려</button>
+                           <button class="btn btn-success btn-xs js-approval-approve" data-page-id="${pid}">승인</button>
+                           <button class="btn btn-danger btn-xs js-approval-reject"   data-page-id="${pid}">반려</button>
                        </div>`
                     : '-';
 
@@ -400,6 +400,18 @@
 
         $(document).on('click', '.js-approval-history', function() {
             ReactCmsAdminApprovalPage.openHistoryModal($(this).data('page-id'));
+        });
+
+        $(document).on('click', '.js-approval-toggle-public', function() {
+            ReactCmsAdminApprovalPage.togglePublicState($(this).data('page-id'), $(this).data('current-state'));
+        });
+
+        $(document).on('click', '.js-approval-approve', function() {
+            ReactCmsAdminApprovalPage.openApproveModal($(this).data('page-id'));
+        });
+
+        $(document).on('click', '.js-approval-reject', function() {
+            ReactCmsAdminApprovalPage.openRejectModal($(this).data('page-id'));
         });
 
         $('#btnRefresh').off('click').on('click', function() { ReactCmsAdminApprovalPage.load(); });
