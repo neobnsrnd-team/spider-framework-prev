@@ -220,14 +220,15 @@ export function CMSBuilder({ onSave, initialPage, mode = "create", initialPageNa
   }
 
   // 편집 모드: DB 저장 상태로 복원 / 생성 모드: 빈 상태로 초기화
+  const { loadPage, clearBlocks } = builder;
   const handleReset = useCallback(() => {
     if (mode === "edit" && initialPage) {
       if (!window.confirm("마지막 저장 상태로 되돌아가시겠습니까?\n현재 편집 내용은 사라집니다.")) return;
-      builder.loadPage(initialPage);
+      loadPage(initialPage);
     } else {
-      builder.clearBlocks();
+      clearBlocks();
     }
-  }, [mode, initialPage, builder.loadPage, builder.clearBlocks]);
+  }, [mode, initialPage, loadPage, clearBlocks]);
 
   // page 선언 이후에 위치해야 TDZ 에러가 발생하지 않음
   const handlePreview = useCallback(() => {

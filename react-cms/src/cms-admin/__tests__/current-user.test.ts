@@ -7,7 +7,7 @@
  *   - 비동기 함수: getCurrentUser (SPIDER_ADMIN_API_URL 미설정, API 성공/실패, 폴백)
  *   - 권한 가드: requireCmsRead, requireCmsWrite
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import {
   hasAuthority,
   canReadCms,
@@ -91,11 +91,6 @@ describe("canAdminScreen", () => {
 // ── getCurrentUser ────────────────────────────────────────────────────────────
 
 describe("getCurrentUser", () => {
-  beforeEach(() => {
-    delete process.env.SPIDER_ADMIN_API_URL;
-    vi.unstubAllGlobals();
-  });
-
   afterEach(() => {
     delete process.env.SPIDER_ADMIN_API_URL;
     vi.unstubAllGlobals();

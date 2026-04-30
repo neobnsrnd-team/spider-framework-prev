@@ -158,6 +158,7 @@ cp .env.example .env
 |---|---|---|
 | `VITE_CMS_BRAND` | CMS 셸 브랜드 테마 색상 | `hana` |
 | `ORACLE_USER` / `ORACLE_PASSWORD` 등 | Oracle DB 접속 정보 | — |
+| `SPIDER_ADMIN_API_URL` | Spider Admin API 베이스 URL (어드민 모드에서 세션 인증에 사용) | — |
 
 **`VITE_CMS_BRAND`** 값에 따라 CMS 빌더 UI의 주요 색상(헤더, 버튼 등)이 변경된다.
 
@@ -167,17 +168,29 @@ VITE_CMS_BRAND=hana   # hana | kb | ibk | woori | shinhan | nh
 
 ### 실행
 
+#### 단독 실행 (파일시스템 저장)
+
 ```bash
 cd react-cms
 npm install
 npm run dev
 ```
 
-빌더 UI는 `http://localhost:5173/builder` 에서 접근한다.
+빌더 UI는 `http://localhost:5173/builder` 에서 접근한다. 페이지는 파일시스템(`demo/front`)에 저장된다.
 
 > `cmsBankPlugin`이 `react-cms` Vite 서버에 `/__cms/create-page` 엔드포인트를 등록하므로,
 > 저장 기능을 사용하려면 `demo/front`가 실행 중일 필요 없이 `react-cms` dev 서버만 실행하면 된다.
 > 단, 생성된 파일이 반영되려면 `demo/front` dev 서버도 함께 실행해야 한다.
+
+#### 어드민 모드 (spider-admin + Oracle DB 저장)
+
+```bash
+cd react-cms
+npm run dev:proxy
+```
+
+spider-admin(`:8080`)과 nginx 프록시(`:9000`)가 실행 중이어야 세션 쿠키가 공유되어 로그인 사용자로 저장된다.
+빌더 UI는 `http://localhost:9000/react-cms/builder` 에서 접근한다.
 
 ---
 
@@ -402,8 +415,22 @@ export function App() {
 
 ```typescript
 interface CMSBuilderProps {
+  /** 페이지 저장 핸들러. 생략 시 defaultSave(파일시스템) 사용 */
   onSave?: (page: CMSPage, params: SavePageParams) => void | Promise<void>;
+  /** 초기 페이지 데이터. edit 모드에서 DB에서 불러온 CMSPage를 전달 */
   initialPage?: CMSPage;
+  /**
+   * 빌더 모드.
+   * 'create': 새 페이지 생성 (기본값) — 초기화 버튼이 빈 상태로 리셋.
+   * 'edit': 기존 페이지 수정 — 초기화 버튼이 initialPage 상태로 복원.
+   */
+  mode?: "create" | "edit";
+  /** 편집 모드에서 저장 모달의 초기 페이지명 */
+  initialPageName?: string;
+  /** 현재 페이지 승인 상태 (WORK / PENDING / APPROVED / REJECTED) */
+  approveState?: string;
+  /** 반려 사유 — REJECTED 상태일 때 배너에 표시 */
+  rejectedReason?: string | null;
 }
 ```
 

@@ -128,9 +128,9 @@
                 const previewBtn = `<button class="btn btn-outline-info btn-xs js-approval-preview"
                     data-page-id="${pid}"><i class="bi bi-box-arrow-up-right"></i> 보기</button>`;
 
-                // 이력 컬럼
-                const tdHistory = `<button class="btn btn-outline-dark btn-xs"
-                    onclick="ReactCmsAdminApprovalPage.openHistoryModal('${pid}')">이력</button>`;
+                // 이력 컬럼 — XSS 방지: pageId를 data-* 속성에만 저장
+                const tdHistory = `<button class="btn btn-outline-dark btn-xs js-approval-history"
+                    data-page-id="${pid}">이력</button>`;
 
                 return `<tr>
                     <td>${HtmlUtils.escape(row.pageName)}</td>
@@ -396,6 +396,10 @@
 
         $(document).on('click', '.js-approval-preview', function() {
             ReactCmsAdminApprovalPage.openReactPreview($(this).data('page-id'));
+        });
+
+        $(document).on('click', '.js-approval-history', function() {
+            ReactCmsAdminApprovalPage.openHistoryModal($(this).data('page-id'));
         });
 
         $('#btnRefresh').off('click').on('click', function() { ReactCmsAdminApprovalPage.load(); });
