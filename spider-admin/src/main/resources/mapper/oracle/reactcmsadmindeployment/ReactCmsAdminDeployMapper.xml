@@ -31,7 +31,6 @@
         FILE_ID LIKE p.PAGE_ID || '%' — 전방 일치(leading wildcard 없음)로 인덱스 활용 가능.
     -->
     <select id="findApprovedPageList" resultType="com.example.spideradmin.domain.reactcmsadmindeployment.dto.ReactCmsAdminDeployPageResponse">
-    <select id="findApprovedPageList" resultType="com.example.spideradmin.domain.reactcmsadmindeployment.dto.ReactCmsAdminDeployPageResponse">
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
