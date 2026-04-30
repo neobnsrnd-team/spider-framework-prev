@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.wasinstance.mapper.WasInstanceMapper">
+
+    <sql id="wasInstanceColumns">
+        INSTANCE_ID AS "instanceId",
+        INSTANCE_NAME AS "instanceName",
+        INSTANCE_DESC AS "instanceDesc",
+        WAS_CONFIG_ID AS "wasConfigId",
+        INSTANCE_TYPE AS "instanceType",
+        IP AS "ip",
+        PORT AS "port",
+        OPER_MODE_TYPE AS "operModeType"
+    </sql>
+
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.wasinstance.dto.WasInstanceResponse">
+        SELECT <include refid="wasInstanceColumns"/>
+        FROM FWK_WAS_INSTANCE
+        WHERE INSTANCE_ID = #{instanceId}
+    </select>
+
+    <select id="countById" resultType="int">
+        SELECT COUNT(*)
+        FROM FWK_WAS_INSTANCE
+        WHERE INSTANCE_ID = #{instanceId}
+    </select>
+
+    <select id="selectAll" resultType="com.example.spideradmin.domain.wasinstance.dto.WasInstanceResponse">
+        SELECT <include refid="wasInstanceColumns"/>
+        FROM FWK_WAS_INSTANCE
+        ORDER BY INSTANCE_ID
+    </select>
+
+    <select id="selectAllSimple" resultType="com.example.spideradmin.domain.wasproperty.dto.WasInstanceSimpleResponse">
+        SELECT INSTANCE_ID as "instanceId",
+               INSTANCE_NAME as "instanceName"
+        FROM FWK_WAS_INSTANCE
+        ORDER BY INSTANCE_ID
+    </select>
+
+    <insert id="insert">
+        INSERT INTO FWK_WAS_INSTANCE (
+            INSTANCE_ID,
+            INSTANCE_NAME,
+            INSTANCE_DESC,
+            WAS_CONFIG_ID,
+            INSTANCE_TYPE,
+            IP,
+            PORT,
+            OPER_MODE_TYPE
+        ) VALUES (
+            #{dto.instanceId},
+            #{dto.instanceName},
+            #{dto.instanceDesc},
+            #{dto.wasConfigId, jdbcType=VARCHAR},
+            #{dto.instanceType},
+            #{dto.ip},
+            #{dto.port},
+            #{dto.operModeType}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE FWK_WAS_INSTANCE
+        SET INSTANCE_NAME = #{dto.instanceName},
+            INSTANCE_DESC = #{dto.instanceDesc},
+            WAS_CONFIG_ID = #{dto.wasConfigId, jdbcType=VARCHAR},
+            INSTANCE_TYPE = #{dto.instanceType},
+            IP = #{dto.ip},
+            PORT = #{dto.port},
+            OPER_MODE_TYPE = #{dto.operModeType}
+        WHERE INSTANCE_ID = #{instanceId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM FWK_WAS_INSTANCE
+        WHERE INSTANCE_ID = #{instanceId}
+    </delete>
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <select id="findBySearchPaging" resultType="com.example.spideradmin.domain.wasinstance.dto.WasInstanceResponse">
+        <bind name="orderColumn" value="
+            (sortBy == 'instanceId') ? 'i.INSTANCE_ID' :
+            (sortBy == 'instanceName') ? 'i.INSTANCE_NAME' :
+            (sortBy == 'instanceDesc') ? 'i.INSTANCE_DESC' :
+            (sortBy == 'instanceType') ? 'i.INSTANCE_TYPE' :
+            (sortBy == 'ip') ? 'i.IP' :
+            (sortBy == 'port') ? 'i.PORT' :
+            (sortBy == 'operModeType') ? 'i.OPER_MODE_TYPE' :
+            'i.INSTANCE_ID'
+        "/>
+        <bind name="orderDir" value="(sortDirection != null &amp;&amp; sortDirection.toUpperCase() == 'DESC') ? 'DESC' : 'ASC'"/>
+        SELECT INSTANCE_ID AS "instanceId",
+               INSTANCE_NAME AS "instanceName",
+               INSTANCE_DESC AS "instanceDesc",
+               WAS_CONFIG_ID AS "wasConfigId",
+               INSTANCE_TYPE AS "instanceType",
+               IP AS "ip",
+               PORT AS "port",
+               OPER_MODE_TYPE AS "operModeType"
+        FROM (
+            SELECT
+                i.INSTANCE_ID,
+                i.INSTANCE_NAME,
+                i.INSTANCE_DESC,
+                i.WAS_CONFIG_ID,
+                i.INSTANCE_TYPE,
+                i.IP,
+                i.PORT,
+                i.OPER_MODE_TYPE,
+                ROW_NUMBER() OVER (ORDER BY ${orderColumn} ${orderDir}) AS RN
+            FROM FWK_WAS_INSTANCE i
+            <where>
+                <if test="instanceName != null and instanceName != ''">
+                    AND i.INSTANCE_NAME LIKE '%' || #{instanceName} || '%'
+                </if>
+                <if test="instanceType != null and instanceType != ''">
+                    AND i.INSTANCE_TYPE = #{instanceType}
+                </if>
+                <if test="operModeType != null and operModeType != ''">
+                    AND i.OPER_MODE_TYPE = #{operModeType}
+                </if>
+            </where>
+        )
+        WHERE RN BETWEEN #{offset} + 1 AND #{offset} + #{limit}
+        ORDER BY RN
+    </select>
+
+    <select id="countBySearch" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_WAS_INSTANCE
+        <where>
+            <if test="instanceName != null and instanceName != ''">
+                AND INSTANCE_NAME LIKE '%' || #{instanceName} || '%'
+            </if>
+            <if test="instanceType != null and instanceType != ''">
+                AND INSTANCE_TYPE = #{instanceType}
+            </if>
+            <if test="operModeType != null and operModeType != ''">
+                AND OPER_MODE_TYPE = #{operModeType}
+            </if>
+        </where>
+    </select>
+
+    <!-- ==================== 엑셀 내보내기 (페이징 없음) ==================== -->
+
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.wasinstance.dto.WasInstanceResponse">
+        <bind name="orderColumn" value="
+            (sortBy == 'instanceId') ? 'i.INSTANCE_ID' :
+            (sortBy == 'instanceName') ? 'i.INSTANCE_NAME' :
+            (sortBy == 'instanceDesc') ? 'i.INSTANCE_DESC' :
+            (sortBy == 'instanceType') ? 'i.INSTANCE_TYPE' :
+            (sortBy == 'ip') ? 'i.IP' :
+            (sortBy == 'port') ? 'i.PORT' :
+            (sortBy == 'operModeType') ? 'i.OPER_MODE_TYPE' :
+            'i.INSTANCE_ID'
+        "/>
+        <bind name="orderDir" value="(sortDirection != null &amp;&amp; sortDirection.toUpperCase() == 'DESC') ? 'DESC' : 'ASC'"/>
+        SELECT INSTANCE_ID AS "instanceId",
+               INSTANCE_NAME AS "instanceName",
+               INSTANCE_DESC AS "instanceDesc",
+               WAS_CONFIG_ID AS "wasConfigId",
+               INSTANCE_TYPE AS "instanceType",
+               IP AS "ip",
+               PORT AS "port",
+               OPER_MODE_TYPE AS "operModeType"
+        FROM FWK_WAS_INSTANCE i
+        <where>
+            <if test="instanceName != null and instanceName != ''">
+                AND i.INSTANCE_NAME LIKE '%' || #{instanceName} || '%'
+            </if>
+            <if test="instanceType != null and instanceType != ''">
+                AND i.INSTANCE_TYPE = #{instanceType}
+            </if>
+            <if test="operModeType != null and operModeType != ''">
+                AND i.OPER_MODE_TYPE = #{operModeType}
+            </if>
+        </where>
+        ORDER BY ${orderColumn} ${orderDir}
+    </select>
+
+
+</mapper>

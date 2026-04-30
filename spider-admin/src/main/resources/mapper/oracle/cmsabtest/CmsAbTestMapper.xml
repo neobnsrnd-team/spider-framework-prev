@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.cmsabtest.mapper.CmsAbTestMapper">
+
+    <sql id="statsJoin">
+        LEFT JOIN (
+            SELECT
+                PAGE_ID,
+                SUM(CASE WHEN EVENT_TYPE = 'VIEW' THEN 1 ELSE 0 END)  AS VIEW_COUNT,
+                SUM(CASE WHEN EVENT_TYPE = 'CLICK' THEN 1 ELSE 0 END) AS CLICK_COUNT
+            FROM SPW_CMS_PAGE_VIEW_LOG
+            WHERE EVENT_TYPE IN ('VIEW', 'CLICK')
+            GROUP BY PAGE_ID
+        ) s ON s.PAGE_ID = p.PAGE_ID
+    </sql>
+
+    <sql id="approvedPageColumns">
+        p.PAGE_ID                                                AS pageId,
+        p.PAGE_NAME                                              AS pageName,
+        p.VIEW_MODE                                              AS viewMode,
+        p.APPROVE_STATE                                          AS approveState,
+        p.IS_PUBLIC                                              AS isPublic,
+        p.CREATE_USER_NAME                                       AS createUserName,
+        TO_CHAR(p.LAST_MODIFIED_DTIME, 'YYYY-MM-DD HH24:MI:SS') AS lastModifiedDtime,
+        p.AB_GROUP_ID                                            AS abGroupId,
+        p.AB_WEIGHT                                              AS abWeight,
+        NVL(s.VIEW_COUNT, 0)                                     AS viewCount,
+        NVL(s.CLICK_COUNT, 0)                                    AS clickCount
+    </sql>
+
+    <sql id="approvedPageOptionColumns">
+        p.PAGE_ID          AS pageId,
+        p.PAGE_NAME        AS pageName,
+        p.VIEW_MODE        AS viewMode,
+        p.IS_PUBLIC        AS isPublic,
+        p.CREATE_USER_NAME AS createUserName,
+        p.AB_GROUP_ID      AS abGroupId,
+        p.AB_WEIGHT        AS abWeight
+    </sql>
+
+    <sql id="approvedPageSearchConditions">
+        WHERE p.USE_YN = 'Y'
+          AND p.APPROVE_STATE = 'APPROVED'
+          AND p.IS_PUBLIC = 'Y'
+          <!-- 타 프로젝트의 REACT 등 다른 PAGE_TYPE 제외 (#136) -->
+          AND p.PAGE_TYPE = 'PAGE'
+        <if test="req.search != null and req.search != ''">
+          AND (
+              p.PAGE_ID LIKE '%' || #{req.search} || '%'
+              OR p.PAGE_NAME LIKE '%' || #{req.search} || '%'
+              OR p.CREATE_USER_NAME LIKE '%' || #{req.search} || '%'
+              OR p.AB_GROUP_ID LIKE '%' || #{req.search} || '%'
+          )
+        </if>
+    </sql>
+
+    <sql id="approvedPageOrderBy">
+        <bind name="orderDir" value="req.sortDirection == 'ASC' ? 'ASC' : 'DESC'"/>
+        <choose>
+            <when test="req.sortBy == 'pageName'">
+                ORDER BY p.PAGE_NAME ${orderDir} NULLS LAST, p.AB_GROUP_ID NULLS LAST
+            </when>
+            <when test="req.sortBy == 'viewMode'">
+                ORDER BY p.VIEW_MODE ${orderDir} NULLS LAST, p.PAGE_NAME
+            </when>
+            <when test="req.sortBy == 'createUserName'">
+                ORDER BY p.CREATE_USER_NAME ${orderDir} NULLS LAST, p.PAGE_NAME
+            </when>
+            <when test="req.sortBy == 'abGroupId'">
+                ORDER BY p.AB_GROUP_ID ${orderDir} NULLS LAST, p.PAGE_NAME
+            </when>
+            <when test="req.sortBy == 'abWeight'">
+                ORDER BY p.AB_WEIGHT ${orderDir} NULLS LAST, p.PAGE_NAME
+            </when>
+            <when test="req.sortBy == 'viewCount'">
+                ORDER BY NVL(s.VIEW_COUNT, 0) ${orderDir}, p.PAGE_NAME
+            </when>
+            <when test="req.sortBy == 'clickCount'">
+                ORDER BY NVL(s.CLICK_COUNT, 0) ${orderDir}, p.PAGE_NAME
+            </when>
+            <when test="req.sortBy == 'lastModifiedDtime'">
+                ORDER BY p.LAST_MODIFIED_DTIME ${orderDir} NULLS LAST
+            </when>
+            <otherwise>
+                ORDER BY p.AB_GROUP_ID NULLS LAST, p.PAGE_NAME
+            </otherwise>
+        </choose>
+    </sql>
+
+    <select id="findApprovedPages" resultType="com.example.spideradmin.domain.cmsabtest.dto.CmsAbPageResponse">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT
+                    <include refid="approvedPageColumns"/>
+                FROM SPW_CMS_PAGE p
+                <include refid="statsJoin"/>
+                <include refid="approvedPageSearchConditions"/>
+                <include refid="approvedPageOrderBy"/>
+            ) INNER_QRY
+            WHERE ROWNUM <![CDATA[<=]]> #{endRow}
+        ) WHERE RNUM > #{offset}
+    </select>
+
+    <select id="countApprovedPages" resultType="long">
+        SELECT COUNT(*)
+        FROM SPW_CMS_PAGE p
+        <include refid="approvedPageSearchConditions"/>
+    </select>
+
+    <select id="findAbGroupPages" resultType="com.example.spideradmin.domain.cmsabtest.dto.CmsAbPageResponse">
+        SELECT
+            <include refid="approvedPageColumns"/>
+        FROM SPW_CMS_PAGE p
+        <include refid="statsJoin"/>
+        WHERE p.USE_YN = 'Y'
+          AND p.APPROVE_STATE = 'APPROVED'
+          AND p.IS_PUBLIC = 'Y'
+          AND p.PAGE_TYPE = 'PAGE'
+          AND p.AB_GROUP_ID IS NOT NULL
+        <if test="search != null and search != ''">
+          AND (
+              p.PAGE_ID LIKE '%' || #{search} || '%'
+              OR p.PAGE_NAME LIKE '%' || #{search} || '%'
+              OR p.CREATE_USER_NAME LIKE '%' || #{search} || '%'
+              OR p.AB_GROUP_ID LIKE '%' || #{search} || '%'
+          )
+        </if>
+        ORDER BY p.AB_GROUP_ID NULLS LAST, p.PAGE_NAME
+    </select>
+
+    <select id="findApprovedPageOptions" resultType="com.example.spideradmin.domain.cmsabtest.dto.CmsAbPageResponse">
+        SELECT
+            <include refid="approvedPageOptionColumns"/>
+        FROM SPW_CMS_PAGE p
+        WHERE p.USE_YN = 'Y'
+          AND p.APPROVE_STATE = 'APPROVED'
+          AND p.IS_PUBLIC = 'Y'
+          AND p.PAGE_TYPE = 'PAGE'
+        <if test="search != null and search != ''">
+          AND (
+              p.PAGE_ID LIKE '%' || #{search} || '%'
+              OR p.PAGE_NAME LIKE '%' || #{search} || '%'
+              OR p.CREATE_USER_NAME LIKE '%' || #{search} || '%'
+              OR p.AB_GROUP_ID LIKE '%' || #{search} || '%'
+          )
+        </if>
+        ORDER BY p.AB_GROUP_ID NULLS LAST, p.PAGE_NAME
+    </select>
+
+    <select id="findGroupPages" resultType="com.example.spideradmin.domain.cmsabtest.dto.CmsAbGroupPageResponse">
+        SELECT
+            p.PAGE_ID             AS pageId,
+            p.PAGE_NAME           AS pageName,
+            p.VIEW_MODE           AS viewMode,
+            p.IS_PUBLIC           AS isPublic,
+            p.AB_WEIGHT           AS abWeight,
+            NVL(s.VIEW_COUNT, 0)  AS viewCount,
+            NVL(s.CLICK_COUNT, 0) AS clickCount
+        FROM SPW_CMS_PAGE p
+        <include refid="statsJoin"/>
+        WHERE p.AB_GROUP_ID = #{groupId}
+          AND p.USE_YN    = 'Y'
+          AND p.PAGE_TYPE = 'PAGE'
+        ORDER BY p.AB_WEIGHT DESC NULLS LAST, p.PAGE_NAME
+    </select>
+
+    <select id="countGroupPages" resultType="long">
+        SELECT COUNT(*)
+        FROM SPW_CMS_PAGE
+        WHERE AB_GROUP_ID = #{groupId}
+          AND USE_YN    = 'Y'
+          AND PAGE_TYPE = 'PAGE'
+    </select>
+
+    <select id="countApprovedPagesByIds" resultType="long">
+        SELECT COUNT(*)
+        FROM SPW_CMS_PAGE
+        WHERE USE_YN = 'Y'
+          AND APPROVE_STATE = 'APPROVED'
+          AND IS_PUBLIC = 'Y'
+          AND PAGE_TYPE = 'PAGE'
+          AND PAGE_ID IN
+          <foreach collection="pageIds" item="pageId" open="(" separator="," close=")">
+              #{pageId}
+          </foreach>
+    </select>
+
+    <select id="countConflictingPages" resultType="long">
+        SELECT COUNT(*)
+        FROM SPW_CMS_PAGE
+        WHERE USE_YN = 'Y'
+          AND AB_GROUP_ID IS NOT NULL
+          AND AB_GROUP_ID != #{groupId}
+          AND PAGE_TYPE = 'PAGE'
+          AND PAGE_ID IN
+          <foreach collection="pageIds" item="pageId" open="(" separator="," close=")">
+              #{pageId}
+          </foreach>
+    </select>
+
+    <select id="countPageInGroup" resultType="long">
+        SELECT COUNT(*)
+        FROM SPW_CMS_PAGE
+        WHERE AB_GROUP_ID = #{groupId}
+          AND PAGE_ID     = #{pageId}
+          AND USE_YN      = 'Y'
+          AND PAGE_TYPE   = 'PAGE'
+    </select>
+
+    <update id="updateAbGroup">
+        UPDATE SPW_CMS_PAGE
+        SET AB_GROUP_ID      = #{groupId},
+            AB_WEIGHT        = #{weight},
+            LAST_MODIFIER_ID = #{modifierId}
+        WHERE PAGE_ID   = #{pageId}
+          AND USE_YN    = 'Y'
+          AND PAGE_TYPE = 'PAGE'
+          AND (AB_GROUP_ID IS NULL OR AB_GROUP_ID = #{groupId})
+    </update>
+
+    <update id="clearAbGroup">
+        UPDATE SPW_CMS_PAGE
+        SET AB_GROUP_ID      = NULL,
+            AB_WEIGHT        = NULL,
+            LAST_MODIFIER_ID = #{modifierId}
+        WHERE AB_GROUP_ID = #{groupId}
+          AND USE_YN      = 'Y'
+          AND PAGE_TYPE   = 'PAGE'
+    </update>
+
+    <update id="clearPageAbGroup">
+        UPDATE SPW_CMS_PAGE
+        SET AB_GROUP_ID      = NULL,
+            AB_WEIGHT        = NULL,
+            LAST_MODIFIER_ID = #{modifierId}
+        WHERE PAGE_ID   = #{pageId}
+          AND USE_YN    = 'Y'
+          AND PAGE_TYPE = 'PAGE'
+          AND AB_GROUP_ID IS NOT NULL
+    </update>
+
+    <update id="promoteLosers">
+        UPDATE SPW_CMS_PAGE
+        SET AB_WEIGHT        = 0,
+            LAST_MODIFIER_ID = #{modifierId}
+        WHERE AB_GROUP_ID = #{groupId}
+          AND PAGE_ID  != #{winnerPageId}
+          AND USE_YN    = 'Y'
+          AND PAGE_TYPE = 'PAGE'
+    </update>
+
+    <update id="setWinner">
+        UPDATE SPW_CMS_PAGE
+        SET AB_WEIGHT        = 1,
+            LAST_MODIFIER_ID = #{modifierId}
+        WHERE PAGE_ID   = #{winnerPageId}
+          AND USE_YN    = 'Y'
+          AND PAGE_TYPE = 'PAGE'
+    </update>
+</mapper>

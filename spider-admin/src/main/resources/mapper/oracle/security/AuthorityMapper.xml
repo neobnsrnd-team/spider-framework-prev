@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.global.security.mapper.AuthorityMapper">
+
+    <select id="selectMenuPermissionsByUserId"
+            resultType="com.example.spideradmin.global.security.dto.MenuPermission">
+        SELECT MENU_ID AS "menuId", AUTH_CODE AS "authCode"
+        FROM FWK_USER_MENU
+        WHERE USER_ID = #{userId}
+    </select>
+
+    <select id="selectMenuPermissionsByRoleId"
+            resultType="com.example.spideradmin.global.security.dto.MenuPermission">
+        SELECT MENU_ID AS "menuId", AUTH_CODE AS "authCode"
+        FROM FWK_ROLE_MENU
+        WHERE ROLE_ID = #{roleId}
+    </select>
+
+</mapper>

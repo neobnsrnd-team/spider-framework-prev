@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.gwsystem.mapper.SystemMapper">
+
+    <select id="selectResponseBySystem"
+            resultType="com.example.spideradmin.domain.gwsystem.dto.SystemResponse">
+        SELECT
+            s.GW_ID              AS gwId,
+            s.SYSTEM_ID          AS systemId,
+            s.OPER_MODE_TYPE     AS operModeType,
+            s.IP                 AS ip,
+            s.PORT               AS port,
+            s.STOP_YN            AS stopYn,
+            s.SYSTEM_DESC        AS systemDesc,
+            s.APPLIED_WAS_INSTANCE AS appliedWasInstance
+        FROM FWK_SYSTEM s
+        WHERE s.GW_ID = #{gwId}
+          AND s.SYSTEM_ID = #{systemId}
+    </select>
+
+    <select id="countBySystem" resultType="int">
+        SELECT COUNT(*) FROM FWK_SYSTEM WHERE GW_ID = #{gwId} AND SYSTEM_ID = #{systemId}
+    </select>
+
+    <insert id="insertSystem">
+        INSERT INTO FWK_SYSTEM (
+            GW_ID,
+            SYSTEM_ID,
+            OPER_MODE_TYPE,
+            IP,
+            PORT,
+            STOP_YN,
+            SYSTEM_DESC,
+            APPLIED_WAS_INSTANCE
+        ) VALUES (
+            #{dto.gwId},
+            #{dto.systemId},
+            #{dto.operModeType},
+            #{dto.ip},
+            #{dto.port},
+            #{dto.stopYn},
+            #{dto.systemDesc},
+            #{dto.appliedWasInstance}
+        )
+    </insert>
+
+    <update id="updateSystem">
+        UPDATE FWK_SYSTEM
+        SET
+            SYSTEM_ID = #{dto.systemId},
+            OPER_MODE_TYPE = #{dto.operModeType},
+            IP = #{dto.ip},
+            PORT = #{dto.port},
+            STOP_YN = #{dto.stopYn},
+            SYSTEM_DESC = #{dto.systemDesc},
+            APPLIED_WAS_INSTANCE = #{dto.appliedWasInstance}
+        WHERE GW_ID = #{dto.gwId}
+          AND SYSTEM_ID = #{dto.systemId}
+    </update>
+
+    <delete id="deleteSystem">
+        DELETE FROM FWK_SYSTEM
+        WHERE GW_ID = #{gwId}
+          AND SYSTEM_ID = #{systemId}
+    </delete>
+
+
+    <!-- ==================== Common (merged) ==================== -->
+
+
+    <!-- SystemResponse 컬럼 (AS alias) -->
+    <sql id="systemColumns">
+        s.GW_ID              AS gwId,
+        s.SYSTEM_ID          AS systemId,
+        s.OPER_MODE_TYPE     AS operModeType,
+        s.IP                 AS ip,
+        s.PORT               AS port,
+        s.STOP_YN            AS stopYn,
+        s.SYSTEM_DESC        AS systemDesc,
+        s.APPLIED_WAS_INSTANCE AS appliedWasInstance
+    </sql>
+
+    <!-- System FROM 절 -->
+    <sql id="fromSystem">
+        FROM FWK_SYSTEM s
+    </sql>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <select id="findByGateway"
+            resultType="com.example.spideradmin.domain.gwsystem.dto.SystemResponse">
+        SELECT <include refid="systemColumns"/>
+        <include refid="fromSystem"/>
+        WHERE s.GW_ID = #{gwId}
+        ORDER BY s.SYSTEM_ID
+    </select>
+
+    <select id="findBySearchPaging"
+            resultType="com.example.spideradmin.domain.gwsystem.dto.SystemResponse">
+        SELECT * FROM (
+            SELECT
+                <include refid="systemColumns"/>,
+                ROW_NUMBER() OVER (ORDER BY s.GW_ID, s.SYSTEM_ID) AS RN
+            <include refid="fromSystem"/>
+            <where>
+                <if test="gwId != null and gwId != ''">
+                    AND s.GW_ID = #{gwId}
+                </if>
+                <if test="operModeType != null and operModeType != ''">
+                    AND s.OPER_MODE_TYPE = #{operModeType}
+                </if>
+                <if test="stopYn != null and stopYn != ''">
+                    AND s.STOP_YN = #{stopYn}
+                </if>
+            </where>
+        )
+        WHERE RN BETWEEN #{offset} + 1 AND #{offset} + #{limit}
+    </select>
+
+    <select id="countBySearch" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_SYSTEM
+        <where>
+            <if test="gwId != null and gwId != ''">
+                AND GW_ID = #{gwId}
+            </if>
+            <if test="operModeType != null and operModeType != ''">
+                AND OPER_MODE_TYPE = #{operModeType}
+            </if>
+            <if test="stopYn != null and stopYn != ''">
+                AND STOP_YN = #{stopYn}
+            </if>
+        </where>
+    </select>
+
+
+</mapper>

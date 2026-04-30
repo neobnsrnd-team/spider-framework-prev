@@ -1,0 +1,11 @@
+package com.example.spideradmin;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class SpiderAdminApplicationTests {
+
+    @Test
+    void contextLoads() {}
+}

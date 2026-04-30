@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    TrxStopHistory Command Mapper (message 도메인)
+    - 거래중지/시작 시 이력 INSERT 전용
+    - 조회는 monitor 도메인의 TrxStopHistoryQueryMapper가 담당
+-->
+<mapper namespace="com.example.spideradmin.domain.transaction.mapper.TrxStopHistoryMapper">
+
+    <insert id="insert">
+        INSERT INTO FWK_TRX_STOP_HISTORY (
+            GUBUN_TYPE,
+            TRX_ID,
+            TRX_STOP_UPDATE_DTIME,
+            TRX_STOP_REASON,
+            TRX_STOP_YN,
+            LAST_UPDATE_USER_ID
+        ) VALUES (
+            #{gubunType, jdbcType=VARCHAR},
+            #{trxId, jdbcType=VARCHAR},
+            #{trxStopUpdateDtime, jdbcType=VARCHAR},
+            #{trxStopReason, jdbcType=VARCHAR},
+            #{trxStopYn, jdbcType=VARCHAR},
+            #{lastUpdateUserId, jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- 배치 삽입 (Oracle INSERT ALL 패턴) -->
+    <insert id="insertBatch">
+        INSERT INTO FWK_TRX_STOP_HISTORY (
+            GUBUN_TYPE,
+            TRX_ID,
+            TRX_STOP_UPDATE_DTIME,
+            TRX_STOP_REASON,
+            TRX_STOP_YN,
+            LAST_UPDATE_USER_ID
+        )
+        SELECT A.* FROM (
+            <foreach collection="list" item="item" separator=" UNION ALL ">
+                SELECT
+                    #{item.gubunType, jdbcType=VARCHAR},
+                    #{item.trxId, jdbcType=VARCHAR},
+                    #{item.trxStopUpdateDtime, jdbcType=VARCHAR},
+                    #{item.trxStopReason, jdbcType=VARCHAR},
+                    #{item.trxStopYn, jdbcType=VARCHAR},
+                    #{item.lastUpdateUserId, jdbcType=VARCHAR}
+                FROM DUAL
+            </foreach>
+        ) A
+    </insert>
+
+
+    <!-- ==================== Common (merged) ==================== -->
+
+
+    <!-- ==================== ResultMap 정의 ==================== -->
+
+    <!-- TrxStopHistoryWithTrxNameResponseDTO ResultMap (JOIN용) -->
+    <resultMap id="TrxStopHistoryWithTrxNameResultMap"
+               type="com.example.spideradmin.domain.transaction.dto.TrxStopHistoryWithTrxNameResponse">
+        <result property="gubunType" column="GUBUN_TYPE"/>
+        <result property="trxId" column="TRX_ID"/>
+        <result property="trxName" column="TRX_NAME"/>
+        <result property="trxStopUpdateDtime" column="TRX_STOP_UPDATE_DTIME"/>
+        <result property="trxStopReason" column="TRX_STOP_REASON"/>
+        <result property="trxStopYn" column="TRX_STOP_YN"/>
+        <result property="lastUpdateUserId" column="LAST_UPDATE_USER_ID"/>
+    </resultMap>
+
+    <!-- ==================== SQL Fragment 정의 ==================== -->
+
+    <!-- JOIN 시 컬럼 (거래명 포함) -->
+    <sql id="columnsWithTrxName">
+        h.GUBUN_TYPE,
+        h.TRX_ID,
+        t.TRX_NAME,
+        h.TRX_STOP_UPDATE_DTIME,
+        h.TRX_STOP_REASON,
+        h.TRX_STOP_YN,
+        h.LAST_UPDATE_USER_ID
+    </sql>
+
+    <!-- FROM 절 (LEFT JOIN with FWK_TRX) -->
+    <sql id="fromWithTrxJoin">
+        FROM FWK_TRX_STOP_HISTORY h
+        LEFT JOIN FWK_TRX t ON h.TRX_ID = t.TRX_ID
+    </sql>
+
+    <!-- 검색 조건 -->
+    <sql id="searchConditions">
+        <where>
+            <if test="gubunType != null and gubunType != ''">
+                AND h.GUBUN_TYPE = #{gubunType}
+            </if>
+            <if test="trxId != null and trxId != ''">
+                AND h.TRX_ID = #{trxId}
+            </if>
+            <if test="startDtime != null and startDtime != ''">
+                AND h.TRX_STOP_UPDATE_DTIME &gt;= #{startDtime}
+            </if>
+            <if test="endDtime != null and endDtime != ''">
+                AND h.TRX_STOP_UPDATE_DTIME &lt;= #{endDtime}
+            </if>
+        </where>
+    </sql>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <!-- ==================== 검색 조건 공통 SQL Fragment (searchDTO 접두사) ==================== -->
+
+    <sql id="searchConditionsWithPrefix">
+        <where>
+            <if test="searchDTO.gubunType != null and searchDTO.gubunType != ''">
+                AND h.GUBUN_TYPE = #{searchDTO.gubunType}
+            </if>
+            <if test="searchDTO.trxId != null and searchDTO.trxId != ''">
+                AND UPPER(h.TRX_ID) LIKE '%' || UPPER(#{searchDTO.trxId}) || '%'
+            </if>
+            <if test="searchDTO.startDtime != null and searchDTO.startDtime != ''">
+                AND h.TRX_STOP_UPDATE_DTIME &gt;= #{searchDTO.startDtime}
+            </if>
+            <if test="searchDTO.endDtime != null and searchDTO.endDtime != ''">
+                AND h.TRX_STOP_UPDATE_DTIME &lt;= #{searchDTO.endDtime}
+            </if>
+        </where>
+    </sql>
+
+    <!-- ==================== 검색 (네이티브 ROWNUM 페이징) ==================== -->
+
+    <select id="searchHistories"
+            resultMap="TrxStopHistoryWithTrxNameResultMap">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT
+                    <include refid="columnsWithTrxName"/>
+                <include refid="fromWithTrxJoin"/>
+                <include refid="searchConditionsWithPrefix"/>
+                ORDER BY
+                <choose>
+                    <when test="sortBy == 'gubunType'">h.GUBUN_TYPE</when>
+                    <when test="sortBy == 'trxId'">UPPER(h.TRX_ID)</when>
+                    <when test="sortBy == 'trxName'">UPPER(t.TRX_NAME)</when>
+                    <when test="sortBy == 'trxStopReason'">UPPER(h.TRX_STOP_REASON)</when>
+                    <when test="sortBy == 'trxStopUpdateDtime'">h.TRX_STOP_UPDATE_DTIME</when>
+                    <when test="sortBy == 'lastUpdateUserId'">UPPER(h.LAST_UPDATE_USER_ID)</when>
+                    <otherwise>h.TRX_STOP_UPDATE_DTIME</otherwise>
+                </choose>
+                <choose>
+                    <when test="sortDirection == 'ASC'"> ASC</when>
+                    <when test="sortDirection == 'DESC'"> DESC</when>
+                    <otherwise> DESC</otherwise>
+                </choose>
+            ) INNER_QRY
+            WHERE ROWNUM <![CDATA[<=]]> #{endRow}
+        ) WHERE RNUM > #{offset}
+    </select>
+
+    <!-- ==================== 검색 카운트 ==================== -->
+
+    <select id="countSearchHistories" resultType="long">
+        SELECT COUNT(*)
+        <include refid="fromWithTrxJoin"/>
+        <include refid="searchConditionsWithPrefix"/>
+    </select>
+
+    <!-- ==================== 거래ID로 조회 ==================== -->
+
+    <select id="findByTrxId"
+            resultMap="TrxStopHistoryWithTrxNameResultMap">
+        SELECT
+            <include refid="columnsWithTrxName"/>
+        <include refid="fromWithTrxJoin"/>
+        WHERE h.TRX_ID = #{trxId, jdbcType=VARCHAR}
+        ORDER BY h.TRX_STOP_UPDATE_DTIME DESC
+    </select>
+
+    <!-- ==================== 엑셀 내보내기용 전체 조회 ==================== -->
+
+    <select id="findAllForExport"
+            resultMap="TrxStopHistoryWithTrxNameResultMap">
+        SELECT
+            <include refid="columnsWithTrxName"/>
+        <include refid="fromWithTrxJoin"/>
+        <include refid="searchConditionsWithPrefix"/>
+        ORDER BY h.TRX_STOP_UPDATE_DTIME DESC
+    </select>
+
+
+</mapper>

@@ -1,0 +1,31 @@
+# ============================================
+# Oracle Database Configuration
+# ============================================
+# Sensitive values are loaded from environment variables.
+# See .env.example for required variables.
+# ============================================
+
+spring:
+  datasource:
+    driver-class-name: oracle.jdbc.OracleDriver
+    url: ${DB_URL:jdbc:oracle:thin:@localhost:1521:XE}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
+    hikari:
+      connection-init-sql: ALTER SESSION SET CURRENT_SCHEMA = ${DB_SCHEMA:}
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+# MyBatis Configuration
+mybatis:
+  mapper-locations: classpath:mapper/oracle/**/*.xml
+  type-handlers-package: com.example.spideradmin.global.common.handler
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: VARCHAR
+    lazy-loading-enabled: false
+    cache-enabled: true
+    auto-mapping-behavior: PARTIAL
