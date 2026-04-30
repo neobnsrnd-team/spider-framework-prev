@@ -235,7 +235,8 @@ export function CMSBuilder({ onSave, initialPage, mode = "create", initialPageNa
     localStorage.setItem("cms_preview", JSON.stringify(page));
     // BASE_URL(=import.meta.env.BASE_URL)을 prefix로 붙여 nginx 프록시 모드에서도 올바른 경로로 이동
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-    window.open(`${base}/preview`, "_blank");
+    // 승인·배포 관리와 동일한 폰 크기(430×860)로 미리보기 창 오픈
+    window.open(`${base}/preview`, "cmsBuilderPreview", "width=430,height=860,scrollbars=yes,resizable=yes");
   }, [page]);
 
   // Context 정보(layouts, codegenConfig, overlayTemplates)를 포함해 코드를 생성한 뒤
