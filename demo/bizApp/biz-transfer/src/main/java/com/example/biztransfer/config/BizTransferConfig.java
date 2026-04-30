@@ -84,13 +84,16 @@ public class BizTransferConfig {
      * @return 구성된 SpiderTcpServer 인스턴스
      */
     @Bean
+    public CommandDispatcher<JsonCommandRequest, JsonCommandResponse> commandDispatcher(
+            List<CommandHandler<JsonCommandRequest, JsonCommandResponse>> handlers) {
+        return new CommandDispatcher<>(handlers);
+    }
+
+    @Bean
     public SpiderTcpServer<JsonCommandRequest, JsonCommandResponse> bizTransferTcpServer(
             ObjectMapper objectMapper,
-            List<CommandHandler<JsonCommandRequest, JsonCommandResponse>> handlers,
+            CommandDispatcher<JsonCommandRequest, JsonCommandResponse> dispatcher,
             Optional<MessageInstanceRecorder> recorder) {
-
-        CommandDispatcher<JsonCommandRequest, JsonCommandResponse> dispatcher =
-                new CommandDispatcher<>(handlers);
 
         return new SpiderTcpServer<>(tcpServerPort, handlerPoolSize, queueCapacity,
                 new JsonMessageCodec(objectMapper), dispatcher, recorder.orElse(null));
