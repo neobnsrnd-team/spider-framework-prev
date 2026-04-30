@@ -1,7 +1,9 @@
 package com.example.spideradmin.infra.tcp.handler;
 
 import com.example.spideradmin.infra.tcp.adapter.BizChannelAdapter;
-import com.example.spideradmin.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.handler.CommandHandler;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class EmergencyNoticeSyncCommandHandler implements CommandHandler {
+public class EmergencyNoticeSyncCommandHandler implements CommandHandler<JsonCommandRequest, JsonCommandResponse> {
 
     private final BizChannelAdapter bizChannelAdapter;
 
@@ -25,7 +27,7 @@ public class EmergencyNoticeSyncCommandHandler implements CommandHandler {
     }
 
     @Override
-    public Object handle(String command, JsonCommandRequest request) {
+    public JsonCommandResponse handle(String command, JsonCommandRequest request) {
         return bizChannelAdapter.doProcess(command, request);
     }
 }

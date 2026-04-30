@@ -1,7 +1,8 @@
 package com.example.spideradmin.infra.tcp.handler;
 
-import com.example.spideradmin.infra.tcp.model.JsonCommandRequest;
-import com.example.spideradmin.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.handler.CommandHandler;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-public class UserCreateCommandHandler implements CommandHandler {
+public class UserCreateCommandHandler implements CommandHandler<JsonCommandRequest, JsonCommandResponse> {
 
     @Override
     public boolean supports(String command) {
@@ -21,7 +22,7 @@ public class UserCreateCommandHandler implements CommandHandler {
     }
 
     @Override
-    public Object handle(String command, JsonCommandRequest request) {
+    public JsonCommandResponse handle(String command, JsonCommandRequest request) {
         Map<String, Object> payload = request.getPayload();
         String name = payload != null ? String.valueOf(payload.getOrDefault("name", "unknown")) : "unknown";
         String role = payload != null ? String.valueOf(payload.getOrDefault("role", "user")) : "user";

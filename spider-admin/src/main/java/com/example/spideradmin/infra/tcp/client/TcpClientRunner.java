@@ -1,7 +1,8 @@
 package com.example.spideradmin.infra.tcp.client;
 
-import com.example.spideradmin.infra.tcp.model.JsonCommandRequest;
-import com.example.spideradmin.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
+import com.example.spiderlink.infra.tcp.client.TcpClient;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
