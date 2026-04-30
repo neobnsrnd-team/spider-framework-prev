@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    Trx Message History Mapper
+    - 트랜잭션-메시지 매핑 변경 이력 관리
+    - 버전 관리 및 이력 생성
+-->
+<mapper namespace="com.example.spideradmin.domain.trxmessage.mapper.TrxMessageHistoryMapper">
+
+    <!-- 다음 버전 번호 조회 -->
+    <select id="getNextVersion" resultType="int">
+        SELECT COALESCE(MAX(VERSION), 0) + 1
+        FROM FWK_TRX_MESSAGE_HISTORY
+        WHERE TRX_ID = #{trxId}
+          AND ORG_ID = #{orgId}
+          AND IO_TYPE = #{ioType}
+    </select>
+
+    <!-- FWK_TRX_MESSAGE에서 직접 이력 레코드 생성 (INSERT ... SELECT) -->
+    <insert id="insertHistoryFromTrxMessage">
+        INSERT INTO FWK_TRX_MESSAGE_HISTORY (
+            TRX_ID, ORG_ID, IO_TYPE, VERSION,
+            MESSAGE_ID, STD_MESSAGE_ID, RES_MESSAGE_ID, STD_RES_MESSAGE_ID,
+            PROXY_RES_YN, PROXY_RES_DATA, EXECUTE_SEQ, PROXY_RES_TYPE,
+            HEX_LOG_YN, MULTI_RES_YN, RES_TYPE_FIELD_ID,
+            MULTI_RES_TYPE, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID,
+            TIMEOUT_SEC, LEGACY_MESSAGE_ID
+        )
+        SELECT
+            TRX_ID, ORG_ID, IO_TYPE, #{version},
+            MESSAGE_ID, STD_MESSAGE_ID, RES_MESSAGE_ID, STD_RES_MESSAGE_ID,
+            PROXY_RES_YN, PROXY_RES_DATA, EXECUTE_SEQ, PROXY_RES_TYPE,
+            HEX_LOG_YN, MULTI_RES_YN, RES_TYPE_FIELD_ID,
+            MULTI_RES_TYPE, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID,
+            TIMEOUT_SEC, LEGACY_MESSAGE_ID
+        FROM FWK_TRX_MESSAGE
+        WHERE TRX_ID = #{trxId}
+          AND ORG_ID = #{orgId}
+          AND IO_TYPE = #{ioType}
+    </insert>
+
+</mapper>

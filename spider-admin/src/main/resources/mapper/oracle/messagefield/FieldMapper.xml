@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    MessageField Mapper (CRUD + Query)
+    - insert / update / delete / 단건 조회
+    - Entity 없이 DTO 직접 반환
+-->
+<mapper namespace="com.example.spideradmin.domain.messagefield.mapper.FieldMapper">
+
+    <!-- 단건 조회 (MessageFieldResponse DTO 직접 반환) -->
+    <select id="selectResponseById"
+            resultType="com.example.spideradmin.domain.messagefield.dto.MessageFieldResponse">
+        SELECT
+            mf.ORG_ID AS orgId,
+            mf.MESSAGE_ID AS messageId,
+            mf.MESSAGE_FIELD_ID AS messageFieldId,
+            mf.SORT_ORDER AS sortOrder,
+            mf.DATA_TYPE AS dataType,
+            mf.DATA_LENGTH AS dataLength,
+            mf.SCALE AS scale,
+            mf.ALIGN AS align,
+            mf.FILLER AS filler,
+            mf.FIELD_TYPE AS fieldType,
+            mf.USE_MODE AS useMode,
+            mf.REQUIRED_YN AS requiredYn,
+            mf.FIELD_TAG AS fieldTag,
+            mf.CODE_GROUP AS codeGroup,
+            mf.DEFAULT_VALUE AS defaultValue,
+            mf.TEST_VALUE AS testValue,
+            mf.REMARK AS remark,
+            mf.LOG_YN AS logYn,
+            mf.CODE_MAPPING_YN AS codeMappingYn,
+            mf.MESSAGE_FIELD_NAME AS messageFieldName,
+            mf.MESSAGE_FIELD_DESC AS messageFieldDesc,
+            mf.LAST_UPDATE_DTIME AS lastUpdateDtime,
+            mf.VALIDATION_RULE_ID AS validationRuleId,
+            mf.LAST_UPDATE_USER_ID AS lastUpdateUserId,
+            mf.FIELD_FORMAT AS fieldFormat,
+            mf.FIELD_FORMAT_DESC AS fieldFormatDesc,
+            mf.FIELD_OPTION AS fieldOption,
+            mf.FIELD_REPEAT_CNT AS fieldRepeatCnt
+        FROM FWK_MESSAGE_FIELD mf
+        WHERE mf.ORG_ID = #{orgId}
+          AND mf.MESSAGE_ID = #{messageId}
+          AND mf.MESSAGE_FIELD_ID = #{messageFieldId}
+    </select>
+
+    <!-- 생성 -->
+    <insert id="insertField">
+        INSERT INTO FWK_MESSAGE_FIELD (
+            ORG_ID, MESSAGE_ID, MESSAGE_FIELD_ID, SORT_ORDER,
+            DATA_TYPE, DATA_LENGTH, SCALE, ALIGN, FILLER,
+            FIELD_TYPE, USE_MODE, REQUIRED_YN, FIELD_TAG,
+            CODE_GROUP, DEFAULT_VALUE, TEST_VALUE, REMARK,
+            LOG_YN, CODE_MAPPING_YN, MESSAGE_FIELD_NAME,
+            MESSAGE_FIELD_DESC, LAST_UPDATE_DTIME, VALIDATION_RULE_ID,
+            LAST_UPDATE_USER_ID, FIELD_FORMAT, FIELD_FORMAT_DESC,
+            FIELD_OPTION, FIELD_REPEAT_CNT
+        ) VALUES (
+            #{dto.orgId}, #{dto.messageId}, #{dto.messageFieldId}, #{dto.sortOrder,jdbcType=NUMERIC},
+            #{dto.dataType}, #{dto.dataLength,jdbcType=NUMERIC}, #{dto.scale,jdbcType=NUMERIC}, #{dto.align}, #{dto.filler},
+            #{dto.fieldType}, #{dto.useMode}, #{dto.requiredYn}, #{dto.fieldTag},
+            #{dto.codeGroup}, #{dto.defaultValue}, #{dto.testValue}, #{dto.remark},
+            #{dto.logYn}, #{dto.codeMappingYn}, #{dto.messageFieldName},
+            #{dto.messageFieldDesc}, #{lastUpdateDtime}, #{dto.validationRuleId},
+            #{lastUpdateUserId}, #{dto.fieldFormat}, #{dto.fieldFormatDesc},
+            #{dto.fieldOption}, #{dto.fieldRepeatCnt,jdbcType=NUMERIC}
+        )
+    </insert>
+
+    <!-- 일괄 생성 (Oracle UNION ALL 패턴) -->
+    <insert id="insertFieldBatch">
+        INSERT INTO FWK_MESSAGE_FIELD (
+            ORG_ID, MESSAGE_ID, MESSAGE_FIELD_ID, SORT_ORDER,
+            DATA_TYPE, DATA_LENGTH, SCALE, ALIGN, FILLER,
+            FIELD_TYPE, USE_MODE, REQUIRED_YN, FIELD_TAG,
+            CODE_GROUP, DEFAULT_VALUE, TEST_VALUE, REMARK,
+            LOG_YN, CODE_MAPPING_YN, MESSAGE_FIELD_NAME,
+            MESSAGE_FIELD_DESC, LAST_UPDATE_DTIME, VALIDATION_RULE_ID,
+            LAST_UPDATE_USER_ID, FIELD_FORMAT, FIELD_FORMAT_DESC,
+            FIELD_OPTION, FIELD_REPEAT_CNT
+        )
+        <foreach collection="fields" item="field" separator=" UNION ALL ">
+            SELECT
+                #{field.orgId,jdbcType=VARCHAR},
+                #{field.messageId,jdbcType=VARCHAR},
+                #{field.messageFieldId,jdbcType=VARCHAR},
+                #{field.sortOrder,jdbcType=NUMERIC},
+                #{field.dataType,jdbcType=VARCHAR},
+                #{field.dataLength,jdbcType=NUMERIC},
+                #{field.scale,jdbcType=NUMERIC},
+                #{field.align,jdbcType=VARCHAR},
+                #{field.filler,jdbcType=VARCHAR},
+                #{field.fieldType,jdbcType=VARCHAR},
+                #{field.useMode,jdbcType=VARCHAR},
+                #{field.requiredYn,jdbcType=VARCHAR},
+                #{field.fieldTag,jdbcType=VARCHAR},
+                #{field.codeGroup,jdbcType=VARCHAR},
+                #{field.defaultValue,jdbcType=VARCHAR},
+                #{field.testValue,jdbcType=VARCHAR},
+                #{field.remark,jdbcType=VARCHAR},
+                #{field.logYn,jdbcType=VARCHAR},
+                #{field.codeMappingYn,jdbcType=VARCHAR},
+                #{field.messageFieldName,jdbcType=VARCHAR},
+                #{field.messageFieldDesc,jdbcType=VARCHAR},
+                #{lastUpdateDtime,jdbcType=VARCHAR},
+                #{field.validationRuleId,jdbcType=VARCHAR},
+                #{lastUpdateUserId,jdbcType=VARCHAR},
+                #{field.fieldFormat,jdbcType=VARCHAR},
+                #{field.fieldFormatDesc,jdbcType=VARCHAR},
+                #{field.fieldOption,jdbcType=VARCHAR},
+                #{field.fieldRepeatCnt,jdbcType=NUMERIC}
+            FROM DUAL
+        </foreach>
+    </insert>
+
+    <!-- 수정 -->
+    <update id="updateField">
+        UPDATE FWK_MESSAGE_FIELD
+        SET SORT_ORDER = #{dto.sortOrder,jdbcType=NUMERIC},
+            DATA_TYPE = #{dto.dataType},
+            DATA_LENGTH = #{dto.dataLength,jdbcType=NUMERIC},
+            SCALE = #{dto.scale,jdbcType=NUMERIC},
+            ALIGN = #{dto.align},
+            FILLER = #{dto.filler},
+            FIELD_TYPE = #{dto.fieldType},
+            USE_MODE = #{dto.useMode},
+            REQUIRED_YN = #{dto.requiredYn},
+            FIELD_TAG = #{dto.fieldTag},
+            CODE_GROUP = #{dto.codeGroup},
+            DEFAULT_VALUE = #{dto.defaultValue},
+            TEST_VALUE = #{dto.testValue},
+            REMARK = #{dto.remark},
+            LOG_YN = #{dto.logYn},
+            CODE_MAPPING_YN = #{dto.codeMappingYn},
+            MESSAGE_FIELD_NAME = #{dto.messageFieldName},
+            MESSAGE_FIELD_DESC = #{dto.messageFieldDesc},
+            LAST_UPDATE_DTIME = #{lastUpdateDtime},
+            VALIDATION_RULE_ID = #{dto.validationRuleId},
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId},
+            FIELD_FORMAT = #{dto.fieldFormat},
+            FIELD_FORMAT_DESC = #{dto.fieldFormatDesc},
+            FIELD_OPTION = #{dto.fieldOption},
+            FIELD_REPEAT_CNT = #{dto.fieldRepeatCnt,jdbcType=NUMERIC}
+        WHERE ORG_ID = #{orgId}
+          AND MESSAGE_ID = #{messageId}
+          AND MESSAGE_FIELD_ID = #{messageFieldId}
+    </update>
+
+    <!-- 삭제 -->
+    <delete id="deleteField">
+        DELETE FROM FWK_MESSAGE_FIELD
+        WHERE ORG_ID = #{orgId}
+          AND MESSAGE_ID = #{messageId}
+          AND MESSAGE_FIELD_ID = #{messageFieldId}
+    </delete>
+
+    <!-- 존재 확인 (중복 체크용) -->
+    <select id="countByFieldId" resultType="int">
+        SELECT COUNT(*)
+        FROM FWK_MESSAGE_FIELD
+        WHERE ORG_ID = #{orgId}
+          AND MESSAGE_ID = #{messageId}
+          AND MESSAGE_FIELD_ID = #{messageFieldId}
+    </select>
+
+
+    <!-- ==================== SQL Fragment 정의 ==================== -->
+
+    <!-- MessageField 컬럼 (AS alias for DTO) -->
+    <sql id="fieldColumnsAsDto">
+        mf.ORG_ID AS orgId,
+        mf.MESSAGE_ID AS messageId,
+        mf.MESSAGE_FIELD_ID AS messageFieldId,
+        mf.SORT_ORDER AS sortOrder,
+        mf.DATA_TYPE AS dataType,
+        mf.DATA_LENGTH AS dataLength,
+        mf.SCALE AS scale,
+        mf.ALIGN AS align,
+        mf.FILLER AS filler,
+        mf.FIELD_TYPE AS fieldType,
+        mf.USE_MODE AS useMode,
+        mf.REQUIRED_YN AS requiredYn,
+        mf.FIELD_TAG AS fieldTag,
+        mf.CODE_GROUP AS codeGroup,
+        mf.DEFAULT_VALUE AS defaultValue,
+        mf.TEST_VALUE AS testValue,
+        mf.REMARK AS remark,
+        mf.LOG_YN AS logYn,
+        mf.CODE_MAPPING_YN AS codeMappingYn,
+        mf.MESSAGE_FIELD_NAME AS messageFieldName,
+        mf.MESSAGE_FIELD_DESC AS messageFieldDesc,
+        mf.LAST_UPDATE_DTIME AS lastUpdateDtime,
+        mf.VALIDATION_RULE_ID AS validationRuleId,
+        mf.LAST_UPDATE_USER_ID AS lastUpdateUserId,
+        mf.FIELD_FORMAT AS fieldFormat,
+        mf.FIELD_FORMAT_DESC AS fieldFormatDesc,
+        mf.FIELD_OPTION AS fieldOption,
+        mf.FIELD_REPEAT_CNT AS fieldRepeatCnt
+    </sql>
+
+    <!-- MessageField 테이블 FROM 절 -->
+    <sql id="fromMessageField">
+        FROM FWK_MESSAGE_FIELD mf
+    </sql>
+
+
+    <!-- ==================== Query ==================== -->
+
+    <!-- 전문 ID에 해당하는 필드 목록 조회 (순번 오름차순, DTO 직접 반환) -->
+    <select id="findByMessageId"
+            resultType="com.example.spideradmin.domain.messagefield.dto.MessageFieldResponse">
+        SELECT <include refid="fieldColumnsAsDto"/>
+        <include refid="fromMessageField"/>
+        WHERE mf.ORG_ID = #{orgId}
+          AND mf.MESSAGE_ID = #{messageId}
+        ORDER BY mf.SORT_ORDER ASC
+    </select>
+
+
+</mapper>

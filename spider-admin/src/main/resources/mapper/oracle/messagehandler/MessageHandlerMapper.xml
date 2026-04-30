@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.messagehandler.mapper.MessageHandlerMapper">
+
+    <select id="countByHandler" resultType="int">
+        SELECT COUNT(*)
+        FROM FWK_MESSAGE_HANDLER
+        WHERE ORG_ID = #{orgId}
+          AND TRX_TYPE = #{trxType}
+          AND IO_TYPE = #{ioType}
+          AND OPER_MODE_TYPE = #{operModeType}
+    </select>
+
+    <insert id="insertHandler">
+        INSERT INTO FWK_MESSAGE_HANDLER (
+            ORG_ID,
+            TRX_TYPE,
+            IO_TYPE,
+            OPER_MODE_TYPE,
+            HANDLER,
+            HANDLER_DESC,
+            STOP_YN,
+            LAST_UPDATE_DTIME,
+            LAST_UPDATE_USER_ID
+        ) VALUES (
+            #{dto.orgId},
+            #{dto.trxType},
+            #{dto.ioType},
+            #{dto.operModeType},
+            #{dto.handler},
+            #{dto.handlerDesc},
+            #{dto.stopYn},
+            #{lastUpdateDtime},
+            #{lastUpdateUserId}
+        )
+    </insert>
+
+    <update id="updateHandler">
+        UPDATE FWK_MESSAGE_HANDLER
+        SET
+            HANDLER = #{dto.handler},
+            HANDLER_DESC = #{dto.handlerDesc},
+            STOP_YN = #{dto.stopYn},
+            LAST_UPDATE_DTIME = #{lastUpdateDtime},
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId}
+        WHERE ORG_ID = #{dto.orgId}
+          AND TRX_TYPE = #{dto.trxType}
+          AND IO_TYPE = #{dto.ioType}
+          AND OPER_MODE_TYPE = #{dto.operModeType}
+    </update>
+
+    <delete id="deleteHandler">
+        DELETE FROM FWK_MESSAGE_HANDLER
+        WHERE ORG_ID = #{orgId}
+          AND TRX_TYPE = #{trxType}
+          AND IO_TYPE = #{ioType}
+          AND OPER_MODE_TYPE = #{operModeType}
+    </delete>
+
+
+    <!-- ==================== Common (merged) ==================== -->
+
+
+    <!-- MessageHandler FROM 절 -->
+    <sql id="fromHandler">
+        FROM FWK_MESSAGE_HANDLER h
+    </sql>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <select id="findBySearchPagingDto" resultType="com.example.spideradmin.domain.messagehandler.dto.HandlerResponse">
+        <bind name="orderColumn" value="
+            (sortBy == 'orgId') ? 'h.ORG_ID' :
+            (sortBy == 'trxType') ? 'h.TRX_TYPE' :
+            (sortBy == 'ioType') ? 'h.IO_TYPE' :
+            (sortBy == 'operModeType') ? 'h.OPER_MODE_TYPE' :
+            (sortBy == 'handler') ? 'h.HANDLER' :
+            (sortBy == 'handlerDesc') ? 'h.HANDLER_DESC' :
+            (sortBy == 'stopYn') ? 'h.STOP_YN' :
+            'h.ORG_ID'
+        "/>
+        <bind name="orderDir" value="(sortDirection != null &amp;&amp; sortDirection.toUpperCase() == 'DESC') ? 'DESC' : 'ASC'"/>
+        SELECT * FROM (
+            SELECT
+                h.ORG_ID AS orgId,
+                h.TRX_TYPE AS trxType,
+                h.IO_TYPE AS ioType,
+                h.OPER_MODE_TYPE AS operModeType,
+                h.HANDLER AS handler,
+                h.HANDLER_DESC AS handlerDesc,
+                h.STOP_YN AS stopYn,
+                ROW_NUMBER() OVER (ORDER BY ${orderColumn} ${orderDir}) AS RN
+            <include refid="fromHandler"/>
+            <where>
+                <if test="orgId != null and orgId != ''">
+                    AND h.ORG_ID = #{orgId}
+                </if>
+                <if test="trxType != null and trxType != ''">
+                    AND h.TRX_TYPE = #{trxType}
+                </if>
+                <if test="ioType != null and ioType != ''">
+                    AND h.IO_TYPE = #{ioType}
+                </if>
+            </where>
+        )
+        WHERE RN BETWEEN #{offset} + 1 AND #{offset} + #{limit}
+        ORDER BY RN
+    </select>
+
+    <select id="countBySearch" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_MESSAGE_HANDLER
+        <where>
+            <if test="orgId != null and orgId != ''">
+                AND ORG_ID = #{orgId}
+            </if>
+            <if test="trxType != null and trxType != ''">
+                AND TRX_TYPE = #{trxType}
+            </if>
+            <if test="ioType != null and ioType != ''">
+                AND IO_TYPE = #{ioType}
+            </if>
+        </where>
+    </select>
+
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.messagehandler.dto.HandlerResponse">
+        <bind name="orderColumn" value="
+            (sortBy == 'orgId') ? 'h.ORG_ID' :
+            (sortBy == 'trxType') ? 'h.TRX_TYPE' :
+            (sortBy == 'ioType') ? 'h.IO_TYPE' :
+            (sortBy == 'operModeType') ? 'h.OPER_MODE_TYPE' :
+            (sortBy == 'handler') ? 'h.HANDLER' :
+            (sortBy == 'handlerDesc') ? 'h.HANDLER_DESC' :
+            (sortBy == 'stopYn') ? 'h.STOP_YN' :
+            'h.ORG_ID'
+        "/>
+        <bind name="orderDir" value="(sortDirection != null &amp;&amp; sortDirection.toUpperCase() == 'DESC') ? 'DESC' : 'ASC'"/>
+        SELECT
+            h.ORG_ID AS orgId,
+            h.TRX_TYPE AS trxType,
+            h.IO_TYPE AS ioType,
+            h.OPER_MODE_TYPE AS operModeType,
+            h.HANDLER AS handler,
+            h.HANDLER_DESC AS handlerDesc,
+            h.STOP_YN AS stopYn
+        <include refid="fromHandler"/>
+        <where>
+            <if test="orgId != null and orgId != ''">
+                AND h.ORG_ID = #{orgId}
+            </if>
+            <if test="trxType != null and trxType != ''">
+                AND h.TRX_TYPE = #{trxType}
+            </if>
+            <if test="ioType != null and ioType != ''">
+                AND h.IO_TYPE = #{ioType}
+            </if>
+        </where>
+        ORDER BY ${orderColumn} ${orderDir}
+    </select>
+
+
+</mapper>

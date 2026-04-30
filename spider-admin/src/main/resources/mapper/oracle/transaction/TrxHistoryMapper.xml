@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    Trx History Mapper
+    - 트랜잭션 변경 이력 관리
+    - 버전 관리 및 이력 생성
+-->
+<mapper namespace="com.example.spideradmin.domain.transaction.mapper.TrxHistoryMapper">
+
+    <!-- 다음 버전 번호 조회 -->
+    <select id="getNextVersion" resultType="int">
+        SELECT COALESCE(MAX(VERSION), 0) + 1
+        FROM FWK_TRX_HISTORY
+        WHERE TRX_ID = #{trxId}
+    </select>
+
+    <!-- FWK_TRX에서 직접 이력 레코드 생성 (INSERT ... SELECT) -->
+    <insert id="insertHistoryFromTrx">
+        INSERT INTO FWK_TRX_HISTORY (
+            TRX_ID, VERSION,
+            OPER_MODE_TYPE, TRX_STOP_YN, TRX_NAME, TRX_DESC,
+            TRX_TYPE, RETRY_TRX_YN, MAX_RETRY_COUNT, RETRY_MI_CYCLE,
+            BIZ_GROUP_ID, BIZDAY_TRX_YN, BIZDAY_TRX_START_TIME, BIZDAY_TRX_END_TIME,
+            SATURDAY_TRX_YN, SATURDAY_TRX_START_TIME, SATURDAY_TRX_END_TIME,
+            HOLIDAY_TRX_YN, HOLIDAY_TRX_START_TIME, HOLIDAY_TRX_END_TIME,
+            TRX_STOP_REASON, HISTORY_REASON
+        )
+        SELECT
+            TRX_ID, #{version},
+            OPER_MODE_TYPE, TRX_STOP_YN, TRX_NAME, TRX_DESC,
+            TRX_TYPE, RETRY_TRX_YN, MAX_RETRY_COUNT, RETRY_MI_CYCLE,
+            BIZ_GROUP_ID, BIZDAY_TRX_YN, BIZDAY_TRX_START_TIME, BIZDAY_TRX_END_TIME,
+            SATURDAY_TRX_YN, SATURDAY_TRX_START_TIME, SATURDAY_TRX_END_TIME,
+            HOLIDAY_TRX_YN, HOLIDAY_TRX_START_TIME, HOLIDAY_TRX_END_TIME,
+            TRX_STOP_REASON, #{historyReason}
+        FROM FWK_TRX
+        WHERE TRX_ID = #{trxId}
+    </insert>
+
+</mapper>

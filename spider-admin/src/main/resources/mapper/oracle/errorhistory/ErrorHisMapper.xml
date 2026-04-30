@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.errorhistory.mapper.ErrorHisMapper">
+
+    <!-- 복합키로 응답 DTO 조회 -->
+    <select id="selectResponseById"
+            resultType="com.example.spideradmin.domain.errorhistory.dto.ErrorHisResponse">
+        SELECT ERROR_CODE AS errorCode,
+               ERROR_SER_NO AS errorSerNo,
+               CUST_USER_ID AS custUserId,
+               ERROR_MESSAGE AS errorMessage,
+               ERROR_OCCUR_DTIME AS errorOccurDtime,
+               ERROR_URL AS errorUrl,
+               ERROR_TRACE AS errorTrace,
+               ERROR_INSTANCE_ID AS errorInstanceId
+        FROM FWK_ERROR_HIS
+        WHERE ERROR_CODE = #{errorCode}
+          AND ERROR_SER_NO = #{errorSerNo}
+    </select>
+
+    <!-- 등록 -->
+    <insert id="insert">
+        INSERT INTO FWK_ERROR_HIS (ERROR_CODE, ERROR_SER_NO, CUST_USER_ID, ERROR_MESSAGE,
+                                   ERROR_OCCUR_DTIME, ERROR_URL, ERROR_TRACE, ERROR_INSTANCE_ID)
+        VALUES (#{dto.errorCode,jdbcType=VARCHAR}, #{dto.errorSerNo,jdbcType=VARCHAR},
+                #{dto.custUserId, jdbcType=VARCHAR},
+                #{dto.errorMessage, jdbcType=VARCHAR}, #{dto.errorOccurDtime, jdbcType=VARCHAR},
+                #{dto.errorUrl, jdbcType=VARCHAR}, #{dto.errorTrace,jdbcType=VARCHAR},
+                #{dto.errorInstanceId, jdbcType=VARCHAR})
+    </insert>
+
+
+
+    <!-- ==================== Common (merged) ==================== -->
+
+
+    <!-- ErrorHisResponseDTO ResultMap (조인 정보 포함) -->
+    <resultMap id="ErrorHisResponseDTOResultMap" type="com.example.spideradmin.domain.errorhistory.dto.ErrorHisResponse">
+        <result property="errorCode" column="ERROR_CODE"/>
+        <result property="errorSerNo" column="ERROR_SER_NO"/>
+        <result property="custUserId" column="CUST_USER_ID"/>
+        <result property="errorMessage" column="ERROR_MESSAGE"/>
+        <result property="errorOccurDtime" column="ERROR_OCCUR_DTIME"/>
+        <result property="errorUrl" column="ERROR_URL"/>
+        <result property="errorTrace" column="ERROR_TRACE"/>
+        <result property="errorTitle" column="ERROR_TITLE"/>
+        <result property="errorLevel" column="ERROR_LEVEL"/>
+        <result property="custPhoneNo" column="CUST_PHONE_NO"/>
+        <result property="errorInstanceId" column="ERROR_INSTANCE_ID"/>
+    </resultMap>
+
+    <!-- 공통 컬럼 SQL Fragment -->
+    <sql id="errorHisColumns">
+        ERROR_CODE, ERROR_SER_NO, CUST_USER_ID, ERROR_MESSAGE,
+        ERROR_OCCUR_DTIME, ERROR_URL, ERROR_TRACE, ERROR_INSTANCE_ID
+    </sql>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <!-- ==================== 공통 SQL 조각 ==================== -->
+
+    <sql id="searchConditionsErrorHis">
+        <if test="search.errorCode != null and search.errorCode != ''">
+            AND UPPER(h.ERROR_CODE) LIKE '%' || UPPER(#{search.errorCode, jdbcType=VARCHAR}) || '%'
+        </if>
+        <if test="search.custUserId != null and search.custUserId != ''">
+            AND UPPER(h.CUST_USER_ID) LIKE '%' || UPPER(#{search.custUserId, jdbcType=VARCHAR}) || '%'
+        </if>
+        <if test="search.custPhoneNo != null and search.custPhoneNo != ''">
+            AND u.PHONE LIKE '%' || #{search.custPhoneNo, jdbcType=VARCHAR} || '%'
+        </if>
+        <if test="search.startDtime != null and search.startDtime != ''">
+            AND h.ERROR_OCCUR_DTIME &gt;= #{search.startDtime, jdbcType=VARCHAR}
+        </if>
+        <if test="search.endDtime != null and search.endDtime != ''">
+            AND h.ERROR_OCCUR_DTIME &lt;= #{search.endDtime, jdbcType=VARCHAR}
+        </if>
+    </sql>
+
+    <sql id="orderByErrorHis">
+        ORDER BY
+        <choose>
+            <when test="search.sortBy != null and search.sortBy != ''">
+                <choose>
+                    <when test="search.sortBy == 'errorCode'">
+                        UPPER(h.ERROR_CODE)
+                    </when>
+                    <when test="search.sortBy == 'errorSerNo'">
+                        h.ERROR_SER_NO
+                    </when>
+                    <when test="search.sortBy == 'custUserId'">
+                        UPPER(h.CUST_USER_ID)
+                    </when>
+                    <when test="search.sortBy == 'custPhoneNo'">
+                        UPPER(u.PHONE)
+                    </when>
+                    <when test="search.sortBy == 'errorMessage'">
+                        UPPER(h.ERROR_MESSAGE)
+                    </when>
+                    <when test="search.sortBy == 'errorUrl'">
+                        UPPER(h.ERROR_URL)
+                    </when>
+                    <when test="search.sortBy == 'errorInstanceId'">
+                        UPPER(h.ERROR_INSTANCE_ID)
+                    </when>
+                    <when test="search.sortBy == 'errorOccurDtime'">
+                        h.ERROR_OCCUR_DTIME
+                    </when>
+                    <when test="search.sortBy == 'errorTitle'">
+                        UPPER(e.ERROR_TITLE)
+                    </when>
+                    <when test="search.sortBy == 'errorLevel'">
+                        e.ERROR_LEVEL
+                    </when>
+                    <otherwise>
+                        h.ERROR_OCCUR_DTIME
+                    </otherwise>
+                </choose>
+                <choose>
+                    <when test="search.sortDirection == 'ASC'"> ASC</when>
+                    <when test="search.sortDirection == 'DESC'"> DESC</when>
+                    <otherwise> DESC</otherwise>
+                </choose>
+            </when>
+            <otherwise>
+                h.ERROR_OCCUR_DTIME DESC
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="fromErrorHisWithJoins">
+        FROM FWK_ERROR_HIS h
+        LEFT JOIN FWK_ERROR e ON h.ERROR_CODE = e.ERROR_CODE
+        LEFT JOIN FWK_USER u ON h.CUST_USER_ID = u.USER_ID
+    </sql>
+
+    <!-- ==================== 검색 페이징 조회 ==================== -->
+
+    <!-- 오류 발생 이력 검색 (오류코드 정보 포함) -->
+    <select id="searchWithErrorInfo"
+            resultMap="ErrorHisResponseDTOResultMap">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT h.ERROR_CODE, h.ERROR_SER_NO, h.CUST_USER_ID, h.ERROR_MESSAGE,
+                       h.ERROR_OCCUR_DTIME, h.ERROR_URL, h.ERROR_TRACE, h.ERROR_INSTANCE_ID,
+                       e.ERROR_TITLE, e.ERROR_LEVEL,
+                       u.PHONE AS CUST_PHONE_NO
+                <include refid="fromErrorHisWithJoins"/>
+                WHERE 1=1
+                <include refid="searchConditionsErrorHis"/>
+                <include refid="orderByErrorHis"/>
+            ) INNER_QRY
+            WHERE ROWNUM &lt;= #{endRow}
+        )
+        WHERE RNUM &gt; #{offset}
+    </select>
+
+    <!-- 오류 발생 이력 건수 조회 -->
+    <select id="countWithErrorInfo" resultType="long">
+        SELECT COUNT(*)
+        <include refid="fromErrorHisWithJoins"/>
+        WHERE 1=1
+        <include refid="searchConditionsErrorHis"/>
+    </select>
+
+    <!-- 엑셀 내보내기용 전체 조회 (페이징 없음) -->
+    <select id="findAllForExport" resultMap="ErrorHisResponseDTOResultMap">
+        SELECT h.ERROR_CODE, h.ERROR_SER_NO, h.CUST_USER_ID, h.ERROR_MESSAGE,
+               h.ERROR_OCCUR_DTIME, h.ERROR_URL, h.ERROR_TRACE, h.ERROR_INSTANCE_ID,
+               e.ERROR_TITLE, e.ERROR_LEVEL,
+               u.PHONE AS CUST_PHONE_NO
+        <include refid="fromErrorHisWithJoins"/>
+        WHERE 1=1
+        <include refid="searchConditionsErrorHis"/>
+        <include refid="orderByErrorHis"/>
+    </select>
+
+</mapper>

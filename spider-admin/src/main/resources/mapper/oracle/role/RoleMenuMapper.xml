@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.role.mapper.RoleMenuMapper">
+
+    <select id="selectByRoleId"
+            resultType="com.example.spideradmin.domain.role.dto.RoleMenuResponse">
+        SELECT
+            ROLE_ID AS roleId,
+            MENU_ID AS menuId,
+            AUTH_CODE AS authCode
+        FROM FWK_ROLE_MENU
+        WHERE ROLE_ID = #{roleId}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO FWK_ROLE_MENU (ROLE_ID, MENU_ID, AUTH_CODE)
+        VALUES (#{roleId}, #{menuId}, #{authCode})
+    </insert>
+
+    <update id="update">
+        UPDATE FWK_ROLE_MENU
+        SET AUTH_CODE = #{authCode}
+        WHERE ROLE_ID = #{roleId} AND MENU_ID = #{menuId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM FWK_ROLE_MENU WHERE ROLE_ID = #{roleId} AND MENU_ID = #{menuId}
+    </delete>
+
+    <delete id="deleteByRoleId">
+        DELETE FROM FWK_ROLE_MENU WHERE ROLE_ID = #{roleId}
+    </delete>
+
+    <insert id="insertBatch">
+        INSERT INTO FWK_ROLE_MENU (ROLE_ID, MENU_ID, AUTH_CODE)
+        SELECT A.* FROM (
+            <foreach collection="list" item="item" separator=" UNION ALL ">
+                SELECT #{item.roleId}, #{item.menuId}, #{item.authCode} FROM DUAL
+            </foreach>
+        ) A
+    </insert>
+
+
+    <!-- ==================== Common (merged) ==================== -->
+
+
+    <resultMap id="RoleMenuPermissionResultMap" type="com.example.spideradmin.domain.role.dto.RoleMenuPermissionResponse">
+        <result property="menuId" column="MENU_ID"/>
+        <result property="menuName" column="MENU_NAME"/>
+        <result property="menuPath" column="MENU_PATH"/>
+        <result property="leafYn" column="LEAF_YN"/>
+        <result property="description" column="MENU_URL"/>
+        <result property="hasRead" column="HAS_READ"/>
+        <result property="hasWrite" column="HAS_WRITE"/>
+    </resultMap>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <!-- 전체 메뉴 계층 경로 + 역할별 권한 조회 (역할-메뉴 모달용) -->
+    <select id="findAllMenusWithPermissions" resultMap="RoleMenuPermissionResultMap" parameterType="String">
+        SELECT A.MENU_ID,
+               A.MENU_NAME,
+               NVL((SELECT 'N' FROM FWK_MENU B WHERE A.MENU_ID = B.PRIOR_MENU_ID AND ROWNUM = 1), 'Y') AS LEAF_YN,
+               SUBSTR(SYS_CONNECT_BY_PATH(A.MENU_NAME, ' > '), 4) AS MENU_PATH,
+               A.MENU_URL,
+               CASE WHEN RM.AUTH_CODE IN ('R', 'W') THEN 1 ELSE 0 END AS HAS_READ,
+               CASE WHEN RM.AUTH_CODE = 'W' THEN 1 ELSE 0 END AS HAS_WRITE
+        FROM FWK_MENU A
+        LEFT JOIN FWK_ROLE_MENU RM ON A.MENU_ID = RM.MENU_ID AND RM.ROLE_ID = #{roleId}
+        WHERE A.USE_YN = 'Y'
+          AND (A.MENU_URL IS NULL OR A.MENU_URL NOT IN ('NaN', 'NAN'))
+        START WITH A.PRIOR_MENU_ID = '*'
+        CONNECT BY PRIOR A.MENU_ID = A.PRIOR_MENU_ID
+        ORDER SIBLINGS BY A.SORT_ORDER
+    </select>
+
+
+</mapper>
