@@ -1,0 +1,52 @@
+{
+  "brand": {
+    "primary": {
+      "5": {
+        "$type": "color",
+        "$value": "#0067ac0d"
+      },
+      "10": {
+        "$type": "color",
+        "$value": "#0067ac1a"
+      },
+      "20": {
+        "$type": "color",
+        "$value": "#0067ac33"
+      },
+      "$type": "color",
+      "$value": "#0067ac"
+    },
+    "alt": {
+      "$type": "color",
+      "$value": "#3395d4"
+    },
+    "fg": {
+      "$type": "color",
+      "$value": "#ffffff"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#005490"
+    },
+    "dark": {
+      "$type": "color",
+      "$value": "#005490"
+    },
+    "darker": {
+      "$type": "color",
+      "$value": "#00416e"
+    },
+    "shadow": {
+      "$type": "color",
+      "$value": "#0067ac40"
+    },
+    "bg": {
+      "$type": "color",
+      "$value": "#f4f8fc"
+    },
+    "name": {
+      "$type": "string",
+      "$value": "우리은행"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "figma-react-component-library-plugin",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --outfile=dist/main.js --platform=browser --target=es6",
+    "watch": "esbuild src/main.ts --bundle --outfile=dist/main.js --platform=browser --target=es6 --watch"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.96.0",
+    "esbuild": "^0.21.0",
+    "typescript": "^5.4.0"
+  }
+}

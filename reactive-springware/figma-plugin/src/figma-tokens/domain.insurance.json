@@ -1,0 +1,22 @@
+{
+  "domain": {
+    "page": {
+      "bg": {
+        "$type": "color",
+        "$value": "#fff8f7"
+      }
+    },
+    "primary": {
+      "$type": "color",
+      "$value": "#e03a1e"
+    },
+    "alt": {
+      "$type": "color",
+      "$value": "#f97f6a"
+    },
+    "name": {
+      "$type": "string",
+      "$value": "보험 기본"
+    }
+  }
+}

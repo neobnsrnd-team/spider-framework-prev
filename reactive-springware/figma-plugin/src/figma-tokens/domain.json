@@ -1,0 +1,32 @@
+{
+  "domain": {
+    "banking": {
+      "pageBg": {
+        "$extensions": { "com.figma.scopes": ["ALL_SCOPES"], "com.figma.hiddenFromPublishing": false },
+        "$type": "color",
+        "$value": "#f5f8f8"
+      }
+    },
+    "card": {
+      "pageBg": {
+        "$extensions": { "com.figma.scopes": ["ALL_SCOPES"], "com.figma.hiddenFromPublishing": false },
+        "$type": "color",
+        "$value": "#f4f7ff"
+      }
+    },
+    "giro": {
+      "pageBg": {
+        "$extensions": { "com.figma.scopes": ["ALL_SCOPES"], "com.figma.hiddenFromPublishing": false },
+        "$type": "color",
+        "$value": "#f9f7ff"
+      }
+    },
+    "insurance": {
+      "pageBg": {
+        "$extensions": { "com.figma.scopes": ["ALL_SCOPES"], "com.figma.hiddenFromPublishing": false },
+        "$type": "color",
+        "$value": "#fff8f7"
+      }
+    }
+  }
+}

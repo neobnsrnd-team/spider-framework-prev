@@ -1,0 +1,22 @@
+{
+  "domain": {
+    "page": {
+      "bg": {
+        "$type": "color",
+        "$value": "#f5f8f8"
+      }
+    },
+    "primary": {
+      "$type": "color",
+      "$value": "#ffffff"
+    },
+    "alt": {
+      "$type": "color",
+      "$value": "#ffffff"
+    },
+    "name": {
+      "$type": "string",
+      "$value": "뱅킹 기본"
+    }
+  }
+}

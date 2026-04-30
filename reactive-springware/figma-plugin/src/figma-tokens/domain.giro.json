@@ -1,0 +1,22 @@
+{
+  "domain": {
+    "page": {
+      "bg": {
+        "$type": "color",
+        "$value": "#f9f7ff"
+      }
+    },
+    "primary": {
+      "$type": "color",
+      "$value": "#5b21b6"
+    },
+    "alt": {
+      "$type": "color",
+      "$value": "#8b5cf6"
+    },
+    "name": {
+      "$type": "string",
+      "$value": "지로 기본"
+    }
+  }
+}

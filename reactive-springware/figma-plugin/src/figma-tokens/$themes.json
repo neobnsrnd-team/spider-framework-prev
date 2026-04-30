@@ -1,0 +1,82 @@
+[
+  {
+    "id": "brand-hana",
+    "name": "hana",
+    "selectedTokenSets": {
+      "brand.hana": "enabled"
+    },
+    "group": "Brand"
+  },
+  {
+    "id": "brand-ibk",
+    "name": "ibk",
+    "selectedTokenSets": {
+      "brand.ibk": "enabled"
+    },
+    "group": "Brand"
+  },
+  {
+    "id": "brand-kb",
+    "name": "kb",
+    "selectedTokenSets": {
+      "brand.kb": "enabled"
+    },
+    "group": "Brand"
+  },
+  {
+    "id": "brand-nh",
+    "name": "nh",
+    "selectedTokenSets": {
+      "brand.nh": "enabled"
+    },
+    "group": "Brand"
+  },
+  {
+    "id": "brand-shinhan",
+    "name": "shinhan",
+    "selectedTokenSets": {
+      "brand.shinhan": "enabled"
+    },
+    "group": "Brand"
+  },
+  {
+    "id": "brand-woori",
+    "name": "woori",
+    "selectedTokenSets": {
+      "brand.woori": "enabled"
+    },
+    "group": "Brand"
+  },
+  {
+    "id": "domain-banking",
+    "name": "banking",
+    "selectedTokenSets": {
+      "domain.banking": "enabled"
+    },
+    "group": "Domain"
+  },
+  {
+    "id": "domain-card",
+    "name": "card",
+    "selectedTokenSets": {
+      "domain.card": "enabled"
+    },
+    "group": "Domain"
+  },
+  {
+    "id": "domain-giro",
+    "name": "giro",
+    "selectedTokenSets": {
+      "domain.giro": "enabled"
+    },
+    "group": "Domain"
+  },
+  {
+    "id": "domain-insurance",
+    "name": "insurance",
+    "selectedTokenSets": {
+      "domain.insurance": "enabled"
+    },
+    "group": "Domain"
+  }
+]

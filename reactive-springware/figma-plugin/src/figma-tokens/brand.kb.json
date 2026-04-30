@@ -1,0 +1,52 @@
+{
+  "brand": {
+    "primary": {
+      "5": {
+        "$type": "color",
+        "$value": "#ffbc000d"
+      },
+      "10": {
+        "$type": "color",
+        "$value": "#ffbc001a"
+      },
+      "20": {
+        "$type": "color",
+        "$value": "#ffbc0033"
+      },
+      "$type": "color",
+      "$value": "#ffbc00"
+    },
+    "alt": {
+      "$type": "color",
+      "$value": "#ffd740"
+    },
+    "fg": {
+      "$type": "color",
+      "$value": "#1a1200"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#7a4400"
+    },
+    "dark": {
+      "$type": "color",
+      "$value": "#e6aa00"
+    },
+    "darker": {
+      "$type": "color",
+      "$value": "#cc9600"
+    },
+    "shadow": {
+      "$type": "color",
+      "$value": "#ffbc0040"
+    },
+    "bg": {
+      "$type": "color",
+      "$value": "#fffdf0"
+    },
+    "name": {
+      "$type": "string",
+      "$value": "KB국민은행"
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "brand": {
+    "primary": {
+      "5": {
+        "$type": "color",
+        "$value": "#0084850d"
+      },
+      "10": {
+        "$type": "color",
+        "$value": "#0084851a"
+      },
+      "20": {
+        "$type": "color",
+        "$value": "#00848533"
+      },
+      "$type": "color",
+      "$value": "#008485"
+    },
+    "alt": {
+      "$type": "color",
+      "$value": "#14b8a6"
+    },
+    "fg": {
+      "$type": "color",
+      "$value": "#ffffff"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#008485"
+    },
+    "dark": {
+      "$type": "color",
+      "$value": "#006e6f"
+    },
+    "darker": {
+      "$type": "color",
+      "$value": "#005859"
+    },
+    "shadow": {
+      "$type": "color",
+      "$value": "#00848540"
+    },
+    "bg": {
+      "$type": "color",
+      "$value": "#f5f8f8"
+    },
+    "name": {
+      "$type": "string",
+      "$value": "하나은행"
+    },
+    "domain": {
+      "card": {
+        "accent": {
+          "$type": "color",
+          "$value": "#caee5d",
+          "$description": "하나카드 소비 카드 액센트 컬러 (라임)"
+        },
+        "accentText": {
+          "$type": "color",
+          "$value": "#546b00",
+          "$description": "하나카드 액센트 배경 위 텍스트 컬러 (올리브)"
+        }
+      }
+    }
+  }
+}

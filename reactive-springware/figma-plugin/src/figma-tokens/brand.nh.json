@@ -1,0 +1,52 @@
+{
+  "brand": {
+    "primary": {
+      "5": {
+        "$type": "color",
+        "$value": "#00a8590d"
+      },
+      "10": {
+        "$type": "color",
+        "$value": "#00a8591a"
+      },
+      "20": {
+        "$type": "color",
+        "$value": "#00a85933"
+      },
+      "$type": "color",
+      "$value": "#00a859"
+    },
+    "alt": {
+      "$type": "color",
+      "$value": "#eef300"
+    },
+    "fg": {
+      "$type": "color",
+      "$value": "#ffffff"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#007a40"
+    },
+    "dark": {
+      "$type": "color",
+      "$value": "#008a49"
+    },
+    "darker": {
+      "$type": "color",
+      "$value": "#006b38"
+    },
+    "shadow": {
+      "$type": "color",
+      "$value": "#00a85940"
+    },
+    "bg": {
+      "$type": "color",
+      "$value": "#f4fbf7"
+    },
+    "name": {
+      "$type": "string",
+      "$value": "NH농협은행"
+    }
+  }
+}

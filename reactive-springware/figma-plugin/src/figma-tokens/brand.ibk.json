@@ -1,0 +1,52 @@
+{
+  "brand": {
+    "primary": {
+      "5": {
+        "$type": "color",
+        "$value": "#0068b70d"
+      },
+      "10": {
+        "$type": "color",
+        "$value": "#0068b71a"
+      },
+      "20": {
+        "$type": "color",
+        "$value": "#0068b733"
+      },
+      "$type": "color",
+      "$value": "#0068b7"
+    },
+    "alt": {
+      "$type": "color",
+      "$value": "#3b9ad9"
+    },
+    "fg": {
+      "$type": "color",
+      "$value": "#ffffff"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#0057a0"
+    },
+    "dark": {
+      "$type": "color",
+      "$value": "#0057a0"
+    },
+    "darker": {
+      "$type": "color",
+      "$value": "#004580"
+    },
+    "shadow": {
+      "$type": "color",
+      "$value": "#0068b740"
+    },
+    "bg": {
+      "$type": "color",
+      "$value": "#f4f7fb"
+    },
+    "name": {
+      "$type": "string",
+      "$value": "IBK기업은행"
+    }
+  }
+}

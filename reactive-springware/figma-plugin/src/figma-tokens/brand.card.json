@@ -1,0 +1,52 @@
+{
+  "brand": {
+    "primary": {
+      "5": {
+        "$type": "color",
+        "$value": "#1a56db0d"
+      },
+      "10": {
+        "$type": "color",
+        "$value": "#1a56db1a"
+      },
+      "20": {
+        "$type": "color",
+        "$value": "#1a56db33"
+      },
+      "$type": "color",
+      "$value": "#1a56db"
+    },
+    "alt": {
+      "$type": "color",
+      "$value": "#4f86f7"
+    },
+    "fg": {
+      "$type": "color",
+      "$value": "#ffffff"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#1a56db"
+    },
+    "dark": {
+      "$type": "color",
+      "$value": "#1648c0"
+    },
+    "darker": {
+      "$type": "color",
+      "$value": "#1240aa"
+    },
+    "shadow": {
+      "$type": "color",
+      "$value": "#1a56db40"
+    },
+    "bg": {
+      "$type": "color",
+      "$value": "#f4f7ff"
+    },
+    "name": {
+      "$type": "string",
+      "$value": "카드 기본"
+    }
+  }
+}

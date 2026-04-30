@@ -1,0 +1,52 @@
+{
+  "brand": {
+    "primary": {
+      "5": {
+        "$type": "color",
+        "$value": "#0046ff0d"
+      },
+      "10": {
+        "$type": "color",
+        "$value": "#0046ff1a"
+      },
+      "20": {
+        "$type": "color",
+        "$value": "#0046ff33"
+      },
+      "$type": "color",
+      "$value": "#0046ff"
+    },
+    "alt": {
+      "$type": "color",
+      "$value": "#4d7fff"
+    },
+    "fg": {
+      "$type": "color",
+      "$value": "#ffffff"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#0033cc"
+    },
+    "dark": {
+      "$type": "color",
+      "$value": "#0038cc"
+    },
+    "darker": {
+      "$type": "color",
+      "$value": "#002b99"
+    },
+    "shadow": {
+      "$type": "color",
+      "$value": "#0046ff40"
+    },
+    "bg": {
+      "$type": "color",
+      "$value": "#f4f6ff"
+    },
+    "name": {
+      "$type": "string",
+      "$value": "신한은행"
+    }
+  }
+}
