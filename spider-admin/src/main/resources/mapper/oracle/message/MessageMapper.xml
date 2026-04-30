@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    Message Mapper (CRUD + Query)
+    - insert / update / delete / 단건 조회
+    - 목록 조회, 검색, 페이징
+    - Entity 없이 DTO 직접 반환
+-->
+<mapper namespace="com.example.spideradmin.domain.message.mapper.MessageMapper">
+
+    <!-- 단건 조회 (MessageResponse DTO 직접 반환) -->
+    <select id="selectResponseById"
+            resultType="com.example.spideradmin.domain.messageparsing.dto.MessageResponse">
+        SELECT
+            m.ORG_ID AS orgId,
+            m.MESSAGE_ID AS messageId,
+            m.MESSAGE_NAME AS messageName,
+            m.MESSAGE_DESC AS messageDesc,
+            m.MESSAGE_TYPE AS messageType,
+            m.PARENT_MESSAGE_ID AS parentMessageId,
+            m.HEADER_YN AS headerYn,
+            m.REQUEST_YN AS requestYn,
+            m.TRX_TYPE AS trxType,
+            m.PRE_LOAD_YN AS preLoadYn,
+            m.LOG_LEVEL AS logLevel,
+            m.BIZ_DOMAIN AS bizDomain,
+            m.VALIDATION_USE_YN AS validationUseYn,
+            m.LOCK_YN AS lockYn,
+            m.CUR_VERSION AS curVersion,
+            m.LAST_UPDATE_DTIME AS lastUpdateDtime,
+            m.LAST_UPDATE_USER_ID AS lastUpdateUserId
+        FROM FWK_MESSAGE m
+        WHERE m.ORG_ID = #{orgId}
+          AND m.MESSAGE_ID = #{messageId}
+    </select>
+
+    <!-- 생성 -->
+    <insert id="insertMessage">
+        INSERT INTO FWK_MESSAGE (
+            ORG_ID, MESSAGE_ID, MESSAGE_NAME, MESSAGE_DESC,
+            MESSAGE_TYPE, PARENT_MESSAGE_ID, HEADER_YN, REQUEST_YN,
+            TRX_TYPE, PRE_LOAD_YN, LOG_LEVEL, BIZ_DOMAIN,
+            VALIDATION_USE_YN, LOCK_YN, CUR_VERSION,
+            LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
+        ) VALUES (
+            #{dto.orgId}, #{dto.messageId}, #{dto.messageName, jdbcType=VARCHAR}, #{dto.messageDesc, jdbcType=VARCHAR},
+            #{dto.messageType, jdbcType=VARCHAR}, #{dto.parentMessageId, jdbcType=VARCHAR}, #{dto.headerYn, jdbcType=VARCHAR}, #{dto.requestYn, jdbcType=VARCHAR},
+            COALESCE(#{dto.trxType, jdbcType=VARCHAR}, '1'), COALESCE(#{dto.preLoadYn, jdbcType=VARCHAR}, 'N'), #{dto.logLevel, jdbcType=VARCHAR}, #{dto.bizDomain, jdbcType=VARCHAR},
+            COALESCE(#{dto.validationUseYn, jdbcType=VARCHAR}, 'N'), COALESCE(#{dto.lockYn, jdbcType=VARCHAR}, 'N'), COALESCE(#{dto.curVersion, jdbcType=NUMERIC}, 1),
+            #{lastUpdateDtime, jdbcType=VARCHAR}, #{lastUpdateUserId, jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- 수정 (NOT NULL 컬럼은 COALESCE로 기존값 유지) -->
+    <update id="updateMessage">
+        UPDATE FWK_MESSAGE
+        SET MESSAGE_NAME = #{dto.messageName, jdbcType=VARCHAR},
+            MESSAGE_DESC = #{dto.messageDesc, jdbcType=VARCHAR},
+            MESSAGE_TYPE = #{dto.messageType, jdbcType=VARCHAR},
+            PARENT_MESSAGE_ID = #{dto.parentMessageId, jdbcType=VARCHAR},
+            HEADER_YN = #{dto.headerYn, jdbcType=VARCHAR},
+            REQUEST_YN = #{dto.requestYn, jdbcType=VARCHAR},
+            TRX_TYPE = COALESCE(#{dto.trxType, jdbcType=VARCHAR}, TRX_TYPE),
+            PRE_LOAD_YN = COALESCE(#{dto.preLoadYn, jdbcType=VARCHAR}, PRE_LOAD_YN),
+            LOG_LEVEL = #{dto.logLevel, jdbcType=VARCHAR},
+            BIZ_DOMAIN = #{dto.bizDomain, jdbcType=VARCHAR},
+            VALIDATION_USE_YN = COALESCE(#{dto.validationUseYn, jdbcType=VARCHAR}, VALIDATION_USE_YN),
+            LOCK_YN = COALESCE(#{dto.lockYn, jdbcType=VARCHAR}, LOCK_YN),
+            CUR_VERSION = COALESCE(#{dto.curVersion, jdbcType=NUMERIC}, CUR_VERSION),
+            LAST_UPDATE_DTIME = #{lastUpdateDtime, jdbcType=VARCHAR},
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId, jdbcType=VARCHAR}
+        WHERE ORG_ID = #{orgId}
+          AND MESSAGE_ID = #{messageId}
+    </update>
+
+    <!-- 삭제 -->
+    <delete id="deleteMessage">
+        DELETE FROM FWK_MESSAGE
+        WHERE ORG_ID = #{orgId}
+          AND MESSAGE_ID = #{messageId}
+    </delete>
+
+    <!-- 존재 확인 (중복 체크용) -->
+    <select id="countByMessageId" resultType="int">
+        SELECT COUNT(*)
+        FROM FWK_MESSAGE
+        WHERE ORG_ID = #{orgId}
+          AND MESSAGE_ID = #{messageId}
+    </select>
+
+
+    <!-- ==================== SQL Fragment 정의 ==================== -->
+
+    <!-- 기본 Message 컬럼 (AS alias for DTO) -->
+    <sql id="baseColumnsAsDto">
+        m.ORG_ID AS orgId,
+        m.MESSAGE_ID AS messageId,
+        m.MESSAGE_NAME AS messageName,
+        m.MESSAGE_DESC AS messageDesc,
+        m.MESSAGE_TYPE AS messageType,
+        m.PARENT_MESSAGE_ID AS parentMessageId,
+        m.HEADER_YN AS headerYn,
+        m.REQUEST_YN AS requestYn,
+        m.TRX_TYPE AS trxType,
+        m.PRE_LOAD_YN AS preLoadYn,
+        m.LOG_LEVEL AS logLevel,
+        m.BIZ_DOMAIN AS bizDomain,
+        m.VALIDATION_USE_YN AS validationUseYn,
+        m.LOCK_YN AS lockYn,
+        m.CUR_VERSION AS curVersion,
+        m.LAST_UPDATE_DTIME AS lastUpdateDtime,
+        m.LAST_UPDATE_USER_ID AS lastUpdateUserId
+    </sql>
+
+    <!-- 목록 조회용 컬럼 (MessageListItemResponse) -->
+    <sql id="listItemColumns">
+        m.ORG_ID AS orgId,
+        m.MESSAGE_ID AS messageId,
+        m.MESSAGE_NAME AS messageName,
+        m.MESSAGE_DESC AS messageDesc,
+        m.MESSAGE_TYPE AS messageType,
+        m.PARENT_MESSAGE_ID AS parentMessageId,
+        m.HEADER_YN AS headerYn,
+        m.REQUEST_YN AS requestYn,
+        m.LOCK_YN AS lockYn,
+        m.CUR_VERSION AS curVersion,
+        m.LAST_UPDATE_DTIME AS lastUpdateDtime,
+        m.LAST_UPDATE_USER_ID AS lastUpdateUserId
+    </sql>
+
+    <!-- Message 테이블 FROM 절 -->
+    <sql id="fromMessage">
+        FROM FWK_MESSAGE m
+    </sql>
+
+
+    <!-- ==================== 필드 조회 ==================== -->
+
+    <!-- 특정 전문의 필드 목록 조회 (MessageFieldResponse DTO 직접 반환) -->
+    <select id="findFieldsByMessageId"
+            resultType="com.example.spideradmin.domain.messagefield.dto.MessageFieldResponse">
+        SELECT
+            mf.ORG_ID AS orgId,
+            mf.MESSAGE_ID AS messageId,
+            mf.MESSAGE_FIELD_ID AS messageFieldId,
+            mf.SORT_ORDER AS sortOrder,
+            mf.DATA_TYPE AS dataType,
+            mf.DATA_LENGTH AS dataLength,
+            mf.SCALE AS scale,
+            mf.ALIGN AS align,
+            mf.FILLER AS filler,
+            mf.FIELD_TYPE AS fieldType,
+            mf.USE_MODE AS useMode,
+            mf.REQUIRED_YN AS requiredYn,
+            mf.FIELD_TAG AS fieldTag,
+            mf.CODE_GROUP AS codeGroup,
+            mf.DEFAULT_VALUE AS defaultValue,
+            mf.TEST_VALUE AS testValue,
+            mf.REMARK AS remark,
+            mf.LOG_YN AS logYn,
+            mf.CODE_MAPPING_YN AS codeMappingYn,
+            mf.MESSAGE_FIELD_NAME AS messageFieldName,
+            mf.MESSAGE_FIELD_DESC AS messageFieldDesc,
+            mf.LAST_UPDATE_DTIME AS lastUpdateDtime,
+            mf.VALIDATION_RULE_ID AS validationRuleId,
+            mf.LAST_UPDATE_USER_ID AS lastUpdateUserId,
+            mf.FIELD_FORMAT AS fieldFormat,
+            mf.FIELD_FORMAT_DESC AS fieldFormatDesc,
+            mf.FIELD_OPTION AS fieldOption,
+            mf.FIELD_REPEAT_CNT AS fieldRepeatCnt
+        FROM FWK_MESSAGE_FIELD mf
+        WHERE mf.ORG_ID = #{orgId}
+          AND mf.MESSAGE_ID = #{messageId}
+        ORDER BY mf.SORT_ORDER ASC
+    </select>
+
+    <!-- ==================== 목록 조회 ==================== -->
+
+    <!-- 검색 조건 -->
+    <sql id="searchConditionsMessage">
+        <if test="searchField != null and searchValue != null and searchValue != ''">
+            <choose>
+                <when test="searchField == 'messageId'">
+                    AND m.MESSAGE_ID LIKE '%' || #{searchValue} || '%'
+                </when>
+                <when test="searchField == 'messageName'">
+                    AND m.MESSAGE_NAME LIKE '%' || #{searchValue} || '%'
+                </when>
+                <when test="searchField == 'messageType'">
+                    AND m.MESSAGE_TYPE LIKE '%' || #{searchValue} || '%'
+                </when>
+            </choose>
+        </if>
+        <if test="orgIdFilter != null and orgIdFilter != ''">
+            AND m.ORG_ID = #{orgIdFilter}
+        </if>
+        <if test="messageTypeFilter != null and messageTypeFilter != ''">
+            AND m.MESSAGE_TYPE = #{messageTypeFilter}
+        </if>
+        <if test="headerYnFilter != null and headerYnFilter != ''">
+            AND m.HEADER_YN = #{headerYnFilter}
+        </if>
+        <if test="parentMessageIdFilter != null and parentMessageIdFilter != ''">
+            AND m.PARENT_MESSAGE_ID = #{parentMessageIdFilter}
+        </if>
+    </sql>
+
+    <!-- 정렬 조건 -->
+    <sql id="orderByMessage">
+        <choose>
+            <when test="sortBy != null and sortBy != '' and sortDirection != null and sortDirection != ''">
+                ORDER BY
+                <choose>
+                    <when test="sortBy == 'messageId'">m.MESSAGE_ID</when>
+                    <when test="sortBy == 'messageName'">m.MESSAGE_NAME</when>
+                    <when test="sortBy == 'messageType'">m.MESSAGE_TYPE</when>
+                    <when test="sortBy == 'orgId'">m.ORG_ID</when>
+                    <when test="sortBy == 'parentMessageId'">m.PARENT_MESSAGE_ID</when>
+                    <when test="sortBy == 'curVersion'">m.CUR_VERSION</when>
+                    <when test="sortBy == 'lockYn'">m.LOCK_YN</when>
+                    <when test="sortBy == 'lastUpdateDtime'">m.LAST_UPDATE_DTIME</when>
+                    <otherwise>m.MESSAGE_ID</otherwise>
+                </choose>
+                <choose>
+                    <when test="sortDirection == 'ASC'">ASC</when>
+                    <otherwise>DESC</otherwise>
+                </choose>
+            </when>
+            <otherwise>
+                ORDER BY m.LAST_UPDATE_DTIME DESC
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- 검색 조건을 적용한 전문 목록 조회 (비페이징, MessageResponse 반환) -->
+    <select id="findAllBySearch"
+            resultType="com.example.spideradmin.domain.messageparsing.dto.MessageResponse">
+        SELECT <include refid="baseColumnsAsDto"/>
+        <include refid="fromMessage"/>
+        <where>
+            <include refid="searchConditionsMessage"/>
+        </where>
+        <include refid="orderByMessage"/>
+    </select>
+
+    <!-- 검색 조건을 적용한 전문 목록 조회 (네이티브 ROWNUM 페이징, MessageListItemResponse 반환) -->
+    <select id="findAllWithSearch"
+            resultType="com.example.spideradmin.domain.message.dto.MessageListItemResponse">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT <include refid="listItemColumns"/>
+                <include refid="fromMessage"/>
+                <where>
+                    <include refid="searchConditionsMessage"/>
+                </where>
+                <include refid="orderByMessage"/>
+            ) INNER_QRY
+            WHERE ROWNUM <![CDATA[<=]]> #{endRow}
+        )
+        WHERE RNUM > #{offset}
+    </select>
+
+    <!-- 엑셀 내보내기용 전체 조회 (페이징 없음) -->
+    <select id="findAllForExport"
+            resultType="com.example.spideradmin.domain.message.dto.MessageListItemResponse">
+        SELECT <include refid="listItemColumns"/>
+        <include refid="fromMessage"/>
+        <where>
+            <include refid="searchConditionsMessage"/>
+        </where>
+        <include refid="orderByMessage"/>
+    </select>
+
+    <!-- 검색 조건 건수 조회 -->
+    <select id="countAllWithSearch" resultType="long">
+        SELECT COUNT(*)
+        <include refid="fromMessage"/>
+        <where>
+            <include refid="searchConditionsMessage"/>
+        </where>
+    </select>
+
+    <!-- ==================== 집계 ==================== -->
+
+    <!-- 전체 전문 수 -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM FWK_MESSAGE
+    </select>
+
+    <!-- 중복 제거된 기관 ID 목록 조회 -->
+    <select id="findDistinctOrgIds" resultType="string">
+        SELECT DISTINCT ORG_ID
+        FROM FWK_MESSAGE
+        ORDER BY ORG_ID ASC
+    </select>
+
+    <!-- Validator 목록 조회 (FWK_VALIDATOR 테이블, USE_YN='Y') -->
+    <select id="findDistinctValidationRuleIds" resultType="string">
+        SELECT VALIDATOR_ID
+        FROM FWK_VALIDATOR
+        WHERE USE_YN = 'Y'
+        ORDER BY VALIDATOR_ID ASC
+    </select>
+
+    <!-- 중복 제거된 전문유형 목록 조회 -->
+    <select id="findDistinctMessageTypes" resultType="string">
+        SELECT DISTINCT MESSAGE_TYPE
+        FROM FWK_MESSAGE
+        WHERE MESSAGE_TYPE IS NOT NULL
+        ORDER BY MESSAGE_TYPE ASC
+    </select>
+
+    <!-- 기관 ID별 헤더 전문 목록 조회 (HEADER_YN = 'Y', HeaderMessageResponse 직접 반환) -->
+    <select id="findHeaderMessagesByOrgId"
+            resultType="com.example.spideradmin.domain.message.dto.HeaderMessageResponse">
+        SELECT
+            m.MESSAGE_ID AS messageId,
+            m.MESSAGE_NAME AS messageName
+        FROM FWK_MESSAGE m
+        WHERE m.ORG_ID = #{orgId}
+          AND m.HEADER_YN = 'Y'
+        ORDER BY m.MESSAGE_ID ASC
+    </select>
+
+
+    <!-- ==================== Backup/Restore ==================== -->
+
+    <!-- 최대 버전 조회 -->
+    <select id="getMaxVersion" resultType="java.lang.Integer">
+        SELECT NVL(MAX(VERSION), 0)
+        FROM FWK_MESSAGE_HISTORY
+        WHERE ORG_ID = #{orgId} AND MESSAGE_ID = #{messageId}
+    </select>
+
+    <!-- FWK_MESSAGE → FWK_MESSAGE_HISTORY 복사 -->
+    <insert id="insertMessageHistory">
+        INSERT INTO FWK_MESSAGE_HISTORY (
+            ORG_ID, MESSAGE_ID, VERSION,
+            MESSAGE_NAME, MESSAGE_DESC, MESSAGE_TYPE, PARENT_MESSAGE_ID,
+            HEADER_YN, REQUEST_YN, TRX_TYPE, PRE_LOAD_YN, LOG_LEVEL,
+            BIZ_DOMAIN, VALIDATION_USE_YN, LOCK_YN,
+            HISTORY_REASON, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
+        )
+        SELECT
+            m.ORG_ID, m.MESSAGE_ID, #{version},
+            m.MESSAGE_NAME, m.MESSAGE_DESC, m.MESSAGE_TYPE, m.PARENT_MESSAGE_ID,
+            m.HEADER_YN, m.REQUEST_YN, m.TRX_TYPE, m.PRE_LOAD_YN, m.LOG_LEVEL,
+            m.BIZ_DOMAIN, m.VALIDATION_USE_YN, m.LOCK_YN,
+            #{historyReason}, #{lastUpdateDtime}, #{lastUpdateUserId}
+        FROM FWK_MESSAGE m
+        WHERE m.ORG_ID = #{orgId} AND m.MESSAGE_ID = #{messageId}
+    </insert>
+
+    <!-- FWK_MESSAGE_FIELD → FWK_MESSAGE_FIELD_HISTORY 복사 -->
+    <insert id="insertMessageFieldHistory">
+        INSERT INTO FWK_MESSAGE_FIELD_HISTORY (
+            ORG_ID, MESSAGE_ID, MESSAGE_FIELD_ID, VERSION,
+            SORT_ORDER, DATA_TYPE, DATA_LENGTH, SCALE, ALIGN, FILLER,
+            FIELD_TYPE, USE_MODE, REQUIRED_YN, FIELD_TAG, CODE_GROUP,
+            DEFAULT_VALUE, TEST_VALUE, REMARK, LOG_YN, CODE_MAPPING_YN,
+            MESSAGE_FIELD_NAME, MESSAGE_FIELD_DESC, VALIDATION_RULE_ID,
+            LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
+        )
+        SELECT
+            f.ORG_ID, f.MESSAGE_ID, f.MESSAGE_FIELD_ID, #{version},
+            f.SORT_ORDER, f.DATA_TYPE, f.DATA_LENGTH, f.SCALE, f.ALIGN, f.FILLER,
+            f.FIELD_TYPE, f.USE_MODE, f.REQUIRED_YN, f.FIELD_TAG, f.CODE_GROUP,
+            f.DEFAULT_VALUE, f.TEST_VALUE, f.REMARK, f.LOG_YN, f.CODE_MAPPING_YN,
+            f.MESSAGE_FIELD_NAME, f.MESSAGE_FIELD_DESC, f.VALIDATION_RULE_ID,
+            #{lastUpdateDtime}, #{lastUpdateUserId}
+        FROM FWK_MESSAGE_FIELD f
+        WHERE f.ORG_ID = #{orgId} AND f.MESSAGE_ID = #{messageId}
+    </insert>
+
+    <!-- FWK_MESSAGE CUR_VERSION 업데이트 -->
+    <update id="updateMessageVersion">
+        UPDATE FWK_MESSAGE
+        SET CUR_VERSION = #{version},
+            LAST_UPDATE_DTIME = #{lastUpdateDtime},
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId}
+        WHERE ORG_ID = #{orgId} AND MESSAGE_ID = #{messageId}
+    </update>
+
+    <!-- 전문 버전 목록 조회 (드롭다운용, 최신순) -->
+    <select id="findVersionsByMessageId"
+            resultType="com.example.spideradmin.domain.message.dto.MessageVersionResponse">
+        SELECT
+            VERSION AS version,
+            HISTORY_REASON AS historyReason,
+            LAST_UPDATE_DTIME AS lastUpdateDtime,
+            LAST_UPDATE_USER_ID AS lastUpdateUserId
+        FROM FWK_MESSAGE_HISTORY
+        WHERE ORG_ID = #{orgId} AND MESSAGE_ID = #{messageId}
+        ORDER BY VERSION DESC
+    </select>
+
+    <!-- 현재 전문 필드 삭제 (복원 전 정리용) -->
+    <delete id="deleteMessageFields">
+        DELETE FROM FWK_MESSAGE_FIELD
+        WHERE ORG_ID = #{orgId} AND MESSAGE_ID = #{messageId}
+    </delete>
+
+    <!-- FWK_MESSAGE_HISTORY → FWK_MESSAGE 복원 (MERGE) -->
+    <insert id="restoreMessageFromHistory">
+        MERGE INTO FWK_MESSAGE m
+        USING (
+            SELECT ORG_ID, MESSAGE_ID, MESSAGE_NAME, MESSAGE_DESC, MESSAGE_TYPE,
+                   PARENT_MESSAGE_ID, HEADER_YN, REQUEST_YN, TRX_TYPE, PRE_LOAD_YN,
+                   LOG_LEVEL, BIZ_DOMAIN, VALIDATION_USE_YN, LOCK_YN, VERSION
+            FROM FWK_MESSAGE_HISTORY
+            WHERE ORG_ID = #{orgId} AND MESSAGE_ID = #{messageId} AND VERSION = #{version}
+        ) h ON (m.ORG_ID = h.ORG_ID AND m.MESSAGE_ID = h.MESSAGE_ID)
+        WHEN MATCHED THEN UPDATE SET
+            m.MESSAGE_NAME = h.MESSAGE_NAME,
+            m.MESSAGE_DESC = h.MESSAGE_DESC,
+            m.MESSAGE_TYPE = h.MESSAGE_TYPE,
+            m.PARENT_MESSAGE_ID = h.PARENT_MESSAGE_ID,
+            m.HEADER_YN = h.HEADER_YN,
+            m.REQUEST_YN = h.REQUEST_YN,
+            m.TRX_TYPE = h.TRX_TYPE,
+            m.PRE_LOAD_YN = h.PRE_LOAD_YN,
+            m.LOG_LEVEL = h.LOG_LEVEL,
+            m.BIZ_DOMAIN = h.BIZ_DOMAIN,
+            m.VALIDATION_USE_YN = h.VALIDATION_USE_YN,
+            m.LOCK_YN = h.LOCK_YN,
+            m.CUR_VERSION = h.VERSION,
+            m.LAST_UPDATE_DTIME = #{lastUpdateDtime},
+            m.LAST_UPDATE_USER_ID = #{lastUpdateUserId}
+        WHEN NOT MATCHED THEN INSERT (
+            ORG_ID, MESSAGE_ID, MESSAGE_NAME, MESSAGE_DESC, MESSAGE_TYPE,
+            PARENT_MESSAGE_ID, HEADER_YN, REQUEST_YN, TRX_TYPE, PRE_LOAD_YN,
+            LOG_LEVEL, BIZ_DOMAIN, VALIDATION_USE_YN, LOCK_YN, CUR_VERSION,
+            LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
+        ) VALUES (
+            h.ORG_ID, h.MESSAGE_ID, h.MESSAGE_NAME, h.MESSAGE_DESC, h.MESSAGE_TYPE,
+            h.PARENT_MESSAGE_ID, h.HEADER_YN, h.REQUEST_YN, h.TRX_TYPE, h.PRE_LOAD_YN,
+            h.LOG_LEVEL, h.BIZ_DOMAIN, h.VALIDATION_USE_YN, h.LOCK_YN, h.VERSION,
+            #{lastUpdateDtime}, #{lastUpdateUserId}
+        )
+    </insert>
+
+    <!-- FWK_MESSAGE_FIELD_HISTORY에서 특정 버전의 필드 목록 조회 (복원 전 비교용) -->
+    <select id="findFieldsByVersion"
+            resultType="com.example.spideradmin.domain.messagefield.dto.MessageFieldResponse">
+        SELECT
+            h.ORG_ID AS orgId,
+            h.MESSAGE_ID AS messageId,
+            h.MESSAGE_FIELD_ID AS messageFieldId,
+            h.SORT_ORDER AS sortOrder,
+            h.DATA_TYPE AS dataType,
+            h.DATA_LENGTH AS dataLength,
+            h.SCALE AS scale,
+            h.ALIGN AS align,
+            h.FILLER AS filler,
+            h.FIELD_TYPE AS fieldType,
+            h.USE_MODE AS useMode,
+            h.REQUIRED_YN AS requiredYn,
+            h.FIELD_TAG AS fieldTag,
+            h.CODE_GROUP AS codeGroup,
+            h.DEFAULT_VALUE AS defaultValue,
+            h.TEST_VALUE AS testValue,
+            h.REMARK AS remark,
+            h.LOG_YN AS logYn,
+            h.CODE_MAPPING_YN AS codeMappingYn,
+            h.MESSAGE_FIELD_NAME AS messageFieldName,
+            h.MESSAGE_FIELD_DESC AS messageFieldDesc,
+            h.LAST_UPDATE_DTIME AS lastUpdateDtime,
+            h.VALIDATION_RULE_ID AS validationRuleId,
+            h.LAST_UPDATE_USER_ID AS lastUpdateUserId
+        FROM FWK_MESSAGE_FIELD_HISTORY h
+        WHERE h.ORG_ID = #{orgId}
+          AND h.MESSAGE_ID = #{messageId}
+          AND h.VERSION = #{version}
+        ORDER BY h.SORT_ORDER ASC
+    </select>
+
+    <!-- FWK_MESSAGE_FIELD_HISTORY → FWK_MESSAGE_FIELD 복원 -->
+    <insert id="restoreMessageFieldsFromHistory">
+        INSERT INTO FWK_MESSAGE_FIELD (
+            ORG_ID, MESSAGE_ID, MESSAGE_FIELD_ID,
+            SORT_ORDER, DATA_TYPE, DATA_LENGTH, SCALE, ALIGN, FILLER,
+            FIELD_TYPE, USE_MODE, REQUIRED_YN, FIELD_TAG, CODE_GROUP,
+            DEFAULT_VALUE, TEST_VALUE, REMARK, LOG_YN, CODE_MAPPING_YN,
+            MESSAGE_FIELD_NAME, MESSAGE_FIELD_DESC, VALIDATION_RULE_ID,
+            LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
+        )
+        SELECT
+            h.ORG_ID, h.MESSAGE_ID, h.MESSAGE_FIELD_ID,
+            h.SORT_ORDER, h.DATA_TYPE, h.DATA_LENGTH, h.SCALE, h.ALIGN, h.FILLER,
+            h.FIELD_TYPE, h.USE_MODE, h.REQUIRED_YN, h.FIELD_TAG, h.CODE_GROUP,
+            h.DEFAULT_VALUE, h.TEST_VALUE, h.REMARK, h.LOG_YN, h.CODE_MAPPING_YN,
+            h.MESSAGE_FIELD_NAME, h.MESSAGE_FIELD_DESC, h.VALIDATION_RULE_ID,
+            #{lastUpdateDtime}, #{lastUpdateUserId}
+        FROM FWK_MESSAGE_FIELD_HISTORY h
+        WHERE h.ORG_ID = #{orgId} AND h.MESSAGE_ID = #{messageId} AND h.VERSION = #{version}
+    </insert>
+
+    <!-- ======================== 필드풀 검증 ======================== -->
+    <select id="verifyFieldPool"
+            resultType="com.example.spideradmin.domain.message.dto.FieldPoolVerifyResponse">
+        SELECT
+            fp.FIELD_DOMAIN_ID   AS fieldDomainId,
+            CASE WHEN fp.FIELD_DOMAIN_ID IS NOT NULL THEN 'Y' END AS domainRegistryYn,
+            t.FIELD_ID           AS messageFieldId,
+            CASE WHEN fp.MESSAGE_FIELD_ID IS NOT NULL THEN 'Y' END AS fieldRegistryYn
+        FROM (
+            <foreach collection="fieldIds" item="id" separator=" UNION ALL ">
+                SELECT #{id} AS FIELD_ID FROM DUAL
+            </foreach>
+        ) t
+        LEFT JOIN FWK_FIELD_POOL fp ON fp.MESSAGE_FIELD_ID = t.FIELD_ID
+    </select>
+
+    <!-- ======================== 테이블 컬럼 조회 ======================== -->
+    <select id="findTableColumns"
+            resultType="com.example.spideradmin.domain.message.dto.TableColumnResponse">
+        SELECT
+            tc.COLUMN_NAME   AS columnName,
+            tc.DATA_TYPE     AS dataType,
+            tc.DATA_LENGTH   AS dataLength,
+            cc.COMMENTS      AS comments
+        FROM ALL_TAB_COLUMNS tc
+        LEFT JOIN ALL_COL_COMMENTS cc
+            ON cc.OWNER = tc.OWNER AND cc.TABLE_NAME = tc.TABLE_NAME AND cc.COLUMN_NAME = tc.COLUMN_NAME
+        WHERE tc.TABLE_NAME = #{tableName}
+          AND tc.OWNER = SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA')
+        ORDER BY tc.COLUMN_ID
+    </select>
+
+    <!-- ======================== 표준전문조회복사 ======================== -->
+    <!-- 검색 조건 -->
+    <sql id="stdSearchConditions">
+        <if test="searchField != null and searchValue != null and searchValue != ''">
+            <choose>
+                <when test="searchField == 'trxId'">
+                    AND UPPER(tm.TRX_ID) LIKE '%' || UPPER(#{searchValue}) || '%'
+                </when>
+                <when test="searchField == 'trxName'">
+                    AND UPPER(t.TRX_NAME) LIKE '%' || UPPER(#{searchValue}) || '%'
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <select id="findTrxMessagesForStdSearch"
+            resultType="com.example.spideradmin.domain.message.dto.StdMessageSearchResponse">
+        SELECT * FROM (
+            SELECT A.*, ROW_NUMBER() OVER (ORDER BY A.trxId, A.ioType, A.orgId) AS RN
+            FROM (
+                SELECT
+                    tm.TRX_ID        AS trxId,
+                    t.TRX_NAME       AS trxName,
+                    tm.ORG_ID        AS orgId,
+                    tm.MESSAGE_ID    AS messageId,
+                    tm.IO_TYPE       AS ioType,
+                    m.MESSAGE_NAME   AS messageName
+                FROM FWK_TRX_MESSAGE tm
+                INNER JOIN FWK_TRX t ON t.TRX_ID = tm.TRX_ID
+                LEFT JOIN FWK_MESSAGE m ON m.ORG_ID = tm.ORG_ID AND m.MESSAGE_ID = tm.MESSAGE_ID
+                WHERE 1=1
+                <include refid="stdSearchConditions"/>
+            ) A
+        ) WHERE RN BETWEEN #{offset} + 1 AND #{endRow}
+        ORDER BY RN
+    </select>
+
+    <select id="countTrxMessagesForStdSearch" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_TRX_MESSAGE tm
+        INNER JOIN FWK_TRX t ON t.TRX_ID = tm.TRX_ID
+        WHERE 1=1
+        <include refid="stdSearchConditions"/>
+    </select>
+
+</mapper>

@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.emergencynotice.mapper.EmergencyNoticeDeployMapper">
+
+    <!--
+        배포 상태는 FWK_PROPERTY 'notice' 그룹의 별도 행으로 관리한다. (key-value 방식)
+        PROPERTY_ID='DEPLOY_STATUS': DRAFT(미배포) / DEPLOYED(배포 중) / ENDED(배포 종료)
+        PROPERTY_ID='START_DTIME':   배포 시작 일시 (yyyyMMddHHmmss)
+        PROPERTY_ID='END_DTIME':     배포 종료 일시 (yyyyMMddHHmmss)
+    -->
+
+    <!--
+        현재 배포 상태 조회.
+        DEPLOY_STATUS 행을 기준으로 START_DTIME·END_DTIME·CLOSEABLE_YN·HIDE_TODAY_YN 행을
+        스칼라 서브쿼리로 함께 조회한다.
+        DEPLOY_STATUS 행이 없으면 null을 반환하여 초기 데이터 미실행을 감지할 수 있다.
+    -->
+    <select id="selectDeployStatus" resultType="com.example.spideradmin.domain.emergencynotice.dto.EmergencyNoticeDeployStatusResponse">
+        SELECT p.DEFAULT_VALUE AS deployStatus,
+               (SELECT q.DEFAULT_VALUE FROM FWK_PROPERTY q
+                WHERE  q.PROPERTY_GROUP_ID = 'notice'
+                AND    q.PROPERTY_ID       = 'START_DTIME')   AS startDtime,
+               (SELECT q.DEFAULT_VALUE FROM FWK_PROPERTY q
+                WHERE  q.PROPERTY_GROUP_ID = 'notice'
+                AND    q.PROPERTY_ID       = 'END_DTIME')     AS endDtime,
+               (SELECT q.DEFAULT_VALUE FROM FWK_PROPERTY q
+                WHERE  q.PROPERTY_GROUP_ID = 'notice'
+                AND    q.PROPERTY_ID       = 'CLOSEABLE_YN')  AS closeableYn,
+               (SELECT q.DEFAULT_VALUE FROM FWK_PROPERTY q
+                WHERE  q.PROPERTY_GROUP_ID = 'notice'
+                AND    q.PROPERTY_ID       = 'HIDE_TODAY_YN') AS hideTodayYn
+        FROM   FWK_PROPERTY p
+        WHERE  p.PROPERTY_GROUP_ID = 'notice'
+        AND    p.PROPERTY_ID       = 'DEPLOY_STATUS'
+    </select>
+
+    <!--
+        배포 이력 조회 (페이징·필터 포함).
+        USE_YN 행을 기준으로 같은 VERSION의 EMERGENCY_KO·CLOSEABLE_YN·HIDE_TODAY_YN 행을
+        LEFT JOIN하여 변경 상세 정보를 함께 조회한다.
+
+        insertHistorySnapshot()은 notice 그룹 전체 행을 한 번에 INSERT하므로
+        PROPERTY_ID별 VERSION은 항상 동기화된다 → VERSION으로 조인 가능.
+    -->
+    <!--
+        ROWNUM 서브쿼리 방식으로 페이징.
+        OFFSET/FETCH NEXT 구문은 12c JDBC 드라이버 버전에 따라 ORA-00933이 발생하므로
+        모든 Oracle 버전에서 동작하는 ROWNUM 이중 서브쿼리를 사용한다.
+    -->
+    <select id="selectHistory" resultType="com.example.spideradmin.domain.emergencynotice.dto.EmergencyNoticeHistoryResponse">
+        SELECT version, reason, lastUpdateDtime, lastUpdateUserId,
+               titleKo, contentKo, titleEn, contentEn, closeableYn, hideTodayYn
+        FROM (
+            SELECT a.*, ROWNUM AS rnum
+            FROM (
+                SELECT h_use.VERSION             AS version,
+                       h_use.REASON              AS reason,
+                       h_use.LAST_UPDATE_DTIME   AS lastUpdateDtime,
+                       h_use.LAST_UPDATE_USER_ID AS lastUpdateUserId,
+                       h_ko.PROPERTY_DESC        AS titleKo,
+                       h_ko.DEFAULT_VALUE        AS contentKo,
+                       h_en.PROPERTY_DESC        AS titleEn,
+                       h_en.DEFAULT_VALUE        AS contentEn,
+                       h_cl.DEFAULT_VALUE        AS closeableYn,
+                       h_ht.DEFAULT_VALUE        AS hideTodayYn
+                FROM   FWK_PROPERTY_HISTORY h_use
+                LEFT JOIN FWK_PROPERTY_HISTORY h_ko
+                       ON h_ko.PROPERTY_GROUP_ID = 'notice'
+                      AND h_ko.PROPERTY_ID       = 'EMERGENCY_KO'
+                      AND h_ko.VERSION           = h_use.VERSION
+                LEFT JOIN FWK_PROPERTY_HISTORY h_en
+                       ON h_en.PROPERTY_GROUP_ID = 'notice'
+                      AND h_en.PROPERTY_ID       = 'EMERGENCY_EN'
+                      AND h_en.VERSION           = h_use.VERSION
+                LEFT JOIN FWK_PROPERTY_HISTORY h_cl
+                       ON h_cl.PROPERTY_GROUP_ID = 'notice'
+                      AND h_cl.PROPERTY_ID       = 'CLOSEABLE_YN'
+                      AND h_cl.VERSION           = h_use.VERSION
+                LEFT JOIN FWK_PROPERTY_HISTORY h_ht
+                       ON h_ht.PROPERTY_GROUP_ID = 'notice'
+                      AND h_ht.PROPERTY_ID       = 'HIDE_TODAY_YN'
+                      AND h_ht.VERSION           = h_use.VERSION
+                WHERE  h_use.PROPERTY_GROUP_ID = 'notice'
+                AND    h_use.PROPERTY_ID       = 'USE_YN'
+                <if test="reason != null and reason != ''">
+                  AND  h_use.REASON = #{reason}
+                </if>
+                ORDER  BY h_use.VERSION DESC
+            ) a
+            WHERE ROWNUM &lt;= #{offset} + #{pageSize}
+        )
+        WHERE rnum &gt; #{offset}
+    </select>
+
+    <!-- 배포 이력 전체 건수 (페이징 totalCount용) -->
+    <select id="selectHistoryCount" resultType="int">
+        SELECT COUNT(*)
+        FROM   FWK_PROPERTY_HISTORY
+        WHERE  PROPERTY_GROUP_ID = 'notice'
+        AND    PROPERTY_ID       = 'USE_YN'
+        <if test="reason != null and reason != ''">
+          AND  REASON = #{reason}
+        </if>
+    </select>
+
+    <!--
+        쓰기 작업 전 행 잠금용 배포 상태 조회 (SELECT FOR UPDATE).
+        DEPLOY_STATUS 행을 잠가 동시 요청이 같은 상태를 읽고 중복 배포·종료하는 TOCTOU 경쟁을 방지한다.
+        반드시 쓰기(@Transactional) 트랜잭션 내에서만 호출해야 한다.
+    -->
+    <select id="selectDeployStatusForUpdate" resultType="com.example.spideradmin.domain.emergencynotice.dto.EmergencyNoticeDeployStatusResponse">
+        SELECT p.DEFAULT_VALUE AS deployStatus,
+               (SELECT q.DEFAULT_VALUE FROM FWK_PROPERTY q
+                WHERE  q.PROPERTY_GROUP_ID = 'notice'
+                AND    q.PROPERTY_ID       = 'START_DTIME')   AS startDtime,
+               (SELECT q.DEFAULT_VALUE FROM FWK_PROPERTY q
+                WHERE  q.PROPERTY_GROUP_ID = 'notice'
+                AND    q.PROPERTY_ID       = 'END_DTIME')     AS endDtime,
+               (SELECT q.DEFAULT_VALUE FROM FWK_PROPERTY q
+                WHERE  q.PROPERTY_GROUP_ID = 'notice'
+                AND    q.PROPERTY_ID       = 'CLOSEABLE_YN')  AS closeableYn,
+               (SELECT q.DEFAULT_VALUE FROM FWK_PROPERTY q
+                WHERE  q.PROPERTY_GROUP_ID = 'notice'
+                AND    q.PROPERTY_ID       = 'HIDE_TODAY_YN') AS hideTodayYn
+        FROM   FWK_PROPERTY p
+        WHERE  p.PROPERTY_GROUP_ID = 'notice'
+        AND    p.PROPERTY_ID       = 'DEPLOY_STATUS'
+        FOR UPDATE
+    </select>
+
+    <!--
+        배포 시작: DEPLOY_STATUS='DEPLOYED', START_DTIME=now, END_DTIME=NULL을 한 번에 업데이트.
+        CASE 표현식으로 3개 행을 단일 SQL로 처리하여 DB 왕복을 최소화한다.
+    -->
+    <update id="updateDeployStart">
+        UPDATE FWK_PROPERTY
+        SET    DEFAULT_VALUE       = CASE PROPERTY_ID
+                                         WHEN 'DEPLOY_STATUS' THEN 'DEPLOYED'
+                                         WHEN 'START_DTIME'   THEN #{startDtime}
+                                         WHEN 'END_DTIME'     THEN NULL
+                                     END,
+               LAST_UPDATE_DTIME   = #{lastUpdateDtime},
+               LAST_UPDATE_USER_ID = #{lastUpdateUserId}
+        WHERE  PROPERTY_GROUP_ID = 'notice'
+        AND    PROPERTY_ID IN ('DEPLOY_STATUS', 'START_DTIME', 'END_DTIME')
+    </update>
+
+    <!--
+        배포 종료: DEPLOY_STATUS='ENDED', END_DTIME=now를 한 번에 업데이트.
+        CASE 표현식으로 2개 행을 단일 SQL로 처리한다.
+    -->
+    <update id="updateDeployEnd">
+        UPDATE FWK_PROPERTY
+        SET    DEFAULT_VALUE       = CASE PROPERTY_ID
+                                         WHEN 'DEPLOY_STATUS' THEN 'ENDED'
+                                         WHEN 'END_DTIME'     THEN #{endDtime}
+                                     END,
+               LAST_UPDATE_DTIME   = #{lastUpdateDtime},
+               LAST_UPDATE_USER_ID = #{lastUpdateUserId}
+        WHERE  PROPERTY_GROUP_ID = 'notice'
+        AND    PROPERTY_ID IN ('DEPLOY_STATUS', 'END_DTIME')
+    </update>
+
+    <!-- 닫기 버튼 노출 여부 업데이트 (CLOSEABLE_YN 행의 DEFAULT_VALUE 변경) -->
+    <update id="updateCloseableYn">
+        UPDATE FWK_PROPERTY
+        SET    DEFAULT_VALUE       = #{value},
+               LAST_UPDATE_DTIME   = #{lastUpdateDtime},
+               LAST_UPDATE_USER_ID = #{lastUpdateUserId}
+        WHERE  PROPERTY_GROUP_ID = 'notice'
+        AND    PROPERTY_ID       = 'CLOSEABLE_YN'
+    </update>
+
+    <!-- 오늘 하루 보지 않기 체크박스 노출 여부 업데이트 (HIDE_TODAY_YN 행의 DEFAULT_VALUE 변경) -->
+    <update id="updateHideTodayYn">
+        UPDATE FWK_PROPERTY
+        SET    DEFAULT_VALUE       = #{value},
+               LAST_UPDATE_DTIME   = #{lastUpdateDtime},
+               LAST_UPDATE_USER_ID = #{lastUpdateUserId}
+        WHERE  PROPERTY_GROUP_ID = 'notice'
+        AND    PROPERTY_ID       = 'HIDE_TODAY_YN'
+    </update>
+
+    <!--
+        배포 이력 스냅샷 삽입 — 'notice' 그룹 전체 행을 FWK_PROPERTY_HISTORY에 복사
+        DEPLOY_STATUS·START_DTIME·END_DTIME 행도 포함되어 자동으로 스냅샷에 기록된다.
+        VERSION은 각 PROPERTY_ID별 기존 최대 VERSION + 1로 자동 계산 (NVL로 최초=1 처리)
+    -->
+    <insert id="insertHistorySnapshot">
+        INSERT INTO FWK_PROPERTY_HISTORY (
+            PROPERTY_GROUP_ID, PROPERTY_ID, VERSION,
+            PROPERTY_NAME, PROPERTY_DESC, DATA_TYPE, VALID_DATA, DEFAULT_VALUE,
+            REASON, LAST_UPDATE_USER_ID, LAST_UPDATE_DTIME
+        )
+        SELECT P.PROPERTY_GROUP_ID,
+               P.PROPERTY_ID,
+               NVL((SELECT MAX(H.VERSION)
+                    FROM   FWK_PROPERTY_HISTORY H
+                    WHERE  H.PROPERTY_GROUP_ID = 'notice'), 0) + 1,
+               P.PROPERTY_NAME,
+               P.PROPERTY_DESC,
+               P.DATA_TYPE,
+               P.VALID_DATA,
+               P.DEFAULT_VALUE,
+               #{reason},
+               #{lastUpdateUserId},
+               #{lastUpdateDtime}
+        FROM   FWK_PROPERTY P
+        WHERE  P.PROPERTY_GROUP_ID = 'notice'
+    </insert>
+
+</mapper>

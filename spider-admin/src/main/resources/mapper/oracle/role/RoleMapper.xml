@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.role.mapper.RoleMapper">
+
+    <select id="selectResponseById"
+            resultType="com.example.spideradmin.domain.role.dto.RoleResponse">
+        SELECT
+            ROLE_ID AS roleId,
+            ROLE_NAME AS roleName,
+            USE_YN AS useYn,
+            ROLE_DESC AS roleDesc,
+            LAST_UPDATE_DTIME AS lastUpdateDtime,
+            LAST_UPDATE_USER_ID AS lastUpdateUserId,
+            RANKING AS ranking
+        FROM FWK_ROLE
+        WHERE ROLE_ID = #{roleId}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO FWK_ROLE (ROLE_ID, ROLE_NAME, USE_YN, ROLE_DESC, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID, RANKING)
+        VALUES (#{dto.roleId}, #{dto.roleName}, #{dto.useYn, jdbcType=VARCHAR}, #{dto.roleDesc, jdbcType=VARCHAR}, #{lastUpdateDtime}, #{lastUpdateUserId}, #{dto.ranking, jdbcType=NUMERIC})
+    </insert>
+
+    <update id="update">
+        UPDATE FWK_ROLE
+        SET ROLE_NAME = #{dto.roleName},
+            USE_YN = #{dto.useYn, jdbcType=VARCHAR},
+            ROLE_DESC = #{dto.roleDesc, jdbcType=VARCHAR},
+            LAST_UPDATE_DTIME = #{lastUpdateDtime},
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId},
+            RANKING = #{dto.ranking, jdbcType=NUMERIC}
+        WHERE ROLE_ID = #{roleId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM FWK_ROLE WHERE ROLE_ID = #{roleId}
+    </delete>
+
+    <select id="countByRoleId" resultType="int">
+        SELECT COUNT(*) FROM FWK_ROLE WHERE ROLE_ID = #{roleId}
+    </select>
+
+    <select id="countByRoleName" resultType="int">
+        SELECT COUNT(*) FROM FWK_ROLE WHERE ROLE_NAME = #{roleName}
+    </select>
+
+    <select id="countByRoleNameExcluding" resultType="int">
+        SELECT COUNT(*) FROM FWK_ROLE WHERE ROLE_NAME = #{roleName} AND ROLE_ID != #{roleId}
+    </select>
+
+    <select id="countUsersByRoleId" resultType="int">
+        SELECT COUNT(*) FROM FWK_USER WHERE ROLE_ID = #{roleId}
+    </select>
+
+
+    <!-- ==================== Common (merged) ==================== -->
+
+
+    <resultMap id="RoleResponseResultMap" type="com.example.spideradmin.domain.role.dto.RoleResponse">
+        <id property="roleId" column="ROLE_ID"/>
+        <result property="roleName" column="ROLE_NAME"/>
+        <result property="useYn" column="USE_YN"/>
+        <result property="roleDesc" column="ROLE_DESC"/>
+        <result property="lastUpdateDtime" column="LAST_UPDATE_DTIME"/>
+        <result property="lastUpdateUserId" column="LAST_UPDATE_USER_ID"/>
+        <result property="ranking" column="RANKING"/>
+        <result property="userCount" column="USER_COUNT"/>
+    </resultMap>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <select id="findAll"
+            resultType="com.example.spideradmin.domain.role.dto.RoleResponse">
+        SELECT
+            ROLE_ID AS roleId,
+            ROLE_NAME AS roleName,
+            USE_YN AS useYn,
+            ROLE_DESC AS roleDesc,
+            LAST_UPDATE_DTIME AS lastUpdateDtime,
+            LAST_UPDATE_USER_ID AS lastUpdateUserId,
+            RANKING AS ranking
+        FROM FWK_ROLE
+        ORDER BY ROLE_ID
+    </select>
+
+    <sql id="searchConditions">
+        <if test="roleName != null and roleName != ''">
+            AND r.ROLE_NAME LIKE '%' || #{roleName} || '%'
+        </if>
+        <if test="roleId != null and roleId != ''">
+            AND r.ROLE_ID LIKE '%' || #{roleId} || '%'
+        </if>
+    </sql>
+
+    <select id="findAllWithSearch" resultMap="RoleResponseResultMap" parameterType="map">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT r.*,
+                       NVL(uc.USER_COUNT, 0) AS USER_COUNT
+                FROM FWK_ROLE r
+                LEFT JOIN (
+                    SELECT ROLE_ID, COUNT(*) AS USER_COUNT
+                    FROM FWK_USER
+                    GROUP BY ROLE_ID
+                ) uc ON r.ROLE_ID = uc.ROLE_ID
+                <where>
+                    <include refid="searchConditions"/>
+                </where>
+                <choose>
+                    <when test="sortBy == 'roleId' and sortDirection == 'DESC'">ORDER BY r.ROLE_ID DESC</when>
+                    <when test="sortBy == 'roleName' and sortDirection == 'ASC'">ORDER BY r.ROLE_NAME ASC</when>
+                    <when test="sortBy == 'roleName' and sortDirection == 'DESC'">ORDER BY r.ROLE_NAME DESC</when>
+                    <when test="sortBy == 'useYn' and sortDirection == 'ASC'">ORDER BY r.USE_YN ASC</when>
+                    <when test="sortBy == 'useYn' and sortDirection == 'DESC'">ORDER BY r.USE_YN DESC</when>
+                    <when test="sortBy == 'roleDesc' and sortDirection == 'ASC'">ORDER BY r.ROLE_DESC ASC</when>
+                    <when test="sortBy == 'roleDesc' and sortDirection == 'DESC'">ORDER BY r.ROLE_DESC DESC</when>
+                    <when test="sortBy == 'ranking' and sortDirection == 'ASC'">ORDER BY r.RANKING ASC</when>
+                    <when test="sortBy == 'ranking' and sortDirection == 'DESC'">ORDER BY r.RANKING DESC</when>
+                    <otherwise>ORDER BY r.ROLE_ID ASC</otherwise>
+                </choose>
+            ) INNER_QRY
+            WHERE ROWNUM <![CDATA[<=]]> #{endRow}
+        ) WHERE RNUM > #{offset}
+    </select>
+
+    <select id="countAllWithSearch" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_ROLE r
+        <where>
+            <include refid="searchConditions"/>
+        </where>
+    </select>
+
+    <select id="findAllForExport" resultMap="RoleResponseResultMap" parameterType="map">
+        SELECT r.*,
+               NVL(uc.USER_COUNT, 0) AS USER_COUNT
+        FROM FWK_ROLE r
+        LEFT JOIN (
+            SELECT ROLE_ID, COUNT(*) AS USER_COUNT
+            FROM FWK_USER
+            GROUP BY ROLE_ID
+        ) uc ON r.ROLE_ID = uc.ROLE_ID
+        <where>
+            <include refid="searchConditions"/>
+        </where>
+        <choose>
+            <when test="sortBy == 'roleId' and sortDirection == 'DESC'">ORDER BY r.ROLE_ID DESC</when>
+            <when test="sortBy == 'roleName' and sortDirection == 'ASC'">ORDER BY r.ROLE_NAME ASC</when>
+            <when test="sortBy == 'roleName' and sortDirection == 'DESC'">ORDER BY r.ROLE_NAME DESC</when>
+            <when test="sortBy == 'useYn' and sortDirection == 'ASC'">ORDER BY r.USE_YN ASC</when>
+            <when test="sortBy == 'useYn' and sortDirection == 'DESC'">ORDER BY r.USE_YN DESC</when>
+            <when test="sortBy == 'roleDesc' and sortDirection == 'ASC'">ORDER BY r.ROLE_DESC ASC</when>
+            <when test="sortBy == 'roleDesc' and sortDirection == 'DESC'">ORDER BY r.ROLE_DESC DESC</when>
+            <when test="sortBy == 'ranking' and sortDirection == 'ASC'">ORDER BY r.RANKING ASC</when>
+            <when test="sortBy == 'ranking' and sortDirection == 'DESC'">ORDER BY r.RANKING DESC</when>
+            <otherwise>ORDER BY r.ROLE_ID ASC</otherwise>
+        </choose>
+    </select>
+
+
+</mapper>

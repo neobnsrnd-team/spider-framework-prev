@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.property.mapper.PropertyMapper">
+
+    <!-- 프로퍼티 일괄 등록 (Oracle DUAL 패턴) - PropertyCreateRequest 기반 -->
+    <insert id="insertBatch">
+        INSERT INTO FWK_PROPERTY (
+            PROPERTY_GROUP_ID, PROPERTY_ID, PROPERTY_NAME, PROPERTY_DESC,
+            DATA_TYPE, VALID_DATA, DEFAULT_VALUE,
+            LAST_UPDATE_USER_ID, LAST_UPDATE_DTIME
+        )
+        SELECT A.* FROM (
+            <foreach collection="list" item="item" separator=" UNION ALL ">
+                SELECT
+                    #{propertyGroupId},
+                    #{item.propertyId},
+                    #{item.propertyName, jdbcType=VARCHAR},
+                    #{item.propertyDesc, jdbcType=VARCHAR},
+                    #{item.dataType, jdbcType=VARCHAR},
+                    #{item.validData, jdbcType=VARCHAR},
+                    #{item.defaultValue, jdbcType=VARCHAR},
+                    #{lastUpdateUserId},
+                    #{lastUpdateDtime}
+                FROM DUAL
+            </foreach>
+        ) A
+    </insert>
+
+    <!-- 프로퍼티 단건 조회 (ResponseDTO) -->
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.property.dto.PropertyResponse">
+        SELECT
+            PROPERTY_GROUP_ID AS propertyGroupId,
+            PROPERTY_ID AS propertyId,
+            PROPERTY_NAME AS propertyName,
+            PROPERTY_DESC AS propertyDesc,
+            DATA_TYPE AS dataType,
+            VALID_DATA AS validData,
+            DEFAULT_VALUE AS defaultValue,
+            LAST_UPDATE_USER_ID AS lastUpdateUserId,
+            LAST_UPDATE_DTIME AS lastUpdateDtime
+        FROM FWK_PROPERTY
+        WHERE PROPERTY_GROUP_ID = #{propertyGroupId}
+          AND PROPERTY_ID = #{propertyId}
+    </select>
+
+    <!-- 프로퍼티 생성 -->
+    <insert id="insert">
+        INSERT INTO FWK_PROPERTY (
+            PROPERTY_GROUP_ID,
+            PROPERTY_ID,
+            PROPERTY_NAME,
+            PROPERTY_DESC,
+            DATA_TYPE,
+            VALID_DATA,
+            DEFAULT_VALUE,
+            LAST_UPDATE_USER_ID,
+            LAST_UPDATE_DTIME
+        ) VALUES (
+            #{dto.propertyGroupId},
+            #{dto.propertyId},
+            #{dto.propertyName, jdbcType=VARCHAR},
+            #{dto.propertyDesc, jdbcType=VARCHAR},
+            #{dto.dataType, jdbcType=VARCHAR},
+            #{dto.validData, jdbcType=VARCHAR},
+            #{dto.defaultValue, jdbcType=VARCHAR},
+            #{lastUpdateUserId},
+            #{lastUpdateDtime}
+        )
+    </insert>
+
+    <!-- 프로퍼티 수정 -->
+    <update id="update">
+        UPDATE FWK_PROPERTY
+        SET
+            PROPERTY_NAME = #{dto.propertyName, jdbcType=VARCHAR},
+            PROPERTY_DESC = #{dto.propertyDesc, jdbcType=VARCHAR},
+            DATA_TYPE = #{dto.dataType, jdbcType=VARCHAR},
+            VALID_DATA = #{dto.validData, jdbcType=VARCHAR},
+            DEFAULT_VALUE = #{dto.defaultValue, jdbcType=VARCHAR},
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId},
+            LAST_UPDATE_DTIME = #{lastUpdateDtime}
+        WHERE PROPERTY_GROUP_ID = #{dto.propertyGroupId}
+          AND PROPERTY_ID = #{dto.propertyId}
+    </update>
+
+    <!-- 프로퍼티 삭제 -->
+    <delete id="delete">
+        DELETE FROM FWK_PROPERTY
+        WHERE PROPERTY_GROUP_ID = #{propertyGroupId}
+          AND PROPERTY_ID = #{propertyId}
+    </delete>
+
+    <!-- 프로퍼티 존재 여부 확인 -->
+    <select id="countById" resultType="int">
+        SELECT COUNT(*)
+        FROM FWK_PROPERTY
+        WHERE PROPERTY_GROUP_ID = #{propertyGroupId}
+          AND PROPERTY_ID = #{propertyId}
+    </select>
+
+    <!-- 프로퍼티 그룹 전체 삭제 -->
+    <delete id="deleteByPropertyGroupId">
+        DELETE FROM FWK_PROPERTY
+        WHERE PROPERTY_GROUP_ID = #{propertyGroupId}
+    </delete>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <resultMap id="PropertyGroupResultMap" type="com.example.spideradmin.domain.property.dto.PropertyGroupResponse">
+        <result property="propertyGroupId" column="PROPERTY_GROUP_ID"/>
+        <result property="propertyGroupName" column="PROPERTY_GROUP_NAME"/>
+        <result property="propertyCount" column="PROPERTY_COUNT"/>
+        <result property="lastUpdateDtime" column="LAST_UPDATE_DTIME"/>
+        <result property="lastUpdateUserId" column="LAST_UPDATE_USER_ID"/>
+    </resultMap>
+
+    <!-- 프로퍼티 그룹 검색 조건 공통 -->
+    <sql id="propertyGroupSearchConditions">
+        <if test="searchValue != null and searchValue != ''">
+            <choose>
+                <when test="searchField == 'propertyGroupId'">
+                    AND p.PROPERTY_GROUP_ID LIKE '%' || #{searchValue} || '%'
+                </when>
+                <when test="searchField == 'propertyGroupName'">
+                    AND c.CODE_NAME LIKE '%' || #{searchValue} || '%'
+                </when>
+                <otherwise>
+                    AND (p.PROPERTY_GROUP_ID LIKE '%' || #{searchValue} || '%'
+                         OR c.CODE_NAME LIKE '%' || #{searchValue} || '%')
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
+    <!-- 프로퍼티 그룹 목록 조회 (검색, 정렬, ROWNUM 페이징) - FWK_CODE 조인 -->
+    <select id="selectPropertyGroups" resultMap="PropertyGroupResultMap">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT
+                    p.PROPERTY_GROUP_ID,
+                    c.CODE_NAME AS PROPERTY_GROUP_NAME,
+                    COUNT(*) AS PROPERTY_COUNT,
+                    MAX(p.LAST_UPDATE_DTIME) AS LAST_UPDATE_DTIME,
+                    MAX(p.LAST_UPDATE_USER_ID) KEEP (DENSE_RANK LAST ORDER BY p.LAST_UPDATE_DTIME) AS LAST_UPDATE_USER_ID
+                FROM FWK_PROPERTY p
+                INNER JOIN FWK_CODE c ON p.PROPERTY_GROUP_ID = c.CODE AND c.CODE_GROUP_ID = 'FR00006'
+                <where>
+                    <include refid="propertyGroupSearchConditions"/>
+                </where>
+                GROUP BY p.PROPERTY_GROUP_ID, c.CODE_NAME
+                <choose>
+                    <when test="sortBy != null and sortBy != ''">
+                        <choose>
+                            <when test="sortBy == 'propertyGroupId'">
+                                ORDER BY p.PROPERTY_GROUP_ID <choose><when test="sortDirection == 'DESC'">DESC</when><otherwise>ASC</otherwise></choose>
+                            </when>
+                            <when test="sortBy == 'propertyGroupName'">
+                                ORDER BY c.CODE_NAME <choose><when test="sortDirection == 'DESC'">DESC</when><otherwise>ASC</otherwise></choose>
+                            </when>
+                            <when test="sortBy == 'propertyCount'">
+                                ORDER BY PROPERTY_COUNT <choose><when test="sortDirection == 'DESC'">DESC</when><otherwise>ASC</otherwise></choose>
+                            </when>
+                            <otherwise>
+                                ORDER BY p.PROPERTY_GROUP_ID
+                            </otherwise>
+                        </choose>
+                    </when>
+                    <otherwise>
+                        ORDER BY p.PROPERTY_GROUP_ID
+                    </otherwise>
+                </choose>
+            ) INNER_QRY
+            WHERE ROWNUM <![CDATA[<=]]> #{endRow}
+        ) WHERE RNUM > #{offset}
+    </select>
+
+    <!-- 프로퍼티 그룹 검색 조건 카운트 -->
+    <select id="countPropertyGroupsWithSearch" resultType="long">
+        SELECT COUNT(*) FROM (
+            SELECT p.PROPERTY_GROUP_ID
+            FROM FWK_PROPERTY p
+            INNER JOIN FWK_CODE c ON p.PROPERTY_GROUP_ID = c.CODE AND c.CODE_GROUP_ID = 'FR00006'
+            <where>
+                <include refid="propertyGroupSearchConditions"/>
+            </where>
+            GROUP BY p.PROPERTY_GROUP_ID
+        )
+    </select>
+
+    <!-- 프로퍼티 그룹 전체 목록 조회 - FWK_CODE 조인 -->
+    <select id="selectAllPropertyGroups" resultMap="PropertyGroupResultMap">
+        SELECT
+            p.PROPERTY_GROUP_ID,
+            c.CODE_NAME AS PROPERTY_GROUP_NAME,
+            COUNT(*) AS PROPERTY_COUNT,
+            MAX(p.LAST_UPDATE_DTIME) AS LAST_UPDATE_DTIME,
+            MAX(p.LAST_UPDATE_USER_ID) KEEP (DENSE_RANK LAST ORDER BY p.LAST_UPDATE_DTIME) AS LAST_UPDATE_USER_ID
+        FROM FWK_PROPERTY p
+        INNER JOIN FWK_CODE c ON p.PROPERTY_GROUP_ID = c.CODE AND c.CODE_GROUP_ID = 'FR00006'
+        GROUP BY p.PROPERTY_GROUP_ID, c.CODE_NAME
+        ORDER BY p.PROPERTY_GROUP_ID
+    </select>
+
+    <resultMap id="PropertyResponseResultMap" type="com.example.spideradmin.domain.property.dto.PropertyResponse">
+        <result property="propertyGroupId" column="PROPERTY_GROUP_ID"/>
+        <result property="propertyId" column="PROPERTY_ID"/>
+        <result property="propertyName" column="PROPERTY_NAME"/>
+        <result property="propertyDesc" column="PROPERTY_DESC"/>
+        <result property="dataType" column="DATA_TYPE"/>
+        <result property="dataTypeName" column="DATA_TYPE_NAME"/>
+        <result property="validData" column="VALID_DATA"/>
+        <result property="defaultValue" column="DEFAULT_VALUE"/>
+        <result property="lastUpdateUserId" column="LAST_UPDATE_USER_ID"/>
+        <result property="lastUpdateDtime" column="LAST_UPDATE_DTIME"/>
+    </resultMap>
+
+    <!-- 엑셀 내보내기용 프로퍼티 그룹 전체 조회 (페이징 없음) -->
+    <select id="findAllForExport" resultMap="PropertyGroupResultMap">
+        SELECT
+            p.PROPERTY_GROUP_ID,
+            c.CODE_NAME AS PROPERTY_GROUP_NAME,
+            COUNT(*) AS PROPERTY_COUNT,
+            MAX(p.LAST_UPDATE_DTIME) AS LAST_UPDATE_DTIME,
+            MAX(p.LAST_UPDATE_USER_ID) KEEP (DENSE_RANK LAST ORDER BY p.LAST_UPDATE_DTIME) AS LAST_UPDATE_USER_ID
+        FROM FWK_PROPERTY p
+        INNER JOIN FWK_CODE c ON p.PROPERTY_GROUP_ID = c.CODE AND c.CODE_GROUP_ID = 'FR00006'
+        <where>
+            <include refid="propertyGroupSearchConditions"/>
+        </where>
+        GROUP BY p.PROPERTY_GROUP_ID, c.CODE_NAME
+        <choose>
+            <when test="sortBy != null and sortBy != ''">
+                <choose>
+                    <when test="sortBy == 'propertyGroupId'">
+                        ORDER BY p.PROPERTY_GROUP_ID <choose><when test="sortDirection == 'DESC'">DESC</when><otherwise>ASC</otherwise></choose>
+                    </when>
+                    <when test="sortBy == 'propertyGroupName'">
+                        ORDER BY c.CODE_NAME <choose><when test="sortDirection == 'DESC'">DESC</when><otherwise>ASC</otherwise></choose>
+                    </when>
+                    <when test="sortBy == 'propertyCount'">
+                        ORDER BY PROPERTY_COUNT <choose><when test="sortDirection == 'DESC'">DESC</when><otherwise>ASC</otherwise></choose>
+                    </when>
+                    <otherwise>
+                        ORDER BY p.PROPERTY_GROUP_ID
+                    </otherwise>
+                </choose>
+            </when>
+            <otherwise>
+                ORDER BY p.PROPERTY_GROUP_ID
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 프로퍼티 그룹 ID로 프로퍼티 목록 조회 - FWK_CODE 조인 -->
+    <select id="selectPropertiesByGroupId" resultMap="PropertyResponseResultMap">
+        SELECT
+            A.PROPERTY_GROUP_ID,
+            A.PROPERTY_ID,
+            A.PROPERTY_NAME,
+            A.PROPERTY_DESC,
+            A.DATA_TYPE,
+            (CASE A.DATA_TYPE
+                WHEN 'C' THEN 'String'
+                WHEN 'N' THEN 'Number'
+                WHEN 'B' THEN 'Boolean'
+            END) AS DATA_TYPE_NAME,
+            A.VALID_DATA,
+            A.DEFAULT_VALUE,
+            A.LAST_UPDATE_USER_ID,
+            SUBSTR(A.LAST_UPDATE_DTIME, 1, 12) AS LAST_UPDATE_DTIME
+        FROM FWK_PROPERTY A
+        INNER JOIN FWK_CODE B ON A.PROPERTY_GROUP_ID = B.CODE AND B.CODE_GROUP_ID = 'FR00006'
+        WHERE 1=1
+        <if test="propertyGroupId != null and propertyGroupId != ''">
+            AND A.PROPERTY_GROUP_ID = #{propertyGroupId}
+        </if>
+        <if test="searchValue != null and searchValue != ''">
+            <choose>
+                <when test="searchField == 'propertyId'">
+                    AND A.PROPERTY_ID LIKE '%' || #{searchValue} || '%'
+                </when>
+                <when test="searchField == 'propertyName'">
+                    AND A.PROPERTY_NAME LIKE '%' || #{searchValue} || '%'
+                </when>
+                <otherwise>
+                    AND (A.PROPERTY_ID LIKE '%' || #{searchValue} || '%'
+                         OR A.PROPERTY_NAME LIKE '%' || #{searchValue} || '%')
+                </otherwise>
+            </choose>
+        </if>
+        ORDER BY A.PROPERTY_GROUP_ID, A.PROPERTY_ID
+    </select>
+
+
+
+</mapper>

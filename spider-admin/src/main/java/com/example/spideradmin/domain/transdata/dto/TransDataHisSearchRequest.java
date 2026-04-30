@@ -1,0 +1,20 @@
+package com.example.spideradmin.domain.transdata.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * 이행 상세 이력 검색 조건 DTO
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class TransDataHisSearchRequest {
+
+    private String tranResult;
+
+    private String tranType;
+}

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    MessageInstance Command Mapper (CRUD)
+    - 단건 조회, 삭제
+    - 목록 조회, 검색 등 Query 전용 SQL은 MessageInstanceQueryMapper에서 처리
+-->
+<mapper namespace="com.example.spideradmin.domain.messageinstance.mapper.MessageInstanceMapper">
+
+    <!-- ==================== Common (merged) ==================== -->
+
+
+    <!-- ==================== SQL Fragment 정의 ==================== -->
+
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <!-- ==================== 공통 SELECT 컬럼 ==================== -->
+
+    <sql id="messageInstanceColumns">
+        m.MESSAGE_SNO       AS messageSno,
+        m.TRX_ID            AS trxId,
+        m.ORG_ID            AS orgId,
+        m.IO_TYPE           AS ioType,
+        m.REQ_RES_TYPE      AS reqResType,
+        m.MESSAGE_ID        AS messageId,
+        m.TRX_TRACKING_NO   AS trxTrackingNo,
+        m.USER_ID           AS userId,
+        m.LOG_DTIME         AS logDtime,
+        m.LAST_LOG_DTIME    AS lastLogDtime,
+        m.LAST_RT_CODE      AS lastRtCode,
+        m.INSTANCE_ID       AS instanceId,
+        m.RETRY_TRX_YN      AS retryTrxYn,
+        m.TRX_DTIME         AS trxDtime,
+        m.CHANNEL_TYPE      AS channelType,
+        m.URI               AS uri,
+        m.TESTCASE_ID       AS testcaseId,
+        m.TESTCASE_SNO      AS testcaseSno,
+        m.SUCCESS_YN        AS successYn
+    </sql>
+
+    <!-- CLOB 컬럼 포함 (상세 조회용) -->
+    <sql id="messageInstanceColumnsWithClob">
+        m.MESSAGE_SNO       AS messageSno,
+        m.TRX_ID            AS trxId,
+        m.ORG_ID            AS orgId,
+        m.IO_TYPE           AS ioType,
+        m.REQ_RES_TYPE      AS reqResType,
+        m.MESSAGE_ID        AS messageId,
+        m.TRX_TRACKING_NO   AS trxTrackingNo,
+        m.USER_ID           AS userId,
+        m.LOG_DTIME         AS logDtime,
+        m.LAST_LOG_DTIME    AS lastLogDtime,
+        m.LAST_RT_CODE      AS lastRtCode,
+        m.INSTANCE_ID       AS instanceId,
+        m.RETRY_TRX_YN      AS retryTrxYn,
+        m.MESSAGE_DATA      AS messageData,
+        m.TRX_DTIME         AS trxDtime,
+        m.CHANNEL_TYPE      AS channelType,
+        m.URI               AS uri,
+        m.LOG_DATA          AS logData,
+        m.LOG_DATA2         AS logData2,
+        m.LOG_DATA3         AS logData3,
+        m.LOG_DATA4         AS logData4,
+        m.TESTCASE_ID       AS testcaseId,
+        m.TESTCASE_SNO      AS testcaseSno,
+        m.SUCCESS_YN        AS successYn
+    </sql>
+
+    <sql id="fromMessageInstance">
+        FROM FWK_MESSAGE_INSTANCE m
+    </sql>
+
+    <!-- ==================== 목록 조회 ==================== -->
+
+    <!-- 검색 조건 -->
+    <sql id="searchConditionsWithSearch">
+        <if test="userId != null and userId != ''">
+            AND m.USER_ID LIKE '%' || #{userId} || '%'
+        </if>
+        <if test="trxTrackingNo != null and trxTrackingNo != ''">
+            AND m.TRX_TRACKING_NO LIKE '%' || #{trxTrackingNo} || '%'
+        </if>
+        <if test="globalId != null and globalId != ''">
+            AND m.INSTANCE_ID LIKE '%' || #{globalId} || '%'
+        </if>
+        <if test="orgId != null and orgId != ''">
+            AND m.ORG_ID LIKE '%' || #{orgId} || '%'
+        </if>
+        <if test="orgMessageId != null and orgMessageId != ''">
+            AND m.MESSAGE_ID LIKE '%' || #{orgMessageId} || '%'
+        </if>
+        <if test="trxDateFrom != null and trxDateFrom != ''">
+            <choose>
+                <when test="trxTimeFrom != null and trxTimeFrom != ''">
+                    AND m.TRX_DTIME &gt;= #{trxDateFrom} || #{trxTimeFrom} || '00'
+                </when>
+                <otherwise>
+                    AND m.TRX_DTIME &gt;= #{trxDateFrom} || '000000'
+                </otherwise>
+            </choose>
+        </if>
+        <if test="trxDateTo != null and trxDateTo != ''">
+            <choose>
+                <when test="trxTimeTo != null and trxTimeTo != ''">
+                    AND m.TRX_DTIME &lt;= #{trxDateTo} || #{trxTimeTo} || '59'
+                </when>
+                <otherwise>
+                    AND m.TRX_DTIME &lt;= #{trxDateTo} || '235959'
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
+    <!-- 검색 조건 목록 조회 (네이티브 ROWNUM 페이징) -->
+    <select id="findAllWithSearch"
+            resultType="com.example.spideradmin.domain.messageinstance.dto.MessageInstanceResponse">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT
+                <include refid="messageInstanceColumns"/>
+                <include refid="fromMessageInstance"/>
+                <where>
+                    <include refid="searchConditionsWithSearch"/>
+                </where>
+                <choose>
+                    <when test="sortBy == 'trxTrackingNo'">ORDER BY m.TRX_TRACKING_NO <if test="sortDirection == 'DESC'">DESC</if></when>
+                    <when test="sortBy == 'trxId'">ORDER BY m.TRX_ID <if test="sortDirection == 'DESC'">DESC</if></when>
+                    <when test="sortBy == 'trxDtime'">ORDER BY m.TRX_DTIME <if test="sortDirection == 'DESC'">DESC</if></when>
+                    <when test="sortBy == 'orgId'">ORDER BY m.ORG_ID <if test="sortDirection == 'DESC'">DESC</if></when>
+                    <when test="sortBy == 'userId'">ORDER BY m.USER_ID <if test="sortDirection == 'DESC'">DESC</if></when>
+                    <when test="sortBy == 'lastRtCode'">ORDER BY m.LAST_RT_CODE <if test="sortDirection == 'DESC'">DESC</if></when>
+                    <otherwise>ORDER BY m.TRX_DTIME DESC, m.LOG_DTIME DESC</otherwise>
+                </choose>
+            ) INNER_QRY
+            WHERE ROWNUM <![CDATA[<=]]> #{endRow}
+        )
+        WHERE RNUM > #{offset}
+    </select>
+
+    <!-- 검색 조건 건수 조회 -->
+    <select id="countAllWithSearch" resultType="long">
+        SELECT COUNT(*)
+        <include refid="fromMessageInstance"/>
+        <where>
+            <include refid="searchConditionsWithSearch"/>
+        </where>
+    </select>
+
+    <!-- 거래 추적 번호로 조회 (상세 조회용 - CLOB 포함) -->
+    <select id="findByTrxTrackingNo"
+            resultType="com.example.spideradmin.domain.messageinstance.dto.MessageInstanceResponse">
+        SELECT
+        <include refid="messageInstanceColumnsWithClob"/>
+        <include refid="fromMessageInstance"/>
+        WHERE m.TRX_TRACKING_NO = #{trxTrackingNo}
+        ORDER BY m.LOG_DTIME ASC
+    </select>
+
+
+</mapper>

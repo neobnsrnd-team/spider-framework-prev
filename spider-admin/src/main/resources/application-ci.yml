@@ -1,0 +1,26 @@
+# =============================================================
+# CI 환경 전용 설정 (GitHub Actions — Oracle container)
+# Oracle container (gvenzl/oracle-free) 서비스로 실행
+# =============================================================
+spring:
+  datasource:
+    driver-class-name: oracle.jdbc.OracleDriver
+    url: jdbc:oracle:thin:@localhost:1521/FREEPDB1
+    username: spider
+    password: spider1234
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+  sql:
+    init:
+      mode: never
+
+mybatis:
+  mapper-locations: 'classpath:mapper/oracle/**/*.xml'
+  type-handlers-package: com.example.spideradmin.global.common.handler
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: VARCHAR
+    lazy-loading-enabled: false
+    cache-enabled: false
+    auto-mapping-behavior: PARTIAL

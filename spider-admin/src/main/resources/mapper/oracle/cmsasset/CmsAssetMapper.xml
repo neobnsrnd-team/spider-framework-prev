@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    CmsAsset Mapper (SPW_CMS_ASSET)
+    - 현업 "승인 요청" 목록 / 결재자 "승인 관리" 목록
+    - 상태 전이: WORK → PENDING → APPROVED / REJECTED
+    - updateState: request/approve/reject 공통, WHERE 가드로 race 방지
+-->
+<mapper namespace="com.example.spideradmin.domain.cmsasset.mapper.CmsAssetMapper">
+
+    <!-- ==================== 공통 컬럼 / 조건 ==================== -->
+
+    <sql id="listColumns">
+        a.ASSET_ID                                                      AS assetId,
+        a.ASSET_NAME                                                    AS assetName,
+        a.BUSINESS_CATEGORY                                             AS businessCategory,
+        c.CODE_NAME                                                     AS businessCategoryName,
+        a.MIME_TYPE                                                     AS mimeType,
+        a.FILE_SIZE                                                     AS fileSize,
+        a.ASSET_URL                                                     AS assetUrl,
+        a.ASSET_STATE                                                   AS assetState,
+        a.USE_YN                                                        AS useYn,
+        a.REJECTED_REASON                                               AS rejectedReason,
+        a.CREATE_USER_ID                                                AS createUserId,
+        a.CREATE_USER_NAME                                              AS createUserName,
+        TO_CHAR(a.CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS')                 AS createDate,
+        TO_CHAR(a.LAST_MODIFIED_DTIME, 'YYYY-MM-DD HH24:MI:SS')         AS lastModifiedDtime
+    </sql>
+
+    <sql id="myListWhere">
+        <where>
+            a.USE_YN = 'Y'
+            AND a.CREATE_USER_ID = #{req.createUserId}
+            <if test="req.assetState != null and req.assetState != ''">
+                AND a.ASSET_STATE = #{req.assetState}
+            </if>
+            <if test="req.businessCategory != null and req.businessCategory != ''">
+                AND a.BUSINESS_CATEGORY = #{req.businessCategory}
+            </if>
+            <if test="req.search != null and req.search != ''">
+                AND (
+                    a.ASSET_NAME LIKE '%' || #{req.search} || '%'
+                    OR a.ASSET_DESC LIKE '%' || #{req.search} || '%'
+                )
+            </if>
+        </where>
+    </sql>
+
+    <sql id="approvalListWhere">
+        <where>
+            <choose>
+                <when test="req.assetState != null and req.assetState != ''">
+                    AND a.ASSET_STATE = #{req.assetState}
+                </when>
+                <otherwise>
+                    <!-- 기본: 결재자에게 보여줄 상태는 WORK를 제외한 전체 (PENDING / APPROVED / REJECTED) -->
+                    AND a.ASSET_STATE != 'WORK'
+                </otherwise>
+            </choose>
+            <if test="req.uploaderId != null and req.uploaderId != ''">
+                AND a.CREATE_USER_ID = #{req.uploaderId}
+            </if>
+            <if test="req.businessCategory != null and req.businessCategory != ''">
+                AND a.BUSINESS_CATEGORY = #{req.businessCategory}
+            </if>
+            <if test="req.useYn != null and req.useYn != ''">
+                AND a.USE_YN = #{req.useYn}
+            </if>
+            <if test="req.search != null and req.search != ''">
+                AND (
+                    a.ASSET_NAME LIKE '%' || #{req.search} || '%'
+                    OR a.CREATE_USER_NAME LIKE '%' || #{req.search} || '%'
+                    OR a.CREATE_USER_ID LIKE '%' || #{req.search} || '%'
+                )
+            </if>
+            <if test="req.startDate != null and req.startDate != ''">
+                AND a.CREATE_DATE &gt;= TO_DATE(#{req.startDate}, 'YYYY-MM-DD')
+            </if>
+            <if test="req.endDate != null and req.endDate != ''">
+                AND a.CREATE_DATE &lt; TO_DATE(#{req.endDate}, 'YYYY-MM-DD') + 1
+            </if>
+        </where>
+    </sql>
+
+    <sql id="orderBy">
+        <bind name="orderDir" value="req.sortDirection == 'ASC' ? 'ASC' : 'DESC'"/>
+        <choose>
+            <when test="req.sortBy == 'assetName'">
+                ORDER BY a.ASSET_NAME ${orderDir} NULLS LAST, a.LAST_MODIFIED_DTIME DESC NULLS LAST
+            </when>
+            <when test="req.sortBy == 'businessCategory'">
+                ORDER BY a.BUSINESS_CATEGORY ${orderDir} NULLS LAST, a.LAST_MODIFIED_DTIME DESC NULLS LAST
+            </when>
+            <when test="req.sortBy == 'assetState'">
+                ORDER BY a.ASSET_STATE ${orderDir} NULLS LAST, a.LAST_MODIFIED_DTIME DESC NULLS LAST
+            </when>
+            <when test="req.sortBy == 'createUserName'">
+                ORDER BY a.CREATE_USER_NAME ${orderDir} NULLS LAST, a.LAST_MODIFIED_DTIME DESC NULLS LAST
+            </when>
+            <when test="req.sortBy == 'createDate'">
+                ORDER BY a.CREATE_DATE ${orderDir} NULLS LAST
+            </when>
+            <when test="req.sortBy == 'lastModifiedDtime'">
+                ORDER BY a.LAST_MODIFIED_DTIME ${orderDir} NULLS LAST
+            </when>
+            <otherwise>
+                ORDER BY a.LAST_MODIFIED_DTIME DESC NULLS LAST, a.CREATE_DATE DESC NULLS LAST
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- ==================== 현업 본인 목록 ==================== -->
+
+    <select id="findMyList" resultType="com.example.spideradmin.domain.cmsasset.dto.CmsAssetListResponse">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT
+                <include refid="listColumns"/>
+                FROM SPW_CMS_ASSET a
+                LEFT JOIN FWK_CODE c
+                  ON c.CODE_GROUP_ID = 'CMS00001'
+                 AND c.CODE = a.BUSINESS_CATEGORY
+                 AND c.USE_YN = 'Y'
+                <include refid="myListWhere"/>
+                <include refid="orderBy"/>
+            ) INNER_QRY
+            WHERE ROWNUM <![CDATA[<=]]> #{endRow}
+        ) WHERE RNUM > #{offset}
+    </select>
+
+    <select id="countMyList" resultType="long">
+        SELECT COUNT(*)
+        FROM SPW_CMS_ASSET a
+        LEFT JOIN FWK_CODE c
+          ON c.CODE_GROUP_ID = 'CMS00001'
+         AND c.CODE = a.BUSINESS_CATEGORY
+         AND c.USE_YN = 'Y'
+        <include refid="myListWhere"/>
+    </select>
+
+    <!-- ==================== 결재자 승인 관리 목록 ==================== -->
+
+    <select id="findApprovalList" resultType="com.example.spideradmin.domain.cmsasset.dto.CmsAssetListResponse">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT
+                <include refid="listColumns"/>
+                FROM SPW_CMS_ASSET a
+                LEFT JOIN FWK_CODE c
+                  ON c.CODE_GROUP_ID = 'CMS00001'
+                 AND c.CODE = a.BUSINESS_CATEGORY
+                 AND c.USE_YN = 'Y'
+                <include refid="approvalListWhere"/>
+                <include refid="orderBy"/>
+            ) INNER_QRY
+            WHERE ROWNUM <![CDATA[<=]]> #{endRow}
+        ) WHERE RNUM > #{offset}
+    </select>
+
+    <select id="countApprovalList" resultType="long">
+        SELECT COUNT(*)
+        FROM SPW_CMS_ASSET a
+        LEFT JOIN FWK_CODE c
+          ON c.CODE_GROUP_ID = 'CMS00001'
+         AND c.CODE = a.BUSINESS_CATEGORY
+         AND c.USE_YN = 'Y'
+        <include refid="approvalListWhere"/>
+    </select>
+
+    <!-- ==================== 존재 확인 / 상태 조회 ==================== -->
+
+    <select id="existsByAssetId" resultType="int">
+        SELECT COUNT(*)
+        FROM SPW_CMS_ASSET
+        WHERE ASSET_ID = #{assetId}
+    </select>
+
+    <select id="findAssetStateById" resultType="string">
+        SELECT ASSET_STATE
+        FROM SPW_CMS_ASSET
+        WHERE ASSET_ID = #{assetId}
+          AND USE_YN   = 'Y'
+    </select>
+
+    <select id="findCreateUserIdByAssetId" resultType="string">
+        SELECT CREATE_USER_ID
+        FROM SPW_CMS_ASSET
+        WHERE ASSET_ID = #{assetId}
+          AND USE_YN   = 'Y'
+    </select>
+
+    <!-- ==================== 상세 (모달 프리뷰) ==================== -->
+
+    <select id="findDetailById" resultType="com.example.spideradmin.domain.cmsasset.dto.CmsAssetDetailResponse">
+        SELECT
+            a.ASSET_ID                                                  AS assetId,
+            a.ASSET_NAME                                                AS assetName,
+            a.BUSINESS_CATEGORY                                         AS businessCategory,
+            c.CODE_NAME                                                 AS businessCategoryName,
+            a.MIME_TYPE                                                 AS mimeType,
+            a.FILE_SIZE                                                 AS fileSize,
+            a.ASSET_PATH                                                AS assetPath,
+            a.ASSET_URL                                                 AS assetUrl,
+            a.ASSET_DESC                                                AS assetDesc,
+            a.ASSET_STATE                                               AS assetState,
+            a.USE_YN                                                    AS useYn,
+            a.REJECTED_REASON                                           AS rejectedReason,
+            a.CREATE_USER_ID                                            AS createUserId,
+            a.CREATE_USER_NAME                                          AS createUserName,
+            a.LAST_MODIFIER_NAME                                        AS lastModifierName,
+            TO_CHAR(a.CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS')             AS createDate,
+            TO_CHAR(a.LAST_MODIFIED_DTIME, 'YYYY-MM-DD HH24:MI:SS')     AS lastModifiedDtime
+        FROM SPW_CMS_ASSET a
+        LEFT JOIN FWK_CODE c
+          ON c.CODE_GROUP_ID = 'CMS00001'
+         AND c.CODE = a.BUSINESS_CATEGORY
+         AND c.USE_YN = 'Y'
+        WHERE a.ASSET_ID = #{assetId}
+    </select>
+
+    <!-- ==================== 상태 전이 UPDATE ==================== -->
+    <!--
+        target = 'REJECTED'           → REJECTED_REASON = 입력값
+        target = 'APPROVED' or 'PENDING' → REJECTED_REASON = NULL (재처리 시 잔존 방지)
+        WHERE 절에 expectedFrom 가드로 race 방지
+    -->
+    <update id="updateState">
+        UPDATE SPW_CMS_ASSET
+        SET ASSET_STATE         = #{target},
+            LAST_MODIFIER_ID    = #{modifierId},
+            LAST_MODIFIER_NAME  = #{modifierName},
+            LAST_MODIFIED_DTIME = SYSTIMESTAMP,
+            <choose>
+                <when test="target == 'REJECTED'">
+                    REJECTED_REASON = #{rejectedReason}
+                </when>
+                <otherwise>
+                    REJECTED_REASON = NULL
+                </otherwise>
+            </choose>
+        WHERE ASSET_ID    = #{assetId}
+          AND ASSET_STATE = #{expectedFrom}
+          AND USE_YN      = 'Y'
+    </update>
+
+    <update id="updateUseYn">
+        UPDATE SPW_CMS_ASSET
+        SET USE_YN = #{useYn},
+            LAST_MODIFIER_ID = #{modifierId},
+            LAST_MODIFIER_NAME = #{modifierName},
+            LAST_MODIFIED_DTIME = SYSTIMESTAMP
+        WHERE ASSET_ID = #{assetId}
+    </update>
+
+</mapper>
