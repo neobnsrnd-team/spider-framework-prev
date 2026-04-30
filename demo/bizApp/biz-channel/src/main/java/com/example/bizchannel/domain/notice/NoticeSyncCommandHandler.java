@@ -1,8 +1,8 @@
 package com.example.bizchannel.domain.notice;
 
-import com.example.spiderlink.infra.tcp.handler.CommandHandler;
-import com.example.spiderlink.infra.tcp.model.JsonCommandRequest;
-import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.handler.CommandHandler;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
