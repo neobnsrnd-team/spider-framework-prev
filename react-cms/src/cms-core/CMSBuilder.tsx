@@ -219,6 +219,16 @@ export function CMSBuilder({ onSave, initialPage, mode = "create", initialPageNa
     setSaveOpen(true);
   }
 
+  // 편집 모드: DB 저장 상태로 복원 / 생성 모드: 빈 상태로 초기화
+  const handleReset = useCallback(() => {
+    if (mode === "edit" && initialPage) {
+      if (!window.confirm("마지막 저장 상태로 되돌아가시겠습니까?\n현재 편집 내용은 사라집니다.")) return;
+      builder.loadPage(initialPage);
+    } else {
+      builder.clearBlocks();
+    }
+  }, [mode, initialPage, builder.loadPage, builder.clearBlocks]);
+
   // page 선언 이후에 위치해야 TDZ 에러가 발생하지 않음
   const handlePreview = useCallback(() => {
     localStorage.setItem("cms_preview", JSON.stringify(page));
@@ -254,7 +264,8 @@ export function CMSBuilder({ onSave, initialPage, mode = "create", initialPageNa
           onViewCode={() => setCodeOpen(true)}
           onSavePage={handleSavePageClick}
           onPreview={handlePreview}
-          onClear={builder.clearBlocks}
+          onClear={handleReset}
+          hasInitialPage={mode === "edit" && !!initialPage}
           approveState={approveState}
         />
 
@@ -362,6 +373,7 @@ function Toolbar({
   onSavePage,
   onPreview,
   onClear,
+  hasInitialPage,
   approveState,
 }: {
   blockCount: number;
@@ -375,6 +387,7 @@ function Toolbar({
   onSavePage: () => void;
   onPreview: () => void;
   onClear: () => void;
+  hasInitialPage: boolean;
   approveState?: string;
 }) {
   const isPending = approveState === "PENDING";
@@ -423,7 +436,7 @@ function Toolbar({
         <ToolbarButton onClick={onPreview} variant="primary" disabled={blockCount === 0}>
           미리보기
         </ToolbarButton>
-        {(blockCount > 0 || layoutType) && (
+        {(blockCount > 0 || layoutType || hasInitialPage) && (
           <ToolbarButton onClick={onClear} variant="danger">초기화</ToolbarButton>
         )}
       </div>

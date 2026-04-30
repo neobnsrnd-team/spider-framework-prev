@@ -93,7 +93,7 @@
             const $tbody = $('#reactCmsAdminApprovalTableBody');
             if (!rows || rows.length === 0) {
                 this.rowsByPageId = {};
-                $tbody.html('<tr><td colspan="10" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>');
+                $tbody.html('<tr><td colspan="11" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>');
                 return;
             }
 
@@ -124,16 +124,16 @@
                        </div>`
                     : '-';
 
+                // 미리보기 버튼 — XSS 방지: pageId를 data-* 속성에만 저장
+                const previewBtn = `<button class="btn btn-outline-info btn-xs js-approval-preview"
+                    data-page-id="${pid}"><i class="bi bi-box-arrow-up-right"></i> 보기</button>`;
+
                 // 이력 컬럼
                 const tdHistory = `<button class="btn btn-outline-dark btn-xs"
                     onclick="ReactCmsAdminApprovalPage.openHistoryModal('${pid}')">이력</button>`;
 
                 return `<tr>
-                    <td>
-                        <span class="clickable-cell"
-                              onclick="ReactCmsAdminApprovalPage.openReactPreview('${pid}')"
-                              title="미리보기">${HtmlUtils.escape(row.pageName)}</span>
-                    </td>
+                    <td>${HtmlUtils.escape(row.pageName)}</td>
                     <td class="text-center">${HtmlUtils.escape(row.viewMode || '')}</td>
                     <td>${HtmlUtils.escape(row.createUserName || '')}</td>
                     <td class="text-center">${badge}</td>
@@ -141,6 +141,7 @@
                     <td class="text-center">${HtmlUtils.escape(row.beginningDate || '-')}</td>
                     <td class="text-center ${expiredCls}">${HtmlUtils.escape(row.expiredDate || '-')}</td>
                     <td class="text-center small">${HtmlUtils.escape(row.lastModifiedDtime || '-')}</td>
+                    <td class="text-center">${previewBtn}</td>
                     <td class="text-center">${tdApproval}</td>
                     <td class="text-center">${tdHistory}</td>
                 </tr>`;
@@ -218,7 +219,7 @@
         // ── React CMS 페이지 프리뷰 (/react-cms/preview?pageType=REACT&pageId=xxx) ──
         openReactPreview: function(pageId) {
             const url = '/react-cms/preview?pageType=REACT&pageId=' + encodeURIComponent(pageId);
-            window.open(url, 'reactCmsBuilderPreview', 'width=1280,height=800,scrollbars=yes,resizable=yes');
+            window.open(url, 'reactCmsBuilderPreview', 'width=430,height=860,scrollbars=yes,resizable=yes');
         },
 
         // ── 승인 모달 ──
@@ -392,6 +393,10 @@
 
         $('#btnApproveConfirm').on('click', function() { ReactCmsAdminApprovalPage._submitApprove(); });
         $('#btnRejectConfirm').on('click',  function() { ReactCmsAdminApprovalPage._submitReject(); });
+
+        $(document).on('click', '.js-approval-preview', function() {
+            ReactCmsAdminApprovalPage.openReactPreview($(this).data('page-id'));
+        });
 
         $('#btnRefresh').off('click').on('click', function() { ReactCmsAdminApprovalPage.load(); });
         $('#btnExcel').off('click').on('click', function() { Toast.warning('엑셀 내보내기는 지원되지 않습니다.'); });

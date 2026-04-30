@@ -4,7 +4,7 @@
  *
  * 테스트 대상:
  *   - 순수 함수: hasAuthority, canReadCms, canWriteCms, canAdminScreen
- *   - 비동기 함수: getCurrentUser (AUTH_BYPASS 분기, API 성공/실패, 폴백)
+ *   - 비동기 함수: getCurrentUser (SPIDER_ADMIN_API_URL 미설정, API 성공/실패, 폴백)
  *   - 권한 가드: requireCmsRead, requireCmsWrite
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
@@ -90,54 +90,18 @@ describe("canAdminScreen", () => {
 
 // ── getCurrentUser ────────────────────────────────────────────────────────────
 
-describe("getCurrentUser — AUTH_BYPASS=true", () => {
+describe("getCurrentUser", () => {
   beforeEach(() => {
-    process.env.AUTH_BYPASS = "true";
     delete process.env.SPIDER_ADMIN_API_URL;
+    vi.unstubAllGlobals();
   });
 
   afterEach(() => {
-    delete process.env.AUTH_BYPASS;
-  });
-
-  it("cms_bypass_role=react-adm 쿠키가 있으면 관리자 반환", async () => {
-    const user = await getCurrentUser("cms_bypass_role=react-adm");
-    expect(user.roleId).toBe("react-adm");
-    expect(user.authorities).toContain("REACT_CMS:W");
-  });
-
-  it("쿠키가 없으면 일반 사용자 반환", async () => {
-    const user = await getCurrentUser("");
-    expect(user.roleId).toBe("react-user");
-    expect(user.authorities).toContain("REACT_CMS:R");
-  });
-
-  it("다른 값의 쿠키가 있으면 일반 사용자 반환", async () => {
-    const user = await getCurrentUser("cms_bypass_role=other-role");
-    expect(user.roleId).toBe("react-user");
-  });
-
-  it("여러 쿠키 중 cms_bypass_role=react-adm이 있으면 관리자 반환", async () => {
-    const user = await getCurrentUser(
-      "session=abc; cms_bypass_role=react-adm; theme=dark",
-    );
-    expect(user.roleId).toBe("react-adm");
-  });
-});
-
-describe("getCurrentUser — AUTH_BYPASS=false", () => {
-  beforeEach(() => {
-    process.env.AUTH_BYPASS = "false";
-  });
-
-  afterEach(() => {
-    delete process.env.AUTH_BYPASS;
     delete process.env.SPIDER_ADMIN_API_URL;
     vi.unstubAllGlobals();
   });
 
   it("SPIDER_ADMIN_API_URL 미설정 시 GUEST 반환", async () => {
-    delete process.env.SPIDER_ADMIN_API_URL;
     const user = await getCurrentUser("");
     expect(user.roleId).toBe("guest");
     expect(user.authorities).toHaveLength(0);
@@ -283,18 +247,27 @@ describe("getCurrentUser — AUTH_BYPASS=false", () => {
 
 describe("requireCmsWrite", () => {
   afterEach(() => {
-    delete process.env.AUTH_BYPASS;
+    delete process.env.SPIDER_ADMIN_API_URL;
     vi.unstubAllGlobals();
   });
 
   it("REACT_CMS:W 권한이 있으면 CurrentUser 반환", async () => {
-    process.env.AUTH_BYPASS = "true";
-    const user = await requireCmsWrite("cms_bypass_role=react-adm");
+    process.env.SPIDER_ADMIN_API_URL = "http://localhost:8080";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: { userId: "u1", userName: "테스트", roleId: "react-adm", authorities: ["REACT_CMS:R", "REACT_CMS:W"] },
+        }),
+      }),
+    );
+    const user = await requireCmsWrite("");
     expect(user.roleId).toBe("react-adm");
   });
 
   it("권한이 없으면 UnauthorizedError throw", async () => {
-    process.env.AUTH_BYPASS = "false";
     delete process.env.SPIDER_ADMIN_API_URL; // → GUEST 반환
     await expect(requireCmsWrite("")).rejects.toThrow(UnauthorizedError);
   });
@@ -302,18 +275,27 @@ describe("requireCmsWrite", () => {
 
 describe("requireCmsRead", () => {
   afterEach(() => {
-    delete process.env.AUTH_BYPASS;
+    delete process.env.SPIDER_ADMIN_API_URL;
     vi.unstubAllGlobals();
   });
 
   it("REACT_CMS:R 권한이 있으면 CurrentUser 반환", async () => {
-    process.env.AUTH_BYPASS = "true";
+    process.env.SPIDER_ADMIN_API_URL = "http://localhost:8080";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: { userId: "u1", userName: "테스트", roleId: "react-user", authorities: ["REACT_CMS:R", "REACT_CMS:W"] },
+        }),
+      }),
+    );
     const user = await requireCmsRead("");
     expect(user.authorities).toContain("REACT_CMS:R");
   });
 
   it("권한이 없으면 UnauthorizedError throw", async () => {
-    process.env.AUTH_BYPASS = "false";
     delete process.env.SPIDER_ADMIN_API_URL; // → GUEST 반환
     await expect(requireCmsRead("")).rejects.toThrow(UnauthorizedError);
   });
