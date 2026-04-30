@@ -142,8 +142,6 @@ Spider-Framework/
 
 ## 빌드 순서 및 의존 관계
 
-일부 모듈은 Maven 로컬 저장소에 먼저 설치되어야 하는 **라이브러리 의존 관계**가 있다.
-
 ```
 spider-common ──► spider-link ──► spider-batch ──► batch-was
      │                │
@@ -151,15 +149,29 @@ spider-common ──► spider-link ──► spider-batch ──► batch-was
      └────────────────┴──────────────────────────► spider-admin
 ```
 
-| 순서 | 모듈 | 명령 | 이유 |
-|------|------|------|------|
-| 1 | `spider-common` | `mvn install -f spider-common/pom.xml` | spider-link·spider-batch·spider-admin이 공통 의존 |
-| 2 | `spider-link` | `mvn install -f spider-link/pom.xml` | spider-batch·spider-admin·bizApp 서버가 의존 |
-| 3 | `spider-batch` | `mvn install -f spider-batch/pom.xml` | batch-was가 의존 |
-| 4 | 나머지 | `mvn package -f <module>/pom.xml` | 위 세 라이브러리가 로컬 저장소에 있어야 빌드 가능 (환경변수 설정·상세 실행 방법은 각 프로젝트 README 참조) |
+루트 디렉토리에 `pom.xml`(집계 POM)이 있으므로 **루트에서 한 번에 빌드**할 수 있다.  
+Maven이 의존 그래프를 분석해 `spider-common → spider-link → spider-admin → spider-batch` 순서를 자동으로 보장한다.
 
-> **CI/CD**: GitHub Actions(`ci.yml`)가 위 순서를 자동으로 보장한다.  
-> **로컬 최초 세팅 또는 라이브러리 변경 시**에는 위 순서대로 직접 `mvn install`을 실행해야 한다.
+```bash
+# 루트에서 전체 빌드 (최초 세팅 또는 라이브러리 변경 시)
+mvn install
+
+# spider-common·spider-link가 이미 설치된 경우 spider-admin만 재빌드
+mvn install -rf :spider-admin
+```
+
+**IntelliJ 사용 시**: 루트 `pom.xml`을 프로젝트로 열면 IDE가 모듈 간 의존성을 소스에서 직접 해결하므로 `mvn install` 없이도 코드 탐색·빌드가 가능하다. Maven 패널 → **Reload All Maven Projects** 후 사용.
+
+### demo/bizApp 별도 빌드
+
+`demo/bizApp`은 루트 집계 POM에 포함되지 않으므로 별도로 빌드한다.  
+`spider-link`가 로컬 저장소에 설치된 후 실행해야 한다.
+
+```bash
+mvn install -f demo/bizApp/pom.xml
+```
+
+> **CI/CD**: GitHub Actions(`ci.yml`)가 위 순서를 자동으로 보장한다.
 
 ---
 
