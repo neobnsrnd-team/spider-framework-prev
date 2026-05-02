@@ -73,15 +73,17 @@
                     <i class="bi bi-box-arrow-up-right"></i> 보기
                 </button>`;
 
-                // 배포 URL: 이력이 있으면 링크 + 복사 버튼, 없으면 "-"
+                // 배포 URL: 이력이 있으면 배포화면이동 버튼 + URL 복사 아이콘 버튼, 없으면 "-"
                 const escapedUrl = row.deployedUrl
                   ? HtmlUtils.escape(row.deployedUrl)
                   : "";
                 const deployedUrlTd = row.deployedUrl
-                  ? `<div class="d-flex flex-column gap-1">
+                  ? `<div class="d-flex gap-1 justify-content-center">
                          <a href="${escapedUrl}" target="_blank" rel="noopener"
-                            class="small text-break">${escapedUrl}</a>
-                         <button class="btn btn-outline-secondary btn-xs js-copy-url align-self-center"
+                            class="btn btn-outline-primary btn-xs">
+                             배포화면이동
+                         </a>
+                         <button class="btn btn-outline-secondary btn-xs js-copy-url"
                                  data-url="${escapedUrl}"
                                  title="URL 복사">
                              URL 복사
