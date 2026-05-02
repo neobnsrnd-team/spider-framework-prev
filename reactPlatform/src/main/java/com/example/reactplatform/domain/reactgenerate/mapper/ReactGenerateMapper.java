@@ -1,6 +1,7 @@
 package com.example.reactplatform.domain.reactgenerate.mapper;
 
 import com.example.reactplatform.domain.reactgenerate.dto.ReactApprovalResponse;
+import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateEntity;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateHistoryResponse;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateResponse;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateSearchRequest;
@@ -16,18 +17,12 @@ import org.apache.ibatis.annotations.Param;
  */
 public interface ReactGenerateMapper {
 
-    /** 생성된 React 코드 이력을 신규 저장한다. */
-    void insert(
-            @Param("codeId") String codeId,
-            @Param("figmaUrl") String figmaUrl,
-            @Param("requirements") String requirements,
-            @Param("systemPrompt") String systemPrompt,
-            @Param("userPrompt") String userPrompt,
-            @Param("reactCode") String reactCode,
-            @Param("failReason") String failReason,
-            @Param("status") String status,
-            @Param("createUserId") String createUserId,
-            @Param("createDtime") String createDtime);
+    /**
+     * 생성된 React 코드 이력을 신규 저장한다.
+     *
+     * @param entity 삽입할 이력 데이터 (codeId, figmaUrl, domain, brand, componentName 등 포함)
+     */
+    void insert(@Param("e") ReactGenerateEntity entity);
 
     /** CODE_ID로 생성 이력을 단건 조회한다. 존재하지 않으면 null 반환. */
     ReactGenerateResponse selectById(@Param("codeId") String codeId);
@@ -86,7 +81,8 @@ public interface ReactGenerateMapper {
      * @param offset         시작 오프셋 (0-based)
      * @param endRow         마지막 행 번호 (inclusive)
      * @param status         상태 필터 (null/빈 문자열이면 APPROVED/REJECTED 전체)
-     * @param codeId         Code ID 부분 일치 (null/빈 문자열이면 미적용)
+     * @param title          화면 제목 부분 일치 (null/빈 문자열이면 미적용)
+     * @param componentName  컴포넌트명 부분 일치 (null/빈 문자열이면 미적용)
      * @param approvalUserId 처리자 ID 부분 일치 (null/빈 문자열이면 미적용)
      * @param createUserId   요청자 ID 부분 일치 (null/빈 문자열이면 미적용)
      * @param fromDate       처리일시 시작 (yyyyMMdd, null/빈 문자열이면 미적용)
@@ -97,7 +93,8 @@ public interface ReactGenerateMapper {
             @Param("offset") int offset,
             @Param("endRow") int endRow,
             @Param("status") String status,
-            @Param("codeId") String codeId,
+            @Param("title") String title,
+            @Param("componentName") String componentName,
             @Param("approvalUserId") String approvalUserId,
             @Param("createUserId") String createUserId,
             @Param("fromDate") String fromDate,
@@ -106,7 +103,8 @@ public interface ReactGenerateMapper {
     /** 승인 이력 전체 건수를 반환한다 (페이지네이션용). */
     int selectApprovalHistoryCount(
             @Param("status") String status,
-            @Param("codeId") String codeId,
+            @Param("title") String title,
+            @Param("componentName") String componentName,
             @Param("approvalUserId") String approvalUserId,
             @Param("createUserId") String createUserId,
             @Param("fromDate") String fromDate,

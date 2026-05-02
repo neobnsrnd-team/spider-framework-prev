@@ -155,7 +155,8 @@ public class ReactApprovalService {
      * @param page           페이지 번호 (1-based)
      * @param size           페이지당 건수
      * @param status         상태 필터 (null/빈 문자열이면 전체)
-     * @param codeId         Code ID 부분 일치 검색 (null/빈 문자열이면 미적용)
+     * @param title          화면 제목 부분 일치 검색 (null/빈 문자열이면 미적용)
+     * @param componentName  컴포넌트명 부분 일치 검색 (null/빈 문자열이면 미적용)
      * @param approvalUserId 처리자 ID 부분 일치 검색
      * @param createUserId   요청자 ID 부분 일치 검색
      * @param fromDate       처리일시 시작 (yyyyMMdd)
@@ -166,7 +167,8 @@ public class ReactApprovalService {
             int page,
             int size,
             String status,
-            String codeId,
+            String title,
+            String componentName,
             String approvalUserId,
             String createUserId,
             String fromDate,
@@ -180,8 +182,9 @@ public class ReactApprovalService {
         // 빈 문자열은 null로 통일하여 mapper의 전체 조회 분기를 타도록 한다
         // status: APPROVED/REJECTED 외의 값이 들어오면 거부 (이력 API 범위 제한)
         String s  = validateAndNormalizeStatus(nullIfBlank(status));
-        String ci = SqlUtils.escapeLike(nullIfBlank(codeId));
         // LIKE 검색 파라미터: %, _, \ 를 이스케이프하여 의도치 않은 와일드카드 동작 방지
+        String ti = SqlUtils.escapeLike(nullIfBlank(title));
+        String cn = SqlUtils.escapeLike(nullIfBlank(componentName));
         String au = SqlUtils.escapeLike(nullIfBlank(approvalUserId));
         String cu = SqlUtils.escapeLike(nullIfBlank(createUserId));
         String fd = nullIfBlank(fromDate);
@@ -192,8 +195,8 @@ public class ReactApprovalService {
             throw new InvalidInputException("시작 날짜는 종료 날짜보다 이전이어야 합니다.");
         }
         List<ReactGenerateHistoryResponse> list =
-                reactGenerateMapper.selectApprovalHistory(offset, endRow, s, ci, au, cu, fd, td);
-        int totalCount = reactGenerateMapper.selectApprovalHistoryCount(s, ci, au, cu, fd, td);
+                reactGenerateMapper.selectApprovalHistory(offset, endRow, s, ti, cn, au, cu, fd, td);
+        int totalCount = reactGenerateMapper.selectApprovalHistoryCount(s, ti, cn, au, cu, fd, td);
         return Map.of("list", list, "totalCount", totalCount, "page", page, "size", size);
     }
 

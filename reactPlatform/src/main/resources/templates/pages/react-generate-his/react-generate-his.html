@@ -31,11 +31,13 @@
     <!-- Pagination -->
     <div th:replace="~{fragments/page-content-layout :: pagination}"></div>
 
-    <!-- Detail Modal -->
-    <div th:replace="~{pages/react-generate-his/react-generate-his-modal :: modal}"></div>
+    <!-- 공용 코드 상세 모달 -->
+    <div th:replace="~{modals/react-code-detail-modal :: modal}"></div>
 
     <!-- Script -->
     <th:block th:replace="~{pages/react-generate-his/react-generate-his-script :: script}" />
+    <!-- 공용 모달 스크립트 (ReactCodeDetailModal 모듈) -->
+    <th:block th:replace="~{modals/react-code-detail-modal-script :: script}" />
 </div>
 </body>
 </html>

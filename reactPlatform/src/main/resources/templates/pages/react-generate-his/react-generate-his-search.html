@@ -3,10 +3,46 @@
 <body>
 <!-- React 코드 생성 이력 Search Fragment -->
 <div th:fragment="search" class="card border p-2 mb-3">
-    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-        <label class="form-label mb-0 small fw-medium">Code ID</label>
-        <input type="text" id="searchCodeId" class="form-control form-control-sm flex-fixed-200"
-               placeholder="Code ID">
+
+    <!-- 1행: title, brand, domain, category, status -->
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <label class="form-label mb-0 small fw-medium">화면 제목</label>
+        <input type="text" id="searchTitle" class="form-control form-control-sm flex-fixed-160"
+               placeholder="화면 제목">
+
+        <label class="form-label mb-0 small fw-medium ms-2">브랜드</label>
+        <select id="searchBrand" class="form-select form-select-sm flex-fixed-120">
+            <option value="">전체</option>
+            <option value="HANA">하나</option>
+            <option value="SHINHAN">신한</option>
+            <option value="KB">국민</option>
+            <option value="NH">농협</option>
+            <option value="IBK">기업</option>
+            <option value="WOORI">우리</option>
+        </select>
+
+        <label class="form-label mb-0 small fw-medium ms-2">도메인</label>
+        <select id="searchDomain" class="form-select form-select-sm flex-fixed-120">
+            <option value="">전체</option>
+            <option value="BANKING">뱅킹</option>
+            <option value="CARD">카드</option>
+            <option value="GIRO">지로</option>
+            <option value="INSURANCE">보험</option>
+        </select>
+
+        <label class="form-label mb-0 small fw-medium ms-2">분류</label>
+        <select id="searchCategory" class="form-select form-select-sm flex-fixed-120">
+            <option value="">전체</option>
+            <option value="AUTH">인증</option>
+            <option value="MAIN">메인</option>
+            <option value="LIST">목록</option>
+            <option value="DETAIL">상세</option>
+            <option value="FORM">폼</option>
+            <option value="MYPAGE">마이페이지</option>
+            <option value="ADMIN">관리자</option>
+            <option value="EVENT">이벤트</option>
+            <option value="ERROR">오류</option>
+        </select>
 
         <label class="form-label mb-0 small fw-medium ms-2">상태</label>
         <select id="searchStatus" class="form-select form-select-sm flex-fixed-130">
@@ -16,6 +52,13 @@
             <option value="APPROVED">승인 완료</option>
             <option value="FAILED">실패</option>
         </select>
+    </div>
+
+    <!-- 2행: componentName, createUserId, 날짜, 나의이력, 건씩, 버튼 -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <label class="form-label mb-0 small fw-medium">컴포넌트명</label>
+        <input type="text" id="searchComponentName" class="form-control form-control-sm flex-fixed-120"
+               placeholder="컴포넌트명">
 
         <label class="form-label mb-0 small fw-medium ms-2">생성자</label>
         <input type="text" id="searchCreateUserId" class="form-control form-control-sm flex-fixed-120"
@@ -29,7 +72,7 @@
 
         <div class="flex-grow-1"></div>
 
-        <!-- 내 것만 보기: 생성자(createUserId)를 현재 로그인 사용자로 고정 -->
+        <!-- 나의 생성 이력: 생성자(createUserId)를 현재 로그인 사용자로 고정 -->
         <div class="form-check form-check-inline ms-2 mb-0">
             <input class="form-check-input" type="checkbox" id="chkMyOnly">
             <label class="form-check-label small fw-medium" for="chkMyOnly">나의 생성 이력</label>

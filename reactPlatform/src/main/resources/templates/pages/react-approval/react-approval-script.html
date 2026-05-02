@@ -5,7 +5,8 @@
 <script th:inline="javascript">
 /*<![CDATA[*/
 (function () {
-const HAS_WRITE = document.getElementById('hasWriteAuth')?.value === 'true';
+// 승인 대기 목록 테이블에서 승인·반려 버튼 노출 여부 판단에 사용
+const HAS_WRITE = /*[[${userAuthorities != null && userAuthorities.contains('REACT_APPROVAL:W')}]]*/ false;
 // 내 것만 보기 체크박스 — createUserId 필터에 현재 로그인 사용자 ID를 주입할 때 사용
 const CURRENT_USER_ID = /*[[${currentUserId}]]*/ '';
 
@@ -23,25 +24,6 @@ function approvalFormatDtime(dtime) {
     if (!dtime || dtime.length < 12) return dtime || '';
     return dtime.substring(0, 4) + '-' + dtime.substring(4, 6) + '-' +
            dtime.substring(6, 8) + ' ' + dtime.substring(8, 10) + ':' + dtime.substring(10, 12);
-}
-
-/**
- * URL이 http/https 프로토콜을 사용하는지 검증한다.
- * javascript: 등 위험 프로토콜을 가진 URL을 href에 바인딩하지 않기 위해 사용한다.
- *
- * @param {string} url - 검증할 URL 문자열
- * @returns {boolean} http/https 프로토콜이면 true, 그 외 또는 파싱 불가이면 false
- */
-function isSafeUrl(url) {
-    if (!url) return false;
-    try {
-        const parsed = new URL(url);
-        // http/https 프로토콜만 허용 — javascript:, data: 등 위험 프로토콜 차단
-        return parsed.protocol === 'https:' || parsed.protocol === 'http:';
-    } catch {
-        // URL 파싱 실패 = 유효하지 않은 URL
-        return false;
-    }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -78,7 +60,8 @@ const ReactApprovalPending = window.ReactApprovalPending = {
         const tbody = $('#pendingTableBody');
         tbody.empty();
         if (!list || list.length === 0) {
-            const cols = HAS_WRITE ? 5 : 4;
+            // 화면 제목·컴포넌트명 컬럼 추가로 기본 4컬럼 → 6, 액션 포함 5컬럼 → 7
+        const cols = HAS_WRITE ? 7 : 6;
             tbody.html(`<tr><td colspan="${cols}" class="text-center py-4 text-body-secondary">
                 승인 대기 중인 코드가 없습니다.</td></tr>`);
             return;
@@ -86,8 +69,7 @@ const ReactApprovalPending = window.ReactApprovalPending = {
 
         const offset = (this.currentPage - 1) * this.pageSize;
         list.forEach((item, idx) => {
-            const safeId     = HtmlUtils.escape(item.codeId  || '');
-            const safeUserId = HtmlUtils.escape(item.createUserId || '');
+            const safeId = HtmlUtils.escape(item.codeId || '');
 
             // 쓰기 권한자이면서 코드 작성자 본인이 아닐 때만 승인·반려 버튼 노출
             const isAuthor   = CURRENT_USER_ID && item.createUserId === CURRENT_USER_ID;
@@ -107,19 +89,35 @@ const ReactApprovalPending = window.ReactApprovalPending = {
                            </button>
                        </td>`);
 
-            tbody.append(`
-                <tr>
-                    <td class="text-center">${offset + idx + 1}</td>
-                    <td class="text-center">${safeUserId}</td>
-                    <td class="text-center">${approvalFormatDtime(item.createDtime)}</td>
-                    ${actionCell}
-                    <td class="text-center">
-                        <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2"
-                                onclick="ReactApprovalDetail.open('${safeId}')">
-                            보기
-                        </button>
-                    </td>
-                </tr>`);
+            const row = $('<tr></tr>');
+
+            // No
+            row.append(`<td class="text-center">${offset + idx + 1}</td>`);
+
+            // 화면 제목
+            const $title = $('<td class="text-truncate" style="max-width:180px;"></td>');
+            $title.attr('title', item.title || '');
+            $title.text(item.title || '—');
+            row.append($title);
+
+            // 컴포넌트명
+            const $comp = $('<td class="text-truncate font-monospace small" style="max-width:160px;"></td>');
+            $comp.attr('title', item.componentName || '');
+            $comp.text(item.componentName || '—');
+            row.append($comp);
+
+            row.append(`
+                <td class="text-center">${HtmlUtils.escape(item.createUserId || '')}</td>
+                <td class="text-center">${approvalFormatDtime(item.createDtime)}</td>
+                ${actionCell}
+                <td class="text-center">
+                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2"
+                            onclick="ReactApprovalDetail.open('${safeId}')">
+                        보기
+                    </button>
+                </td>
+            `);
+            tbody.append(row);
         });
     },
 
@@ -226,7 +224,8 @@ const ReactApprovalHis = window.ReactApprovalHis = {
         // 나의 승인 이력 체크 시 승인자 ID를 현재 로그인 사용자로 고정
         const myOnly = $('#chkHisMyOnly').is(':checked');
         this.appliedSearch = {
-            codeId:          $('#hisSearchCodeId').val().trim(),
+            title:           $('#hisSearchTitle').val().trim(),
+            componentName:   $('#hisSearchComponentName').val().trim(),
             status:          $('#hisSearchStatus').val(),
             approvalUserId:  myOnly ? CURRENT_USER_ID : $('#hisSearchApprovalUserId').val().trim(),
             createUserId:    $('#hisSearchCreateUserId').val().trim(),
@@ -267,7 +266,7 @@ const ReactApprovalHis = window.ReactApprovalHis = {
         const tbody = $('#approvalHisTableBody');
         tbody.empty();
         if (!list || list.length === 0) {
-            tbody.html(`<tr><td colspan="6" class="text-center py-4 text-body-secondary">
+            tbody.html(`<tr><td colspan="8" class="text-center py-4 text-body-secondary">
                 조회된 데이터가 없습니다.</td></tr>`);
             return;
         }
@@ -275,24 +274,40 @@ const ReactApprovalHis = window.ReactApprovalHis = {
         const offset = (this.currentPage - 1) * this.itemsPerPage;
         list.forEach((item, idx) => {
             const statusInfo = APPROVAL_STATUS_LABEL[item.status] || { text: item.status, cls: 'bg-secondary' };
-            const safeId     = HtmlUtils.escape(item.codeId  || '');
+            const safeId     = HtmlUtils.escape(item.codeId || '');
 
-            tbody.append(`
-                <tr>
-                    <td class="text-center">${offset + idx + 1}</td>
-                    <td class="text-center">
-                        <span class="badge ${statusInfo.cls}">${statusInfo.text}</span>
-                    </td>
-                    <td class="text-center">${HtmlUtils.escape(item.createUserId || '')}</td>
-                    <td class="text-center">${HtmlUtils.escape(item.approvalUserId || '')}</td>
-                    <td class="text-center">${approvalFormatDtime(item.approvalDtime)}</td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2"
-                                onclick="ReactApprovalDetail.open('${safeId}')">
-                            보기
-                        </button>
-                    </td>
-                </tr>`);
+            const row = $('<tr></tr>');
+
+            // No
+            row.append(`<td class="text-center">${offset + idx + 1}</td>`);
+
+            // 화면 제목
+            const $title = $('<td class="text-truncate" style="max-width:180px;"></td>');
+            $title.attr('title', item.title || '');
+            $title.text(item.title || '—');
+            row.append($title);
+
+            // 컴포넌트명
+            const $comp = $('<td class="text-truncate font-monospace small" style="max-width:160px;"></td>');
+            $comp.attr('title', item.componentName || '');
+            $comp.text(item.componentName || '—');
+            row.append($comp);
+
+            row.append(`
+                <td class="text-center">
+                    <span class="badge ${statusInfo.cls}">${statusInfo.text}</span>
+                </td>
+                <td class="text-center">${HtmlUtils.escape(item.createUserId || '')}</td>
+                <td class="text-center">${HtmlUtils.escape(item.approvalUserId || '')}</td>
+                <td class="text-center">${approvalFormatDtime(item.approvalDtime)}</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2"
+                            onclick="ReactApprovalDetail.open('${safeId}')">
+                        보기
+                    </button>
+                </td>
+            `);
+            tbody.append(row);
         });
     },
 
@@ -347,100 +362,17 @@ const ReactApprovalHis = window.ReactApprovalHis = {
 };
 
 // ═══════════════════════════════════════════════════════
-//  공용 상세 모달 모듈
+//  상세 모달 — 공용 ReactCodeDetailModal에 위임
 // ═══════════════════════════════════════════════════════
+// ReactApprovalDetail.open()을 그대로 유지해 기존 onclick 참조가 동작하도록 shim 제공.
 const ReactApprovalDetail = window.ReactApprovalDetail = {
-    currentCodeId: null,
-    currentStatus: null,
-
     open: function (codeId) {
-        this.currentCodeId = codeId;
-        this.currentStatus = null;
-
-        $('#approvalDetailLoading').removeClass('d-none');
-        $('#approvalDetailContent').addClass('d-none');
-        // 모달 내 액션 버튼 초기화
-        $('#approvalDetailBtnApprove, #approvalDetailBtnReject').addClass('d-none');
-
-        const modal = new bootstrap.Modal(document.getElementById('approvalDetailModal'));
-        modal.show();
-
-        $.ajax({
-            url: API_BASE_URL + '/react-generate/' + codeId,
-            method: 'GET',
-            success: (res) => {
-                if (res.success && res.data) {
-                    this.render(res.data);
-                } else {
-                    Toast.error(res.message || '상세 정보를 불러오지 못했습니다.');
-                    modal.hide();
-                }
-            },
-            error: (xhr) => {
-                Toast.error(xhr.responseJSON?.message || '상세 조회 중 오류가 발생했습니다.');
-                modal.hide();
-            },
+        ReactCodeDetailModal.open(codeId, 'approval', {
+            // 승인 버튼: 모달 닫은 뒤 승인 처리 위임
+            onApprove: (id) => ReactApprovalPending.approve(id),
+            // 반려 버튼: 모달 닫은 뒤 반려 사유 입력 모달 열기 위임
+            onReject:  (id) => ReactApprovalPending.openRejectModal(id),
         });
-    },
-
-    render: function (data) {
-        this.currentStatus = data.status;
-        const statusInfo = APPROVAL_STATUS_LABEL[data.status] || { text: data.status, cls: 'bg-secondary' };
-        $('#approvalDetailCodeId').text(data.codeId || '—');
-        const safeUrl    = HtmlUtils.escape(data.figmaUrl || '');
-
-        // 안전한 URL(http/https)만 href 속성을 설정하고, 그 외에는 링크 없이 텍스트만 표시 (XSS 방지)
-        if (isSafeUrl(data.figmaUrl)) {
-            $('#approvalDetailFigmaUrl').attr('href', safeUrl).text(safeUrl || '—');
-        } else {
-            $('#approvalDetailFigmaUrl').removeAttr('href').text(safeUrl || '—');
-        }
-        $('#approvalDetailStatusBadge')
-            .text(statusInfo.text).removeClass().addClass('badge ' + statusInfo.cls);
-        $('#approvalDetailCreateUserId').text(data.createUserId || '—');
-        $('#approvalDetailCreateDtime').text(approvalFormatDtime(data.createDtime) || '—');
-        $('#approvalDetailApprovalUserId').text(data.approvalUserId || '—');
-        $('#approvalDetailApprovalDtime').text(approvalFormatDtime(data.approvalDtime) || '—');
-
-        // 반려 사유: REJECTED 상태일 때만 노출
-        if (data.status === 'REJECTED') {
-            $('#approvalDetailRejectReason').text(data.failReason || '—');
-            $('#approvalDetailRejectReasonRow').removeClass('d-none');
-        } else {
-            $('#approvalDetailRejectReasonRow').addClass('d-none');
-        }
-
-        // 미리보기 섹션
-        const hasCode = !!(data.reactCode && data.reactCode.trim());
-        if (hasCode) {
-            $('#approvalDetailPreviewSection').removeClass('d-none');
-            const frame    = document.getElementById('approvalDetailPreviewFrame');
-            const sendCode = () => frame.contentWindow.postMessage(
-                { type: 'UPDATE_CODE', code: data.reactCode, codeId: data.codeId },
-                window.location.origin
-            );
-            if (frame.contentDocument?.readyState === 'complete') sendCode();
-            else frame.onload = sendCode;
-            document.getElementById('approvalDetailCodeDisplay').textContent = data.reactCode;
-            new bootstrap.Tab(document.getElementById('approvalDetailTab-screen')).show();
-        } else {
-            $('#approvalDetailPreviewSection').addClass('d-none');
-        }
-
-        // PENDING_APPROVAL 상태이고 쓰기 권한이 있을 때 작성자 여부에 따라 버튼/안내 분기
-        const isAuthor = CURRENT_USER_ID && data.createUserId === CURRENT_USER_ID;
-        if (HAS_WRITE && data.status === 'PENDING_APPROVAL') {
-            if (isAuthor) {
-                // 작성자 본인 — 승인·반려 불가 안내 메시지 노출
-                $('#approvalDetailAuthorNotice').removeClass('d-none');
-            } else {
-                // 제3자 승인자 — 승인·반려 버튼 노출
-                $('#approvalDetailBtnApprove, #approvalDetailBtnReject').removeClass('d-none');
-            }
-        }
-
-        $('#approvalDetailLoading').addClass('d-none');
-        $('#approvalDetailContent').removeClass('d-none');
     },
 };
 
@@ -465,52 +397,13 @@ $(document).ready(function () {
         ReactApprovalPending.reject(ReactApprovalPending.activeCodeId, reason);
     });
 
-    // ── 모달 내 승인 버튼
-    $('#approvalDetailBtnApprove').on('click', function () {
-        if (!ReactApprovalDetail.currentCodeId) return;
-        bootstrap.Modal.getInstance(document.getElementById('approvalDetailModal'))?.hide();
-        ReactApprovalPending.approve(ReactApprovalDetail.currentCodeId);
-    });
-
-    // ── 모달 내 반려 버튼
-    $('#approvalDetailBtnReject').on('click', function () {
-        if (!ReactApprovalDetail.currentCodeId) return;
-        bootstrap.Modal.getInstance(document.getElementById('approvalDetailModal'))?.hide();
-        ReactApprovalPending.openRejectModal(ReactApprovalDetail.currentCodeId);
-    });
-
-    // ── 모달 코드 복사
-    $('#approvalDetailBtnCopyCode').on('click', function () {
-        const code = document.getElementById('approvalDetailCodeDisplay').textContent;
-        navigator.clipboard.writeText(code)
-            .then(() => Toast.success('코드가 클립보드에 복사됐습니다.'))
-            .catch(() => Toast.error('복사에 실패했습니다.'));
-    });
-
-    // ── 모달 닫힐 때 Preview App 초기화
-    document.getElementById('approvalDetailModal').addEventListener('hidden.bs.modal', function () {
-        const frame = document.getElementById('approvalDetailPreviewFrame');
-        if (frame.contentDocument?.readyState === 'complete') {
-            frame.contentWindow.postMessage({ type: 'UPDATE_CODE', code: '' }, window.location.origin);
-        }
-        document.getElementById('approvalDetailCodeDisplay').textContent = '';
-        $('#approvalDetailContent').addClass('d-none');
-        $('#approvalDetailLoading').removeClass('d-none');
-        // 버튼·안내 메시지·반려 사유 모두 초기화 (다음 열기 시 조건에 따라 재노출)
-        $('#approvalDetailBtnApprove, #approvalDetailBtnReject').addClass('d-none');
-        $('#approvalDetailAuthorNotice').addClass('d-none');
-        $('#approvalDetailRejectReasonRow').addClass('d-none');
-        $('#approvalDetailRejectReason').text('');
-        ReactApprovalDetail.currentCodeId = null;
-        ReactApprovalDetail.currentStatus = null;
-    });
-
     // ── 검색 버튼
     $('#btnSearch').on('click', function () { ReactApprovalHis.search(); });
 
     // ── 검색 초기화
     $('#btnSearchReset').on('click', function () {
-        $('#hisSearchCodeId').val('');
+        $('#hisSearchTitle').val('');
+        $('#hisSearchComponentName').val('');
         $('#hisSearchStatus').val('');
         $('#hisSearchApprovalUserId').val('').prop('disabled', false);
         $('#hisSearchCreateUserId').val('');

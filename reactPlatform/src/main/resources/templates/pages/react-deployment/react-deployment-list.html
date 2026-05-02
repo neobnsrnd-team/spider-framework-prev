@@ -10,7 +10,7 @@
         </div>
         <div class="d-flex align-items-center gap-2">
             <input type="text" id="deployListSearch" class="form-control form-control-sm flex-fixed-200"
-                   placeholder="코드 ID / 요청자 검색">
+                   placeholder="화면 제목 / 컴포넌트명 / 요청자 검색">
             <button type="button" class="btn btn-outline-secondary btn-sm" id="btnDeployListSearch">
                 <i class="bi bi-search"></i>
             </button>
@@ -26,12 +26,14 @@
                 <thead class="table-light">
                     <tr>
                         <th class="text-center" style="width:50px;">No</th>
-                        <th class="text-center" style="width:200px;">코드 ID</th>
-                        <th class="text-center" style="width:120px;">요청자</th>
+                        <th class="text-center" style="width:160px;">화면 제목</th>
+                        <th class="text-center" style="width:160px;">컴포넌트명</th>
+                        <th class="text-center" style="width:100px;">요청자</th>
                         <th class="text-center" style="width:120px;">승인자</th>
                         <th class="text-center" style="width:150px;">승인일시</th>
                         <th class="text-center" style="width:150px;">최근 배포 상태</th>
                         <th class="text-center" style="width:150px;">최근 배포일시</th>
+                        <th class="text-center" style="width:70px;">상세</th>
                         <th class="text-center" style="width:80px;"
                             th:if="${userAuthorities != null and userAuthorities.contains('REACT_DEPLOY:W')}">
                             배포

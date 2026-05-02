@@ -31,15 +31,13 @@
     <!-- 페이지네이션 -->
     <div th:replace="~{fragments/page-content-layout :: pagination}"></div>
 
-    <!-- 코드 상세 모달 (대기 목록 + 이력 공용) -->
-    <div th:replace="~{pages/react-approval/react-approval-modal :: modal}"></div>
-
-    <!-- 권한 정보 (JS 참조용) -->
-    <input type="hidden" id="hasWriteAuth"
-           th:value="${userAuthorities != null and userAuthorities.contains('REACT_APPROVAL:W')}">
+    <!-- 공용 코드 상세 모달 -->
+    <div th:replace="~{modals/react-code-detail-modal :: modal}"></div>
 
     <!-- Scripts -->
     <th:block th:replace="~{pages/react-approval/react-approval-script :: script}" />
+    <!-- 공용 모달 스크립트 (ReactCodeDetailModal 모듈) -->
+    <th:block th:replace="~{modals/react-code-detail-modal-script :: script}" />
 </div>
 </body>
 </html>

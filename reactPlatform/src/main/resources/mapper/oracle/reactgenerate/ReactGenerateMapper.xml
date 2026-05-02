@@ -14,6 +14,12 @@
         INSERT INTO FWK_REACT_CODE_HIS (
             CODE_ID,
             FIGMA_URL,
+            DOMAIN,
+            BRAND,
+            COMPONENT_NAME,
+            TITLE,
+            CATEGORY,
+            DESCRIPTION,
             REQUIREMENTS,
             SYSTEM_PROMPT,
             USER_PROMPT,
@@ -21,18 +27,28 @@
             FAIL_REASON,
             STATUS,
             CREATE_USER_ID,
-            CREATE_DTIME
+            CREATE_DTIME,
+            REF_CODE_ID,
+            ROOT_CODE_ID
         ) VALUES (
-            #{codeId,jdbcType=VARCHAR},
-            #{figmaUrl,jdbcType=VARCHAR},
-            #{requirements,jdbcType=CLOB},
-            #{systemPrompt,jdbcType=CLOB},
-            #{userPrompt,jdbcType=CLOB},
-            #{reactCode,jdbcType=CLOB},
-            #{failReason,jdbcType=CLOB},
-            #{status,jdbcType=VARCHAR},
-            #{createUserId,jdbcType=VARCHAR},
-            #{createDtime,jdbcType=VARCHAR}
+            #{e.codeId,jdbcType=VARCHAR},
+            #{e.figmaUrl,jdbcType=VARCHAR},
+            #{e.domain,jdbcType=VARCHAR},
+            #{e.brand,jdbcType=VARCHAR},
+            #{e.componentName,jdbcType=VARCHAR},
+            #{e.title,jdbcType=VARCHAR},
+            #{e.category,jdbcType=VARCHAR},
+            #{e.description,jdbcType=VARCHAR},
+            #{e.requirements,jdbcType=CLOB},
+            #{e.systemPrompt,jdbcType=CLOB},
+            #{e.userPrompt,jdbcType=CLOB},
+            #{e.reactCode,jdbcType=CLOB},
+            #{e.failReason,jdbcType=CLOB},
+            #{e.status,jdbcType=VARCHAR},
+            #{e.createUserId,jdbcType=VARCHAR},
+            #{e.createDtime,jdbcType=VARCHAR},
+            #{e.refCodeId,jdbcType=VARCHAR},
+            #{e.rootCodeId,jdbcType=VARCHAR}
         )
     </insert>
 
@@ -41,23 +57,47 @@
     <sql id="selectColumns">
         CODE_ID          AS codeId,
         FIGMA_URL        AS figmaUrl,
+        TITLE            AS title,
+        BRAND            AS brand,
+        DOMAIN           AS domain,
+        CATEGORY         AS category,
+        COMPONENT_NAME   AS componentName,
+        DESCRIPTION      AS description,
+        REQUIREMENTS     AS requirements,
         REACT_CODE       AS reactCode,
         FAIL_REASON      AS failReason,
         STATUS           AS status,
         CREATE_USER_ID   AS createUserId,
         CREATE_DTIME     AS createDtime,
         APPROVAL_USER_ID AS approvalUserId,
-        APPROVAL_DTIME   AS approvalDtime
+        APPROVAL_DTIME   AS approvalDtime,
+        REF_CODE_ID      AS refCodeId,
+        ROOT_CODE_ID     AS rootCodeId
     </sql>
 
     <!-- 목록 조회에 사용하는 WHERE 조건 Fragment (selectList/selectCount 공유) -->
     <sql id="historyWhereConditions">
         <where>
-            <if test="req.codeId != null and req.codeId != ''">
-                AND CODE_ID LIKE '%' || #{req.codeId} || '%' ESCAPE '\'
+            <if test="req.title != null and req.title != ''">
+                AND TITLE LIKE '%' || #{req.title} || '%' ESCAPE '\'
+            </if>
+            <if test="req.brand != null and req.brand != ''">
+                AND BRAND = #{req.brand}
+            </if>
+            <if test="req.domain != null and req.domain != ''">
+                AND DOMAIN = #{req.domain}
+            </if>
+            <if test="req.category != null and req.category != ''">
+                AND CATEGORY = #{req.category}
+            </if>
+            <if test="req.componentName != null and req.componentName != ''">
+                AND COMPONENT_NAME LIKE '%' || #{req.componentName} || '%' ESCAPE '\'
             </if>
             <if test="req.status != null and req.status != ''">
                 AND STATUS = #{req.status}
+            </if>
+            <if test="req.codeId != null and req.codeId != ''">
+                AND CODE_ID LIKE '%' || #{req.codeId} || '%' ESCAPE '\'
             </if>
             <if test="req.createUserId != null and req.createUserId != ''">
                 <!-- 부분 일치 검색. ESCAPE '\' 절로 와일드카드(%, _) 문자를 리터럴로 처리 -->
@@ -96,6 +136,11 @@
                 SELECT
                     CODE_ID          AS codeId,
                     FIGMA_URL        AS figmaUrl,
+                    TITLE            AS title,
+                    BRAND            AS brand,
+                    DOMAIN           AS domain,
+                    CATEGORY         AS category,
+                    COMPONENT_NAME   AS componentName,
                     STATUS           AS status,
                     CREATE_USER_ID   AS createUserId,
                     CREATE_DTIME     AS createDtime,
@@ -121,6 +166,11 @@
         SELECT
             CODE_ID          AS codeId,
             FIGMA_URL        AS figmaUrl,
+            TITLE            AS title,
+            BRAND            AS brand,
+            DOMAIN           AS domain,
+            CATEGORY         AS category,
+            COMPONENT_NAME   AS componentName,
             STATUS           AS status,
             CREATE_USER_ID   AS createUserId,
             CREATE_DTIME     AS createDtime,
@@ -144,11 +194,13 @@
             SELECT INNER_QRY.*, ROWNUM AS RNUM
             FROM (
                 SELECT
-                    CODE_ID        AS codeId,
-                    FIGMA_URL      AS figmaUrl,
-                    STATUS         AS status,
-                    CREATE_USER_ID AS createUserId,
-                    CREATE_DTIME   AS createDtime
+                    CODE_ID          AS codeId,
+                    TITLE            AS title,
+                    COMPONENT_NAME   AS componentName,
+                    FIGMA_URL        AS figmaUrl,
+                    STATUS           AS status,
+                    CREATE_USER_ID   AS createUserId,
+                    CREATE_DTIME     AS createDtime
                 FROM FWK_REACT_CODE_HIS
                 WHERE STATUS = 'PENDING_APPROVAL'
                 ORDER BY CREATE_DTIME ASC
@@ -183,8 +235,11 @@
                     STATUS IN ('APPROVED', 'REJECTED')
                 </otherwise>
             </choose>
-            <if test="codeId != null and codeId != ''">
-                AND CODE_ID LIKE '%' || #{codeId} || '%' ESCAPE '\'
+            <if test="title != null and title != ''">
+                AND TITLE LIKE '%' || #{title} || '%' ESCAPE '\'
+            </if>
+            <if test="componentName != null and componentName != ''">
+                AND COMPONENT_NAME LIKE '%' || #{componentName} || '%' ESCAPE '\'
             </if>
             <if test="approvalUserId != null and approvalUserId != ''">
                 AND APPROVAL_USER_ID LIKE '%' || #{approvalUserId} || '%' ESCAPE '\'
@@ -211,6 +266,8 @@
             FROM (
                 SELECT
                     CODE_ID          AS codeId,
+                    TITLE            AS title,
+                    COMPONENT_NAME   AS componentName,
                     FIGMA_URL        AS figmaUrl,
                     STATUS           AS status,
                     CREATE_USER_ID   AS createUserId,

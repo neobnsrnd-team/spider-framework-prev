@@ -14,6 +14,34 @@ public class ReactGenerateResponse {
 
     private String codeId;
     private String figmaUrl;
+
+    /** 화면 제목 (사람이 읽는 이름). */
+    private String title;
+
+    /** 브랜드 (BrandType enum name). */
+    private String brand;
+
+    /** 서비스 도메인 (DomainType enum name). */
+    private String domain;
+
+    /** 화면 목적 분류 (AUTH / MAIN / LIST / DETAIL 등). */
+    private String category;
+
+    /** React 컴포넌트 식별자 (PascalCase). */
+    private String componentName;
+
+    /** 화면 설명. */
+    private String description;
+
+    /** 사용자 추가 요구사항. */
+    private String requirements;
+
+    /** 재생성 직계 부모 CODE_ID. 최초 생성이면 null. */
+    private String refCodeId;
+
+    /** 재생성 체인 최상위 CODE_ID. 최초 생성이면 null. */
+    private String rootCodeId;
+
     private String reactCode;
     private String failReason;
     private String status;

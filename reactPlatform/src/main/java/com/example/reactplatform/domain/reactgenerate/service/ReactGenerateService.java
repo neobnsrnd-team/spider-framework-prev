@@ -3,6 +3,7 @@ package com.example.reactplatform.domain.reactgenerate.service;
 import com.example.reactplatform.domain.reactgenerate.ai.client.ClaudeApiClient;
 import com.example.reactplatform.domain.reactgenerate.ai.prompt.PromptBuilder;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateApprovalResponse;
+import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateEntity;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateHistoryResponse;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateRequest;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateResponse;
@@ -25,8 +26,6 @@ import com.example.reactplatform.global.log.event.ErrorLogEvent;
 import com.example.reactplatform.global.util.ExcelColumnDefinition;
 import com.example.reactplatform.global.util.ExcelExportUtil;
 import com.example.reactplatform.global.util.TraceIdUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -53,7 +52,6 @@ public class ReactGenerateService {
     private final FigmaDesignExtractor figmaDesignExtractor;
     private final CodeValidator codeValidator;
     private final ApplicationEventPublisher eventPublisher;
-    private final ObjectMapper objectMapper;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
@@ -78,20 +76,6 @@ public class ReactGenerateService {
         // 실패 이력 저장에 필요하므로 try 바깥에서 미리 생성
         String id = UUID.randomUUID().toString();
         String now = LocalDateTime.now().format(FORMATTER);
-
-        // brand·domain·componentName은 requirements 컬럼에 JSON으로 저장 (DB 스키마 변경 없이 유지)
-        String requirementsJson;
-        try {
-            Map<String, Object> requirementsMap = new HashMap<>();
-            requirementsMap.put("brand", request.getBrand().name().toLowerCase());
-            requirementsMap.put("domain", effectiveDomain.name().toLowerCase());
-            if (request.getComponentName() != null && !request.getComponentName().isBlank()) {
-                requirementsMap.put("componentName", request.getComponentName());
-            }
-            requirementsJson = objectMapper.writeValueAsString(requirementsMap);
-        } catch (JsonProcessingException e) {
-            throw new InternalException("requirements JSON 직렬화 실패", e);
-        }
 
         // 어느 단계에서 실패해도 그 시점까지 수집된 값을 실패 이력에 기록하기 위해 바깥에 선언
         String systemPrompt = null;
@@ -135,18 +119,9 @@ public class ReactGenerateService {
                 log.warn("React 코드 보안 경고 — warnings: {}", String.join(" | ", validation.getWarnings()));
             }
 
-            // 7. DB 저장 (초기 상태: GENERATED)
-            reactGenerateMapper.insert(
-                    id,
-                    request.getFigmaUrl(),
-                    requirementsJson,
-                    systemPrompt,
-                    userPrompt,
-                    reactCode,
-                    null, // failReason: 성공이므로 null
-                    ReactGenerateStatus.GENERATED.name(),
-                    createdBy,
-                    now);
+            // 7. DB 저장 (초기 상태: GENERATED) — 구조화 필드를 전용 컬럼에 저장
+            reactGenerateMapper.insert(buildEntity(id, request, effectiveDomain, systemPrompt, userPrompt,
+                    reactCode, null, ReactGenerateStatus.GENERATED.name(), createdBy, now));
 
             log.info("React 코드 생성 완료 — codeId: {}", id);
 
@@ -176,17 +151,8 @@ public class ReactGenerateService {
                     request.getBrand(),
                     effectiveDomain,
                     failReason);
-            reactGenerateMapper.insert(
-                    id,
-                    request.getFigmaUrl(),
-                    requirementsJson,
-                    systemPrompt,
-                    userPrompt,
-                    reactCode,
-                    failReason,
-                    ReactGenerateStatus.FAILED.name(),
-                    createdBy,
-                    now);
+            reactGenerateMapper.insert(buildEntity(id, request, effectiveDomain, systemPrompt, userPrompt,
+                    reactCode, failReason, ReactGenerateStatus.FAILED.name(), createdBy, now));
             throw e; // 원래 예외를 그대로 재전파 → GlobalExceptionHandler에서 처리
         }
     }
@@ -307,6 +273,11 @@ public class ReactGenerateService {
         List<ReactGenerateHistoryResponse> data = reactGenerateMapper.selectAllForExport(req);
 
         List<ExcelColumnDefinition> columns = List.of(
+                new ExcelColumnDefinition("화면 제목", 30, "title"),
+                new ExcelColumnDefinition("브랜드", 12, "brand"),
+                new ExcelColumnDefinition("도메인", 12, "domain"),
+                new ExcelColumnDefinition("분류", 12, "category"),
+                new ExcelColumnDefinition("컴포넌트명", 25, "componentName"),
                 new ExcelColumnDefinition("Figma URL", 50, "figmaUrl"),
                 new ExcelColumnDefinition("상태", 15, "status"),
                 new ExcelColumnDefinition("생성자", 15, "createUserId"),
@@ -317,6 +288,11 @@ public class ReactGenerateService {
         List<Map<String, Object>> rows = new ArrayList<>();
         for (ReactGenerateHistoryResponse item : data) {
             Map<String, Object> row = new HashMap<>();
+            row.put("title", item.getTitle());
+            row.put("brand", item.getBrand());
+            row.put("domain", item.getDomain());
+            row.put("category", item.getCategory());
+            row.put("componentName", item.getComponentName());
             row.put("figmaUrl", item.getFigmaUrl());
             row.put("status", translateStatus(item.getStatus()));
             row.put("createUserId", item.getCreateUserId());
@@ -331,6 +307,49 @@ public class ReactGenerateService {
         } catch (IOException e) {
             throw new InternalException("엑셀 파일 생성 중 오류가 발생했습니다", e);
         }
+    }
+
+    /**
+     * 생성 요청 정보와 실행 결과를 조합해 INSERT용 엔티티를 생성한다.
+     *
+     * @param id            생성된 CODE_ID
+     * @param request       사용자 요청 (figmaUrl, brand, domain, componentName 등)
+     * @param effectiveDomain null 대체 처리 후 확정된 도메인
+     * @param systemPrompt  Claude에게 전달한 시스템 프롬프트 (실패 시 null 가능)
+     * @param userPrompt    Claude에게 전달한 유저 프롬프트 (실패 시 null 가능)
+     * @param reactCode     생성된 React 코드 (실패 시 null 가능)
+     * @param failReason    실패 사유 (성공 시 null)
+     * @param status        저장할 상태 (GENERATED / FAILED)
+     * @param createdBy     생성 요청자 ID
+     * @param now           생성 일시 (yyyyMMddHHmmss)
+     * @return INSERT 전용 엔티티
+     */
+    private ReactGenerateEntity buildEntity(
+            String id,
+            ReactGenerateRequest request,
+            DomainType effectiveDomain,
+            String systemPrompt,
+            String userPrompt,
+            String reactCode,
+            String failReason,
+            String status,
+            String createdBy,
+            String now) {
+
+        return ReactGenerateEntity.builder()
+                .codeId(id)
+                .figmaUrl(request.getFigmaUrl())
+                .brand(request.getBrand() != null ? request.getBrand().name() : null)
+                .domain(effectiveDomain.name())
+                .componentName(request.getComponentName())
+                .systemPrompt(systemPrompt)
+                .userPrompt(userPrompt)
+                .reactCode(reactCode)
+                .failReason(failReason)
+                .status(status)
+                .createUserId(createdBy)
+                .createDtime(now)
+                .build();
     }
 
     /** DB 저장 형식(yyyyMMddHHmmss)을 사람이 읽기 쉬운 형식(yyyy-MM-dd HH:mm)으로 변환한다. */

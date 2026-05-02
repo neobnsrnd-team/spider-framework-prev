@@ -5,9 +5,13 @@
 <div th:fragment="search" class="card border p-2 mb-3">
     <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
 
-        <label class="form-label mb-0 small fw-medium">Code ID</label>
-        <input type="text" id="hisSearchCodeId" class="form-control form-control-sm flex-fixed-200"
-               placeholder="Code ID">
+        <label class="form-label mb-0 small fw-medium">화면 제목</label>
+        <input type="text" id="hisSearchTitle" class="form-control form-control-sm flex-fixed-150"
+               placeholder="화면 제목">
+
+        <label class="form-label mb-0 small fw-medium ms-2">컴포넌트명</label>
+        <input type="text" id="hisSearchComponentName" class="form-control form-control-sm flex-fixed-150"
+               placeholder="컴포넌트명">
 
         <label class="form-label mb-0 small fw-medium ms-2">상태</label>
         <select id="hisSearchStatus" class="form-select form-select-sm flex-fixed-130">
@@ -26,11 +30,11 @@
                class="form-control form-control-sm flex-fixed-120"
                placeholder="요청자 ID">
 
-        <label class="form-label mb-0 small fw-medium ms-2">처리일 시작</label>
+        <label class="form-label mb-0 small fw-medium ms-2">승인일 시작</label>
         <input type="date" id="hisSearchFromDate"
                class="form-control form-control-sm flex-fixed-140">
 
-        <label class="form-label mb-0 small fw-medium ms-2">처리일 종료</label>
+        <label class="form-label mb-0 small fw-medium ms-2">승인일 종료</label>
         <input type="date" id="hisSearchToDate"
                class="form-control form-control-sm flex-fixed-140">
 
