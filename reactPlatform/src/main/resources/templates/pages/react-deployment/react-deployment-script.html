@@ -501,6 +501,11 @@ $(document).ready(function () {
         ReactDeployHis.search();
     });
 
+    // ── 나의 배포 이력: 체크 시 즉시 재조회
+    $('#hisSearchOnlyMine').on('change', function () {
+        ReactDeployHis.search();
+    });
+
     // ── 새로고침 버튼 (툴바)
     $('#btnRefresh').on('click', function () { ReactDeployHis.load(); });
 
