@@ -26,6 +26,8 @@ import com.example.reactplatform.global.log.event.ErrorLogEvent;
 import com.example.reactplatform.global.util.ExcelColumnDefinition;
 import com.example.reactplatform.global.util.ExcelExportUtil;
 import com.example.reactplatform.global.util.TraceIdUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -52,35 +54,47 @@ public class ReactGenerateService {
     private final FigmaDesignExtractor figmaDesignExtractor;
     private final CodeValidator codeValidator;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     /**
-     * Figma URL과 brand·domain을 받아 Claude API로 React 코드를 생성하고 DB에 저장한다.
+     * Figma URL과 brand·domain 등을 받아 Claude API로 React 코드를 생성하고 DB에 저장한다.
      *
-     * @param request   figmaUrl, brand, domain
+     * @param request   title, category, description, figmaUrl, brand, domain, componentName, requirements
      * @param createdBy 생성 요청자 ID (로그인 사용자)
      * @return 생성된 코드와 메타 정보
      */
     public ReactGenerateResponse generate(ReactGenerateRequest request, String createdBy) {
-        // domain 미입력 시 banking 기본값 적용
+        // domain 미입력 시 BANKING 기본값 적용
         DomainType effectiveDomain = request.getDomain() != null ? request.getDomain() : DomainType.BANKING;
 
+        String categoryStr = request.getCategory() != null ? request.getCategory().name() : null;
+
         log.info(
-                "React 코드 생성 요청 — figmaUrl: {}, brand: {}, domain: {}, userId: {}",
+                "React 코드 생성 요청 — figmaUrl: {}, brand: {}, domain: {}, category: {}, userId: {}",
                 request.getFigmaUrl(),
                 request.getBrand(),
                 effectiveDomain,
+                categoryStr,
                 createdBy);
 
         // 실패 이력 저장에 필요하므로 try 바깥에서 미리 생성
         String id = UUID.randomUUID().toString();
         String now = LocalDateTime.now().format(FORMATTER);
 
+        // componentName 확정값: Figma에서 가져오기 전 실패 시 "Unknown" 폴백
+        // 실제 값은 Figma 디자인 컨텍스트 추출 후 갱신된다
+        String effectiveComponentName =
+                (request.getComponentName() != null && !request.getComponentName().isBlank())
+                        ? request.getComponentName()
+                        : "Unknown";
+
         // 어느 단계에서 실패해도 그 시점까지 수집된 값을 실패 이력에 기록하기 위해 바깥에 선언
         String systemPrompt = null;
         String userPrompt = null;
         String reactCode = null;
+        String figmaJson = null;
 
         try {
             // 1. Figma URL에서 fileKey, nodeId 파싱
@@ -89,6 +103,9 @@ public class ReactGenerateService {
 
             // 2. Figma API 호출로 디자인 노드 데이터 수신
             FigmaNodeResponse figmaNodeResponse = figmaApiClient.getNode(parsed.getFileKey(), parsed.getNodeId());
+
+            // Figma 원시 응답을 JSON 문자열로 직렬화하여 감사 이력 저장
+            figmaJson = toJson(figmaNodeResponse);
 
             // 3. 원시 Figma 응답에서 Claude 프롬프트용 디자인 컨텍스트 추출
             FigmaDesignContext designContext =
@@ -100,18 +117,29 @@ public class ReactGenerateService {
                     designContext.getWidth(),
                     designContext.getHeight());
 
-            // 4. system / user prompt 조립 (Figma 디자인 컨텍스트 + brand/domain/componentName 포함)
+            // componentName 미입력 시 Figma 컴포넌트명으로 대체
+            if (request.getComponentName() == null || request.getComponentName().isBlank()) {
+                effectiveComponentName = designContext.getComponentName();
+            }
+
+            // 4. system / user prompt 조립
             systemPrompt = promptBuilder.buildSystemPrompt();
             userPrompt = promptBuilder.buildUserPrompt(
-                    designContext, request.getBrand(), effectiveDomain, request.getComponentName());
+                    designContext,
+                    request.getBrand(),
+                    effectiveDomain,
+                    effectiveComponentName,
+                    request.getTitle(),
+                    categoryStr,
+                    request.getDescription(),
+                    request.getRequirements());
 
             // 5. Claude API 호출하여 React 코드 생성
             reactCode = claudeApiClient.generate(systemPrompt, userPrompt);
 
-            // 6. 보안 패턴 검증 (Java 정규표현식 기반, Node.js/ESLint 불필요)
+            // 6. 보안 패턴 검증 (Java 정규표현식 기반)
             CodeValidationResult validation = codeValidator.validate(reactCode);
             if (!validation.isPassed()) {
-                // ERROR 위반 → catch 블록에서 실패 이력 저장 후 예외 재전파
                 log.warn("React 코드 보안 검증 실패 — errors: {}", String.join(" | ", validation.getErrors()));
                 throw new InvalidInputException("보안 검증 실패: " + String.join(", ", validation.getErrors()));
             }
@@ -120,14 +148,21 @@ public class ReactGenerateService {
             }
 
             // 7. DB 저장 (초기 상태: GENERATED) — 구조화 필드를 전용 컬럼에 저장
-            reactGenerateMapper.insert(buildEntity(id, request, effectiveDomain, systemPrompt, userPrompt,
-                    reactCode, null, ReactGenerateStatus.GENERATED.name(), createdBy, now));
+            reactGenerateMapper.insert(buildEntity(
+                    id, request, effectiveDomain, effectiveComponentName, categoryStr, figmaJson,
+                    systemPrompt, userPrompt, reactCode, null, ReactGenerateStatus.GENERATED.name(), createdBy, now));
 
             log.info("React 코드 생성 완료 — codeId: {}", id);
 
             return ReactGenerateResponse.builder()
                     .codeId(id)
+                    .title(request.getTitle())
+                    .category(categoryStr)
+                    .description(request.getDescription())
                     .figmaUrl(request.getFigmaUrl())
+                    .brand(request.getBrand().name())
+                    .domain(effectiveDomain.name())
+                    .componentName(effectiveComponentName)
                     .reactCode(reactCode)
                     .status(ReactGenerateStatus.GENERATED.name())
                     .createDtime(now)
@@ -151,8 +186,9 @@ public class ReactGenerateService {
                     request.getBrand(),
                     effectiveDomain,
                     failReason);
-            reactGenerateMapper.insert(buildEntity(id, request, effectiveDomain, systemPrompt, userPrompt,
-                    reactCode, failReason, ReactGenerateStatus.FAILED.name(), createdBy, now));
+            reactGenerateMapper.insert(buildEntity(
+                    id, request, effectiveDomain, effectiveComponentName, categoryStr, figmaJson,
+                    systemPrompt, userPrompt, reactCode, failReason, ReactGenerateStatus.FAILED.name(), createdBy, now));
             throw e; // 원래 예외를 그대로 재전파 → GlobalExceptionHandler에서 처리
         }
     }
@@ -312,22 +348,28 @@ public class ReactGenerateService {
     /**
      * 생성 요청 정보와 실행 결과를 조합해 INSERT용 엔티티를 생성한다.
      *
-     * @param id            생성된 CODE_ID
-     * @param request       사용자 요청 (figmaUrl, brand, domain, componentName 등)
-     * @param effectiveDomain null 대체 처리 후 확정된 도메인
-     * @param systemPrompt  Claude에게 전달한 시스템 프롬프트 (실패 시 null 가능)
-     * @param userPrompt    Claude에게 전달한 유저 프롬프트 (실패 시 null 가능)
-     * @param reactCode     생성된 React 코드 (실패 시 null 가능)
-     * @param failReason    실패 사유 (성공 시 null)
-     * @param status        저장할 상태 (GENERATED / FAILED)
-     * @param createdBy     생성 요청자 ID
-     * @param now           생성 일시 (yyyyMMddHHmmss)
+     * @param id                  생성된 CODE_ID
+     * @param request             사용자 요청 (figmaUrl, brand, domain 등)
+     * @param effectiveDomain     null 대체 처리 후 확정된 도메인
+     * @param effectiveComponentName Figma에서 확정된 컴포넌트명
+     * @param categoryStr         카테고리 enum name (null 가능)
+     * @param figmaJson           Figma API 원시 응답 JSON (실패 시 null 가능)
+     * @param systemPrompt        Claude에게 전달한 시스템 프롬프트 (실패 시 null 가능)
+     * @param userPrompt          Claude에게 전달한 유저 프롬프트 (실패 시 null 가능)
+     * @param reactCode           생성된 React 코드 (실패 시 null 가능)
+     * @param failReason          실패 사유 (성공 시 null)
+     * @param status              저장할 상태 (GENERATED / FAILED)
+     * @param createdBy           생성 요청자 ID
+     * @param now                 생성 일시 (yyyyMMddHHmmss)
      * @return INSERT 전용 엔티티
      */
     private ReactGenerateEntity buildEntity(
             String id,
             ReactGenerateRequest request,
             DomainType effectiveDomain,
+            String effectiveComponentName,
+            String categoryStr,
+            String figmaJson,
             String systemPrompt,
             String userPrompt,
             String reactCode,
@@ -339,9 +381,14 @@ public class ReactGenerateService {
         return ReactGenerateEntity.builder()
                 .codeId(id)
                 .figmaUrl(request.getFigmaUrl())
+                .figmaJson(figmaJson)
                 .brand(request.getBrand() != null ? request.getBrand().name() : null)
                 .domain(effectiveDomain.name())
-                .componentName(request.getComponentName())
+                .componentName(effectiveComponentName)
+                .title(request.getTitle())
+                .category(categoryStr)
+                .description(request.getDescription())
+                .requirements(request.getRequirements())
                 .systemPrompt(systemPrompt)
                 .userPrompt(userPrompt)
                 .reactCode(reactCode)
@@ -350,6 +397,20 @@ public class ReactGenerateService {
                 .createUserId(createdBy)
                 .createDtime(now)
                 .build();
+    }
+
+    /**
+     * 객체를 JSON 문자열로 직렬화한다.
+     * 직렬화 실패 시 null을 반환하여 JSON 저장 실패가 코드 생성 전체를 중단하지 않도록 한다.
+     */
+    private String toJson(Object obj) {
+        if (obj == null) return null;
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.warn("Figma 응답 JSON 직렬화 실패 — FIGMA_JSON 컬럼 null로 저장됩니다", e);
+            return null;
+        }
     }
 
     /** DB 저장 형식(yyyyMMddHHmmss)을 사람이 읽기 쉬운 형식(yyyy-MM-dd HH:mm)으로 변환한다. */

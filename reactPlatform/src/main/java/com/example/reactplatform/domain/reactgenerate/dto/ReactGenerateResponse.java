@@ -13,10 +13,17 @@ import lombok.NoArgsConstructor;
 public class ReactGenerateResponse {
 
     private String codeId;
-    private String figmaUrl;
 
-    /** 화면 제목 (사람이 읽는 이름). */
+    /** 화면 제목. */
     private String title;
+
+    /** 화면 목적 분류 (AUTH/MAIN/LIST/DETAIL/FORM/MYPAGE/ADMIN/EVENT/ERROR). */
+    private String category;
+
+    /** 화면 설명. */
+    private String description;
+
+    private String figmaUrl;
 
     /** 브랜드 (BrandType enum name). */
     private String brand;
@@ -24,14 +31,8 @@ public class ReactGenerateResponse {
     /** 서비스 도메인 (DomainType enum name). */
     private String domain;
 
-    /** 화면 목적 분류 (AUTH / MAIN / LIST / DETAIL 등). */
-    private String category;
-
     /** React 컴포넌트 식별자 (PascalCase). */
     private String componentName;
-
-    /** 화면 설명. */
-    private String description;
 
     /** 사용자 추가 요구사항. */
     private String requirements;

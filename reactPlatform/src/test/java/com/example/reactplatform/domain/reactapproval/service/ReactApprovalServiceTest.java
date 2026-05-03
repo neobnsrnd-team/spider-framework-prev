@@ -247,7 +247,7 @@ class ReactApprovalServiceTest {
         @DisplayName("날짜 형식이 yyyyMMdd가 아니면 InvalidInputException이 발생한다")
         void getHistory_invalidDateFormat_throwsInvalidInputException() {
             assertThatThrownBy(
-                            () -> service.getHistory(1, 10, null, null, null, null, "2024-01-01", null))
+                            () -> service.getHistory(1, 10, null, null, null, null, null, "2024-01-01", null))
                     .isInstanceOf(InvalidInputException.class)
                     .satisfies(ex -> assertThat(((BaseException) ex).getDetailMessage()).contains("yyyyMMdd"));
         }
@@ -256,7 +256,7 @@ class ReactApprovalServiceTest {
         @DisplayName("8자리 숫자 형식이 아닌 날짜도 거부된다")
         void getHistory_nonNumericDate_throwsInvalidInputException() {
             assertThatThrownBy(
-                            () -> service.getHistory(1, 10, null, null, null, null, null, "abcdefgh"))
+                            () -> service.getHistory(1, 10, null, null, null, null, null, null, "abcdefgh"))
                     .isInstanceOf(InvalidInputException.class);
         }
 
@@ -265,7 +265,7 @@ class ReactApprovalServiceTest {
         void getHistory_dateRangeReversed_throwsInvalidInputException() {
             assertThatThrownBy(
                             () -> service.getHistory(
-                                    1, 10, null, null, null, null, "20240201", "20240101"))
+                                    1, 10, null, null, null, null, null, "20240201", "20240101"))
                     .isInstanceOf(InvalidInputException.class)
                     .satisfies(ex -> assertThat(((BaseException) ex).getDetailMessage()).contains("이전"));
         }
@@ -274,20 +274,20 @@ class ReactApprovalServiceTest {
         @DisplayName("fromDate와 toDate가 같으면 정상 처리된다")
         void getHistory_sameDates_succeeds() {
             when(reactGenerateMapper.selectApprovalHistory(
-                            anyInt(), anyInt(), any(), any(), any(), any(), any(), any()))
+                            anyInt(), anyInt(), any(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(List.of());
-            when(reactGenerateMapper.selectApprovalHistoryCount(any(), any(), any(), any(), any(), any()))
+            when(reactGenerateMapper.selectApprovalHistoryCount(any(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(0);
 
             assertThatNoException()
-                    .isThrownBy(() -> service.getHistory(1, 10, null, null, null, null, "20240101", "20240101"));
+                    .isThrownBy(() -> service.getHistory(1, 10, null, null, null, null, null, "20240101", "20240101"));
         }
 
         @Test
         @DisplayName("APPROVED / REJECTED 이외의 status 값이면 InvalidInputException이 발생한다")
         void getHistory_invalidStatus_throwsInvalidInputException() {
             assertThatThrownBy(
-                            () -> service.getHistory(1, 10, "PENDING_APPROVAL", null, null, null, null, null))
+                            () -> service.getHistory(1, 10, "PENDING_APPROVAL", null, null, null, null, null, null))
                     .isInstanceOf(InvalidInputException.class)
                     .satisfies(ex -> assertThat(((BaseException) ex).getDetailMessage()).contains("APPROVED"));
         }
@@ -296,75 +296,75 @@ class ReactApprovalServiceTest {
         @DisplayName("status=APPROVED이면 정상 처리된다")
         void getHistory_validStatusApproved_succeeds() {
             when(reactGenerateMapper.selectApprovalHistory(
-                            anyInt(), anyInt(), any(), any(), any(), any(), any(), any()))
+                            anyInt(), anyInt(), any(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(List.of());
-            when(reactGenerateMapper.selectApprovalHistoryCount(any(), any(), any(), any(), any(), any()))
+            when(reactGenerateMapper.selectApprovalHistoryCount(any(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(0);
 
             assertThatNoException()
-                    .isThrownBy(() -> service.getHistory(1, 10, "APPROVED", null, null, null, null, null));
+                    .isThrownBy(() -> service.getHistory(1, 10, "APPROVED", null, null, null, null, null, null));
         }
 
         @Test
         @DisplayName("%, _, \\이 포함된 입력은 이스케이프되어 mapper에 전달된다")
         void getHistory_likeWildcard_escapedBeforePassedToMapper() {
             when(reactGenerateMapper.selectApprovalHistory(
-                            anyInt(), anyInt(), any(), any(), anyString(), anyString(), any(), any()))
+                            anyInt(), anyInt(), any(), any(), any(), anyString(), anyString(), any(), any()))
                     .thenReturn(List.of());
             when(reactGenerateMapper.selectApprovalHistoryCount(
-                            any(), any(), anyString(), anyString(), any(), any()))
+                            any(), any(), any(), anyString(), anyString(), any(), any()))
                     .thenReturn(0);
 
-            service.getHistory(1, 10, null, null, "user%01", "dept_A", null, null);
+            service.getHistory(1, 10, null, null, null, "user%01", "dept_A", null, null);
 
             verify(reactGenerateMapper)
                     .selectApprovalHistory(
-                            anyInt(), anyInt(), isNull(), isNull(), eq("user\\%01"), eq("dept\\_A"), isNull(), isNull());
+                            anyInt(), anyInt(), isNull(), isNull(), isNull(), eq("user\\%01"), eq("dept\\_A"), isNull(), isNull());
         }
 
         @Test
         @DisplayName("\\을 포함한 입력은 \\\\로 이스케이프된다")
         void getHistory_backslash_doubleEscaped() {
             when(reactGenerateMapper.selectApprovalHistory(
-                            anyInt(), anyInt(), any(), any(), anyString(), any(), any(), any()))
+                            anyInt(), anyInt(), any(), any(), any(), anyString(), any(), any(), any()))
                     .thenReturn(List.of());
             when(reactGenerateMapper.selectApprovalHistoryCount(
-                            any(), any(), anyString(), any(), any(), any()))
+                            any(), any(), any(), anyString(), any(), any(), any()))
                     .thenReturn(0);
 
-            service.getHistory(1, 10, null, null, "user\\01", null, null, null);
+            service.getHistory(1, 10, null, null, null, "user\\01", null, null, null);
 
             verify(reactGenerateMapper)
                     .selectApprovalHistory(
-                            anyInt(), anyInt(), isNull(), isNull(), eq("user\\\\01"), isNull(), isNull(), isNull());
+                            anyInt(), anyInt(), isNull(), isNull(), isNull(), eq("user\\\\01"), isNull(), isNull(), isNull());
         }
 
         @Test
         @DisplayName("빈 문자열 필터는 null로 변환되어 전체 조회로 동작한다")
         void getHistory_blankFilters_convertedToNull() {
             when(reactGenerateMapper.selectApprovalHistory(
-                            anyInt(), anyInt(), any(), any(), any(), any(), any(), any()))
+                            anyInt(), anyInt(), any(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(List.of());
-            when(reactGenerateMapper.selectApprovalHistoryCount(any(), any(), any(), any(), any(), any()))
+            when(reactGenerateMapper.selectApprovalHistoryCount(any(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(0);
 
-            service.getHistory(1, 10, "", "", "  ", "", "", "");
+            service.getHistory(1, 10, "", "", "", "  ", "", "", "");
 
             verify(reactGenerateMapper)
                     .selectApprovalHistory(
-                            anyInt(), anyInt(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull());
+                            anyInt(), anyInt(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull());
         }
 
         @Test
         @DisplayName("결과를 list, totalCount, page, size를 포함한 Map으로 반환한다")
         void getHistory_returnsMapWithExpectedKeys() {
             when(reactGenerateMapper.selectApprovalHistory(
-                            anyInt(), anyInt(), any(), any(), any(), any(), any(), any()))
+                            anyInt(), anyInt(), any(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(List.of(new ReactGenerateHistoryResponse()));
-            when(reactGenerateMapper.selectApprovalHistoryCount(any(), any(), any(), any(), any(), any()))
+            when(reactGenerateMapper.selectApprovalHistoryCount(any(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(1);
 
-            var result = service.getHistory(2, 5, null, null, null, null, null, null);
+            var result = service.getHistory(2, 5, null, null, null, null, null, null, null);
 
             assertThat(result).containsKeys("list", "totalCount", "page", "size");
             assertThat(result.get("page")).isEqualTo(2);

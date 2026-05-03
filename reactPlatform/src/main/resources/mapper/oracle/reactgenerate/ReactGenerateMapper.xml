@@ -14,8 +14,9 @@
         INSERT INTO FWK_REACT_CODE_HIS (
             CODE_ID,
             FIGMA_URL,
-            DOMAIN,
+            FIGMA_JSON,
             BRAND,
+            DOMAIN,
             COMPONENT_NAME,
             TITLE,
             CATEGORY,
@@ -33,8 +34,9 @@
         ) VALUES (
             #{e.codeId,jdbcType=VARCHAR},
             #{e.figmaUrl,jdbcType=VARCHAR},
-            #{e.domain,jdbcType=VARCHAR},
+            #{e.figmaJson,jdbcType=CLOB},
             #{e.brand,jdbcType=VARCHAR},
+            #{e.domain,jdbcType=VARCHAR},
             #{e.componentName,jdbcType=VARCHAR},
             #{e.title,jdbcType=VARCHAR},
             #{e.category,jdbcType=VARCHAR},
@@ -56,13 +58,13 @@
 
     <sql id="selectColumns">
         CODE_ID          AS codeId,
-        FIGMA_URL        AS figmaUrl,
         TITLE            AS title,
+        CATEGORY         AS category,
+        DESCRIPTION      AS description,
+        FIGMA_URL        AS figmaUrl,
         BRAND            AS brand,
         DOMAIN           AS domain,
-        CATEGORY         AS category,
         COMPONENT_NAME   AS componentName,
-        DESCRIPTION      AS description,
         REQUIREMENTS     AS requirements,
         REACT_CODE       AS reactCode,
         FAIL_REASON      AS failReason,

@@ -23,6 +23,9 @@ public class ReactGenerateEntity {
     private String codeId;
     private String figmaUrl;
 
+    /** Figma API 응답 JSON 원본. */
+    private String figmaJson;
+
     /** 서비스 도메인 (DomainType enum name, 예: BANKING). */
     private String domain;
 

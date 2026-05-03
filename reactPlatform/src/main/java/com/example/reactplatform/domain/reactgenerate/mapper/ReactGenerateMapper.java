@@ -20,7 +20,7 @@ public interface ReactGenerateMapper {
     /**
      * 생성된 React 코드 이력을 신규 저장한다.
      *
-     * @param entity 삽입할 이력 데이터 (codeId, figmaUrl, domain, brand, componentName 등 포함)
+     * @param entity 삽입할 이력 데이터 (codeId, figmaUrl, figmaJson, domain, brand, componentName 등 포함)
      */
     void insert(@Param("e") ReactGenerateEntity entity);
 

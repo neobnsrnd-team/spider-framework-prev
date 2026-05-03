@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import com.example.reactplatform.domain.reactgenerate.ai.client.ClaudeApiClient;
 import com.example.reactplatform.domain.reactgenerate.ai.prompt.PromptBuilder;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateApprovalResponse;
+import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateEntity;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateRequest;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateResponse;
 import com.example.reactplatform.domain.reactgenerate.enums.BrandType;
@@ -88,12 +89,20 @@ class ReactGenerateServiceTest {
         ReactGenerateResponse response = service.generate(generateRequest(DomainType.BANKING), USER_ID);
 
         // GENERATED 상태로 insert 호출 여부 확인
-        ArgumentCaptor<String> statusCaptor = ArgumentCaptor.forClass(String.class);
-        verify(reactGenerateMapper).insert(
-                anyString(), eq(VALID_FIGMA_URL), anyString(),
-                eq(SYSTEM_PROMPT), eq(USER_PROMPT), eq(GENERATED_CODE),
-                eq(null), statusCaptor.capture(), eq(USER_ID), anyString());
-        assertThat(statusCaptor.getValue()).isEqualTo(ReactGenerateStatus.GENERATED.name());
+        ArgumentCaptor<ReactGenerateEntity> entityCaptor = ArgumentCaptor.forClass(ReactGenerateEntity.class);
+        verify(reactGenerateMapper).insert(entityCaptor.capture());
+        ReactGenerateEntity saved = entityCaptor.getValue();
+        assertThat(saved.getStatus()).isEqualTo(ReactGenerateStatus.GENERATED.name());
+        assertThat(saved.getFigmaUrl()).isEqualTo(VALID_FIGMA_URL);
+        assertThat(saved.getBrand()).isEqualTo("HANA");
+        assertThat(saved.getDomain()).isEqualTo("BANKING");
+        assertThat(saved.getComponentName()).isEqualTo("TestComponent");
+        assertThat(saved.getTitle()).isEqualTo("테스트 제목");
+        assertThat(saved.getSystemPrompt()).isEqualTo(SYSTEM_PROMPT);
+        assertThat(saved.getUserPrompt()).isEqualTo(USER_PROMPT);
+        assertThat(saved.getReactCode()).isEqualTo(GENERATED_CODE);
+        assertThat(saved.getFailReason()).isNull();
+        assertThat(saved.getCreateUserId()).isEqualTo(USER_ID);
 
         assertThat(response.getReactCode()).isEqualTo(GENERATED_CODE);
         assertThat(response.getStatus()).isEqualTo(ReactGenerateStatus.GENERATED.name());
@@ -135,8 +144,11 @@ class ReactGenerateServiceTest {
         // domain null로 요청
         service.generate(generateRequest(null), USER_ID);
 
-        // promptBuilder.buildUserPrompt에 BANKING이 전달되는지 확인
-        verify(promptBuilder).buildUserPrompt(any(), eq(BrandType.HANA), eq(DomainType.BANKING), isNull());
+        // promptBuilder.buildUserPrompt에 effectiveDomain=BANKING이 전달되는지 확인
+        verify(promptBuilder).buildUserPrompt(
+                any(), eq(BrandType.HANA), eq(DomainType.BANKING),
+                eq("TestComponent"), eq("테스트 제목"),
+                isNull(), isNull(), isNull());
     }
 
     // ========== generate — Figma 단계 실패 ==========
@@ -144,21 +156,27 @@ class ReactGenerateServiceTest {
     @Test
     @DisplayName("Figma API 호출 실패 시 systemPrompt·userPrompt·reactCode 모두 null로 FAILED 저장 후 예외 전파")
     void generate_figmaApiThrows_savesFailedRecordWithNullPrompts() throws Exception {
-        when(objectMapper.writeValueAsString(any())).thenReturn("{\"brand\":\"hana\",\"domain\":\"banking\"}");
         when(figmaApiClient.getNode(anyString(), anyString()))
                 .thenThrow(new InternalException("Figma 연결 실패"));
 
         assertThatThrownBy(() -> service.generate(generateRequest(DomainType.BANKING), USER_ID))
                 .isInstanceOf(InternalException.class);
 
-        verify(reactGenerateMapper).insert(
-                anyString(), eq(VALID_FIGMA_URL), anyString(),
-                eq(null),          // systemPrompt: Figma 실패 시점에는 아직 미설정
-                eq(null),          // userPrompt
-                eq(null),          // reactCode
-                anyString(),       // failReason
-                eq(ReactGenerateStatus.FAILED.name()),
-                eq(USER_ID), anyString());
+        ArgumentCaptor<ReactGenerateEntity> entityCaptor = ArgumentCaptor.forClass(ReactGenerateEntity.class);
+        verify(reactGenerateMapper).insert(entityCaptor.capture());
+        ReactGenerateEntity saved = entityCaptor.getValue();
+        assertThat(saved.getFigmaUrl()).isEqualTo(VALID_FIGMA_URL);
+        assertThat(saved.getFigmaJson()).isNull();            // Figma 호출 실패로 미설정
+        assertThat(saved.getBrand()).isEqualTo("HANA");
+        assertThat(saved.getDomain()).isEqualTo("BANKING");
+        assertThat(saved.getComponentName()).isEqualTo("Unknown"); // Figma 도달 전 폴백값
+        assertThat(saved.getTitle()).isEqualTo("테스트 제목");
+        assertThat(saved.getSystemPrompt()).isNull();         // 미설정
+        assertThat(saved.getUserPrompt()).isNull();           // 미설정
+        assertThat(saved.getReactCode()).isNull();            // 미설정
+        assertThat(saved.getFailReason()).isNotNull();
+        assertThat(saved.getStatus()).isEqualTo(ReactGenerateStatus.FAILED.name());
+        assertThat(saved.getCreateUserId()).isEqualTo(USER_ID);
     }
 
     // ========== generate — Claude 단계 실패 ==========
@@ -166,26 +184,33 @@ class ReactGenerateServiceTest {
     @Test
     @DisplayName("Claude API 실패 시 systemPrompt·userPrompt는 기록되고 reactCode는 null로 FAILED 저장")
     void generate_claudeApiThrows_savesFailedRecordWithPromptsButNullCode() throws Exception {
-        when(objectMapper.writeValueAsString(any())).thenReturn("{\"brand\":\"hana\",\"domain\":\"banking\"}");
         when(figmaApiClient.getNode(anyString(), anyString())).thenReturn(new FigmaNodeResponse());
         when(figmaDesignExtractor.extract(any(), anyString(), anyString()))
                 .thenReturn(minimalDesignContext());
         when(promptBuilder.buildSystemPrompt()).thenReturn(SYSTEM_PROMPT);
-        when(promptBuilder.buildUserPrompt(any(), any(), any(), any())).thenReturn(USER_PROMPT);
+        when(promptBuilder.buildUserPrompt(any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(USER_PROMPT);
         when(claudeApiClient.generate(anyString(), anyString()))
                 .thenThrow(new InternalException("Claude 타임아웃"));
 
         assertThatThrownBy(() -> service.generate(generateRequest(DomainType.BANKING), USER_ID))
                 .isInstanceOf(InternalException.class);
 
-        verify(reactGenerateMapper).insert(
-                anyString(), eq(VALID_FIGMA_URL), anyString(),
-                eq(SYSTEM_PROMPT),  // systemPrompt: 이미 설정됨
-                eq(USER_PROMPT),    // userPrompt: 이미 설정됨
-                eq(null),           // reactCode: Claude 실패로 미설정
-                anyString(),
-                eq(ReactGenerateStatus.FAILED.name()),
-                eq(USER_ID), anyString());
+        ArgumentCaptor<ReactGenerateEntity> entityCaptor = ArgumentCaptor.forClass(ReactGenerateEntity.class);
+        verify(reactGenerateMapper).insert(entityCaptor.capture());
+        ReactGenerateEntity saved = entityCaptor.getValue();
+        assertThat(saved.getFigmaUrl()).isEqualTo(VALID_FIGMA_URL);
+        assertThat(saved.getFigmaJson()).isNotNull();          // Figma 성공 후 직렬화됨
+        assertThat(saved.getBrand()).isEqualTo("HANA");
+        assertThat(saved.getDomain()).isEqualTo("BANKING");
+        assertThat(saved.getComponentName()).isEqualTo("TestComponent");
+        assertThat(saved.getTitle()).isEqualTo("테스트 제목");
+        assertThat(saved.getSystemPrompt()).isEqualTo(SYSTEM_PROMPT); // 이미 설정됨
+        assertThat(saved.getUserPrompt()).isEqualTo(USER_PROMPT);     // 이미 설정됨
+        assertThat(saved.getReactCode()).isNull();                    // Claude 실패로 미설정
+        assertThat(saved.getFailReason()).isNotNull();
+        assertThat(saved.getStatus()).isEqualTo(ReactGenerateStatus.FAILED.name());
+        assertThat(saved.getCreateUserId()).isEqualTo(USER_ID);
     }
 
     // ========== generate — 코드 검증 실패 ==========
@@ -203,12 +228,12 @@ class ReactGenerateServiceTest {
         assertThatThrownBy(() -> service.generate(generateRequest(DomainType.BANKING), USER_ID))
                 .isInstanceOf(InvalidInputException.class);
 
-        verify(reactGenerateMapper).insert(
-                anyString(), anyString(), anyString(),
-                anyString(), anyString(), anyString(),
-                anyString(),
-                eq(ReactGenerateStatus.FAILED.name()),
-                eq(USER_ID), anyString());
+        // 검증 실패 시 reactCode는 Claude가 반환한 코드가 포함된 채로 FAILED 저장
+        ArgumentCaptor<ReactGenerateEntity> entityCaptor = ArgumentCaptor.forClass(ReactGenerateEntity.class);
+        verify(reactGenerateMapper).insert(entityCaptor.capture());
+        ReactGenerateEntity saved = entityCaptor.getValue();
+        assertThat(saved.getStatus()).isEqualTo(ReactGenerateStatus.FAILED.name());
+        assertThat(saved.getCreateUserId()).isEqualTo(USER_ID);
     }
 
     // ========== requestApproval ==========
@@ -286,13 +311,14 @@ class ReactGenerateServiceTest {
 
     /** 성공 파이프라인 전체를 스텁한다. */
     private void stubGeneratePipeline(CodeValidationResult validationResult) throws Exception {
-        // ObjectMapper는 실제 직렬화 없이 고정 JSON을 반환
-        when(objectMapper.writeValueAsString(any())).thenReturn("{\"brand\":\"hana\",\"domain\":\"banking\"}");
         when(figmaApiClient.getNode(anyString(), anyString())).thenReturn(new FigmaNodeResponse());
+        // ObjectMapper 직렬화: Figma 응답 → JSON 문자열 (임의 문자열 반환)
+        when(objectMapper.writeValueAsString(any())).thenReturn("{\"nodes\":{}}");
         when(figmaDesignExtractor.extract(any(), anyString(), anyString()))
                 .thenReturn(minimalDesignContext());
         when(promptBuilder.buildSystemPrompt()).thenReturn(SYSTEM_PROMPT);
-        when(promptBuilder.buildUserPrompt(any(), any(), any(), any())).thenReturn(USER_PROMPT);
+        when(promptBuilder.buildUserPrompt(any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(USER_PROMPT);
         when(claudeApiClient.generate(anyString(), anyString())).thenReturn(GENERATED_CODE);
         when(codeValidator.validate(anyString())).thenReturn(validationResult);
     }
@@ -306,9 +332,10 @@ class ReactGenerateServiceTest {
                 .build();
     }
 
-    /** 최소 필드만 채운 ReactGenerateRequest 생성 헬퍼 */
+    /** 최소 필드만 채운 ReactGenerateRequest 생성 헬퍼 (title 필수) */
     private ReactGenerateRequest generateRequest(DomainType domain) {
         return ReactGenerateRequest.builder()
+                .title("테스트 제목")
                 .figmaUrl(VALID_FIGMA_URL)
                 .brand(BrandType.HANA)
                 .domain(domain)

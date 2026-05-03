@@ -14,8 +14,62 @@
     <!-- Input Card -->
     <div class="card mb-3">
         <div class="card-body">
-            <div class="mb-2">
-                <label for="figmaUrlInput" class="form-label fw-semibold">Figma URL</label>
+            <div class="mb-3">
+                <label for="titleInput" class="form-label fw-semibold">
+                    제목 <span class="text-danger">*</span>
+                </label>
+                <input type="text"
+                       id="titleInput"
+                       class="form-control"
+                       placeholder="예: 로그인 폼, 계좌 이체 화면"
+                       autocomplete="off"
+                       maxlength="200">
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="categorySelect" class="form-label fw-semibold">
+                        카테고리 <span class="text-muted fw-normal small">(선택)</span>
+                    </label>
+                    <select id="categorySelect" class="form-select">
+                        <option value="">-- 카테고리 선택 --</option>
+                        <option value="AUTH">인증</option>
+                        <option value="MAIN">메인</option>
+                        <option value="LIST">목록</option>
+                        <option value="DETAIL">상세</option>
+                        <option value="FORM">폼</option>
+                        <option value="MYPAGE">마이페이지</option>
+                        <option value="ADMIN">관리</option>
+                        <option value="EVENT">이벤트</option>
+                        <option value="ERROR">오류</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="componentNameInput" class="form-label fw-semibold">
+                        컴포넌트명 <span class="text-muted fw-normal small">(선택, 미입력 시 Figma명 사용)</span>
+                    </label>
+                    <input type="text"
+                           id="componentNameInput"
+                           class="form-control"
+                           placeholder="예: LoginPage, TransferForm"
+                           autocomplete="off"
+                           maxlength="100">
+                    <div class="form-text">PascalCase로 입력하세요.</div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="descriptionInput" class="form-label fw-semibold">
+                    설명 <span class="text-muted fw-normal small">(선택)</span>
+                </label>
+                <textarea id="descriptionInput"
+                          class="form-control"
+                          rows="2"
+                          placeholder="화면의 목적이나 주요 기능을 간략히 설명해주세요."
+                          maxlength="2000"></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="figmaUrlInput" class="form-label fw-semibold">
+                    Figma URL <span class="text-danger">*</span>
+                </label>
                 <input type="url"
                        id="figmaUrlInput"
                        class="form-control"
@@ -39,7 +93,7 @@
                 </div>
                 <div class="col-md-6">
                     <label for="domainSelect" class="form-label fw-semibold">
-                        도메인 <span class="text-muted fw-normal small">(선택, 미선택 시 banking 적용)</span>
+                        도메인 <span class="text-muted fw-normal small">(선택, 미선택 시 뱅킹 적용)</span>
                     </label>
                     <select id="domainSelect" class="form-select">
                         <option value="">-- 도메인 선택 --</option>
@@ -51,16 +105,13 @@
                 </div>
             </div>
             <div class="mb-3">
-                <label for="componentNameInput" class="form-label fw-semibold">
-                    컴포넌트명 <span class="text-muted fw-normal small">(선택, 미입력 시 AI가 결정)</span>
+                <label for="requirementsInput" class="form-label fw-semibold">
+                    사용자 요구사항 <span class="text-muted fw-normal small">(선택)</span>
                 </label>
-                <input type="text"
-                       id="componentNameInput"
-                       class="form-control"
-                       placeholder="예: LoginPage, TransferForm, MainDashboard"
-                       autocomplete="off"
-                       maxlength="100">
-                <div class="form-text">PascalCase로 입력하세요. Container scaffold 파일명도 이 값을 기준으로 생성됩니다.</div>
+                <textarea id="requirementsInput"
+                          class="form-control"
+                          rows="3"
+                          placeholder="Claude에게 전달할 추가 요구사항을 자유롭게 입력하세요. 예: 모바일 최적화, 다크모드 지원, 특정 컴포넌트 사용 등"></textarea>
             </div>
             <div class="d-flex justify-content-end gap-2">
                 <button type="button" class="btn btn-outline-secondary" id="btnReset">

@@ -333,24 +333,6 @@ Tailwind `@theme` 블록에 선언된 공통 고정 토큰. 도메인·브랜드
 | `--brand-name` | `'우리은행'` |
 | `--shadow-primary` | `0px 8px 20px -4px var(--brand-shadow)` |
 
-### 지로 기본 (`[data-brand='giro']`)
-
-| CSS 변수 | 값 |
-|---------|-----|
-| `--brand-primary` | `#5b21b6` |
-| `--brand-alt` | `#8b5cf6` |
-| `--brand-bg` | `#f9f7ff` |
-| `--brand-name` | `'지로 기본'` |
-
-### 보험 기본 (`[data-brand='insurance']`)
-
-| CSS 변수 | 값 |
-|---------|-----|
-| `--brand-primary` | `#e03a1e` |
-| `--brand-alt` | `#f97f6a` |
-| `--brand-bg` | `#fff8f7` |
-| `--brand-name` | `'보험 기본'` |
-
 ## Domain Tokens
 
 `data-domain` 속성으로 주입되는 도메인별 토큰.

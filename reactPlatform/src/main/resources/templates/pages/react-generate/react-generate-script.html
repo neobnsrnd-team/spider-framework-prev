@@ -30,11 +30,20 @@
 
     // ─── 생성 ───────────────────────────────────────────────
     $('#btnGenerate').on('click', function () {
-        const figmaUrl = $('#figmaUrlInput').val().trim();
-        const brand = $('#brandSelect').val();
-        const domain = $('#domainSelect').val() || null;
+        const title         = $('#titleInput').val().trim() || null;
+        const category      = $('#categorySelect').val() || null;
         const componentName = $('#componentNameInput').val().trim() || null;
+        const description   = $('#descriptionInput').val().trim() || null;
+        const figmaUrl      = $('#figmaUrlInput').val().trim();
+        const brand         = $('#brandSelect').val();
+        const domain        = $('#domainSelect').val() || null;
+        const requirements  = $('#requirementsInput').val().trim() || null;
 
+        if (!title) {
+            Toast.warning('제목을 입력해주세요.');
+            $('#titleInput').focus();
+            return;
+        }
         if (!figmaUrl) {
             Toast.warning('Figma URL을 입력해주세요.');
             return;
@@ -62,7 +71,16 @@
             url: API_BASE_URL + '/react-generate/generate',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ figmaUrl: figmaUrl, brand: brand, domain: domain, componentName: componentName }),
+            data: JSON.stringify({
+                title: title,
+                category: category,
+                componentName: componentName,
+                description: description,
+                figmaUrl: figmaUrl,
+                brand: brand,
+                domain: domain,
+                requirements: requirements
+            }),
             success: function (res) {
                 if (res.success && res.data) {
                     renderResult(res.data);
@@ -151,10 +169,14 @@
     // ─── 초기화 ─────────────────────────────────────────────
     $('#btnReset').on('click', function () {
         // 입력 폼 초기화
+        $('#titleInput').val('');
+        $('#categorySelect').val('');
+        $('#componentNameInput').val('');
+        $('#descriptionInput').val('');
         $('#figmaUrlInput').val('');
         $('#brandSelect').val('');
         $('#domainSelect').val('');
-        $('#componentNameInput').val('');
+        $('#requirementsInput').val('');
 
         // 결과 영역 숨김 및 내부 상태 초기화
         $('#resultSection').addClass('d-none');
@@ -172,8 +194,8 @@
         $('#figmaUrlInput').focus();
     });
 
-    // ─── Enter 키 지원 ──────────────────────────────────────
-    $('#figmaUrlInput').on('keydown', function (e) {
+    // ─── Enter 키 지원 (단일 라인 입력 필드에만 적용) ─────────
+    $('#titleInput, #figmaUrlInput, #componentNameInput').on('keydown', function (e) {
         if (e.key === 'Enter') {
             $('#btnGenerate').trigger('click');
         }
