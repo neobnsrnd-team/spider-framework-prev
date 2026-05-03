@@ -19,6 +19,10 @@ const ROOT = join(__dirname, '..');
 const COMPONENT_LIB = join(ROOT, 'component-library');
 const OUTPUT_DIR = join(ROOT, 'generated');
 const OUTPUT_FILE = join(OUTPUT_DIR, 'component-types.md');
+// reactPlatform 프로젝트의 Claude 시스템 프롬프트 디렉토리에도 동기화
+const REACT_PLATFORM_OUTPUT_FILE = join(
+  ROOT, '..', 'reactPlatform', 'src', 'main', 'resources', 'prompts', 'component-types.md'
+);
 
 /** component-library 하위 카테고리 순서 (Claude에게 계층 구조를 명확히 전달하기 위해 고정) */
 const CATEGORY_ORDER = ['core', 'layout', 'modules', 'biz'];
@@ -154,9 +158,18 @@ function main() {
     }
   }
 
-  writeFileSync(OUTPUT_FILE, lines.join('\n'), 'utf-8');
+  const content = lines.join('\n');
+  writeFileSync(OUTPUT_FILE, content, 'utf-8');
   console.log(`✅ component-types.md 생성 완료 (${entries.length}개 컴포넌트)`);
   console.log(`   출력: ${OUTPUT_FILE}`);
+
+  // reactPlatform 프로젝트의 prompts 디렉토리에도 동기화한다.
+  try {
+    writeFileSync(REACT_PLATFORM_OUTPUT_FILE, content, 'utf-8');
+    console.log(`   동기화: ${REACT_PLATFORM_OUTPUT_FILE}`);
+  } catch {
+    console.warn(`   ⚠️  reactPlatform 동기화 실패 (경로 확인 필요): ${REACT_PLATFORM_OUTPUT_FILE}`);
+  }
 }
 
 main();

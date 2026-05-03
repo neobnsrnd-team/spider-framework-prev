@@ -13,6 +13,21 @@ import lombok.Setter;
 @Setter
 public class ReactGenerateSearchRequest {
 
+    /** 화면 제목 부분 일치 검색. null이면 전체 조회. */
+    private String title;
+
+    /** 브랜드 정확 일치 (BrandType enum name). null이면 전체 조회. */
+    private String brand;
+
+    /** 서비스 도메인 정확 일치 (DomainType enum name). null이면 전체 조회. */
+    private String domain;
+
+    /** 화면 분류 정확 일치 (AUTH / MAIN / LIST 등). null이면 전체 조회. */
+    private String category;
+
+    /** 컴포넌트명 부분 일치 검색. null이면 전체 조회. */
+    private String componentName;
+
     /** 상태 필터 (GENERATED / PENDING_APPROVAL / APPROVED / FAILED). null이면 전체 조회. */
     private String status;
 

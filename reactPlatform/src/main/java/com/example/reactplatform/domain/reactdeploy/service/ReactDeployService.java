@@ -23,6 +23,7 @@ import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateResponse;
 import com.example.reactplatform.domain.reactgenerate.mapper.ReactGenerateMapper;
 import com.example.reactplatform.global.exception.InvalidInputException;
 import com.example.reactplatform.global.exception.NotFoundException;
+import java.util.regex.Pattern;
 import com.example.reactplatform.global.util.SqlUtils;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -129,18 +130,31 @@ public class ReactDeployService {
     /**
      * 전체 배포 이력을 페이지네이션으로 반환한다 (하단 이력 테이블용).
      *
-     * @param page   페이지 번호 (1-based)
-     * @param size   페이지당 건수
-     * @param search 코드 ID 또는 실행자 ID 검색 키워드
-     * @param userId 실행자 ID 일치 필터 — null이면 전체 조회
+     * @param page     페이지 번호 (1-based)
+     * @param size     페이지당 건수
+     * @param search   화면 제목·컴포넌트명·실행자 ID 검색 키워드
+     * @param userId   실행자 ID 일치 필터 — null이면 전체 조회
+     * @param fromDate 배포 일시 시작 (yyyyMMdd)
+     * @param toDate   배포 일시 종료 (yyyyMMdd)
      * @return list, totalCount, page, size
      */
-    public Map<String, Object> findAllHistoryList(int page, int size, String search, String userId) {
-        int offset = (page - 1) * size;
-        int endRow = offset + size;
+    public Map<String, Object> findAllHistoryList(
+            int page, int size, String search, String userId, String fromDate, String toDate) {
+        validateDateFormat(fromDate, "배포 일시 시작");
+        validateDateFormat(toDate,   "배포 일시 종료");
+
+        String fd = nullIfBlank(fromDate);
+        String td = nullIfBlank(toDate);
+        if (fd != null && td != null && fd.compareTo(td) > 0) {
+            throw new InvalidInputException("시작 날짜는 종료 날짜보다 이전이어야 합니다.");
+        }
+
+        int offset  = (page - 1) * size;
+        int endRow  = offset + size;
         String escaped = SqlUtils.escapeLike(nullIfBlank(search));
-        List<ReactDeployHistoryResponse> list = reactDeployMapper.selectAllHistoryList(offset, endRow, escaped, userId);
-        int totalCount = reactDeployMapper.selectAllHistoryCount(escaped, userId);
+        List<ReactDeployHistoryResponse> list =
+                reactDeployMapper.selectAllHistoryList(offset, endRow, escaped, userId, fd, td);
+        int totalCount = reactDeployMapper.selectAllHistoryCount(escaped, userId, fd, td);
         return Map.of("list", list, "totalCount", totalCount, "page", page, "size", size);
     }
 
@@ -165,6 +179,19 @@ public class ReactDeployService {
      * CLOB는 길이 제한이 없으나, 예외 메시지에 긴 응답 바디가 포함될 경우를 대비해 제한한다.
      */
     private static final int FAIL_REASON_MAX_LENGTH = 2000;
+
+    /** yyyyMMdd 형식 검증 패턴 */
+    private static final Pattern YYYYMMDD = Pattern.compile("^\\d{8}$");
+
+    /**
+     * 날짜 문자열이 yyyyMMdd 형식인지 검증한다.
+     * null·공백은 허용하며, 형식 불일치 시 {@link InvalidInputException}을 던진다.
+     */
+    private static void validateDateFormat(String date, String fieldName) {
+        if (date != null && !date.isBlank() && !YYYYMMDD.matcher(date).matches()) {
+            throw new InvalidInputException(fieldName + " 날짜 형식이 올바르지 않습니다. (yyyyMMdd 형식으로 입력하세요)");
+        }
+    }
 
     /** 배포 결과를 FWK_REACT_DEPLOY_HIS에 INSERT한다. */
     private void recordHistory(String codeId, DeployResult result, String userId) {

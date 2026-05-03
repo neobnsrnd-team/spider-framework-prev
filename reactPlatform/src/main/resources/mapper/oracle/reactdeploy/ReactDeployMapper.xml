@@ -38,7 +38,8 @@
     <sql id="deployListSearchCondition">
         <if test="search != null and search != ''">
             AND (
-                c.CODE_ID LIKE '%' || #{search} || '%' ESCAPE '\'
+                c.TITLE LIKE '%' || #{search} || '%' ESCAPE '\'
+                OR c.COMPONENT_NAME LIKE '%' || #{search} || '%' ESCAPE '\'
                 OR c.CREATE_USER_ID LIKE '%' || #{search} || '%' ESCAPE '\'
             )
         </if>
@@ -57,6 +58,8 @@
             FROM (
                 SELECT
                     c.CODE_ID            AS codeId,
+                    c.TITLE              AS title,
+                    c.COMPONENT_NAME     AS componentName,
                     c.FIGMA_URL          AS figmaUrl,
                     c.CREATE_USER_ID     AS createUserId,
                     c.APPROVAL_USER_ID   AS approvalUserId,
@@ -93,13 +96,21 @@
     <sql id="historySearchCondition">
         <if test="search != null and search != ''">
             AND (
-                h.CODE_ID LIKE '%' || #{search} || '%' ESCAPE '\'
+                c.TITLE LIKE '%' || #{search} || '%' ESCAPE '\'
+                OR c.COMPONENT_NAME LIKE '%' || #{search} || '%' ESCAPE '\'
                 OR h.LAST_UPDATE_USER_ID LIKE '%' || #{search} || '%' ESCAPE '\'
             )
         </if>
         <!-- onlyMine 체크박스 선택 시 로그인 사용자의 이력만 조회 -->
         <if test="userId != null and userId != ''">
             AND h.LAST_UPDATE_USER_ID = #{userId,jdbcType=VARCHAR}
+        </if>
+        <!-- 배포 일시 범위 필터: yyyyMMdd → yyyyMMdd000000 / yyyyMMdd235959 으로 비교 -->
+        <if test="fromDate != null and fromDate != ''">
+            AND h.LAST_UPDATE_DTIME &gt;= #{fromDate} || '000000'
+        </if>
+        <if test="toDate != null and toDate != ''">
+            AND h.LAST_UPDATE_DTIME &lt;= #{toDate} || '235959'
         </if>
     </sql>
 
@@ -112,6 +123,8 @@
                 SELECT
                     h.DEPLOY_ID            AS deployId,
                     h.CODE_ID              AS codeId,
+                    c.TITLE                AS title,
+                    c.COMPONENT_NAME       AS componentName,
                     h.DEPLOY_MODE          AS deployMode,
                     h.DEPLOY_STATUS        AS deployStatus,
                     h.FAIL_REASON          AS failReason,
@@ -119,6 +132,7 @@
                     h.LAST_UPDATE_USER_ID  AS lastUpdateUserId,
                     h.LAST_UPDATE_DTIME    AS lastUpdateDtime
                 FROM FWK_REACT_DEPLOY_HIS h
+                LEFT JOIN FWK_REACT_CODE_HIS c ON c.CODE_ID = h.CODE_ID
                 <where>
                     <include refid="historySearchCondition"/>
                 </where>
@@ -132,6 +146,7 @@
     <select id="selectAllHistoryCount" resultType="int">
         SELECT COUNT(*)
         FROM FWK_REACT_DEPLOY_HIS h
+        LEFT JOIN FWK_REACT_CODE_HIS c ON c.CODE_ID = h.CODE_ID
         <where>
             <include refid="historySearchCondition"/>
         </where>
@@ -148,6 +163,8 @@
                 SELECT
                     h.DEPLOY_ID            AS deployId,
                     h.CODE_ID              AS codeId,
+                    c.TITLE                AS title,
+                    c.COMPONENT_NAME       AS componentName,
                     h.DEPLOY_MODE          AS deployMode,
                     h.DEPLOY_STATUS        AS deployStatus,
                     h.FAIL_REASON          AS failReason,
@@ -155,6 +172,7 @@
                     h.LAST_UPDATE_USER_ID  AS lastUpdateUserId,
                     h.LAST_UPDATE_DTIME    AS lastUpdateDtime
                 FROM FWK_REACT_DEPLOY_HIS h
+                LEFT JOIN FWK_REACT_CODE_HIS c ON c.CODE_ID = h.CODE_ID
                 WHERE h.CODE_ID = #{codeId,jdbcType=VARCHAR}
                 ORDER BY h.LAST_UPDATE_DTIME DESC
             ) inner_q

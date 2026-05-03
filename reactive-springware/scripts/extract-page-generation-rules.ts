@@ -18,6 +18,10 @@ const ROOT        = join(__dirname, '..');
 const SOURCE_FILE = join(ROOT, 'docs', 'page-generation-rules.md');
 const OUTPUT_DIR  = join(ROOT, 'generated');
 const OUTPUT_FILE = join(OUTPUT_DIR, 'page-generation-rules.md');
+// reactPlatform 프로젝트의 Claude 시스템 프롬프트 디렉토리에도 동기화
+const REACT_PLATFORM_OUTPUT_FILE = join(
+  ROOT, '..', 'reactPlatform', 'src', 'main', 'resources', 'prompts', 'page-generation-rules.md'
+);
 
 function main() {
   mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -27,6 +31,14 @@ function main() {
 
   console.log(`✅ page-generation-rules.md 복사 완료`);
   console.log(`   출력: ${OUTPUT_FILE}`);
+
+  // reactPlatform 프로젝트의 prompts 디렉토리에도 동기화한다.
+  try {
+    writeFileSync(REACT_PLATFORM_OUTPUT_FILE, content, 'utf-8');
+    console.log(`   동기화: ${REACT_PLATFORM_OUTPUT_FILE}`);
+  } catch {
+    console.warn(`   ⚠️  reactPlatform 동기화 실패 (경로 확인 필요): ${REACT_PLATFORM_OUTPUT_FILE}`);
+  }
 }
 
 main();

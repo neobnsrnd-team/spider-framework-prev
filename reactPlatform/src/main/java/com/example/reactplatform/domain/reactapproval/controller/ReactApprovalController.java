@@ -58,7 +58,8 @@ public class ReactApprovalController {
      * @param page           페이지 번호 (기본값 1, 최솟값 1)
      * @param size           페이지당 건수 (기본값 10, 범위 1~100)
      * @param status         상태 필터 (APPROVED / REJECTED, 미입력 시 전체)
-     * @param codeId         Code ID 부분 일치 검색
+     * @param title          화면 제목 부분 일치 검색
+     * @param componentName  컴포넌트명 부분 일치 검색
      * @param approvalUserId 처리자 ID 부분 일치 검색
      * @param createUserId   요청자 ID 부분 일치 검색
      * @param fromDate       처리일시 시작 (yyyyMMdd)
@@ -71,13 +72,14 @@ public class ReactApprovalController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "") String status,
-            @RequestParam(defaultValue = "") String codeId,
+            @RequestParam(defaultValue = "") String title,
+            @RequestParam(defaultValue = "") String componentName,
             @RequestParam(defaultValue = "") String approvalUserId,
             @RequestParam(defaultValue = "") String createUserId,
             @RequestParam(defaultValue = "") String fromDate,
             @RequestParam(defaultValue = "") String toDate) {
         return ResponseEntity.ok(ApiResponse.success(
-                reactApprovalService.getHistory(page, size, status, codeId, approvalUserId, createUserId, fromDate, toDate)));
+                reactApprovalService.getHistory(page, size, status, title, componentName, approvalUserId, createUserId, fromDate, toDate)));
     }
 
     /**

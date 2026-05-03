@@ -22,6 +22,12 @@ public class ReactDeployHistoryResponse {
     /** 코드 ID */
     private String codeId;
 
+    /** 화면 제목 */
+    private String title;
+
+    /** 컴포넌트명 */
+    private String componentName;
+
     /** 배포 모드. {@code local | git-pr} */
     private String deployMode;
 

@@ -4,6 +4,7 @@ import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateApprovalR
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateRequest;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateResponse;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateSearchRequest;
+import com.example.reactplatform.domain.reactgenerate.dto.ReactRegenerateRequest;
 import com.example.reactplatform.domain.reactgenerate.dto.RenderErrorRequest;
 import com.example.reactplatform.domain.reactgenerate.service.ReactGenerateService;
 import com.example.reactplatform.global.dto.ApiResponse;
@@ -37,6 +38,22 @@ public class ReactGenerateController {
             @Valid @RequestBody ReactGenerateRequest request) {
         String currentUserId = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(ApiResponse.success(reactGenerateService.generate(request, currentUserId)));
+    }
+
+    /**
+     * 기존 생성 이력을 기반으로 변경 요청사항을 반영하여 코드를 재생성한다.
+     *
+     * @param id      재생성 기준이 되는 원본 코드 ID (refCodeId)
+     * @param request 변경 요청사항
+     * @return 재생성된 코드와 메타 정보 (refCodeId, rootCodeId 포함)
+     */
+    @PostMapping("/{id}/regenerate")
+    @PreAuthorize("hasAuthority('REACT_GENERATE:W')")
+    public ResponseEntity<ApiResponse<ReactGenerateResponse>> regenerate(
+            @PathVariable String id,
+            @Valid @RequestBody ReactRegenerateRequest request) {
+        String currentUserId = SecurityUtil.getCurrentUserId();
+        return ResponseEntity.ok(ApiResponse.success(reactGenerateService.regenerate(id, request, currentUserId)));
     }
 
     @PostMapping("/{id}/request-approval")

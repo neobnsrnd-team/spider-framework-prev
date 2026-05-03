@@ -34,6 +34,9 @@
     <!-- 코드별 배포 이력 상세 모달 -->
     <div th:replace="~{pages/react-deployment/react-deployment-modal :: modal}"></div>
 
+    <!-- 공용 코드 상세 모달 (view 모드 — 배포 전 코드 내용 확인용) -->
+    <div th:replace="~{modals/react-code-detail-modal :: modal}"></div>
+
     <!-- 권한 정보 (JS 참조용) -->
     <!-- SPA에서 react-approval 페이지와 id 충돌을 피하기 위해 hasDeployWriteAuth 사용 -->
     <input type="hidden" id="hasDeployWriteAuth"
@@ -41,6 +44,8 @@
 
     <!-- Scripts -->
     <th:block th:replace="~{pages/react-deployment/react-deployment-script :: script}" />
+    <!-- 공용 모달 스크립트 (ReactCodeDetailModal 모듈) -->
+    <th:block th:replace="~{modals/react-code-detail-modal-script :: script}" />
 </div>
 </body>
 </html>
