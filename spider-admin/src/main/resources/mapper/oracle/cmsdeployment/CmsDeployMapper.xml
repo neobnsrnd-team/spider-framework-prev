@@ -57,6 +57,8 @@
                 SELECT
                     p.PAGE_ID                                                   AS pageId,
                     p.PAGE_NAME                                                 AS pageName,
+                    <!-- 배포 미리보기 창 크기 결정용 (#278) -->
+                    p.VIEW_MODE                                                 AS viewMode,
                     p.CREATE_USER_NAME                                          AS createUserName,
                     CASE WHEN lh.FILE_ID IS NOT NULL
                         THEN 'http://' || si.INSTANCE_IP || ':' || TO_CHAR(si.INSTANCE_PORT)
