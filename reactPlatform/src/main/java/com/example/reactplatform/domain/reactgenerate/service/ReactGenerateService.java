@@ -70,13 +70,15 @@ public class ReactGenerateService {
     public ReactGenerateResponse generate(ReactGenerateRequest request, String createdBy) {
         // domain 미입력 시 BANKING 기본값 적용
         DomainType effectiveDomain = request.getDomain() != null ? request.getDomain() : DomainType.BANKING;
+        // brand 미입력 시 HANA 기본값 적용 — buildEntity에 null이 전달되지 않도록 보장
+        BrandType effectiveBrand = request.getBrand() != null ? request.getBrand() : BrandType.HANA;
 
         String categoryStr = request.getCategory() != null ? request.getCategory().name() : null;
 
         log.info(
                 "React 코드 생성 요청 — figmaUrl: {}, brand: {}, domain: {}, category: {}, userId: {}",
                 request.getFigmaUrl(),
-                request.getBrand(),
+                effectiveBrand,
                 effectiveDomain,
                 categoryStr,
                 createdBy);
@@ -151,7 +153,7 @@ public class ReactGenerateService {
 
             // 7. DB 저장 (초기 상태: GENERATED) — 구조화 필드를 전용 컬럼에 저장
             reactGenerateMapper.insert(buildEntity(
-                    id, request.getFigmaUrl(), request.getBrand(), effectiveDomain,
+                    id, request.getFigmaUrl(), effectiveBrand, effectiveDomain,
                     effectiveComponentName, categoryStr, request.getTitle(), request.getDescription(),
                     request.getRequirements(), figmaJson,
                     systemPrompt, userPrompt, reactCode, null, ReactGenerateStatus.GENERATED.name(),
@@ -165,7 +167,7 @@ public class ReactGenerateService {
                     .category(categoryStr)
                     .description(request.getDescription())
                     .figmaUrl(request.getFigmaUrl())
-                    .brand(request.getBrand().name())
+                    .brand(effectiveBrand.name())
                     .domain(effectiveDomain.name())
                     .componentName(effectiveComponentName)
                     .requirements(request.getRequirements())
@@ -190,11 +192,11 @@ public class ReactGenerateService {
             log.error(
                     "React 코드 생성 실패 — codeId: {}, brand: {}, domain: {}, error: {}",
                     id,
-                    request.getBrand(),
+                    effectiveBrand,
                     effectiveDomain,
                     failReason);
             reactGenerateMapper.insert(buildEntity(
-                    id, request.getFigmaUrl(), request.getBrand(), effectiveDomain,
+                    id, request.getFigmaUrl(), effectiveBrand, effectiveDomain,
                     effectiveComponentName, categoryStr, request.getTitle(), request.getDescription(),
                     request.getRequirements(), figmaJson,
                     systemPrompt, userPrompt, reactCode, failReason, ReactGenerateStatus.FAILED.name(),
@@ -230,9 +232,9 @@ public class ReactGenerateService {
         // rootCodeId 체인 계산: 원본이 이미 재생성본이면 그 rootCodeId를 승계, 최초면 원본 자신이 root
         String rootCodeId = original.getRootCodeId() != null ? original.getRootCodeId() : refCodeId;
 
-        // brand가 null인 경우 HANA를 기본값으로 적용 — valueOf() NPE 방지
-        BrandType brand = original.getBrand() != null
-                ? BrandType.valueOf(original.getBrand())
+        // brand가 null 또는 빈 문자열인 경우 HANA를 기본값으로 적용 — valueOf() NPE·IAE 방지
+        BrandType brand = (original.getBrand() != null && !original.getBrand().isBlank())
+                ? BrandType.valueOf(original.getBrand().toUpperCase())
                 : BrandType.HANA;
         DomainType effectiveDomain = original.getDomain() != null
                 ? DomainType.valueOf(original.getDomain())

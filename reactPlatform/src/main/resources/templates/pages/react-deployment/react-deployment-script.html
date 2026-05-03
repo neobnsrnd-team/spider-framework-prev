@@ -113,9 +113,9 @@ const ReactDeployList = window.ReactDeployList = {
                     </button>
                  </td>`;
 
-            // 이력 모달 오픈 시 onclick 인라인 인수로 전달 → 작은따옴표 이스케이프 필요
-            const escapedTitle = (item.title         || '—').replace(/'/g, "\\'");
-            const escapedComp  = (item.componentName || '' ).replace(/'/g, "\\'");
+            // onclick 인라인 인수용 이스케이프: 역슬래시 먼저 처리 → HTML 특수문자(HtmlUtils) → 작은따옴표 순으로 적용
+            const escapedTitle = HtmlUtils.escape((item.title         || '—').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+            const escapedComp  = HtmlUtils.escape((item.componentName || '' ).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
 
             const tr = $('<tr></tr>');
 
