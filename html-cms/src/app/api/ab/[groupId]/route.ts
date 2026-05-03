@@ -63,14 +63,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ grou
         // 활성 서버 중 운영(localhost 가 아닌) 서버 우선 선택 — 시드 환경에 React 데모 서버
         // (localhost:5173/5174) 가 ALIVE_YN='Y' 로 함께 존재할 때 단순히 servers[0] 를 쓰면
         // 이름 가나다 정렬 영향으로 데모 서버가 잡히는 문제를 방어한다.
+        // IPv6 루프백(::1)도 제외하고, 폴백에서도 INSTANCE_IP 가 비어있는 서버를 걸러
+        // 'http:///...' 형태의 잘못된 redirect URL 생성을 막는다.
         const servers = await getServerList('Y');
         const operationServer =
-            servers.find((s) => !!s.INSTANCE_IP && !/^(localhost|127\.0\.0\.1)$/i.test(s.INSTANCE_IP)) ?? servers[0];
+            servers.find((s) => !!s.INSTANCE_IP && !/^(localhost|127\.0\.0\.1|::1)$/i.test(s.INSTANCE_IP)) ??
+            servers.find((s) => !!s.INSTANCE_IP);
         if (!operationServer) {
             return NextResponse.json({ ok: false, error: '활성화된 운영 서버가 없습니다.' }, { status: 503 });
         }
         const redirectUrl = new URL(
-            buildServerUrl(operationServer.INSTANCE_IP, operationServer.INSTANCE_PORT, `/cms/deployed/${targetPageId}.html`),
+            buildServerUrl(
+                operationServer.INSTANCE_IP,
+                operationServer.INSTANCE_PORT,
+                `/cms/deployed/${targetPageId}.html`,
+            ),
         );
 
         const res = NextResponse.redirect(redirectUrl, 302);
