@@ -22,6 +22,12 @@ public class CmsDeployPageResponse {
     /** 페이지명 */
     private String pageName;
 
+    /**
+     * 뷰모드 — 'mobile' / 'responsive' / 'web'(=PC).
+     * 배포 미리보기 창 크기 결정에 사용. (#278)
+     */
+    private String viewMode;
+
     /** 작성자명 */
     private String createUserName;
 

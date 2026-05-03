@@ -13,6 +13,10 @@
         sortBy: null,
         sortDirection: null,
 
+        // 배포 미리보기 래퍼 팝업 크기 — viewMode 무관 동일하게 큰 창으로 열고
+        // 내부 디바이스 프레임이 viewMode 별 폭(모바일=390 / 웹=풀폭) 을 책임진다 (#278)
+        PREVIEW_WINDOW_SIZE: { w: 1400, h: 900 },
+
         load: function(page) {
             if (page !== undefined) this.currentPage = page;
             const params = new URLSearchParams({
@@ -76,8 +80,26 @@
             return String(value || '')
                 .replace(/\\/g, '\\\\')
                 .replace(/'/g, "\\'")
+                // onclick="..." 속성 컨텍스트에서 " 가 포함되면 HTML 속성이 조기에 닫히므로 &quot; 로 인코딩
+                .replace(/"/g, '&quot;')
                 .replace(/\r/g, '\\r')
                 .replace(/\n/g, '\\n');
+        },
+
+        // 배포된 페이지를 디바이스 프레임 래퍼(/cms-admin/deployments/preview) 안에서 열기 (#278)
+        // - mobile: 폰 프레임(390x844) 안에 iframe
+        // - web/PC: 풀폭 iframe
+        // 외부 배포 서버(nginx) 가 X-Frame-Options 미설정이라 cross-origin iframe 가능
+        openDeployedPreview: function(url, viewMode) {
+            const wrapperUrl = '/cms-admin/deployments/preview'
+                + '?url=' + encodeURIComponent(url)
+                + '&viewMode=' + encodeURIComponent(viewMode || '');
+            const size = this.PREVIEW_WINDOW_SIZE;
+            window.open(
+                wrapperUrl,
+                'cmsDeployPreview',
+                `width=${size.w},height=${size.h},scrollbars=yes,resizable=yes`,
+            );
         },
 
         renderTable: function(rows) {
@@ -94,6 +116,8 @@
                 const pid          = HtmlUtils.escape(row.pageId || '');
                 const jsPageName   = this.escapeJsStringArg(row.pageName);
                 const jsDeployedUrl = this.escapeJsStringArg(row.deployedUrl);
+                // viewMode 는 배포 미리보기 창 크기 결정에 사용 (#278)
+                const jsViewMode   = this.escapeJsStringArg(row.viewMode);
 
                 // 노출기간 셀 — 만료된 경우 종료일 빨간색 + 만료 뱃지
                 const beginStr = row.beginningDate || '-';
@@ -107,9 +131,13 @@
                     : '-';
                 const periodCell = `<td class="small">${HtmlUtils.escape(beginStr)} ~ ${endStr}</td>`;
 
+                // 배포 미리보기: 앵커(target=_blank) → 버튼(window.open) 으로 변경
+                // viewMode 에 맞춘 창 크기로 노출되도록 openDeployedPreview() 위임 (#278)
                 const previewBtn = row.deployedUrl
-                    ? `<a href="${HtmlUtils.escape(row.deployedUrl)}" target="_blank" rel="noopener"
-                          class="btn btn-outline-info btn-xs"><i class="bi bi-box-arrow-up-right"></i> 보기</a>`
+                    ? `<button type="button" class="btn btn-outline-info btn-xs"
+                               onclick="CmsDeployPage.openDeployedPreview('${jsDeployedUrl}', '${jsViewMode}')">
+                           <i class="bi bi-box-arrow-up-right"></i> 보기
+                       </button>`
                     : '<span class="text-body-secondary small">-</span>';
                 const deployedUrlCell = row.deployedUrl
                     ? `<td class="small">

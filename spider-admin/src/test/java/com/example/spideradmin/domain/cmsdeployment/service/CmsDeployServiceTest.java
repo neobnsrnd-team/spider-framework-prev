@@ -176,6 +176,7 @@ class CmsDeployServiceTest {
         return CmsDeployPageResponse.builder()
                 .pageId(PAGE_ID)
                 .pageName("테스트 페이지")
+                .viewMode("mobile")
                 .createUserName("홍길동")
                 .deployedUrl("http://133.186.135.23:8080/cms/deployed/" + PAGE_ID + ".html")
                 .build();

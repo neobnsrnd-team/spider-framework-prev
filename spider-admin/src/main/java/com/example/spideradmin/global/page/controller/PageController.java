@@ -2,6 +2,7 @@ package com.example.spideradmin.global.page.controller;
 
 import com.example.spideradmin.domain.board.dto.BoardResponse;
 import com.example.spideradmin.domain.board.service.BoardService;
+import com.example.spideradmin.global.exception.InvalidInputException;
 import com.example.spideradmin.global.security.CustomUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Set;
@@ -17,6 +18,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Slf4j
 @Controller
@@ -491,6 +493,31 @@ public class PageController {
     @PreAuthorize("hasAuthority('CMS:W')")
     public String cmsAdminDeployments(HttpServletRequest request, Model model) {
         return resolveView(request, "pages/cms-deployment/cms-deployment :: content", model);
+    }
+
+    /**
+     * 배포된 페이지를 디바이스 프레임(모바일/웹) 안에 iframe 으로 노출하는 미리보기 팝업. (#278)
+     *
+     * <p>배포된 HTML 자체에는 ContentBuilder 런타임이 없어 viewMode 별 렌더링이 불가능하므로,
+     * 래퍼 페이지가 디바이스 폭을 강제(mobile=390px)하거나 풀폭(web/PC) 으로 표시한다.
+     * 일반 admin 레이아웃이 아닌 standalone 페이지로 반환한다.
+     *
+     * @param url       배포 HTML 의 절대 URL (cms/deployed 경로만 허용)
+     * @param viewMode  'mobile' / 'responsive' / 'web' / 'PC' (대소문자 구분)
+     */
+    @GetMapping("/cms-admin/deployments/preview")
+    @PreAuthorize("hasAuthority('CMS:W')")
+    public String cmsAdminDeploymentPreview(
+            @RequestParam("url") String url,
+            @RequestParam(value = "viewMode", required = false) String viewMode,
+            Model model) {
+        // 외부에서 임의 URL 주입 차단 — 배포된 페이지 경로(/cms/deployed/) 만 허용
+        if (url == null || !url.contains("/cms/deployed/")) {
+            throw new InvalidInputException("허용되지 않은 미리보기 URL 입니다.");
+        }
+        model.addAttribute("deployedUrl", url);
+        model.addAttribute("viewMode", viewMode == null ? "" : viewMode);
+        return "pages/cms-deployment/cms-deployment-preview";
     }
 
     @GetMapping("/cms-admin/statistics")
