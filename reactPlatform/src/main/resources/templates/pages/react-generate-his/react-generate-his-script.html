@@ -339,9 +339,10 @@
     // ─── 초기 조회 ─────────────────────────────────────────────
     ReactGenerateHis.search();
 
-    // 캐시에서 복원 시(tab:activated) React 코드 생성 이력 최신화
+    // 캐시에서 복원 시(tab:activated) 현재 페이지를 유지하며 목록을 최신화한다.
+    // search()는 currentPage를 1로 리셋하므로 load()를 사용한다.
     $('[data-tab-page]').on('tab:activated', function () {
-        ReactGenerateHis.search();
+        ReactGenerateHis.load();
     });
 })();
 </script>

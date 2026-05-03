@@ -13,31 +13,47 @@ const ReactRegenerateModal = window.ReactRegenerateModal = (function () {
     let _onSuccess     = null;
     let _bsModal       = null;
 
+    // DOM 참조를 한 곳에서 관리 — IIFE 최상단에서 요소 부재 시 초기화를 조기 종료
+    const _el = {
+        modal:        document.getElementById('reactRegenerateModal'),
+        requirements: document.getElementById('rcRegenRequirements'),
+        charCount:    document.getElementById('rcRegenCharCount'),
+        progress:     document.getElementById('rcRegenProgress'),
+        btnSubmit:    document.getElementById('rcRegenBtnSubmit'),
+        btnCancel:    document.getElementById('rcRegenBtnCancel'),
+        btnClose:     document.getElementById('rcRegenBtnClose'),
+    };
+
+    // 모달 HTML fragment 가 로드되지 않은 경우 조기 종료 (include 순서 오류 방지)
+    if (!_el.modal) {
+        console.warn('ReactRegenerateModal: modal element not found — skipping init');
+        return { open: function () {} };
+    }
+
     // 문자 카운터
-    document.getElementById('rcRegenRequirements').addEventListener('input', function () {
-        document.getElementById('rcRegenCharCount').textContent = this.value.length + ' / 4000';
+    _el.requirements.addEventListener('input', function () {
+        _el.charCount.textContent = this.value.length + ' / 4000';
     });
 
     // 취소·닫기
-    ['rcRegenBtnClose', 'rcRegenBtnCancel'].forEach(function (id) {
-        document.getElementById(id).addEventListener('click', function () {
+    [_el.btnClose, _el.btnCancel].forEach(function (btn) {
+        btn.addEventListener('click', function () {
             _bsModal?.hide();
         });
     });
 
     // 제출
-    document.getElementById('rcRegenBtnSubmit').addEventListener('click', function () {
-        const requirements = document.getElementById('rcRegenRequirements').value.trim();
+    _el.btnSubmit.addEventListener('click', function () {
+        const requirements = _el.requirements.value.trim();
         if (!requirements) {
             Toast.warning('변경 요청사항을 입력해주세요.');
-            document.getElementById('rcRegenRequirements').focus();
+            _el.requirements.focus();
             return;
         }
 
-        // UI: 진행 중 상태
-        document.getElementById('rcRegenProgress').classList.remove('d-none');
-        ['rcRegenBtnSubmit', 'rcRegenBtnCancel', 'rcRegenBtnClose'].forEach(function (id) {
-            document.getElementById(id).disabled = true;
+        _el.progress.classList.remove('d-none');
+        [_el.btnSubmit, _el.btnCancel, _el.btnClose].forEach(function (btn) {
+            btn.disabled = true;
         });
 
         $.ajax({
@@ -47,18 +63,16 @@ const ReactRegenerateModal = window.ReactRegenerateModal = (function () {
             data: JSON.stringify({ requirements: requirements }),
             success: function (res) {
                 if (res.success && res.data) {
-                    _bsModal?.hide();
                     Toast.success('코드가 재생성되었습니다.');
                     if (typeof _onSuccess === 'function') {
-                        // 모달 숨김 애니메이션이 끝난 뒤 신규 상세 모달을 열어 자연스럽게 전환
-                        document.getElementById('reactRegenerateModal').addEventListener(
-                            'hidden.bs.modal',
-                            function openNext() {
-                                this.removeEventListener('hidden.bs.modal', openNext);
-                                _onSuccess(res.data.codeId);
-                            }
-                        );
+                        // hide() 애니메이션(300ms) 완료 후 onSuccess 호출 — 백드롭 중첩 방지
+                        // 리스너를 hide() 호출 전에 등록해야 이벤트를 놓치지 않는다
+                        _el.modal.addEventListener('hidden.bs.modal', function handler() {
+                            _el.modal.removeEventListener('hidden.bs.modal', handler);
+                            _onSuccess(res.data.codeId);
+                        });
                     }
+                    _bsModal?.hide();
                 } else {
                     Toast.error(res.message || '재생성에 실패했습니다.');
                     _resetButtons();
@@ -72,9 +86,9 @@ const ReactRegenerateModal = window.ReactRegenerateModal = (function () {
     });
 
     function _resetButtons() {
-        document.getElementById('rcRegenProgress').classList.add('d-none');
-        ['rcRegenBtnSubmit', 'rcRegenBtnCancel', 'rcRegenBtnClose'].forEach(function (id) {
-            document.getElementById(id).disabled = false;
+        _el.progress.classList.add('d-none');
+        [_el.btnSubmit, _el.btnCancel, _el.btnClose].forEach(function (btn) {
+            btn.disabled = false;
         });
     }
 
@@ -88,13 +102,13 @@ const ReactRegenerateModal = window.ReactRegenerateModal = (function () {
             _currentCodeId = codeId;
             _onSuccess     = onSuccess;
 
-            // 입력 초기화
-            document.getElementById('rcRegenRequirements').value = '';
-            document.getElementById('rcRegenCharCount').textContent = '0 / 4000';
-            document.getElementById('rcRegenProgress').classList.add('d-none');
+            _el.requirements.value = '';
+            _el.charCount.textContent = '0 / 4000';
+            _el.progress.classList.add('d-none');
             _resetButtons();
 
-            _bsModal = new bootstrap.Modal(document.getElementById('reactRegenerateModal'));
+            // 기존 인스턴스 재사용 — 동일 DOM 요소에 중복 생성 방지
+            _bsModal = bootstrap.Modal.getInstance(_el.modal) || new bootstrap.Modal(_el.modal);
             _bsModal.show();
         }
     };

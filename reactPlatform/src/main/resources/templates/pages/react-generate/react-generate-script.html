@@ -153,9 +153,9 @@
         $(this).addClass('active');
 
         if (mode === 'mobile') {
-            // 모바일: 430×500 고정 폭, 직사각형 모서리, 얇은 테두리 + 그림자
+            // 모바일: 430×860 고정 폭 — 상세 모달과 동일한 비율로 통일
             frame.style.cssText = [
-                'width:430px', 'height:500px', 'border:none',
+                'width:430px', 'height:860px', 'border:none',
                 'border-radius:0',
                 'box-shadow:0 0 0 1px #dee2e6, 0 8px 24px rgba(0,0,0,0.12)',
                 'display:block', 'margin:16px auto',

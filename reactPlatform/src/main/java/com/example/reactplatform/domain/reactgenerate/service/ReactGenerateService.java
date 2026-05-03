@@ -327,7 +327,8 @@ public class ReactGenerateService {
                     .validationWarnings(validation.getWarnings().isEmpty() ? null : validation.getWarnings())
                     .build();
 
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
+            // generate()와 동일하게 Exception 범위로 잡아 checked 예외 발생 시에도 FAILED 이력을 보장한다
             String failReason = (e instanceof BaseException be && be.getDetailMessage() != null)
                     ? be.getDetailMessage()
                     : e.getMessage();
