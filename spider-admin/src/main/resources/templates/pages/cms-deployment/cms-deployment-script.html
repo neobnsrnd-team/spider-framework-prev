@@ -80,6 +80,8 @@
             return String(value || '')
                 .replace(/\\/g, '\\\\')
                 .replace(/'/g, "\\'")
+                // onclick="..." 속성 컨텍스트에서 " 가 포함되면 HTML 속성이 조기에 닫히므로 &quot; 로 인코딩
+                .replace(/"/g, '&quot;')
                 .replace(/\r/g, '\\r')
                 .replace(/\n/g, '\\n');
         },
