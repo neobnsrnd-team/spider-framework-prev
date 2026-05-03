@@ -25,6 +25,9 @@ public class ReactGenerateResponse {
 
     private String figmaUrl;
 
+    /** Figma API 응답 JSON 원본. 재생성 시 Figma API 재호출 없이 재사용한다. */
+    private String figmaJson;
+
     /** 브랜드 (BrandType enum name). */
     private String brand;
 

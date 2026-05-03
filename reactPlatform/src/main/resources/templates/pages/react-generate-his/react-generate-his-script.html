@@ -254,6 +254,8 @@
         openDetail: function (codeId) {
             ReactCodeDetailModal.open(codeId, 'history', {
                 onRequestApproval: () => ReactGenerateHis.load(),
+                // 재생성 완료 후 목록 갱신
+                onRegenerate: () => ReactGenerateHis.load(),
             });
         },
     };

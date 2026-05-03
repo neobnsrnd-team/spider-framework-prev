@@ -58,6 +58,7 @@
 
     <sql id="selectColumns">
         CODE_ID          AS codeId,
+        FIGMA_JSON       AS figmaJson,
         TITLE            AS title,
         CATEGORY         AS category,
         DESCRIPTION      AS description,

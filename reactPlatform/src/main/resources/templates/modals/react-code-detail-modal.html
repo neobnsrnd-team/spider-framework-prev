@@ -192,6 +192,11 @@
                 </div><!-- /modal-body -->
 
                 <div class="modal-footer py-2">
+                    <!-- 생성 이력 모드: 코드가 있는 경우(GENERATED/FAILED/APPROVED/REJECTED) + REACT_GENERATE:W 일 때 노출 -->
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-none"
+                            id="rcDetailBtnRegenerate">
+                        <i class="bi bi-arrow-repeat me-1"></i>재생성
+                    </button>
                     <!-- 생성 이력 모드: 작성자 본인 + GENERATED + REACT_GENERATE:W 일 때 노출 -->
                     <button type="button" class="btn btn-outline-warning btn-sm d-none"
                             id="rcDetailBtnRequestApproval">

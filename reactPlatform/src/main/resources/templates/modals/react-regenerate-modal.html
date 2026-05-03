@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  React 코드 재생성 모달 Fragment.
+  생성 이력 상세 모달에서 "재생성" 버튼 클릭 시 열린다.
+  JS 측에서 ReactRegenerateModal.open(codeId, onSuccess) 호출.
+-->
+<div th:fragment="modal">
+    <div class="modal fade" id="reactRegenerateModal" tabindex="-1" aria-hidden="true"
+         data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title">
+                        <i class="bi bi-arrow-repeat text-primary me-1"></i>코드 재생성
+                    </h6>
+                    <button type="button" class="btn-close" id="rcRegenBtnClose" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        기존 Figma 디자인과 코드를 유지하며 변경 요청사항만 반영하여 재생성합니다.
+                    </p>
+                    <label for="rcRegenRequirements" class="form-label fw-semibold">
+                        변경 요청사항 <span class="text-danger">*</span>
+                    </label>
+                    <textarea id="rcRegenRequirements"
+                              class="form-control"
+                              rows="4"
+                              maxlength="4000"
+                              placeholder="예: 버튼 색상을 primary로 변경해줘&#10;예: 입력 필드 아래에 에러 메시지 영역 추가해줘"></textarea>
+                    <div class="d-flex justify-content-end mt-1">
+                        <span class="text-muted small" id="rcRegenCharCount">0 / 4000</span>
+                    </div>
+                    <!-- 재생성 중 진행 표시 -->
+                    <div id="rcRegenProgress" class="d-none text-center py-2">
+                        <div class="spinner-border spinner-border-sm text-primary me-2"
+                             role="status" aria-hidden="true"></div>
+                        <span class="text-muted small">재생성 중입니다. 잠시 기다려주세요...</span>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" id="rcRegenBtnCancel">취소</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="rcRegenBtnSubmit">
+                        <i class="bi bi-arrow-repeat me-1"></i>재생성
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

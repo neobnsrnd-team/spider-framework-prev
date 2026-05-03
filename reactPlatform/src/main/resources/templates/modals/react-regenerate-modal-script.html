@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="script">
+<script>
+/**
+ * 재생성 모달 컨트롤러.
+ * ReactCodeDetailModal 에서 "재생성" 버튼 클릭 시 ReactRegenerateModal.open(codeId, onSuccess) 를 호출한다.
+ * 재생성 성공 후 onSuccess(newCodeId) 콜백을 호출하고 모달을 닫는다.
+ */
+const ReactRegenerateModal = window.ReactRegenerateModal = (function () {
+    let _currentCodeId = null;
+    let _onSuccess     = null;
+    let _bsModal       = null;
+
+    // 문자 카운터
+    document.getElementById('rcRegenRequirements').addEventListener('input', function () {
+        document.getElementById('rcRegenCharCount').textContent = this.value.length + ' / 4000';
+    });
+
+    // 취소·닫기
+    ['rcRegenBtnClose', 'rcRegenBtnCancel'].forEach(function (id) {
+        document.getElementById(id).addEventListener('click', function () {
+            _bsModal?.hide();
+        });
+    });
+
+    // 제출
+    document.getElementById('rcRegenBtnSubmit').addEventListener('click', function () {
+        const requirements = document.getElementById('rcRegenRequirements').value.trim();
+        if (!requirements) {
+            Toast.warning('변경 요청사항을 입력해주세요.');
+            document.getElementById('rcRegenRequirements').focus();
+            return;
+        }
+
+        // UI: 진행 중 상태
+        document.getElementById('rcRegenProgress').classList.remove('d-none');
+        ['rcRegenBtnSubmit', 'rcRegenBtnCancel', 'rcRegenBtnClose'].forEach(function (id) {
+            document.getElementById(id).disabled = true;
+        });
+
+        $.ajax({
+            url: API_BASE_URL + '/react-generate/' + _currentCodeId + '/regenerate',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ requirements: requirements }),
+            success: function (res) {
+                if (res.success && res.data) {
+                    _bsModal?.hide();
+                    Toast.success('코드가 재생성되었습니다.');
+                    if (typeof _onSuccess === 'function') {
+                        // 모달 숨김 애니메이션이 끝난 뒤 신규 상세 모달을 열어 자연스럽게 전환
+                        document.getElementById('reactRegenerateModal').addEventListener(
+                            'hidden.bs.modal',
+                            function openNext() {
+                                this.removeEventListener('hidden.bs.modal', openNext);
+                                _onSuccess(res.data.codeId);
+                            }
+                        );
+                    }
+                } else {
+                    Toast.error(res.message || '재생성에 실패했습니다.');
+                    _resetButtons();
+                }
+            },
+            error: function (xhr) {
+                Toast.error(xhr.responseJSON?.message || '재생성 중 오류가 발생했습니다.');
+                _resetButtons();
+            }
+        });
+    });
+
+    function _resetButtons() {
+        document.getElementById('rcRegenProgress').classList.add('d-none');
+        ['rcRegenBtnSubmit', 'rcRegenBtnCancel', 'rcRegenBtnClose'].forEach(function (id) {
+            document.getElementById(id).disabled = false;
+        });
+    }
+
+    return {
+        /**
+         * 재생성 모달을 연다.
+         * @param {string}   codeId    재생성 대상 코드 ID
+         * @param {Function} onSuccess 재생성 완료 후 호출할 콜백 (newCodeId 전달)
+         */
+        open: function (codeId, onSuccess) {
+            _currentCodeId = codeId;
+            _onSuccess     = onSuccess;
+
+            // 입력 초기화
+            document.getElementById('rcRegenRequirements').value = '';
+            document.getElementById('rcRegenCharCount').textContent = '0 / 4000';
+            document.getElementById('rcRegenProgress').classList.add('d-none');
+            _resetButtons();
+
+            _bsModal = new bootstrap.Modal(document.getElementById('reactRegenerateModal'));
+            _bsModal.show();
+        }
+    };
+})();
+</script>
+</th:block>
+</body>
+</html>

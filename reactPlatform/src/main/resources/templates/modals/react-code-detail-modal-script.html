@@ -7,11 +7,12 @@
 
   사용법:
     ReactCodeDetailModal.open(codeId, mode, callbacks);
-    - mode      : 'history'  (생성 이력)   — 승인 요청 버튼 노출
+    - mode      : 'history'  (생성 이력)   — 승인 요청·재생성 버튼 노출
                | 'approval' (승인 관리)   — 승인·반려 버튼 노출
                | 'view'     (읽기 전용)   — 액션 버튼 없음 (닫기만 표시)
     - callbacks : {
         onRequestApproval(codeId) — 승인 요청 성공 후 목록 갱신 (history 모드)
+        onRegenerate(newCodeId)   — 재생성 성공 후 목록 갱신 (history 모드)
         onApprove(codeId)         — 승인 버튼 클릭 시 처리 위임 (approval 모드)
         onReject(codeId)          — 반려 버튼 클릭 시 처리 위임 (approval 모드)
       }
@@ -89,11 +90,12 @@
         $(this).addClass('active');
 
         if (mode === 'mobile') {
-            // 모바일: 430×860 센터 정렬, 폰 외형(border-radius + outline)
+            // 모바일: 430×860 고정 폭, 직사각형(PC와 동일한 모서리), 얇은 테두리 + 그림자
             frame.style.cssText = [
                 'width:430px', 'height:860px', 'border:none',
-                'border-radius:36px', 'outline:8px solid #333',
-                'display:block', 'margin:20px auto',
+                'border-radius:0',
+                'box-shadow:0 0 0 1px #dee2e6, 0 8px 24px rgba(0,0,0,0.12)',
+                'display:block', 'margin:24px auto',
             ].join(';');
             wrapper.style.overflowY = 'auto';
             wrapper.style.minHeight = '500px';
@@ -245,6 +247,11 @@
                 const canRequest = HAS_GENERATE_WRITE && isAuthor && status === 'GENERATED';
                 $('#rcDetailBtnRequestApproval').toggleClass('d-none', !canRequest);
 
+                // 재생성: REACT_GENERATE:W 권한 보유 시 GENERATED·FAILED·APPROVED·REJECTED 상태에서 노출
+                const canRegen = HAS_GENERATE_WRITE &&
+                    ['GENERATED', 'FAILED', 'APPROVED', 'REJECTED'].includes(status);
+                $('#rcDetailBtnRegenerate').toggleClass('d-none', !canRegen);
+
             } else if (this._mode === 'approval') {
                 if (HAS_APPROVAL_WRITE && status === 'PENDING_APPROVAL') {
                     if (isAuthor) {
@@ -258,11 +265,32 @@
 
         /** 모달 열기 전 버튼·안내 메시지를 모두 초기 상태(hidden)로 되돌린다. */
         _resetButtons: function () {
+            $('#rcDetailBtnRegenerate').addClass('d-none');
             $('#rcDetailBtnRequestApproval').addClass('d-none');
             $('#rcDetailAuthorNotice').addClass('d-none');
             $('#rcDetailBtnApprove, #rcDetailBtnReject').addClass('d-none');
         },
     };
+
+    // ─── 모달 내 재생성 (history 모드) ───────────────────────
+    // 상세 모달을 닫고 재생성 모달을 연다.
+    // 재생성 성공 후: 신규 코드의 상세 모달을 열고, onRegenerate 콜백으로 목록 갱신 위임.
+    $('#rcDetailBtnRegenerate').on('click', function () {
+        const codeId    = ReactCodeDetailModal.currentCodeId;
+        const callbacks = ReactCodeDetailModal._callbacks;
+        if (!codeId) return;
+
+        bootstrap.Modal.getInstance(document.getElementById('reactCodeDetailModal'))?.hide();
+
+        ReactRegenerateModal.open(codeId, function (newCodeId) {
+            // 재생성된 코드의 상세 모달 오픈
+            ReactCodeDetailModal.open(newCodeId, 'history', callbacks);
+            // 목록 갱신 위임
+            if (typeof callbacks.onRegenerate === 'function') {
+                callbacks.onRegenerate(newCodeId);
+            }
+        });
+    });
 
     // ─── 모달 내 승인 요청 (history 모드) ─────────────────────
     $('#rcDetailBtnRequestApproval').on('click', function () {

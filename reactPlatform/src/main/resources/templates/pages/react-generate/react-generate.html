@@ -140,7 +140,7 @@
         </div>
 
         <!-- Preview Tabs -->
-        <ul class="nav nav-tabs" id="previewTabs" role="tablist">
+        <ul class="nav nav-tabs d-flex align-items-center" id="previewTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active"
                         id="tab-screen"
@@ -161,16 +161,31 @@
                     <i class="bi bi-file-code me-1"></i>코드 미리보기
                 </button>
             </li>
+            <!-- PC / 모바일 전환 버튼 — 화면 미리보기 탭 활성 시에만 표시 -->
+            <li class="nav-item ms-auto me-2" id="previewModeGroup">
+                <div class="btn-group btn-group-sm" role="group" aria-label="미리보기 모드">
+                    <button type="button" class="btn btn-outline-secondary active"
+                            id="btnPreviewPc" data-mode="pc">
+                        <i class="bi bi-display me-1"></i>PC
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary"
+                            id="btnPreviewMobile" data-mode="mobile">
+                        <i class="bi bi-phone me-1"></i>모바일
+                    </button>
+                </div>
+            </li>
         </ul>
 
         <div class="tab-content border border-top-0 rounded-bottom">
             <!-- Screen Preview Tab -->
             <div class="tab-pane fade show active p-0" id="screenPreview" role="tabpanel">
-                <iframe id="previewFrame"
-                        src="/preview-app/index.html"
-                        title="화면 미리보기"
-                        style="width:100%; height:500px; border:none; border-radius: 0 0 4px 4px;">
-                </iframe>
+                <div id="previewWrapper" style="overflow-y:auto; background:#f8f9fa; border-radius:0 0 4px 4px;">
+                    <iframe id="previewFrame"
+                            src="/preview-app/index.html"
+                            title="화면 미리보기"
+                            style="width:100%; height:500px; border:none; border-radius:0 0 4px 4px; display:block;">
+                    </iframe>
+                </div>
             </div>
 
             <!-- Code Preview Tab -->
@@ -193,6 +208,40 @@
             <button type="button" class="btn btn-outline-warning" id="btnRequestApproval">
                 <i class="bi bi-send me-1"></i>승인 요청
             </button>
+        </div>
+
+        <!-- Regenerate Section -->
+        <div class="card mt-3">
+            <div class="card-header py-2 d-flex align-items-center justify-content-between"
+                 style="cursor:pointer;"
+                 id="regenerateToggle"
+                 data-bs-toggle="collapse"
+                 data-bs-target="#regenerateBody"
+                 aria-expanded="false"
+                 aria-controls="regenerateBody">
+                <span class="fw-semibold small">
+                    <i class="bi bi-arrow-repeat me-1 text-primary"></i>코드 재생성
+                </span>
+                <i class="bi bi-chevron-down small text-muted" id="regenerateChevron"></i>
+            </div>
+            <div class="collapse" id="regenerateBody">
+                <div class="card-body pt-2">
+                    <label for="regenerateRequirements" class="form-label small fw-semibold">
+                        변경 요청사항 <span class="text-danger">*</span>
+                    </label>
+                    <textarea id="regenerateRequirements"
+                              class="form-control form-control-sm"
+                              rows="3"
+                              placeholder="예: 버튼 색상을 primary로 변경해줘, 입력 필드 아래에 에러 메시지 영역 추가해줘"
+                              maxlength="4000"></textarea>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="text-muted small">Figma 디자인과 기존 코드를 유지하며 변경 요청만 반영합니다.</span>
+                        <button type="button" class="btn btn-sm btn-primary" id="btnRegenerate">
+                            <i class="bi bi-arrow-repeat me-1"></i>재생성
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

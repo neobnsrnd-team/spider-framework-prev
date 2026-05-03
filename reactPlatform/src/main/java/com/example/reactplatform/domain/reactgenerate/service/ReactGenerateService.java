@@ -8,6 +8,8 @@ import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateHistoryRe
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateRequest;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateResponse;
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateSearchRequest;
+import com.example.reactplatform.domain.reactgenerate.dto.ReactRegenerateRequest;
+import com.example.reactplatform.domain.reactgenerate.enums.BrandType;
 import com.example.reactplatform.domain.reactgenerate.enums.DomainType;
 import com.example.reactplatform.domain.reactgenerate.enums.ReactGenerateStatus;
 import com.example.reactplatform.domain.reactgenerate.figma.FigmaDesignContext;
@@ -149,8 +151,11 @@ public class ReactGenerateService {
 
             // 7. DB 저장 (초기 상태: GENERATED) — 구조화 필드를 전용 컬럼에 저장
             reactGenerateMapper.insert(buildEntity(
-                    id, request, effectiveDomain, effectiveComponentName, categoryStr, figmaJson,
-                    systemPrompt, userPrompt, reactCode, null, ReactGenerateStatus.GENERATED.name(), createdBy, now));
+                    id, request.getFigmaUrl(), request.getBrand(), effectiveDomain,
+                    effectiveComponentName, categoryStr, request.getTitle(), request.getDescription(),
+                    request.getRequirements(), figmaJson,
+                    systemPrompt, userPrompt, reactCode, null, ReactGenerateStatus.GENERATED.name(),
+                    createdBy, now, null, null));
 
             log.info("React 코드 생성 완료 — codeId: {}", id);
 
@@ -187,9 +192,152 @@ public class ReactGenerateService {
                     effectiveDomain,
                     failReason);
             reactGenerateMapper.insert(buildEntity(
-                    id, request, effectiveDomain, effectiveComponentName, categoryStr, figmaJson,
-                    systemPrompt, userPrompt, reactCode, failReason, ReactGenerateStatus.FAILED.name(), createdBy, now));
+                    id, request.getFigmaUrl(), request.getBrand(), effectiveDomain,
+                    effectiveComponentName, categoryStr, request.getTitle(), request.getDescription(),
+                    request.getRequirements(), figmaJson,
+                    systemPrompt, userPrompt, reactCode, failReason, ReactGenerateStatus.FAILED.name(),
+                    createdBy, now, null, null));
             throw e; // 원래 예외를 그대로 재전파 → GlobalExceptionHandler에서 처리
+        }
+    }
+
+    /**
+     * 기존 생성 이력을 기반으로 변경 요청사항을 반영하여 React 코드를 재생성한다.
+     *
+     * <p>Figma API를 재호출하지 않고 원본 레코드의 figmaJson을 재사용한다.
+     * figmaJson이 null인 경우(직렬화 실패 이력)에는 Figma API를 재호출하여 보완한다.
+     *
+     * <p>재생성 이력 체인:
+     * <ul>
+     *   <li>refCodeId = 직계 부모 codeId</li>
+     *   <li>rootCodeId = 부모의 rootCodeId가 있으면 그 값, 없으면 부모의 codeId (체인 최상위)</li>
+     * </ul>
+     *
+     * @param refCodeId  재생성 기준이 되는 원본 코드 ID
+     * @param request    변경 요청사항
+     * @param createdBy  재생성 요청자 ID
+     * @return 재생성된 코드와 메타 정보
+     * @throws NotFoundException 원본 codeId가 존재하지 않을 때
+     */
+    public ReactGenerateResponse regenerate(String refCodeId, ReactRegenerateRequest request, String createdBy) {
+        ReactGenerateResponse original = reactGenerateMapper.selectById(refCodeId);
+        if (original == null) {
+            throw new NotFoundException("원본 생성 이력을 찾을 수 없습니다. codeId=" + refCodeId);
+        }
+
+        // rootCodeId 체인 계산: 원본이 이미 재생성본이면 그 rootCodeId를 승계, 최초면 원본 자신이 root
+        String rootCodeId = original.getRootCodeId() != null ? original.getRootCodeId() : refCodeId;
+
+        BrandType brand = BrandType.valueOf(original.getBrand());
+        DomainType effectiveDomain = original.getDomain() != null
+                ? DomainType.valueOf(original.getDomain())
+                : DomainType.BANKING;
+        String effectiveComponentName = original.getComponentName() != null
+                ? original.getComponentName()
+                : "Unknown";
+        String categoryStr = original.getCategory();
+
+        log.info(
+                "React 코드 재생성 요청 — refCodeId: {}, brand: {}, domain: {}, userId: {}",
+                refCodeId, brand, effectiveDomain, createdBy);
+
+        String id = UUID.randomUUID().toString();
+        String now = LocalDateTime.now().format(FORMATTER);
+
+        String systemPrompt = null;
+        String userPrompt = null;
+        String reactCode = null;
+        String figmaJson = original.getFigmaJson();
+
+        try {
+            // figmaJson 역직렬화 시도 — 실패 시 null로 처리하여 Figma API 재호출 폴백
+            FigmaNodeResponse cachedNodeResponse = null;
+            if (figmaJson != null) {
+                try {
+                    cachedNodeResponse = objectMapper.readValue(figmaJson, FigmaNodeResponse.class);
+                } catch (JsonProcessingException parseEx) {
+                    // 역직렬화 실패(스키마 변경 등): null로 처리하고 API 재호출로 복구
+                    log.warn("재생성: figmaJson 역직렬화 실패 — Figma API 재호출로 복구, refCodeId: {}", refCodeId, parseEx);
+                    figmaJson = null;
+                }
+            }
+
+            FigmaUrlParser.ParsedFigmaUrl parsed = FigmaUrlParser.parse(original.getFigmaUrl());
+            FigmaNodeResponse figmaNodeResponse;
+            if (cachedNodeResponse != null) {
+                figmaNodeResponse = cachedNodeResponse;
+            } else {
+                // figmaJson 미저장 또는 역직렬화 실패: Figma API 재호출
+                log.warn("재생성: Figma API 재호출 진행 — refCodeId: {}", refCodeId);
+                figmaNodeResponse = figmaApiClient.getNode(parsed.getFileKey(), parsed.getNodeId());
+                figmaJson = toJson(figmaNodeResponse);
+            }
+
+            FigmaDesignContext designContext =
+                    figmaDesignExtractor.extract(figmaNodeResponse, parsed.getNodeId(), original.getFigmaUrl());
+
+            log.info("재생성: 디자인 컨텍스트 추출 완료 — component: {}", designContext.getComponentName());
+
+            systemPrompt = promptBuilder.buildSystemPrompt();
+            userPrompt = promptBuilder.buildRegenerateUserPrompt(
+                    designContext,
+                    brand,
+                    effectiveDomain,
+                    effectiveComponentName,
+                    original.getTitle(),
+                    categoryStr,
+                    original.getDescription(),
+                    original.getReactCode(),
+                    request.getRequirements());
+
+            reactCode = claudeApiClient.generate(systemPrompt, userPrompt);
+
+            CodeValidationResult validation = codeValidator.validate(reactCode);
+            if (!validation.isPassed()) {
+                log.warn("재생성 코드 보안 검증 실패 — errors: {}", String.join(" | ", validation.getErrors()));
+                throw new InvalidInputException("보안 검증 실패: " + String.join(", ", validation.getErrors()));
+            }
+            if (!validation.getWarnings().isEmpty()) {
+                log.warn("재생성 코드 보안 경고 — warnings: {}", String.join(" | ", validation.getWarnings()));
+            }
+
+            reactGenerateMapper.insert(buildEntity(
+                    id, original.getFigmaUrl(), brand, effectiveDomain, effectiveComponentName,
+                    categoryStr, original.getTitle(), original.getDescription(), request.getRequirements(),
+                    figmaJson, systemPrompt, userPrompt, reactCode,
+                    null, ReactGenerateStatus.GENERATED.name(), createdBy, now, refCodeId, rootCodeId));
+
+            log.info("React 코드 재생성 완료 — codeId: {}, refCodeId: {}", id, refCodeId);
+
+            return ReactGenerateResponse.builder()
+                    .codeId(id)
+                    .title(original.getTitle())
+                    .category(categoryStr)
+                    .description(original.getDescription())
+                    .figmaUrl(original.getFigmaUrl())
+                    .brand(brand.name())
+                    .domain(effectiveDomain.name())
+                    .componentName(effectiveComponentName)
+                    .requirements(request.getRequirements())
+                    .reactCode(reactCode)
+                    .status(ReactGenerateStatus.GENERATED.name())
+                    .createDtime(now)
+                    .refCodeId(refCodeId)
+                    .rootCodeId(rootCodeId)
+                    .validationWarnings(validation.getWarnings().isEmpty() ? null : validation.getWarnings())
+                    .build();
+
+        } catch (RuntimeException e) {
+            String failReason = (e instanceof BaseException be && be.getDetailMessage() != null)
+                    ? be.getDetailMessage()
+                    : e.getMessage();
+            log.error("React 코드 재생성 실패 — codeId: {}, refCodeId: {}, error: {}", id, refCodeId, failReason);
+            reactGenerateMapper.insert(buildEntity(
+                    id, original.getFigmaUrl(), brand, effectiveDomain, effectiveComponentName,
+                    categoryStr, original.getTitle(), original.getDescription(), request.getRequirements(),
+                    figmaJson, systemPrompt, userPrompt, reactCode,
+                    failReason, ReactGenerateStatus.FAILED.name(), createdBy, now, refCodeId, rootCodeId));
+            throw e;
         }
     }
 
@@ -346,13 +494,17 @@ public class ReactGenerateService {
     }
 
     /**
-     * 생성 요청 정보와 실행 결과를 조합해 INSERT용 엔티티를 생성한다.
+     * 생성·재생성 실행 결과를 조합해 INSERT용 엔티티를 생성한다.
      *
      * @param id                  생성된 CODE_ID
-     * @param request             사용자 요청 (figmaUrl, brand, domain 등)
+     * @param figmaUrl            Figma URL
+     * @param brand               브랜드
      * @param effectiveDomain     null 대체 처리 후 확정된 도메인
      * @param effectiveComponentName Figma에서 확정된 컴포넌트명
      * @param categoryStr         카테고리 enum name (null 가능)
+     * @param title               화면 제목
+     * @param description         화면 설명 (null 가능)
+     * @param requirements        추가 요구사항 / 변경 요청사항 (null 가능)
      * @param figmaJson           Figma API 원시 응답 JSON (실패 시 null 가능)
      * @param systemPrompt        Claude에게 전달한 시스템 프롬프트 (실패 시 null 가능)
      * @param userPrompt          Claude에게 전달한 유저 프롬프트 (실패 시 null 가능)
@@ -361,14 +513,20 @@ public class ReactGenerateService {
      * @param status              저장할 상태 (GENERATED / FAILED)
      * @param createdBy           생성 요청자 ID
      * @param now                 생성 일시 (yyyyMMddHHmmss)
+     * @param refCodeId           재생성 직계 부모 CODE_ID (최초 생성 시 null)
+     * @param rootCodeId          재생성 체인 최상위 CODE_ID (최초 생성 시 null)
      * @return INSERT 전용 엔티티
      */
     private ReactGenerateEntity buildEntity(
             String id,
-            ReactGenerateRequest request,
+            String figmaUrl,
+            BrandType brand,
             DomainType effectiveDomain,
             String effectiveComponentName,
             String categoryStr,
+            String title,
+            String description,
+            String requirements,
             String figmaJson,
             String systemPrompt,
             String userPrompt,
@@ -376,19 +534,21 @@ public class ReactGenerateService {
             String failReason,
             String status,
             String createdBy,
-            String now) {
+            String now,
+            String refCodeId,
+            String rootCodeId) {
 
         return ReactGenerateEntity.builder()
                 .codeId(id)
-                .figmaUrl(request.getFigmaUrl())
+                .figmaUrl(figmaUrl)
                 .figmaJson(figmaJson)
-                .brand(request.getBrand() != null ? request.getBrand().name() : null)
+                .brand(brand != null ? brand.name() : null)
                 .domain(effectiveDomain.name())
                 .componentName(effectiveComponentName)
-                .title(request.getTitle())
+                .title(title)
                 .category(categoryStr)
-                .description(request.getDescription())
-                .requirements(request.getRequirements())
+                .description(description)
+                .requirements(requirements)
                 .systemPrompt(systemPrompt)
                 .userPrompt(userPrompt)
                 .reactCode(reactCode)
@@ -396,6 +556,8 @@ public class ReactGenerateService {
                 .status(status)
                 .createUserId(createdBy)
                 .createDtime(now)
+                .refCodeId(refCodeId)
+                .rootCodeId(rootCodeId)
                 .build();
     }
 
