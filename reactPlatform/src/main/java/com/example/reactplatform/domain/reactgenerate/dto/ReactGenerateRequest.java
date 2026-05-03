@@ -66,5 +66,6 @@ public class ReactGenerateRequest {
      * Claude에게 전달하는 추가 요구사항 (자유 텍스트).
      * 재생성 시에는 변경 요청사항을 담는다.
      */
+    @Size(max = 4000, message = "요구사항은 4000자 이내로 입력해주세요.")
     private String requirements;
 }

@@ -168,6 +168,7 @@ public class ReactGenerateService {
                     .brand(request.getBrand().name())
                     .domain(effectiveDomain.name())
                     .componentName(effectiveComponentName)
+                    .requirements(request.getRequirements())
                     .reactCode(reactCode)
                     .status(ReactGenerateStatus.GENERATED.name())
                     .createDtime(now)
@@ -181,9 +182,10 @@ public class ReactGenerateService {
 
             // BaseException은 getMessage()가 ErrorType 고정 문구를 반환하므로
             // detailMessage(실제 상세 오류)가 있으면 우선 사용한다
+            // e.getMessage()가 null인 경우(NullPointerException 등) 클래스명을 폴백으로 기록
             String failReason = (e instanceof BaseException be && be.getDetailMessage() != null)
                     ? be.getDetailMessage()
-                    : e.getMessage();
+                    : (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
 
             log.error(
                     "React 코드 생성 실패 — codeId: {}, brand: {}, domain: {}, error: {}",
@@ -228,7 +230,10 @@ public class ReactGenerateService {
         // rootCodeId 체인 계산: 원본이 이미 재생성본이면 그 rootCodeId를 승계, 최초면 원본 자신이 root
         String rootCodeId = original.getRootCodeId() != null ? original.getRootCodeId() : refCodeId;
 
-        BrandType brand = BrandType.valueOf(original.getBrand());
+        // brand가 null인 경우 HANA를 기본값으로 적용 — valueOf() NPE 방지
+        BrandType brand = original.getBrand() != null
+                ? BrandType.valueOf(original.getBrand())
+                : BrandType.HANA;
         DomainType effectiveDomain = original.getDomain() != null
                 ? DomainType.valueOf(original.getDomain())
                 : DomainType.BANKING;
@@ -329,9 +334,10 @@ public class ReactGenerateService {
 
         } catch (Exception e) {
             // generate()와 동일하게 Exception 범위로 잡아 checked 예외 발생 시에도 FAILED 이력을 보장한다
+            // e.getMessage()가 null인 경우(NullPointerException 등) 클래스명을 폴백으로 기록
             String failReason = (e instanceof BaseException be && be.getDetailMessage() != null)
                     ? be.getDetailMessage()
-                    : e.getMessage();
+                    : (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
             log.error("React 코드 재생성 실패 — codeId: {}, refCodeId: {}, error: {}", id, refCodeId, failReason);
             reactGenerateMapper.insert(buildEntity(
                     id, original.getFigmaUrl(), brand, effectiveDomain, effectiveComponentName,
