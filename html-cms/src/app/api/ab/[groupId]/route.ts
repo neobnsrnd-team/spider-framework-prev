@@ -60,14 +60,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ grou
             return NextResponse.json({ ok: false, error: '노출 가능한 페이지가 없습니다.' }, { status: 404 });
         }
 
-        // 활성 운영 서버 조회 — 첫 번째 서버의 배포 URL로 리다이렉트
+        // 활성 서버 중 운영(localhost 가 아닌) 서버 우선 선택 — 시드 환경에 React 데모 서버
+        // (localhost:5173/5174) 가 ALIVE_YN='Y' 로 함께 존재할 때 단순히 servers[0] 를 쓰면
+        // 이름 가나다 정렬 영향으로 데모 서버가 잡히는 문제를 방어한다.
         const servers = await getServerList('Y');
-        if (servers.length === 0) {
+        const operationServer =
+            servers.find((s) => !!s.INSTANCE_IP && !/^(localhost|127\.0\.0\.1)$/i.test(s.INSTANCE_IP)) ?? servers[0];
+        if (!operationServer) {
             return NextResponse.json({ ok: false, error: '활성화된 운영 서버가 없습니다.' }, { status: 503 });
         }
-        const server = servers[0];
         const redirectUrl = new URL(
-            buildServerUrl(server.INSTANCE_IP, server.INSTANCE_PORT, `/cms/deployed/${targetPageId}.html`),
+            buildServerUrl(operationServer.INSTANCE_IP, operationServer.INSTANCE_PORT, `/cms/deployed/${targetPageId}.html`),
         );
 
         const res = NextResponse.redirect(redirectUrl, 302);
