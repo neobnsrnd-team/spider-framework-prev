@@ -33,8 +33,7 @@
  * ● Biz/Insurance   — InsuranceSummaryCard
  */
 
-import { COLOR, BRAND, FONT_SIZE, SPACING, FONT_FAMILY, FONT_VAR } from './tokens';
-import { solid } from './helpers';
+import { FONT_FAMILY } from './tokens';
 import { createVariables } from './createVariables';
 
 /* core */
@@ -146,69 +145,71 @@ import { createUsageTransactionItem }    from './components/biz/card/createUsage
 import { createInsuranceSummaryCard }    from './components/biz/insurance/createInsuranceSummaryCard';
 
 /* ── 레이아웃 상수 ──────────────────────────────────────────── */
-const COMPONENT_GAP = 48;  // 같은 행 내 컴포넌트 간격
-const SECTION_GAP   = 100; // 섹션 간 세로 간격
-const LABEL_GAP     = 28;  // 섹션 레이블과 첫 컴포넌트 간격
-
-/** 섹션 레이블 — "● 섹션명" 형태로 브랜드 점 + Bold 텍스트 */
-function createSectionLabel(text: string, x: number, y: number): FrameNode {
-  const frame = figma.createFrame();
-  frame.name = `_section/${text}`;
-  frame.layoutMode = 'HORIZONTAL';
-  frame.itemSpacing = SPACING.sm;
-  frame.counterAxisAlignItems = 'CENTER';
-  frame.primaryAxisSizingMode = 'AUTO';
-  frame.counterAxisSizingMode = 'AUTO';
-  frame.fills = [];
-
-  const dot = figma.createEllipse();
-  dot.resize(10, 10);
-  dot.fills = [solid(BRAND.primary)];
-  frame.appendChild(dot);
-
-  const label = figma.createText();
-  label.fontName = { family: FONT_FAMILY.sans, style: 'Bold' };
-  label.fontSize = FONT_SIZE.lg;
-  label.characters = text;
-  label.fills = [solid(COLOR.textHeading)];
-  frame.appendChild(label);
-
-  /* x, y는 페이지에 추가된 이후에 설정해야 실제 캔버스 위치에 반영된다.
-   * appendChild 이전에 설정하면 페이지 삽입 시 (0, 0)으로 리셋된다. */
-  figma.currentPage.appendChild(frame);
-  frame.x = x;
-  frame.y = y;
-  return frame;
-}
+const COMPONENT_GAP   = 48;  // 같은 행 내 컴포넌트 간격
+const SECTION_GAP     = 100; // 섹션 간 세로 간격
+const SECTION_PADDING = 48;  // 섹션 내부 패딩 (상하좌우 동일)
 
 /**
- * 컴포넌트 노드 배열을 가로로 나열하고 최대 높이를 반환한다.
- * 컴포넌트 너비가 달라도 각 노드의 실제 width를 사용하므로 겹치지 않는다.
+ * 피그마 Section 노드를 생성하고 nodes를 가로로 나열해 담는다.
+ *
+ * 치수는 section.appendChild() 이전에 측정한다.
+ * Figma는 appendChild 시 자식 노드 좌표를 리셋하므로, 이동 후 섹션 기준 상대 좌표로 재지정한다.
+ * @returns 다음 섹션의 시작 y 좌표
  */
-function layoutRow(nodes: SceneNode[], startX: number, startY: number): number {
-  let cursorX = startX;
-  let maxHeight = 0;
-  nodes.forEach((node) => {
-    /* x/y 설정 전에 반드시 페이지에 append해야 좌표가 (0,0)으로 리셋되지 않는다.
-     * 이미 페이지에 있더라도 appendChild → x/y 순서를 강제해 좌표를 안전하게 적용한다. */
-    figma.currentPage.appendChild(node);
-    node.x = cursorX;
-    node.y = startY;
-    cursorX += node.width + COMPONENT_GAP;
-    if (node.height > maxHeight) maxHeight = node.height;
-  });
-  return maxHeight;
-}
-
-/** 섹션 레이블 + 컴포넌트 행을 배치하고 다음 섹션의 시작 y를 반환한다. */
 function layoutSection(name: string, nodes: SceneNode[], startY: number): number {
-  const label = createSectionLabel(name, 0, startY);
-  const rowY = startY + label.height + LABEL_GAP;
-  const rowHeight = layoutRow(nodes, 0, rowY);
-  return rowY + rowHeight + SECTION_GAP;
+  /* 1. appendChild 이전에 치수 측정 — 이동 후 크기가 달라질 수 있으므로 미리 기록 */
+  const dims = nodes.map(n => ({ w: n.width, h: n.height }));
+
+  let totalW = SECTION_PADDING;
+  let maxH   = 0;
+  dims.forEach(d => {
+    totalW += d.w + COMPONENT_GAP;
+    if (d.h > maxH) maxH = d.h;
+  });
+  totalW = totalW - COMPONENT_GAP + SECTION_PADDING;
+  const totalH = SECTION_PADDING + maxH + SECTION_PADDING;
+
+  /* 2. 섹션 생성·위치·크기 설정 */
+  const section = figma.createSection();
+  section.name  = name;
+  figma.currentPage.appendChild(section);
+  section.x = 0;
+  section.y = startY;
+  section.resizeWithoutConstraints(totalW, totalH);
+
+  /* 3. 노드를 섹션으로 이동한 뒤 섹션 기준 상대 좌표로 재배치
+   * appendChild 시 좌표가 리셋되므로, 이후에 좌표를 지정해야 한다.
+   * ComponentSetNode 등 일부 타입은 Section에 직접 담지 못할 수 있으므로
+   * 실패 시 캔버스 절대 좌표로 대체 배치한다 */
+  let cursorX = SECTION_PADDING;
+  nodes.forEach((node, i) => {
+    try {
+      section.appendChild(node);
+      node.x = cursorX;
+      node.y = SECTION_PADDING;
+    } catch {
+      /* section.appendChild 실패 → 섹션 밖 캔버스에 절대 좌표로 배치 */
+      figma.currentPage.appendChild(node);
+      node.x = cursorX;
+      node.y = startY + SECTION_PADDING;
+    }
+    cursorX += dims[i].w + COMPONENT_GAP;
+  });
+
+  return startY + totalH + SECTION_GAP;
 }
 
 /* ── 메인 ──────────────────────────────────────────────────── */
+
+/** 현재 실행 중인 단계 이름 — 오류 발생 시 위치 특정용 */
+let _step = '(init)';
+
+/** 단계 이름을 갱신하고 fn()을 실행한다. 에러 시 단계 이름이 메시지에 포함된다. */
+async function s<T extends SceneNode>(name: string, fn: () => Promise<T>): Promise<T> {
+  _step = name;
+  return fn();
+}
+
 (async () => {
   /* ── 커맨드 분기 ──────────────────────────────────────────
    * manifest.json menu 항목에 따라 실행 흐름을 분기한다.
@@ -221,137 +222,152 @@ function layoutSection(name: string, nodes: SceneNode[], startY: number): number
     return;
   }
 
+  /* 0. 페이지 로드 — dynamic-page documentAccess 모드에서는
+   * figma.currentPage.appendChild 등 ChildrenMixin 메서드 사용 전에 반드시 호출해야 한다 */
+  _step = 'loadAsync';
+  await figma.currentPage.loadAsync();
+
   /* 1. 폰트 사전 로드 */
+  _step = 'loadFontAsync';
   await figma.loadFontAsync({ family: FONT_FAMILY.sans, style: 'Regular' });
   await figma.loadFontAsync({ family: FONT_FAMILY.sans, style: 'Medium' });
   await figma.loadFontAsync({ family: FONT_FAMILY.sans, style: 'Bold' });
 
   /* 2. 컴포넌트 생성 */
   const coreNodes: SceneNode[] = [
-    await createButton(),
-    await createButtonWithIcon(),
-    await createButtonIconOnly(),
-    await createButtonFullWidth(),
-    await createBadge(),
-    await createInput(),
-    await createInputWithLabel(),
-    await createInputWithHelper(),
-    await createInputWithIcon(),
-    await createInputFormat(),
-    await createInputFullWidth(),
-    await createTypography(),
-    await createSelect(),
+    await s('createButton',         createButton),
+    await s('createButtonWithIcon', createButtonWithIcon),
+    await s('createButtonIconOnly', createButtonIconOnly),
+    await s('createButtonFullWidth',createButtonFullWidth),
+    await s('createBadge',          createBadge),
+    await s('createInput',          createInput),
+    await s('createInputWithLabel', createInputWithLabel),
+    await s('createInputWithHelper',createInputWithHelper),
+    await s('createInputWithIcon',  createInputWithIcon),
+    await s('createInputFormat',    createInputFormat),
+    await s('createInputFullWidth', createInputFullWidth),
+    await s('createTypography',     createTypography),
+    await s('createSelect',         createSelect),
   ];
 
   const moduleCommonNodes: SceneNode[] = [
-    await createSectionHeader(),
-    await createAlertBanner(),
-    await createEmptyState(),
-    await createInfoRow(),
-    await createLabelValueRow(),
-    await createDividerWithLabel(),
-    await createSelectableItem(),
-    await createActionLinkItem(),
-    await createNoticeItem(),
-    await createCollapsibleSection(),
-    await createSuccessHero(),
-    await createCard(),
-    await createBalanceToggle(),
-    await createDropdownMenu(),
-    await createCheckbox(),
-    await createDivider(),
-    await createStepIndicator(),
-    await createErrorState(),
-    await createSelectableListItem(),
-    await createRecentRecipientItem(),
-    await createSidebarNav(),
-    await createBankSelectGridItem(),
-    await createBankSelectGrid(),
-    await createTransferLimitInfo(),
-    await createDatePicker(),
-    await createPinConfirmSheet(),
-    await createBottomSheet(),
-    await createModal(),
-    await createTabNav(),
+    await s('createSectionHeader',     createSectionHeader),
+    await s('createAlertBanner',       createAlertBanner),
+    await s('createEmptyState',        createEmptyState),
+    await s('createInfoRow',           createInfoRow),
+    await s('createLabelValueRow',     createLabelValueRow),
+    await s('createDividerWithLabel',  createDividerWithLabel),
+    await s('createSelectableItem',    createSelectableItem),
+    await s('createActionLinkItem',    createActionLinkItem),
+    await s('createNoticeItem',        createNoticeItem),
+    await s('createCollapsibleSection',createCollapsibleSection),
+    await s('createSuccessHero',       createSuccessHero),
+    await s('createCard',              createCard),
+    await s('createBalanceToggle',     createBalanceToggle),
+    await s('createDropdownMenu',      createDropdownMenu),
+    await s('createCheckbox',          createCheckbox),
+    await s('createDivider',           createDivider),
+    await s('createStepIndicator',     createStepIndicator),
+    await s('createErrorState',        createErrorState),
+    await s('createSelectableListItem',createSelectableListItem),
+    await s('createRecentRecipientItem',createRecentRecipientItem),
+    await s('createSidebarNav',        createSidebarNav),
+    await s('createBankSelectGridItem',createBankSelectGridItem),
+    await s('createBankSelectGrid',    createBankSelectGrid),
+    await s('createTransferLimitInfo', createTransferLimitInfo),
+    await s('createDatePicker',        createDatePicker),
+    await s('createPinConfirmSheet',   createPinConfirmSheet),
+    await s('createBottomSheet',       createBottomSheet),
+    await s('createModal',             createModal),
+    await s('createTabNav',            createTabNav),
   ];
 
   const moduleBankingNodes: SceneNode[] = [
-    await createAccountSelectItem(),
-    await createAmountInput(),
-    await createOtpInput(),
-    await createNumberKeypad(),
-    await createPinDotIndicator(),
-    await createTransactionList(),
-    await createTransactionSearchFilter(),
-    await createTransferForm(),
+    await s('createAccountSelectItem',      createAccountSelectItem),
+    await s('createAmountInput',            createAmountInput),
+    await s('createOtpInput',               createOtpInput),
+    await s('createNumberKeypad',           createNumberKeypad),
+    await s('createPinDotIndicator',        createPinDotIndicator),
+    await s('createTransactionList',        createTransactionList),
+    await s('createTransactionSearchFilter',createTransactionSearchFilter),
+    await s('createTransferForm',           createTransferForm),
   ];
-  
+
   /* layout 컴포넌트 참조를 변수에 저장 — createPageLayouts에서 인스턴스 생성에 사용 */
-  const pageHeader    = await createPageHeader();
-  const homeHeader    = await createHomeHeader();
-  const appBrandHeader = await createAppBrandHeader();
-  const bottomNav     = await createBottomNav();
-  const modalSlideOver = await createModalSlideOver();
-  const pageLayouts   = await createPageLayouts(pageHeader, homeHeader, bottomNav);
+  const pageHeader     = await s('createPageHeader',    createPageHeader);
+  const homeHeader     = await s('createHomeHeader',    createHomeHeader);
+  const appBrandHeader = await s('createAppBrandHeader',createAppBrandHeader);
+  const bottomNav      = await s('createBottomNav',     createBottomNav);
+  const modalSlideOver = await s('createModalSlideOver',createModalSlideOver);
+  _step = 'createPageLayouts';
+  const pageLayouts    = await createPageLayouts(pageHeader, homeHeader, bottomNav);
 
   const layoutNodes: SceneNode[] = [
     pageHeader, homeHeader, appBrandHeader, bottomNav, modalSlideOver, pageLayouts,
-    await createStack(),
-    await createInline(),
-    await createGrid(),
-    await createSection(),
+    await s('createStack',   createStack),
+    await s('createInline',  createInline),
+    await s('createGrid',    createGrid),
+    await s('createSection', createSection),
   ];
 
   const bizBankingNodes: SceneNode[] = [
-    await createAccountSummaryCard(),
-    await createAccountSelectorCard(),
+    await s('createAccountSummaryCard',  createAccountSummaryCard),
+    await s('createAccountSelectorCard', createAccountSelectorCard),
   ];
 
   const bizCommonNodes: SceneNode[] = [
-    await createBannerCarousel(),
-    await createBrandBanner(),
-    await createQuickMenuGrid(),
-    await createUserProfile(),
+    await s('createBannerCarousel', createBannerCarousel),
+    await s('createBrandBanner',    createBrandBanner),
+    await s('createQuickMenuGrid',  createQuickMenuGrid),
+    await s('createUserProfile',    createUserProfile),
   ];
 
   const bizCardNodes: SceneNode[] = [
-    await createCardVisual(),
-    await createCardPillTab(),
-    await createCardSummaryCard(),
-    await createCardChipItem(),
-    await createCardInfoPanel(),
-    await createCardPaymentItem(),
-    await createCardPaymentActions(),
-    await createCardPaymentSummary(),
-    await createCardBenefitSummary(),
-    await createCardLinkedBalance(),
-    await createCardManagementPanel(),
-    await createCardPerformanceBar(),
-    await createBillingPeriodLabel(),
-    await createAccountSelectCard(),
-    await createPaymentAccountCard(),
-    await createStatementHeroCard(),
-    await createStatementTotalCard(),
-    await createSummaryCard(),
-    await createQuickShortcutCard(),
-    await createLoanMenuBar(),
-    await createUsageHistoryFilterSheet(),
-    await createUsageTransactionItem(),
+    await s('createCardVisual',           createCardVisual),
+    await s('createCardPillTab',          createCardPillTab),
+    await s('createCardSummaryCard',      createCardSummaryCard),
+    await s('createCardChipItem',         createCardChipItem),
+    await s('createCardInfoPanel',        createCardInfoPanel),
+    await s('createCardPaymentItem',      createCardPaymentItem),
+    await s('createCardPaymentActions',   createCardPaymentActions),
+    await s('createCardPaymentSummary',   createCardPaymentSummary),
+    await s('createCardBenefitSummary',   createCardBenefitSummary),
+    await s('createCardLinkedBalance',    createCardLinkedBalance),
+    await s('createCardManagementPanel',  createCardManagementPanel),
+    await s('createCardPerformanceBar',   createCardPerformanceBar),
+    await s('createBillingPeriodLabel',   createBillingPeriodLabel),
+    await s('createAccountSelectCard',    createAccountSelectCard),
+    await s('createPaymentAccountCard',   createPaymentAccountCard),
+    await s('createStatementHeroCard',    createStatementHeroCard),
+    await s('createStatementTotalCard',   createStatementTotalCard),
+    await s('createSummaryCard',          createSummaryCard),
+    await s('createQuickShortcutCard',    createQuickShortcutCard),
+    await s('createLoanMenuBar',          createLoanMenuBar),
+    await s('createUsageHistoryFilterSheet',createUsageHistoryFilterSheet),
+    await s('createUsageTransactionItem', createUsageTransactionItem),
   ];
 
   const bizInsuranceNodes: SceneNode[] = [
-    await createInsuranceSummaryCard(),
+    await s('createInsuranceSummaryCard', createInsuranceSummaryCard),
   ];
 
   /* 3. 섹션별 배치 */
   let nextY = 0;
+  _step = 'layoutSection:Core';
   nextY = layoutSection('Core',            coreNodes,          nextY);
+  _step = 'layoutSection:Modules/Common';
   nextY = layoutSection('Modules/Common',  moduleCommonNodes,  nextY);
+  _step = 'layoutSection:Modules/Banking';
   nextY = layoutSection('Modules/Banking', moduleBankingNodes, nextY);
+  _step = 'layoutSection:Layout';
   nextY = layoutSection('Layout',          layoutNodes,        nextY);
+  _step = 'layoutSection:Biz/Banking';
   nextY = layoutSection('Biz/Banking',     bizBankingNodes,    nextY);
+  _step = 'layoutSection:Biz/Common';
   nextY = layoutSection('Biz/Common',      bizCommonNodes,     nextY);
+  _step = 'layoutSection:Biz/Card';
   nextY = layoutSection('Biz/Card',        bizCardNodes,       nextY);
+  _step = 'layoutSection:Biz/Insurance';
   nextY = layoutSection('Biz/Insurance',   bizInsuranceNodes,  nextY);
 
   /* 4. 뷰포트 맞춤 */
@@ -361,6 +377,6 @@ function layoutSection(name: string, nodes: SceneNode[], startY: number): number
   ]);
   figma.closePlugin('✅ React Component Library 생성 완료! (총 89개 컴포넌트)');
 })().catch((err) => {
-  /* 어떤 createXxx()에서 에러가 났는지 플러그인 알림으로 표시 */
-  figma.closePlugin(`❌ 오류: ${err instanceof Error ? err.message : String(err)}`);
+  /* _step 이 마지막으로 갱신된 함수명을 포함해 에러 위치를 표시한다 */
+  figma.closePlugin(`❌ 오류 in [${_step}]: ${err instanceof Error ? err.message : String(err)}`);
 });

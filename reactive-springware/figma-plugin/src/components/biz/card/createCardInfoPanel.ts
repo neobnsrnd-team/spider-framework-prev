@@ -57,9 +57,8 @@ export async function createCardInfoPanel(): Promise<ComponentNode> {
     { label: '결제일',   value: '매월 25일' },
   ]);
 
-  /* 구분선 */
-  const divider = addRect(comp, PANEL_WIDTH - SPACING.standard * 2, 1, COLOR.borderSubtle);
-  setPadding(divider as unknown as FrameNode, SPACING.md, 0); /* 실제로는 margin 역할 */
+  /* 구분선 — RectangleNode에 padding 속성이 없으므로 여백은 Auto Layout gap에 위임 */
+  addRect(comp, PANEL_WIDTH - SPACING.standard * 2, 1, COLOR.borderSubtle);
 
   await createSection(comp, '카드 이용기간', [
     { label: '일시불/할부',    value: '2026.03.13 ~ 2026.04.12' },
