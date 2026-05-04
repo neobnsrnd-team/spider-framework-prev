@@ -13,6 +13,7 @@
         _detailChart: null,
         /** afterDraw 레이블 계산 시 total 접근용 — _renderDetailChart 실행 시 갱신 */
         _chartTotal: 0,
+        PREVIEW_WINDOW_SIZE: { w: 1400, h: 900 },
 
         /**
          * 비율(%) 계산 헬퍼 — afterDraw·tooltip·요약 테이블에서 공통 사용
@@ -74,7 +75,7 @@
         renderTable: function(rows) {
             const $tbody = $('#statisticsTableBody');
             if (!rows || rows.length === 0) {
-                $tbody.html('<tr><td colspan="5" class="text-center py-4 text-body-secondary">아직 수집된 데이터가 없습니다.</td></tr>');
+                $tbody.html('<tr><td colspan="6" class="text-center py-4 text-body-secondary">아직 수집된 데이터가 없습니다.</td></tr>');
                 return;
             }
 
@@ -88,12 +89,20 @@
                     ? `<button class="btn btn-outline-primary btn-xs"
                            onclick="CmsStatisticsPage.openDetailModal('${pid}', '${escapedName}', '${HtmlUtils.escape(startDate)}', '${HtmlUtils.escape(endDate)}')">상세</button>`
                     : '-';
+                const previewBtn = row.deployedUrl
+                    ? `<button type="button" class="btn btn-outline-info btn-xs js-stat-preview"
+                           data-deployed-url="${HtmlUtils.escape(row.deployedUrl)}"
+                           data-view-mode="${HtmlUtils.escape(row.viewMode || '')}">
+                           <i class="bi bi-box-arrow-up-right"></i> 보기
+                       </button>`
+                    : '<span class="text-body-secondary small">-</span>';
 
                 return `<tr>
                     <td>${HtmlUtils.escape(row.pageName || '')}</td>
                     <td class="text-monospace small">${pid}</td>
                     <td class="text-end">${(row.viewCount || 0).toLocaleString()}</td>
                     <td class="text-end">${(row.clickCount || 0).toLocaleString()}</td>
+                    <td class="text-center">${previewBtn}</td>
                     <td class="text-center">${detailBtn}</td>
                 </tr>`;
             }).join('');
@@ -159,6 +168,19 @@
             $('#filterPageId').val('');
             this.itemsPerPage = parseInt($('#limitRows').val()) || 10;
             this.load(1);
+        },
+
+        // ── CMS 페이지 미리보기 ──
+        openPreview: function(deployedUrl, viewMode) {
+            const wrapperUrl = '/cms-admin/deployments/preview'
+                + '?url=' + encodeURIComponent(deployedUrl)
+                + '&viewMode=' + encodeURIComponent(viewMode || '');
+            const size = this.PREVIEW_WINDOW_SIZE;
+            window.open(
+                wrapperUrl,
+                'cmsStatisticsPreview',
+                `width=${size.w},height=${size.h},scrollbars=yes,resizable=yes`,
+            );
         },
 
         openDetailModal: function(pageId, pageName, startDate, endDate) {
@@ -323,6 +345,10 @@
         $('#limitRows').on('change', function() {
             CmsStatisticsPage.itemsPerPage = parseInt($(this).val()) || 10;
             CmsStatisticsPage.load(1);
+        });
+
+        $(document).on('click', '.js-stat-preview', function() {
+            CmsStatisticsPage.openPreview($(this).data('deployed-url'), $(this).data('view-mode'));
         });
 
         $('#btnRefresh').off('click').on('click', function() { CmsStatisticsPage.load(); });
