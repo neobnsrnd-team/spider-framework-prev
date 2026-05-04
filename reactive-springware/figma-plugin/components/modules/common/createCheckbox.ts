@@ -56,7 +56,7 @@ async function createCheckboxVariant(shape: CheckboxShape, state: CheckboxState)
   /* 우측 레이블 텍스트 */
   await addTextWithVar(
     comp, '레이블', FONT_SIZE.sm,
-    COLOR_VAR.textSecondary, COLOR.textSecondary, false, SIZE_VAR.fontSizeSm,
+    COLOR_VAR.textSecondary, COLOR.textSecondary, false, SIZE_VAR.fontSizeSm, 'label',
   );
 
   return comp;

@@ -34,9 +34,10 @@ async function createUsageTransactionVariant(type: 'Normal' | 'Refund'): Promise
   left.layoutGrow = 1;
   clearFill(left);
 
-  await addTextWithVar(left, isRefund ? '스타벅스 (취소)' : '스타벅스', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm);
-  await addTextWithVar(left, '2026.04.15 · 신용 · 하나 머니 체크카드', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
+  /* left를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(left);
+  await addTextWithVar(left, isRefund ? '스타벅스 (취소)' : '스타벅스', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'merchantName', comp);
+  await addTextWithVar(left, '2026.04.15 · 신용 · 하나 머니 체크카드', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'transactionMeta', comp);
 
   /* 우측: 금액 */
   const amountText = isRefund ? '-4,500원' : '4,500원';
@@ -44,7 +45,7 @@ async function createUsageTransactionVariant(type: 'Normal' | 'Refund'): Promise
     comp, amountText, FONT_SIZE.sm,
     isRefund ? COLOR_VAR.brandText : COLOR_VAR.textHeading,
     isRefund ? BRAND.text         : COLOR.textHeading,
-    true, SIZE_VAR.fontSizeSm,
+    true, SIZE_VAR.fontSizeSm, 'transactionAmount',
   );
 
   return comp;

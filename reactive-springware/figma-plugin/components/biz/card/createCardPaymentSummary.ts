@@ -16,11 +16,11 @@ import { createIcon } from '../../../icons';
 const CARD_WIDTH = 390;
 
 export async function createCardPaymentSummary(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('CardPaymentSummary');
   setAutoLayout(comp, 'VERTICAL', 0, 'MIN');
   comp.resize(CARD_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   await setFloatVar(comp, 'cornerRadius', SIZE_VAR.radiusXl, RADIUS.xl);
   await setFillWithVar(comp, COLOR_VAR.surface, COLOR.surface);
   comp.effects = [{ type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.08 }, offset: { x: 0, y: 2 }, radius: 8, spread: 0, visible: true, blendMode: 'NORMAL' }];
@@ -30,8 +30,8 @@ export async function createCardPaymentSummary(): Promise<ComponentNode> {
   setAutoLayout(top, 'VERTICAL', SPACING.xs);
   setPadding(top, SPACING.md, SPACING.md, SPACING.lg, SPACING.md);
   top.layoutAlign = 'STRETCH';
-  top.primaryAxisSizingMode = 'FIXED';
-  top.counterAxisSizingMode = 'AUTO';
+  top.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  top.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   top.resize(CARD_WIDTH, 1);
   clearFill(top);
 
@@ -42,13 +42,14 @@ export async function createCardPaymentSummary(): Promise<ComponentNode> {
   monthRow.primaryAxisSizingMode = 'AUTO';
   monthRow.counterAxisSizingMode = 'AUTO';
   clearFill(monthRow);
-  await addTextWithVar(monthRow, '2026년 4월', FONT_SIZE.lg, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeLg);
-  monthRow.appendChild(createIcon('ChevronDown', 16, COLOR.textMuted));
-  top.appendChild(monthRow);
-
-  await addTextWithVar(top, '2026.04.25 출금예정 (04.12기준)', FONT_SIZE.sm, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeSm);
-  await addTextWithVar(top, '350,000원', FONT_SIZE['3xl'], COLOR_VAR.brandPrimary, BRAND.primary, true, SIZE_VAR.fontSize3xl);
+  /* top → comp, monthRow → top 순서로 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(top);
+  top.appendChild(monthRow);
+  await addTextWithVar(monthRow, '2026년 4월', FONT_SIZE.lg, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeLg, 'billingMonth', comp);
+  monthRow.appendChild(createIcon('ChevronDown', 16, COLOR.textMuted));
+
+  await addTextWithVar(top, '2026.04.25 출금예정 (04.12기준)', FONT_SIZE.sm, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeSm, 'paymentSchedule', comp);
+  await addTextWithVar(top, '350,000원', FONT_SIZE['3xl'], COLOR_VAR.brandPrimary, BRAND.primary, true, SIZE_VAR.fontSize3xl, 'totalAmount', comp);
 
   /* 하단: 세부 3열 */
   const bottom = figma.createFrame();
@@ -73,7 +74,7 @@ export async function createCardPaymentSummary(): Promise<ComponentNode> {
     setPadding(col, 0, SPACING.xs);
     col.counterAxisAlignItems = 'CENTER';
     col.layoutGrow = 1;
-    col.primaryAxisSizingMode = 'FIXED';
+    col.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
     col.counterAxisSizingMode = 'AUTO';
     col.resize(1, 1);
     clearFill(col);
@@ -85,9 +86,10 @@ export async function createCardPaymentSummary(): Promise<ComponentNode> {
       col.strokeLeftWeight = 1; col.strokeRightWeight = 1;
     }
 
+    /* col → bottom → comp 순서로 먼저 추가해야 TEXT property reference 바인딩 가능 */
+    bottom.appendChild(col);
     const labelText = await addTextWithVar(col, colDefs[i].label, FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
     labelText.textAlignHorizontal = 'CENTER';
-    bottom.appendChild(col);
   }
 
   comp.appendChild(bottom);

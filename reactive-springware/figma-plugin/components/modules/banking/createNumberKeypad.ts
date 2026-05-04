@@ -51,7 +51,7 @@ function createDeleteCell(): FrameNode {
 }
 
 export async function createNumberKeypad(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('NumberKeypad');
   comp.layoutMode = 'NONE';
   comp.resize(KEYPAD_WIDTH, CELL_HEIGHT * 4);
   clearFill(comp);

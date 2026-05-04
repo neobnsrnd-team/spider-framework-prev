@@ -15,12 +15,12 @@ import { createIcon } from '../../../icons';
 const CARD_WIDTH = 390;
 
 export async function createStatementTotalCard(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('StatementTotalCard');
   setAutoLayout(comp, 'VERTICAL', SPACING.md, 'MIN');
   setPadding(comp, SPACING.md, SPACING.md);
   comp.resize(CARD_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   await setFloatVar(comp, 'cornerRadius', SIZE_VAR.radiusXl, RADIUS.xl);
   await setFillWithVar(comp, COLOR_VAR.surface, COLOR.surface);
   comp.effects = [{ type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.08 }, offset: { x: 0, y: 2 }, radius: 8, spread: 0, visible: true, blendMode: 'NORMAL' }];
@@ -32,16 +32,17 @@ export async function createStatementTotalCard(): Promise<ComponentNode> {
   labelRow.primaryAxisSizingMode = 'AUTO';
   labelRow.counterAxisSizingMode = 'AUTO';
   clearFill(labelRow);
-  await addTextWithVar(labelRow, '총 결제금액', FONT_SIZE.sm, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeSm);
+  /* labelRow → comp, badge → labelRow 순서로 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(labelRow);
+  await addTextWithVar(labelRow, '총 결제금액', FONT_SIZE.sm, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeSm, 'sectionLabel', comp);
   /* 배지 */
   const badge = figma.createFrame();
   setAutoLayout(badge, 'HORIZONTAL', 0);
   setPadding(badge, 2, SPACING.sm);
   await setFloatVar(badge, 'cornerRadius', SIZE_VAR.radiusFull, RADIUS.full);
   await setFillWithVar(badge, COLOR_VAR.brandBg, BRAND.bg);
-  await addTextWithVar(badge, '예정', FONT_SIZE.xs, COLOR_VAR.brandText, BRAND.text, true, SIZE_VAR.fontSizeXs);
   labelRow.appendChild(badge);
-  comp.appendChild(labelRow);
+  await addTextWithVar(badge, '예정', FONT_SIZE.xs, COLOR_VAR.brandText, BRAND.text, true, SIZE_VAR.fontSizeXs, 'statusBadge', comp);
 
   /* 금액 + 화살표 */
   const amountRow = figma.createFrame();
@@ -50,9 +51,10 @@ export async function createStatementTotalCard(): Promise<ComponentNode> {
   amountRow.primaryAxisSizingMode = 'AUTO';
   amountRow.counterAxisSizingMode = 'AUTO';
   clearFill(amountRow);
-  await addTextWithVar(amountRow, '350,000원', FONT_SIZE['3xl'], COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSize3xl);
-  amountRow.appendChild(createIcon('ChevronRight', 24, COLOR.textMuted));
+  /* amountRow를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(amountRow);
+  await addTextWithVar(amountRow, '350,000원', FONT_SIZE['3xl'], COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSize3xl, 'totalAmount', comp);
+  amountRow.appendChild(createIcon('ChevronRight', 24, COLOR.textMuted));
 
   /* 3개 액션 버튼 */
   const actionRow = figma.createFrame();
@@ -73,10 +75,11 @@ export async function createStatementTotalCard(): Promise<ComponentNode> {
     await setFloatVar(btn, 'cornerRadius', SIZE_VAR.radiusSm, RADIUS.sm);
     clearFill(btn);
     await setStrokeWithVar(btn, COLOR_VAR.border, COLOR.border);
+    /* btn을 actionRow에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+    actionRow.appendChild(btn);
     const text = await addTextWithVar(btn, label, FONT_SIZE.xs, COLOR_VAR.textHeading, COLOR.textHeading, false, SIZE_VAR.fontSizeXs);
     text.textAlignHorizontal = 'CENTER';
     text.layoutAlign = 'STRETCH';
-    actionRow.appendChild(btn);
   }
   comp.appendChild(actionRow);
 

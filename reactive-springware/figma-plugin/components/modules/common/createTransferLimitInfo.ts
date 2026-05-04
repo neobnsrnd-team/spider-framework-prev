@@ -55,7 +55,7 @@ async function createTransferLimitInfoVariant(variant: TransferLimitVariant): Pr
   /* 헤더 */
   const header = await addTextWithVar(
     comp, '이체 한도 안내', FONT_SIZE.xs,
-    COLOR_VAR.textSecondary, COLOR.textSecondary, true, SIZE_VAR.fontSizeXs,
+    COLOR_VAR.textSecondary, COLOR.textSecondary, true, SIZE_VAR.fontSizeXs, 'sectionTitle',
   );
   header.layoutAlign = 'STRETCH';
 

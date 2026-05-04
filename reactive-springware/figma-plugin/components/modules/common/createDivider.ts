@@ -10,7 +10,7 @@ import { COLOR, COLOR_VAR } from '../../../tokens';
 import { createComponent, setFillWithVar } from '../../../helpers';
 
 export async function createDivider(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('Divider');
   /* 1px 높이 수평선 — border-border-subtle 색상 */
   comp.resize(390, 1);
   comp.layoutMode = 'NONE';

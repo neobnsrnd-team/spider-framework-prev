@@ -43,6 +43,7 @@ async function createTypographyVariant(variant: TypographyVariant, weight: Typog
   const text = await addTextWithVar(
     comp, `${variant} 텍스트 예시`, fontSize,
     COLOR_VAR.textHeading, COLOR.textHeading, weight === 'Bold', fontSizeVar,
+    'text',
   );
 
   /* Medium weight: addTextWithVar는 Bold/Regular만 지원하므로 fontName 재설정 */

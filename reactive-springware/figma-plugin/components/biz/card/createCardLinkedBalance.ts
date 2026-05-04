@@ -18,7 +18,7 @@ async function createCardLinkedBalanceVariant(state: 'Visible' | 'Hidden'): Prom
   comp.counterAxisSizingMode = 'AUTO';
   clearFill(comp);
 
-  await addTextWithVar(comp, '사용가능 한도 금액', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
+  await addTextWithVar(comp, '사용가능 한도 금액', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'limitLabel');
 
   /* 금액 + 배지 버튼 */
   const amountRow = figma.createFrame();
@@ -28,8 +28,11 @@ async function createCardLinkedBalanceVariant(state: 'Visible' | 'Hidden'): Prom
   amountRow.counterAxisSizingMode = 'AUTO';
   clearFill(amountRow);
 
+  /* amountRow를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(amountRow);
+
   const amountText = state === 'Visible' ? '1,200,000원' : '잔액 숨김 중';
-  await addTextWithVar(amountRow, amountText, FONT_SIZE['2xl'], COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSize2xl);
+  await addTextWithVar(amountRow, amountText, FONT_SIZE['2xl'], COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSize2xl, 'balanceAmount', comp);
 
   /* 배지 버튼 (보기/숨기기) */
   const badgeBtn = figma.createFrame();
@@ -38,11 +41,10 @@ async function createCardLinkedBalanceVariant(state: 'Visible' | 'Hidden'): Prom
   await setFloatVar(badgeBtn, 'cornerRadius', SIZE_VAR.radiusFull, RADIUS.full);
   await setFillWithVar(badgeBtn, COLOR_VAR.surfaceRaised, COLOR.surfaceRaised);
   await setStrokeWithVar(badgeBtn, COLOR_VAR.border, COLOR.border);
-  const badgeLabel = state === 'Visible' ? '숨기기' : '보기';
-  await addTextWithVar(badgeBtn, badgeLabel, FONT_SIZE.xs, COLOR_VAR.textSecondary, COLOR.textSecondary, false, SIZE_VAR.fontSizeXs);
+  /* badgeBtn을 amountRow에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   amountRow.appendChild(badgeBtn);
-
-  comp.appendChild(amountRow);
+  const badgeLabel = state === 'Visible' ? '숨기기' : '보기';
+  await addTextWithVar(badgeBtn, badgeLabel, FONT_SIZE.xs, COLOR_VAR.textSecondary, COLOR.textSecondary, false, SIZE_VAR.fontSizeXs, 'badgeLabel', comp);
   return comp;
 }
 

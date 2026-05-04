@@ -42,8 +42,8 @@ async function createSummaryVariant(variant: 'Asset' | 'Spending'): Promise<Comp
   setAutoLayout(comp, 'VERTICAL', SPACING.lg, 'MIN');
   setPadding(comp, SPACING.xl, SPACING.xl);
   comp.resize(CARD_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   await setFloatVar(comp, 'cornerRadius', SIZE_VAR.radiusXl, RADIUS.xl);
   await setFillWithVar(comp, COLOR_VAR.surface, COLOR.surface);
   await setStrokeWithVar(comp, COLOR_VAR.borderSubtle, COLOR.borderSubtle);
@@ -73,9 +73,12 @@ async function createSummaryVariant(variant: 'Asset' | 'Spending'): Promise<Comp
   setAutoLayout(textArea, 'VERTICAL', SPACING.xs, 'MIN');
   textArea.layoutGrow = 1;
   clearFill(textArea);
-  await addTextWithVar(textArea, cfg.title, FONT_SIZE.xl, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeXl);
-  await addTextWithVar(textArea, cfg.amount, FONT_SIZE.lg, cfg.amountColorVar, cfg.amountColor, true, SIZE_VAR.fontSizeLg);
+
+  /* topRow/textArea를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(topRow);
   topRow.appendChild(textArea);
+  await addTextWithVar(textArea, cfg.title, FONT_SIZE.xl, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeXl, 'cardTitle', comp);
+  await addTextWithVar(textArea, cfg.amount, FONT_SIZE.lg, cfg.amountColorVar, cfg.amountColor, true, SIZE_VAR.fontSizeLg, 'cardAmount', comp);
 
   /* 아이콘 원형 */
   const iconCircle = figma.createFrame();
@@ -87,7 +90,6 @@ async function createSummaryVariant(variant: 'Asset' | 'Spending'): Promise<Comp
   await setFillWithVar(iconCircle, COLOR_VAR.brandBg, BRAND.bg);
   iconCircle.appendChild(createIcon(variant === 'Asset' ? 'Building2' : 'CreditCard', 24, BRAND.primary));
   topRow.appendChild(iconCircle);
-  comp.appendChild(topRow);
 
   /* 하단: 액션 버튼 */
   const actionRow = figma.createFrame();

@@ -64,7 +64,9 @@ class FigmaDesignPipelineIntegrationTest {
         props.setReadTimeoutSeconds(30);
 
         figmaApiClient = new FigmaApiClient(new RestTemplateBuilder(), props);
-        extractor = new FigmaDesignExtractor();
+        VariantNormalizer normalizer = new VariantNormalizer(objectMapper);
+        normalizer.load();
+        extractor = new FigmaDesignExtractor(normalizer);
         rawRestTemplate = new RestTemplateBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .readTimeout(Duration.ofSeconds(30))

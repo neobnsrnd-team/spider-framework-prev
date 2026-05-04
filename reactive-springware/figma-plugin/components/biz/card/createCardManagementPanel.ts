@@ -54,11 +54,11 @@ async function createNavRow(label: string, subText?: string): Promise<FrameNode>
 }
 
 export async function createCardManagementPanel(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('CardManagementPanel');
   setAutoLayout(comp, 'VERTICAL', SPACING.xs, 'MIN');
   comp.resize(PANEL_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   clearFill(comp);
 
   /* 섹션 헤더 — "카드 관리" */
@@ -72,8 +72,9 @@ export async function createCardManagementPanel(): Promise<ComponentNode> {
   header.counterAxisSizingMode = 'AUTO';
   header.resize(PANEL_WIDTH, 1);
   clearFill(header);
-  await addTextWithVar(header, '카드 관리', FONT_SIZE.base, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase);
+  /* header를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(header);
+  await addTextWithVar(header, '카드 관리', FONT_SIZE.base, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase, 'sectionTitle', comp);
 
   for (const { label, subText } of NAV_ROWS) {
     comp.appendChild(await createNavRow(label, subText));

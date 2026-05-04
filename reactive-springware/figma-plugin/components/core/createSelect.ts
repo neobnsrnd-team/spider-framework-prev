@@ -47,6 +47,7 @@ async function createSelectVariant(state: 'Closed' | 'Open'): Promise<ComponentN
     state === 'Open' ? BRAND.text : COLOR.textPlaceholder,
     false,
     SIZE_VAR.fontSizeSm,
+    'placeholder',
   );
   label.layoutGrow = 1;
 

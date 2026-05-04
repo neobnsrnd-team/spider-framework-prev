@@ -42,9 +42,10 @@ async function createFullVariant(): Promise<ComponentNode> {
   info.counterAxisSizingMode = 'AUTO';
   clearFill(info);
 
-  await addTextWithVar(info, 'VISA', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, true, SIZE_VAR.fontSizeXs);
-  await addTextWithVar(info, '하나 머니 체크카드', FONT_SIZE.base, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase);
+  /* info를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(info);
+  await addTextWithVar(info, 'VISA', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, true, SIZE_VAR.fontSizeXs, 'brandLabel', comp);
+  await addTextWithVar(info, '하나 머니 체크카드', FONT_SIZE.base, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase, 'cardName', comp);
 
   return comp;
 }
@@ -58,8 +59,8 @@ async function createCompactVariant(): Promise<ComponentNode> {
   comp.counterAxisSizingMode = 'AUTO';
   clearFill(comp);
 
-  await addTextWithVar(comp, 'VISA', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, true, SIZE_VAR.fontSizeXs);
-  await addTextWithVar(comp, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm);
+  await addTextWithVar(comp, 'VISA', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, true, SIZE_VAR.fontSizeXs, 'brandLabel');
+  await addTextWithVar(comp, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'cardName');
 
   return comp;
 }

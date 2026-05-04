@@ -50,7 +50,10 @@ async function createCardSummaryVariant(type: CardType): Promise<ComponentNode> 
   headerRow.resize(CARD_WIDTH - SPACING.lg * 2, 1);
   clearFill(headerRow);
 
-  const cardNameText = await addTextWithVar(headerRow, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm);
+  /* headerRow를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(headerRow);
+
+  const cardNameText = await addTextWithVar(headerRow, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'cardName', comp);
   cardNameText.layoutGrow = 1;
 
   /* 배지 */
@@ -59,31 +62,33 @@ async function createCardSummaryVariant(type: CardType): Promise<ComponentNode> 
   setPadding(badge, 2, SPACING.sm);
   await setFloatVar(badge, 'cornerRadius', SIZE_VAR.radiusFull, RADIUS.full);
   await setFillWithVar(badge, COLOR_VAR.brandBg, BRAND.bg);
-  await addTextWithVar(badge, '포인트 적립', FONT_SIZE.xs, COLOR_VAR.brandText, BRAND.text, true, SIZE_VAR.fontSizeXs);
+  /* badge를 headerRow에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   headerRow.appendChild(badge);
-  comp.appendChild(headerRow);
+  await addTextWithVar(badge, '포인트 적립', FONT_SIZE.xs, COLOR_VAR.brandText, BRAND.text, true, SIZE_VAR.fontSizeXs, 'badgeLabel', comp);
 
   /* 마스킹 카드번호 */
-  await addTextWithVar(comp, '1234 **** **** 5678', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
+  await addTextWithVar(comp, '1234 **** **** 5678', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'maskedCardNumber');
 
   /* 금액 영역 */
   const amountSection = figma.createFrame();
   setAutoLayout(amountSection, 'VERTICAL', SPACING.xs, 'MIN');
   amountSection.layoutAlign = 'STRETCH';
-  amountSection.primaryAxisSizingMode = 'FIXED';
-  amountSection.counterAxisSizingMode = 'AUTO';
+  amountSection.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  amountSection.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   amountSection.resize(CARD_WIDTH - SPACING.lg * 2, 1);
   clearFill(amountSection);
   setPadding(amountSection, SPACING.md, 0);
 
-  await addTextWithVar(amountSection, AMOUNT_LABEL[type], FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
-  await addTextWithVar(amountSection, AMOUNT_VALUE[type], FONT_SIZE.xl, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeXl);
+  /* amountSection을 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(amountSection);
+
+  await addTextWithVar(amountSection, AMOUNT_LABEL[type], FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'amountLabel', comp);
+  await addTextWithVar(amountSection, AMOUNT_VALUE[type], FONT_SIZE.xl, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeXl, 'amountValue', comp);
 
   /* Credit: 한도 서브텍스트 */
   if (type === 'Credit') {
-    await addTextWithVar(amountSection, '한도 600,000원', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
+    await addTextWithVar(amountSection, '한도 600,000원', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'creditLimit', comp);
   }
-  comp.appendChild(amountSection);
 
   /* 액션 버튼 영역 (텍스트로 대표) */
   const actionRow = figma.createFrame();

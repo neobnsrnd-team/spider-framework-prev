@@ -58,7 +58,7 @@ async function createNavItem(label: string, isActive: boolean): Promise<FrameNod
 }
 
 export async function createSidebarNav(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('SidebarNav');
   setAutoLayout(comp, 'VERTICAL', 0, 'MIN');
   comp.resize(NAV_WIDTH, ITEM_HEIGHT * 4);
   comp.primaryAxisSizingMode = 'FIXED';

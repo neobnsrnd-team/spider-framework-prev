@@ -88,7 +88,7 @@ async function createBadgeVariant(variant: BadgeVariant, dot: boolean): Promise<
     await setFloatVar(comp, 'cornerRadius', SIZE_VAR.radiusFull, RADIUS.full);
     await setFillWithVar(comp, bgVar, bgFallback);
 
-    const label = await addTextWithVar(comp, variant, FONT_SIZE.xs, textVar, textFallback, true, SIZE_VAR.fontSizeXs);
+    const label = await addTextWithVar(comp, variant, FONT_SIZE.xs, textVar, textFallback, true, SIZE_VAR.fontSizeXs, 'label');
     label.textAlignHorizontal = 'CENTER';
   }
 

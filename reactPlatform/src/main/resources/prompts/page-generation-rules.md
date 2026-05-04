@@ -305,18 +305,15 @@ const { data } = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts });
 | 검색창 | `SearchInput` | |
 | 은행 선택 그리드 | `BankSelectGrid` | prop명: `columns` (`cols` 아님) |
 
-### Figma Variant 값 → React prop 값 변환
+### Figma component props 처리 방침
 
-| Figma Variant 값 | `variant` prop |
-|-----------------|---------------|
-| `Primary` / `Filled` | `'primary'` |
-| `Secondary` / `Outlined` / `Stroke` | `'outline'` |
-| `Tertiary` / `Ghost` / `Typography` | `'ghost'` |
-| `Destructive` / `Error` | `'danger'` |
-| `Info` | `'info'` |
-| `Neutral` | `'neutral'` |
-| `Success` | `'success'` |
-| `Warning` | `'warning'` |
+Element Tree의 `| props: {...}` 값은 **서버에서 이미 React prop 형식으로 정규화**된 상태다.
+
+- **키**: camelCase (`variant`, `size`, `validationState`, `dot`, `loading` 등)
+- **값**: React prop 허용값 그대로 (`primary`, `outline`, `sm`, `md`, `true`, `false`, `default` 등)
+- **TEXT 타입 props** (label, placeholder 등 사람이 읽는 텍스트): 변환 없이 원본 그대로
+
+추가 변환 없이 props 값을 코드에 **직접 사용**할 것.
 
 ---
 

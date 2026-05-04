@@ -106,8 +106,8 @@ async function createDefaultVariant(): Promise<ComponentNode> {
   const comp = createComponent('State=Default');
   setAutoLayout(comp, 'VERTICAL', 0, 'MIN');
   comp.resize(LIST_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   clearFill(comp);
 
   comp.appendChild(await createDateHeader('4월 28일'));
@@ -131,8 +131,8 @@ async function createLoadingVariant(): Promise<ComponentNode> {
   const comp = createComponent('State=Loading');
   setAutoLayout(comp, 'VERTICAL', 0, 'MIN');
   comp.resize(LIST_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   clearFill(comp);
 
   for (let i = 0; i < 3; i++) {
@@ -173,7 +173,7 @@ async function createEmptyVariant(): Promise<ComponentNode> {
   comp.counterAxisSizingMode = 'FIXED';
   clearFill(comp);
 
-  await addTextWithVar(comp, '거래 내역이 없어요', FONT_SIZE.sm, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeSm);
+  await addTextWithVar(comp, '거래 내역이 없어요', FONT_SIZE.sm, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeSm, 'emptyMessage');
   return comp;
 }
 

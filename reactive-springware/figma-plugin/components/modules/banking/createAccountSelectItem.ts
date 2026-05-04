@@ -4,8 +4,11 @@
  * Selected(true|false) 2 variants.
  * 컴포넌트 이름: "AccountSelectItem"
  */
-import { COLOR, BRAND, SPACING, FONT_SIZE } from '../../../tokens';
-import { createComponent, combineVariants, setAutoLayout, setPadding, setFill, addText } from '../../../helpers';
+import { COLOR, BRAND, SPACING, RADIUS, FONT_SIZE } from '../../../tokens';
+import {
+  createComponent, combineVariants, setAutoLayout, setPadding,
+  setFill, addText, addIconSlot,
+} from '../../../helpers';
 import { createIcon } from '../../../icons';
 
 async function createAccountSelectVariant(selected: boolean): Promise<ComponentNode> {
@@ -18,11 +21,21 @@ async function createAccountSelectVariant(selected: boolean): Promise<ComponentN
   comp.counterAxisAlignItems = 'CENTER';
   setFill(comp, selected ? BRAND.bg : COLOR.surfaceSubtle);
 
-  /* 아이콘 원형 */
-  const iconCircle = figma.createEllipse();
-  iconCircle.resize(40, 40);
-  setFill(iconCircle, selected ? BRAND.primary : COLOR.surfaceRaised);
-  comp.appendChild(iconCircle);
+  /* 은행 아이콘 원형 배경 Frame — 이전의 createEllipse() 대체 */
+  const iconWrap = figma.createFrame();
+  setAutoLayout(iconWrap, 'HORIZONTAL', 0);
+  iconWrap.resize(40, 40);
+  iconWrap.primaryAxisSizingMode = 'FIXED';
+  iconWrap.counterAxisSizingMode = 'FIXED';
+  iconWrap.primaryAxisAlignItems = 'CENTER';
+  iconWrap.counterAxisAlignItems = 'CENTER';
+  iconWrap.cornerRadius = RADIUS.full;
+  setFill(iconWrap, selected ? BRAND.primary : COLOR.surfaceRaised);
+  comp.appendChild(iconWrap);
+
+  /* Building2를 디폴트로 설정 — 디자이너가 은행별 아이콘으로 swap 가능 */
+  const iconColor = selected ? COLOR.surface : COLOR.textMuted;
+  addIconSlot(comp, 'Building2', 24, iconColor, 'bankIcon', iconWrap);
 
   /* 텍스트 영역 */
   const textArea = figma.createFrame();
@@ -34,7 +47,7 @@ async function createAccountSelectVariant(selected: boolean): Promise<ComponentN
   await addText(textArea, '1,234,567원', FONT_SIZE.xs, COLOR.textSecondary);
   comp.appendChild(textArea);
 
-  /* 선택 체크 아이콘 */
+  /* 선택 체크 아이콘 — selected 상태에서만 표시, 항상 Check 고정 */
   if (selected) {
     comp.appendChild(createIcon('Check', 20, BRAND.primary));
   }

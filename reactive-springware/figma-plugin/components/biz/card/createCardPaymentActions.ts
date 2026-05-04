@@ -16,7 +16,7 @@ const GROUP_WIDTH = 390 - SPACING.standard * 2; /* 양쪽 패딩 제외 */
 const ACTIONS = ['분할납부', '즉시결제', '리볼빙'];
 
 export async function createCardPaymentActions(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('CardPaymentActions');
   setAutoLayout(comp, 'HORIZONTAL', SPACING.xs);
   comp.resize(GROUP_WIDTH, 1);
   comp.primaryAxisSizingMode = 'FIXED';
@@ -34,10 +34,11 @@ export async function createCardPaymentActions(): Promise<ComponentNode> {
     clearFill(btn);
     await setStrokeWithVar(btn, COLOR_VAR.border, COLOR.border);
 
-    const text = await addTextWithVar(btn, label, FONT_SIZE.xs, COLOR_VAR.textHeading, COLOR.textHeading, false, SIZE_VAR.fontSizeXs);
+    /* btn을 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+    comp.appendChild(btn);
+    const text = await addTextWithVar(btn, label, FONT_SIZE.xs, COLOR_VAR.textHeading, COLOR.textHeading, false, SIZE_VAR.fontSizeXs, 'actionLabel', comp);
     text.textAlignHorizontal = 'CENTER';
     text.layoutAlign = 'STRETCH';
-    comp.appendChild(btn);
   }
 
   figma.currentPage.appendChild(comp);

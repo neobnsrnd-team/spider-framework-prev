@@ -42,21 +42,22 @@ async function createErrorStateVariant(variant: ErrorStateVariant): Promise<Comp
   textGroup.primaryAxisAlignItems = 'CENTER';
   clearFill(textGroup);
 
+  /* textGroup을 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(textGroup);
+
   /* 타이틀 */
   const title = await addTextWithVar(
     textGroup, '오류가 발생했습니다', FONT_SIZE.base,
-    COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase,
+    COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase, 'title', comp,
   );
   title.textAlignHorizontal = 'CENTER';
 
   /* 설명 */
   const desc = await addTextWithVar(
     textGroup, '데이터를 불러오지 못했습니다.\n잠시 후 다시 시도해 주세요.', FONT_SIZE.sm,
-    COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeSm,
+    COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeSm, 'description', comp,
   );
   desc.textAlignHorizontal = 'CENTER';
-
-  comp.appendChild(textGroup);
 
   /* 재시도 버튼 — WithRetry variant에만 표시 */
   if (variant === 'WithRetry') {
@@ -69,12 +70,13 @@ async function createErrorStateVariant(variant: ErrorStateVariant): Promise<Comp
     await setFillWithVar(btn, COLOR_VAR.surface, COLOR.surface);
     await setStrokeWithVar(btn, COLOR_VAR.border, COLOR.border);
 
+    /* btn을 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+    comp.appendChild(btn);
+
     await addTextWithVar(
       btn, '다시 시도', FONT_SIZE.sm,
-      COLOR_VAR.textBase, COLOR.textBase, false, SIZE_VAR.fontSizeSm,
+      COLOR_VAR.textBase, COLOR.textBase, false, SIZE_VAR.fontSizeSm, 'retryLabel', comp,
     );
-
-    comp.appendChild(btn);
   }
 
   return comp;

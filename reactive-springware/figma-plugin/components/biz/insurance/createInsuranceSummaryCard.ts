@@ -51,8 +51,8 @@ async function createInsuranceVariant(status: 'Active' | 'Pending' | 'Expired'):
   setAutoLayout(comp, 'VERTICAL', SPACING.md, 'MIN');
   setPadding(comp, SPACING.xl, SPACING.xl);
   comp.resize(CARD_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   await setFloatVar(comp, 'cornerRadius', SIZE_VAR.radiusXl, RADIUS.xl);
   await setFillWithVar(comp, COLOR_VAR.surface, COLOR.surface);
   await setStrokeWithVar(comp, COLOR_VAR.borderSubtle, COLOR.borderSubtle);
@@ -68,7 +68,10 @@ async function createInsuranceVariant(status: 'Active' | 'Pending' | 'Expired'):
   topRow.resize(CARD_WIDTH - SPACING.xl * 2, 1);
   clearFill(topRow);
 
-  const nameText = await addTextWithVar(topRow, '하나 건강보험', FONT_SIZE.lg, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeLg);
+  /* topRow를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(topRow);
+
+  const nameText = await addTextWithVar(topRow, '하나 건강보험', FONT_SIZE.lg, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeLg, 'insuranceName', comp);
   nameText.layoutGrow = 1;
 
   /* 상태 배지 */
@@ -79,12 +82,12 @@ async function createInsuranceVariant(status: 'Active' | 'Pending' | 'Expired'):
   await setFloatVar(badge, 'cornerRadius', SIZE_VAR.radiusFull, RADIUS.full);
   await setFillWithVar(badge, cfg.badgeFillVar, cfg.badgeFill);
   badge.appendChild(createIcon(cfg.statusIcon, 12, cfg.badgeText));
-  await addTextWithVar(badge, cfg.label, FONT_SIZE.xs, cfg.badgeTextVar, cfg.badgeText, false, SIZE_VAR.fontSizeXs);
+  /* badge를 topRow에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   topRow.appendChild(badge);
-  comp.appendChild(topRow);
+  await addTextWithVar(badge, cfg.label, FONT_SIZE.xs, cfg.badgeTextVar, cfg.badgeText, false, SIZE_VAR.fontSizeXs, 'statusLabel', comp);
 
   /* 증권번호 */
-  await addTextWithVar(comp, '증권번호 · 2024-001234-56', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
+  await addTextWithVar(comp, '증권번호 · 2024-001234-56', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'policyNumber');
 
   /* 구분선 */
   const divider = figma.createFrame();

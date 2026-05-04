@@ -5,13 +5,14 @@
  */
 import { COLOR, BRAND, SPACING, RADIUS, FONT_SIZE } from '../../../tokens';
 import { createComponent, combineVariants, setAutoLayout, setFill, clearFill, addText } from '../../../helpers';
+import { createIcon } from '../../../icons';
 
 type GridCols = 3 | 4;
 
 async function createQuickMenuGridVariant(cols: GridCols): Promise<ComponentNode> {
-  const itemSize = cols === 4 ? 72 : 88;
+  const itemSize   = cols === 4 ? 72 : 88;
   const totalWidth = cols * itemSize + (cols - 1) * SPACING.sm;
-  const comp = createComponent(`Cols=${cols}`);
+  const comp       = createComponent(`Cols=${cols}`);
   comp.resize(totalWidth, itemSize * 2 + SPACING.sm);
   comp.layoutMode = 'NONE';
   clearFill(comp);
@@ -28,12 +29,23 @@ async function createQuickMenuGridVariant(cols: GridCols): Promise<ComponentNode
       item.counterAxisAlignItems = 'CENTER';
       clearFill(item);
 
-      const icon = figma.createRectangle();
-      icon.resize(48, 48);
-      icon.cornerRadius = RADIUS.md;
+      /* 아이콘 배경 Frame — 이전의 createRectangle() 대체 */
+      const iconBg = figma.createFrame();
+      setAutoLayout(iconBg, 'HORIZONTAL', 0);
+      iconBg.resize(48, 48);
+      iconBg.primaryAxisSizingMode = 'FIXED';
+      iconBg.counterAxisSizingMode = 'FIXED';
+      iconBg.primaryAxisAlignItems = 'CENTER';
+      iconBg.counterAxisAlignItems = 'CENTER';
+      iconBg.cornerRadius = RADIUS.md;
       /* BRAND.bg를 아이콘 배경으로 사용해 브랜드 색상을 일관되게 표현 */
-      setFill(icon, BRAND.bg);
-      item.appendChild(icon);
+      setFill(iconBg, BRAND.bg);
+
+      /* comp → item → iconBg → icon 으로 3단계 중첩되어 componentPropertyReferences 적용 불가.
+       * createIcon으로 정적 아이콘을 직접 삽입해 디폴트 아이콘을 표시한다. */
+      iconBg.appendChild(createIcon('LayoutGrid', 28, BRAND.primary));
+      item.appendChild(iconBg);
+
       await addText(item, '메뉴', FONT_SIZE.xs, COLOR.textBase);
 
       item.x = col * (itemSize + SPACING.sm);

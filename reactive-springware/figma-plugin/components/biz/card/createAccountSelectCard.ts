@@ -54,10 +54,11 @@ async function createAccountSelectCardVariant(selected: boolean): Promise<Compon
   info.primaryAxisSizingMode = 'AUTO';
   info.counterAxisSizingMode = 'AUTO';
   clearFill(info);
-  await addTextWithVar(info, '하나은행', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm);
-  await addTextWithVar(info, '123-****-5678', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
+  /* info를 left에, left를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   left.appendChild(info);
   comp.appendChild(left);
+  await addTextWithVar(info, '하나은행', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'bankName', comp);
+  await addTextWithVar(info, '123-****-5678', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'accountNumber', comp);
 
   if (selected) {
     comp.appendChild(createIcon('CheckCircle', 20, BRAND.primary));

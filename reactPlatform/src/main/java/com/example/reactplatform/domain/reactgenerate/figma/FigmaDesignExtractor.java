@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +30,10 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class FigmaDesignExtractor {
+
+    private final VariantNormalizer variantNormalizer;
 
     /** 노드 트리 탐색 최대 깊이. 루트는 0, 직계 자식은 1 */
     private static final int MAX_DEPTH = 15;
@@ -271,26 +275,33 @@ public class FigmaDesignExtractor {
     }
 
     /**
-     * INSTANCE 노드의 componentProperties에서 Claude에게 유용한 속성만 추출한다.
+     * INSTANCE 노드의 componentProperties에서 Claude에게 유용한 속성을 추출하고 React prop 형식으로 정규화한다.
      *
      * <p>포함: VARIANT(변형 옵션), BOOLEAN(on/off 상태), TEXT(텍스트 오버라이드)
      * <p>제외: INSTANCE_SWAP — 컴포넌트 ID 문자열이라 Claude에게 의미가 없음
      *
+     * <p>추출 후 {@link VariantNormalizer}를 통해 키·값을 정규화한다.
+     * 예) {Variant=Primary, Size=Medium} → {variant=primary, size=md}
+     *
      * @param node 추출할 노드
-     * @return 속성명 → 값 문자열 맵. INSTANCE가 아니거나 속성이 없으면 null
+     * @return 정규화된 속성명 → 값 문자열 맵. INSTANCE가 아니거나 속성이 없으면 null
      */
     private Map<String, String> extractComponentProps(FigmaNode node) {
         if (!"INSTANCE".equals(node.getType())) return null;
         if (node.getComponentProperties() == null || node.getComponentProperties().isEmpty()) return null;
 
-        Map<String, String> result = new LinkedHashMap<>();
+        // INSTANCE_SWAP 제외 후 타입 정보가 보존된 상태로 수집 (VariantNormalizer가 TEXT 타입 판별에 사용)
+        Map<String, FigmaNode.ComponentProperty> rawProps = new LinkedHashMap<>();
         node.getComponentProperties().forEach((propName, prop) -> {
             if (prop == null || prop.getType() == null || prop.getValue() == null) return;
-            // INSTANCE_SWAP은 컴포넌트 ID 문자열이라 제외
             if ("INSTANCE_SWAP".equals(prop.getType())) return;
-            result.put(propName, String.valueOf(prop.getValue()));
+            rawProps.put(propName, prop);
         });
-        return result.isEmpty() ? null : result;
+
+        if (rawProps.isEmpty()) return null;
+
+        Map<String, String> normalized = variantNormalizer.normalize(node.getName(), rawProps);
+        return normalized.isEmpty() ? null : normalized;
     }
 
     /** Double 값을 int로 변환한다. null이면 0을 반환한다. */

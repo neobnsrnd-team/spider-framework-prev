@@ -17,7 +17,7 @@
 import { COLOR, BRAND, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../tokens';
 import {
   createComponent, combineVariants, setAutoLayout, setPadding,
-  setFillWithVar, setStrokeWithVar, addTextWithVar, addRect, setFloatVar,
+  setFillWithVar, setStrokeWithVar, addTextWithVar, addRect, setFloatVar, addIconSlot,
 } from '../../helpers';
 
 type InputSize  = 'Medium' | 'Large';
@@ -86,7 +86,7 @@ async function buildInputField(
   await setStrokeWithVar(comp, borderVar, borderFallback);
 
   /* placeholder 텍스트 */
-  const placeholder = await addTextWithVar(comp, '입력해주세요', fontSize, COLOR_VAR.textPlaceholder, COLOR.textPlaceholder, false, fontSizeVar);
+  const placeholder = await addTextWithVar(comp, '입력해주세요', fontSize, COLOR_VAR.textPlaceholder, COLOR.textPlaceholder, false, fontSizeVar, 'placeholder');
   placeholder.layoutGrow = 1;
   placeholder.textAlignVertical = 'CENTER';
 
@@ -96,10 +96,14 @@ async function buildInputField(
   }
 }
 
-/** 아이콘 플레이스홀더 사각형 추가 */
-function addIconPlaceholder(comp: ComponentNode, size: InputSize): void {
+/**
+ * 아이콘 슬롯 추가.
+ * Icons/Search 컴포넌트가 있으면 INSTANCE_SWAP으로 등록하고, 없으면 rect 플레이스홀더로 대체.
+ * @param position - 'left' | 'right' — property 이름을 leftIcon / rightIcon 으로 구분
+ */
+function addIconPlaceholder(comp: ComponentNode, size: InputSize, position: 'left' | 'right'): void {
   const iconSize = size === 'Large' ? 20 : 16;
-  addRect(comp, iconSize, iconSize, COLOR.textMuted, RADIUS.xs);
+  addIconSlot(comp, 'Search', iconSize, COLOR.textMuted, position === 'left' ? 'leftIcon' : 'rightIcon');
 }
 
 /* ── ComponentSet 생성 함수 ─────────────────────────────────────── */
@@ -150,7 +154,7 @@ export async function createInputWithLabel(): Promise<ComponentSetNode> {
       comp.strokes = [];
 
       /* label 텍스트 */
-      const label = await addTextWithVar(comp, '레이블', FONT_SIZE.xs, COLOR_VAR.textLabel, COLOR.textLabel, true, SIZE_VAR.fontSizeXs);
+      const label = await addTextWithVar(comp, '레이블', FONT_SIZE.xs, COLOR_VAR.textLabel, COLOR.textLabel, true, SIZE_VAR.fontSizeXs, 'label');
 
       /* 입력 필드 프레임 */
       const field = figma.createFrame();
@@ -171,11 +175,13 @@ export async function createInputWithLabel(): Promise<ComponentSetNode> {
       await setFillWithVar(field, bgVar, bgFallback);
       await setStrokeWithVar(field, borderVar, borderFallback);
 
-      const placeholder = await addTextWithVar(field, '입력해주세요', fontSize, COLOR_VAR.textPlaceholder, COLOR.textPlaceholder, false, fontSizeVar);
+      /* field를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+      comp.appendChild(field);
+
+      const placeholder = await addTextWithVar(field, '입력해주세요', fontSize, COLOR_VAR.textPlaceholder, COLOR.textPlaceholder, false, fontSizeVar, 'placeholder', comp);
       placeholder.layoutGrow = 1;
       placeholder.textAlignVertical = 'CENTER';
 
-      comp.appendChild(field);
       components.push(comp);
     }
   }
@@ -232,15 +238,16 @@ export async function createInputWithHelper(): Promise<ComponentSetNode> {
       await setFillWithVar(field, bgVar, bgFallback);
       await setStrokeWithVar(field, borderVar, borderFallback);
 
-      const placeholder = await addTextWithVar(field, '입력해주세요', fontSize, COLOR_VAR.textPlaceholder, COLOR.textPlaceholder, false, fontSizeVar);
+      /* field를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+      comp.appendChild(field);
+
+      const placeholder = await addTextWithVar(field, '입력해주세요', fontSize, COLOR_VAR.textPlaceholder, COLOR.textPlaceholder, false, fontSizeVar, 'placeholder', comp);
       placeholder.layoutGrow = 1;
       placeholder.textAlignVertical = 'CENTER';
 
-      comp.appendChild(field);
-
       /* helperText */
       const { varName, fallback } = helperStyle[state];
-      await addTextWithVar(comp, '안내 문구입니다', FONT_SIZE.xs, varName, fallback, false, SIZE_VAR.fontSizeXs);
+      await addTextWithVar(comp, '안내 문구입니다', FONT_SIZE.xs, varName, fallback, false, SIZE_VAR.fontSizeXs, 'helperText');
 
       components.push(comp);
     }
@@ -281,17 +288,17 @@ export async function createInputWithIcon(): Promise<ComponentSetNode> {
 
       /* 좌측 아이콘 */
       if (icon === 'Left' || icon === 'Both') {
-        addIconPlaceholder(comp, size);
+        addIconPlaceholder(comp, size, 'left');
       }
 
       /* placeholder */
-      const placeholder = await addTextWithVar(comp, '입력해주세요', fontSize, COLOR_VAR.textPlaceholder, COLOR.textPlaceholder, false, fontSizeVar);
+      const placeholder = await addTextWithVar(comp, '입력해주세요', fontSize, COLOR_VAR.textPlaceholder, COLOR.textPlaceholder, false, fontSizeVar, 'placeholder');
       placeholder.layoutGrow = 1;
       placeholder.textAlignVertical = 'CENTER';
 
       /* 우측 아이콘 */
       if (icon === 'Right' || icon === 'Both') {
-        addIconPlaceholder(comp, size);
+        addIconPlaceholder(comp, size, 'right');
       }
 
       components.push(comp);

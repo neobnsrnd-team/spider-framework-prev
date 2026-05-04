@@ -102,17 +102,17 @@ async function createModalVariant(
     modalHeader.counterAxisAlignItems = 'CENTER';
     modalHeader.fills = [];
 
-    /* addTextWithVar 7번째 인자: fontSize Figma Variable 경로 */
+    /* modalHeader를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+    comp.appendChild(modalHeader);
+    modalHeader.layoutSizingHorizontal = 'FILL';
+
     const title = await addTextWithVar(
       modalHeader, '모달 제목', FONT_SIZE.base,
-      COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase,
+      COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase, 'title', comp,
     );
     title.layoutGrow = 1;
     /* X 아이콘: createIcon은 변수 바인딩 미지원 — fallback RGB 사용 */
     modalHeader.appendChild(createIcon('X', 16, COLOR.textMuted));
-
-    comp.appendChild(modalHeader);
-    modalHeader.layoutSizingHorizontal = 'FILL';
   } else {
     /* Center: 타이틀 중앙 정렬 + X 버튼 우측 고정
      * 구현: [spacer(32px) | title(layoutGrow=1, CENTER text) | X버튼(32px)]
@@ -127,9 +127,13 @@ async function createModalVariant(
     spacer.fills = [];
     modalHeader.appendChild(spacer);
 
+    /* modalHeader를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+    comp.appendChild(modalHeader);
+    modalHeader.layoutSizingHorizontal = 'FILL';
+
     const title = await addTextWithVar(
       modalHeader, '모달 제목', FONT_SIZE.base,
-      COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase,
+      COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase, 'title', comp,
     );
     title.layoutGrow = 1;
     title.textAlignHorizontal = 'CENTER';
@@ -145,9 +149,6 @@ async function createModalVariant(
     closeBtn.fills = [];
     closeBtn.appendChild(createIcon('X', 16, COLOR.textMuted));
     modalHeader.appendChild(closeBtn);
-
-    comp.appendChild(modalHeader);
-    modalHeader.layoutSizingHorizontal = 'FILL';
   }
 
   /* ── 본문 텍스트 ────────────────────────────────────────────── */
@@ -159,7 +160,7 @@ async function createModalVariant(
     COLOR_VAR.textBase,
     COLOR.textBase,
     false,
-    SIZE_VAR.fontSizeSm,
+    SIZE_VAR.fontSizeSm, 'content',
   );
   content.layoutSizingHorizontal = 'FILL';
   content.layoutGrow = 1;

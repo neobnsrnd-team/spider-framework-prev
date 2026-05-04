@@ -5,7 +5,9 @@
  * 컴포넌트 이름: "NoticeItem"
  */
 import { COLOR, BRAND, SPACING, RADIUS, FONT_SIZE } from '../../../tokens';
-import { createComponent, setAutoLayout, setPadding, clearFill, setFill, addText } from '../../../helpers';
+import {
+  createComponent, setAutoLayout, setPadding, clearFill, setFill, addText, addIconSlot,
+} from '../../../helpers';
 import { createIcon } from '../../../icons';
 
 export async function createNoticeItem(): Promise<ComponentNode> {
@@ -18,7 +20,7 @@ export async function createNoticeItem(): Promise<ComponentNode> {
   comp.counterAxisAlignItems = 'CENTER';
   clearFill(comp);
 
-  /* 아이콘 원형 컨테이너 */
+  /* 아이콘 원형 컨테이너 — 공지 유형을 나타내는 아이콘 슬롯 (INSTANCE_SWAP) */
   const iconWrap = figma.createFrame();
   setAutoLayout(iconWrap, 'HORIZONTAL', 0);
   iconWrap.resize(40, 40);
@@ -28,8 +30,9 @@ export async function createNoticeItem(): Promise<ComponentNode> {
   iconWrap.counterAxisAlignItems = 'CENTER';
   iconWrap.cornerRadius = RADIUS.sm;
   setFill(iconWrap, BRAND.bg);
-  iconWrap.appendChild(createIcon('Bell', 20, BRAND.primary));
   comp.appendChild(iconWrap);
+  /* Bell을 디폴트로 설정 — 디자이너가 Figma 패널에서 공지 유형에 맞게 swap 가능 */
+  addIconSlot(comp, 'Bell', 20, BRAND.primary, 'icon', iconWrap);
 
   /* 텍스트 영역 */
   const textArea = figma.createFrame();
@@ -42,7 +45,7 @@ export async function createNoticeItem(): Promise<ComponentNode> {
   await addText(textArea, '공지 설명 텍스트입니다.', FONT_SIZE.xs, COLOR.textMuted);
   comp.appendChild(textArea);
 
-  /* ChevronRight 아이콘 */
+  /* ChevronRight — 항상 고정 네비게이션 화살표이므로 swap 불필요 */
   comp.appendChild(createIcon('ChevronRight', 16, COLOR.textMuted));
 
   figma.currentPage.appendChild(comp);

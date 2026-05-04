@@ -18,7 +18,7 @@ const HEADER_WIDTH  = 390;
 const HEADER_HEIGHT = 56; /* h-14 */
 
 export async function createAppBrandHeader(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('AppBrandHeader');
   setAutoLayout(comp, 'HORIZONTAL', 0, 'CENTER');
   comp.primaryAxisAlignItems = 'CENTER';
   comp.resize(HEADER_WIDTH, HEADER_HEIGHT);
@@ -42,15 +42,15 @@ export async function createAppBrandHeader(): Promise<ComponentNode> {
   badge.counterAxisSizingMode = 'FIXED';
   await setFloatVar(badge, 'cornerRadius', SIZE_VAR.radiusFull, RADIUS.full);
   await setFillWithVar(badge, COLOR_VAR.brandPrimary, BRAND.primary);
-  /* text-[10px]: tokens에 10px 항목이 없어 xs(12px)로 근사, fallback 10 */
-  const initial = await addTextWithVar(badge, 'H', 10, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeXs);
-  initial.textAlignHorizontal = 'CENTER';
+  /* comp → inner → badge 순서로 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(inner);
   inner.appendChild(badge);
+  /* text-[10px]: tokens에 10px 항목이 없어 xs(12px)로 근사, fallback 10 */
+  const initial = await addTextWithVar(badge, 'H', 10, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeXs, 'brandInitial', comp);
+  initial.textAlignHorizontal = 'CENTER';
 
   /* 브랜드명: text-lg font-bold text-brand-text tracking-tight */
-  await addTextWithVar(inner, '하나은행', FONT_SIZE.lg, COLOR_VAR.brandText, BRAND.text, true, SIZE_VAR.fontSizeLg);
-
-  comp.appendChild(inner);
+  await addTextWithVar(inner, '하나은행', FONT_SIZE.lg, COLOR_VAR.brandText, BRAND.text, true, SIZE_VAR.fontSizeLg, 'brandName', comp);
   figma.currentPage.appendChild(comp);
   return comp;
 }

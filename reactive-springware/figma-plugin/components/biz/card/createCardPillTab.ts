@@ -21,10 +21,10 @@ async function createCardPillTabVariant(selected: boolean): Promise<ComponentNod
 
   if (selected) {
     await setFillWithVar(comp, COLOR_VAR.brandPrimary, BRAND.primary);
-    await addTextWithVar(comp, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeSm);
+    await addTextWithVar(comp, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeSm, 'tabLabel');
   } else {
     await setFillWithVar(comp, COLOR_VAR.surfaceRaised, COLOR.surfaceRaised);
-    await addTextWithVar(comp, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textSecondary, COLOR.textSecondary, false, SIZE_VAR.fontSizeSm);
+    await addTextWithVar(comp, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textSecondary, COLOR.textSecondary, false, SIZE_VAR.fontSizeSm, 'tabLabel');
   }
 
   return comp;

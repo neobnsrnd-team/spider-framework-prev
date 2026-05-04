@@ -25,8 +25,8 @@ async function createPerformanceVariant(state: 'InProgress' | 'Achieved'): Promi
   setAutoLayout(comp, 'VERTICAL', SPACING.sm, 'MIN');
   setPadding(comp, SPACING.md, SPACING.md);
   comp.resize(CARD_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   await setFloatVar(comp, 'cornerRadius', SIZE_VAR.radiusXl, RADIUS.xl);
   await setFillWithVar(comp, COLOR_VAR.surface, COLOR.surface);
   await setStrokeWithVar(comp, COLOR_VAR.borderSubtle, COLOR.borderSubtle);
@@ -41,7 +41,6 @@ async function createPerformanceVariant(state: 'InProgress' | 'Achieved'): Promi
   topRow.counterAxisSizingMode = 'AUTO';
   topRow.resize(CARD_WIDTH - SPACING.md * 2, 1);
   clearFill(topRow);
-  await addTextWithVar(topRow, '하나 머니 체크카드', FONT_SIZE.xs, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeXs);
 
   const detailRow = figma.createFrame();
   setAutoLayout(detailRow, 'HORIZONTAL', SPACING.xs);
@@ -49,10 +48,13 @@ async function createPerformanceVariant(state: 'InProgress' | 'Achieved'): Promi
   detailRow.primaryAxisSizingMode = 'AUTO';
   detailRow.counterAxisSizingMode = 'AUTO';
   clearFill(detailRow);
-  await addTextWithVar(detailRow, '실적 상세', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
-  detailRow.appendChild(createIcon('ChevronRight', 14, COLOR.textMuted));
-  topRow.appendChild(detailRow);
+
+  /* topRow → comp, detailRow → topRow 순서로 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(topRow);
+  topRow.appendChild(detailRow);
+  await addTextWithVar(topRow, '하나 머니 체크카드', FONT_SIZE.xs, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeXs, 'cardName', comp);
+  await addTextWithVar(detailRow, '실적 상세', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'detailLabel', comp);
+  detailRow.appendChild(createIcon('ChevronRight', 14, COLOR.textMuted));
 
   /* 이용금액 / 목표금액 행 */
   const amountRow = figma.createFrame();
@@ -64,9 +66,10 @@ async function createPerformanceVariant(state: 'InProgress' | 'Achieved'): Promi
   amountRow.counterAxisSizingMode = 'AUTO';
   amountRow.resize(CARD_WIDTH - SPACING.md * 2, 1);
   clearFill(amountRow);
-  await addTextWithVar(amountRow, isAchieved ? '300,000원' : '150,000원', FONT_SIZE.sm, isAchieved ? COLOR_VAR.brandText : COLOR_VAR.textHeading, isAchieved ? BRAND.text : COLOR.textHeading, true, SIZE_VAR.fontSizeSm);
-  await addTextWithVar(amountRow, '목표 300,000원', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
+  /* amountRow를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(amountRow);
+  await addTextWithVar(amountRow, isAchieved ? '300,000원' : '150,000원', FONT_SIZE.sm, isAchieved ? COLOR_VAR.brandText : COLOR_VAR.textHeading, isAchieved ? BRAND.text : COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'usageAmount', comp);
+  await addTextWithVar(amountRow, '목표 300,000원', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'targetAmount', comp);
 
   /* 진행 바 */
   const barBg = figma.createFrame();
@@ -81,7 +84,7 @@ async function createPerformanceVariant(state: 'InProgress' | 'Achieved'): Promi
 
   /* 달성 안내 문구 */
   const statusText = isAchieved ? '✓ 전월 실적 달성 완료' : '150,000원 더 이용하면 실적 달성';
-  await addTextWithVar(comp, statusText, FONT_SIZE.xs, isAchieved ? COLOR_VAR.brandText : COLOR_VAR.textMuted, isAchieved ? BRAND.text : COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
+  await addTextWithVar(comp, statusText, FONT_SIZE.xs, isAchieved ? COLOR_VAR.brandText : COLOR_VAR.textMuted, isAchieved ? BRAND.text : COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'statusMessage');
 
   return comp;
 }

@@ -160,8 +160,8 @@ async function createPinSection(filledCount: number, showError: boolean): Promis
   setAutoLayout(section, 'VERTICAL', SPACING.xl);
   setPadding(section, SPACING.xl, SPACING.standard);
   section.resize(SHEET_WIDTH, 1);
-  section.primaryAxisSizingMode = 'FIXED';
-  section.counterAxisSizingMode = 'AUTO';
+  section.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  section.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   clearFill(section);
 
   await addTextWithVar(section, '비밀번호를 입력하세요', FONT_SIZE.base, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeBase);
@@ -178,8 +178,8 @@ async function createPinConfirmSheetVariant(state: 'Idle' | 'Filling' | 'Error')
   const comp = createComponent(`State=${state}`);
   setAutoLayout(comp, 'VERTICAL', 0, 'MIN');
   comp.resize(SHEET_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   await setFillWithVar(comp, COLOR_VAR.surface, COLOR.surface);
   await setFloatVar(comp, 'topLeftRadius',  SIZE_VAR.radiusXl, RADIUS.xl);
   await setFloatVar(comp, 'topRightRadius', SIZE_VAR.radiusXl, RADIUS.xl);

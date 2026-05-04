@@ -124,9 +124,12 @@ async function createBottomSheetVariant(
   spacer.fills = [];
   header.appendChild(spacer);
 
-  /* addTextWithVar는 내부에서 header에 append하므로 layoutGrow 설정 시점 ✓ */
+  /* header를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(header);
+  header.layoutSizingHorizontal = 'FILL';
+
   const titleNode = await addTextWithVar(
-    header, '바텀시트 제목', FONT_SIZE.base, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase,
+    header, '바텀시트 제목', FONT_SIZE.base, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase, 'title', comp,
   );
   titleNode.layoutGrow = 1;
   titleNode.textAlignHorizontal = 'CENTER';
@@ -142,10 +145,6 @@ async function createBottomSheetVariant(
   closeBtn.fills = [];
   closeBtn.appendChild(createIcon('X', 16, COLOR.textMuted));
   header.appendChild(closeBtn);
-
-  /* appendChild 이후에 FILL 설정 */
-  comp.appendChild(header);
-  header.layoutSizingHorizontal = 'FILL';
 
   /* ── 본문 placeholder ─────────────────────────────────────────
    * layoutGrow=1: 핸들·헤더·footer를 제외한 세로 공간을 모두 차지 */

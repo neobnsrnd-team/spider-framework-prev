@@ -13,7 +13,7 @@ import {
 import { createIcon } from '../../../icons';
 
 export async function createPaymentAccountCard(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('PaymentAccountCard');
   setAutoLayout(comp, 'HORIZONTAL', SPACING.md);
   setPadding(comp, SPACING.md, SPACING.md);
   comp.primaryAxisAlignItems = 'SPACE_BETWEEN';
@@ -30,9 +30,10 @@ export async function createPaymentAccountCard(): Promise<ComponentNode> {
   setAutoLayout(textArea, 'VERTICAL', SPACING.xs, 'MIN');
   textArea.layoutGrow = 1;
   clearFill(textArea);
-  await addTextWithVar(textArea, '하나은행 결제계좌', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm);
-  await addTextWithVar(textArea, '365일 06:00~23:30', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
+  /* textArea를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(textArea);
+  await addTextWithVar(textArea, '하나은행 결제계좌', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'accountLabel', comp);
+  await addTextWithVar(textArea, '365일 06:00~23:30', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'operatingHours', comp);
 
   /* 아이콘 원형 */
   const iconCircle = figma.createFrame();

@@ -135,8 +135,8 @@ function createFieldGroup(opacity?: number): FrameNode {
   const group = figma.createFrame();
   setAutoLayout(group, 'VERTICAL', SPACING.xs, 'MIN');
   group.resize(FORM_WIDTH, 1);
-  group.primaryAxisSizingMode = 'FIXED';
-  group.counterAxisSizingMode = 'AUTO';
+  group.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  group.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   clearFill(group);
   if (opacity !== undefined) group.opacity = opacity;
   return group;
@@ -146,8 +146,8 @@ async function createTransferFormVariant(step: TransferStep): Promise<ComponentN
   const comp = createComponent(`State=${step}`);
   setAutoLayout(comp, 'VERTICAL', SPACING.lg, 'MIN');
   comp.resize(FORM_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   clearFill(comp);
 
   /* ── 1단계: 받는 계좌번호 ── */

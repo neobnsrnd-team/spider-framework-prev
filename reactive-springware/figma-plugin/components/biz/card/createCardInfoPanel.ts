@@ -44,12 +44,12 @@ async function createSection(
 }
 
 export async function createCardInfoPanel(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('CardInfoPanel');
   setAutoLayout(comp, 'VERTICAL', SPACING.xs, 'MIN');
   setPadding(comp, SPACING.standard, SPACING.standard);
   comp.resize(PANEL_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   clearFill(comp);
 
   await createSection(comp, '결제정보', [

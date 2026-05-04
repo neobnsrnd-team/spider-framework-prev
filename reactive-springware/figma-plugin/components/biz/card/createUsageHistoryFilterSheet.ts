@@ -26,8 +26,8 @@ async function createFilterSection(
   const section = figma.createFrame();
   setAutoLayout(section, 'VERTICAL', SPACING.xs, 'MIN');
   section.layoutAlign = 'STRETCH';
-  section.primaryAxisSizingMode = 'FIXED';
-  section.counterAxisSizingMode = 'AUTO';
+  section.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  section.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 (layoutAlign STRETCH가 적용) */
   section.resize(SHEET_WIDTH - SPACING.standard * 2, 1);
   clearFill(section);
 
@@ -65,8 +65,8 @@ async function createFilterVariant(state: 'Collapsed' | 'Expanded'): Promise<Com
   const comp = createComponent(`State=${state}`);
   setAutoLayout(comp, 'VERTICAL', 0, 'MIN');
   comp.resize(SHEET_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   await setFillWithVar(comp, COLOR_VAR.surface, COLOR.surface);
   await setFloatVar(comp, 'topLeftRadius', SIZE_VAR.radiusXl, RADIUS.xl);
   await setFloatVar(comp, 'topRightRadius', SIZE_VAR.radiusXl, RADIUS.xl);
@@ -83,9 +83,10 @@ async function createFilterVariant(state: 'Collapsed' | 'Expanded'): Promise<Com
     header.counterAxisSizingMode = 'AUTO';
     header.resize(SHEET_WIDTH, 1);
     clearFill(header);
-    await addTextWithVar(header, '승인 · 전체 · 이번달', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, false, SIZE_VAR.fontSizeSm);
-    header.appendChild(createIcon('SlidersHorizontal', 20, COLOR.textMuted));
+    /* header를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
     comp.appendChild(header);
+    await addTextWithVar(header, '승인 · 전체 · 이번달', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, false, SIZE_VAR.fontSizeSm, 'filterSummary', comp);
+    header.appendChild(createIcon('SlidersHorizontal', 20, COLOR.textMuted));
   } else {
     /* 핸들바 */
     const handle = figma.createFrame();
@@ -110,17 +111,18 @@ async function createFilterVariant(state: 'Collapsed' | 'Expanded'): Promise<Com
     titleRow.counterAxisSizingMode = 'AUTO';
     titleRow.resize(SHEET_WIDTH, 1);
     clearFill(titleRow);
-    await addTextWithVar(titleRow, '검색 조건', FONT_SIZE.lg, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeLg);
-    titleRow.appendChild(createIcon('X', 20, COLOR.textMuted));
+    /* titleRow를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
     comp.appendChild(titleRow);
+    await addTextWithVar(titleRow, '검색 조건', FONT_SIZE.lg, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeLg, 'sheetTitle', comp);
+    titleRow.appendChild(createIcon('X', 20, COLOR.textMuted));
 
     /* 필터 바디 */
     const body = figma.createFrame();
     setAutoLayout(body, 'VERTICAL', SPACING.lg, 'MIN');
     setPadding(body, 0, SPACING.standard, SPACING['2xl'], SPACING.standard);
     body.layoutAlign = 'STRETCH';
-    body.primaryAxisSizingMode = 'FIXED';
-    body.counterAxisSizingMode = 'AUTO';
+    body.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+    body.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
     body.resize(SHEET_WIDTH, 1);
     clearFill(body);
 
@@ -137,12 +139,12 @@ async function createFilterVariant(state: 'Collapsed' | 'Expanded'): Promise<Com
     submitBtn.counterAxisSizingMode = 'FIXED';
     await setFloatVar(submitBtn, 'cornerRadius', SIZE_VAR.radiusXl, RADIUS.xl);
     await setFillWithVar(submitBtn, COLOR_VAR.brandPrimary, BRAND.primary);
-    const submitText = await addTextWithVar(submitBtn, '조회', FONT_SIZE.base, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeBase);
+    /* comp → body → submitBtn 순서로 먼저 추가해야 TEXT property reference 바인딩 가능 */
+    comp.appendChild(body);
+    body.appendChild(submitBtn);
+    const submitText = await addTextWithVar(submitBtn, '조회', FONT_SIZE.base, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeBase, 'submitLabel', comp);
     submitText.layoutAlign = 'STRETCH';
     submitText.textAlignHorizontal = 'CENTER';
-    body.appendChild(submitBtn);
-
-    comp.appendChild(body);
   }
 
   return comp;

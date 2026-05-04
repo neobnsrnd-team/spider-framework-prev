@@ -1,0 +1,40 @@
+{
+  "global": {
+    "keys": {
+      "Size":      "size",
+      "Variant":   "variant",
+      "Dot":       "dot",
+      "Loading":   "loading",
+      "Disabled":  "disabled",
+      "State":     "state",
+      "Type":      "type",
+      "Shape":     "shape",
+      "Intent":    "intent",
+      "Mode":      "mode",
+      "Compact":   "compact",
+      "Snap":      "snap",
+      "TitleAlign":"titleAlign",
+      "Justify":   "justify",
+      "Format":    "format",
+      "Weight":    "weight",
+      "Color":     "color",
+      "Icon":      "icon",
+      "Label":     "label"
+    }
+  },
+  "components": {
+    "input": {
+      "keys": {
+        "State": "validationState"
+      }
+    }
+  },
+  "values": {
+    "size": {
+      "Small":  "sm",
+      "Medium": "md",
+      "Large":  "lg"
+    },
+    "default": "lowercase"
+  }
+}

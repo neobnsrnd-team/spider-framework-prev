@@ -53,13 +53,13 @@ async function createBankCell(
   iconBox.fills = [{ type: 'SOLID', color: COLOR.surfaceRaised }];
   parentOrComp.appendChild(iconBox);
 
-  /* 은행명 (caption) */
+  /* 은행명 (caption) — parentOrComp가 ComponentNode일 때만 TEXT property 등록됨 */
   await addTextWithVar(
     parentOrComp, '하나은행', FONT_SIZE.xs,
     state === 'Selected' ? COLOR_VAR.brandPrimary : COLOR_VAR.textSecondary,
     state === 'Selected' ? BRAND.primary          : COLOR.textSecondary,
     state === 'Selected', /* Selected: bold */
-    SIZE_VAR.fontSizeXs,
+    SIZE_VAR.fontSizeXs, 'bankName',
   );
 }
 

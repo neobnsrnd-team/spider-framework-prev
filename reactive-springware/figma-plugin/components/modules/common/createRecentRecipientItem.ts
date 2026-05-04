@@ -14,7 +14,7 @@ import {
 import { createIcon } from '../../../icons';
 
 export async function createRecentRecipientItem(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('RecentRecipientItem');
   setAutoLayout(comp, 'HORIZONTAL', SPACING.sm);
   setPadding(comp, SPACING.sm, SPACING.md);
   comp.resize(390, 60);
@@ -42,20 +42,21 @@ export async function createRecentRecipientItem(): Promise<ComponentNode> {
   textGroup.counterAxisSizingMode = 'AUTO';
   clearFill(textGroup);
 
+  /* textGroup을 먼저 comp에 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(textGroup);
+  textGroup.layoutGrow = 1;
+
   const name = await addTextWithVar(
     textGroup, '홍길동', FONT_SIZE.sm,
-    COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm,
+    COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'name', comp,
   );
   name.textAlignHorizontal = 'LEFT';
 
   const sub = await addTextWithVar(
     textGroup, '하나은행 123-456-789012', FONT_SIZE.xs,
-    COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs,
+    COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'accountNumber', comp,
   );
   sub.textAlignHorizontal = 'LEFT';
-
-  textGroup.layoutGrow = 1;
-  comp.appendChild(textGroup);
 
   /* ChevronRight 아이콘 */
   comp.appendChild(createIcon('ChevronRight', 16, COLOR.textMuted));

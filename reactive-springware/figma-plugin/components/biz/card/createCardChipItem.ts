@@ -13,7 +13,7 @@ import {
 import { createIcon } from '../../../icons';
 
 export async function createCardChipItem(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('CardChipItem');
   setAutoLayout(comp, 'HORIZONTAL', SPACING.sm);
   setPadding(comp, SPACING.sm, SPACING.sm);
   comp.counterAxisAlignItems = 'CENTER';
@@ -39,9 +39,10 @@ export async function createCardChipItem(): Promise<ComponentNode> {
   info.counterAxisSizingMode = 'AUTO';
   clearFill(info);
 
-  await addTextWithVar(info, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm);
-  await addTextWithVar(info, '1234-****-****-5678', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
+  /* info를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(info);
+  await addTextWithVar(info, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'cardName', comp);
+  await addTextWithVar(info, '1234-****-****-5678', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'cardNumber', comp);
 
   figma.currentPage.appendChild(comp);
   return comp;

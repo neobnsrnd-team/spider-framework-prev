@@ -15,11 +15,11 @@ import { createIcon } from '../../../icons';
 const CARD_WIDTH = 390;
 
 export async function createCardBenefitSummary(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('CardBenefitSummary');
   setAutoLayout(comp, 'VERTICAL', 0, 'MIN');
   comp.resize(CARD_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   await setFloatVar(comp, 'cornerRadius', SIZE_VAR.radiusLg, RADIUS.lg);
   await setFillWithVar(comp, COLOR_VAR.surface, COLOR.surface);
   await setStrokeWithVar(comp, COLOR_VAR.borderSubtle, COLOR.borderSubtle);

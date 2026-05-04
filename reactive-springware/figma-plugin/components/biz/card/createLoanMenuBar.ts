@@ -21,7 +21,7 @@ const MENU_ITEMS = [
 ] as const;
 
 export async function createLoanMenuBar(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('LoanMenuBar');
   setAutoLayout(comp, 'HORIZONTAL', SPACING.xs);
   setPadding(comp, SPACING.xs, SPACING.sm);
   comp.counterAxisAlignItems = 'CENTER';
@@ -37,15 +37,16 @@ export async function createLoanMenuBar(): Promise<ComponentNode> {
     setPadding(btn, SPACING.xs, SPACING.md);
     btn.counterAxisAlignItems = 'CENTER';
     btn.layoutGrow = 1;
-    btn.counterAxisSizingMode = 'AUTO';
+    btn.resize(1, 1);                    /* resize를 먼저 호출해야 이후 AUTO 설정이 유효 */
     btn.primaryAxisSizingMode = 'FIXED';
-    btn.resize(1, 1);
+    btn.counterAxisSizingMode = 'AUTO';
     await setFloatVar(btn, 'cornerRadius', SIZE_VAR.radiusLg, RADIUS.lg);
     clearFill(btn);
 
     btn.appendChild(createIcon(icon, 14, COLOR.textSecondary));
-    await addTextWithVar(btn, label, FONT_SIZE.xs, COLOR_VAR.textLabel, COLOR.textLabel, true, SIZE_VAR.fontSizeXs);
+    /* btn을 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
     comp.appendChild(btn);
+    await addTextWithVar(btn, label, FONT_SIZE.xs, COLOR_VAR.textLabel, COLOR.textLabel, true, SIZE_VAR.fontSizeXs, 'menuLabel', comp);
   }
 
   figma.currentPage.appendChild(comp);

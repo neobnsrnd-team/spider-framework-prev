@@ -5,7 +5,10 @@
  * 컴포넌트 이름: "SelectableItem"
  */
 import { COLOR, BRAND, SPACING, RADIUS, FONT_SIZE } from '../../../tokens';
-import { createComponent, combineVariants, setAutoLayout, setPadding, setFill, setStroke, clearFill, clearStroke, addText } from '../../../helpers';
+import {
+  createComponent, combineVariants, setAutoLayout, setPadding,
+  setFill, setStroke, clearFill, clearStroke, addText, addIconSlot,
+} from '../../../helpers';
 
 async function createSelectableVariant(selected: boolean): Promise<ComponentNode> {
   const comp = createComponent(`Selected=${selected ? 'True' : 'False'}`);
@@ -26,11 +29,22 @@ async function createSelectableVariant(selected: boolean): Promise<ComponentNode
     clearStroke(comp);
   }
 
-  /* 아이콘 원형 */
-  const iconCircle = figma.createEllipse();
-  iconCircle.resize(40, 40);
-  setFill(iconCircle, selected ? BRAND.primary : COLOR.surfaceRaised);
-  comp.appendChild(iconCircle);
+  /* 아이콘 원형 배경 Frame — 이전의 createEllipse() 대체 */
+  const iconWrap = figma.createFrame();
+  setAutoLayout(iconWrap, 'HORIZONTAL', 0);
+  iconWrap.resize(40, 40);
+  iconWrap.primaryAxisSizingMode = 'FIXED';
+  iconWrap.counterAxisSizingMode = 'FIXED';
+  iconWrap.primaryAxisAlignItems = 'CENTER';
+  iconWrap.counterAxisAlignItems = 'CENTER';
+  /* RADIUS.full(9999)로 완전 원형 표현 */
+  iconWrap.cornerRadius = RADIUS.full;
+  setFill(iconWrap, selected ? BRAND.primary : COLOR.surfaceRaised);
+  comp.appendChild(iconWrap);
+
+  /* 아이콘 색: selected면 흰색(surface), 아니면 뮤트 텍스트 */
+  const iconColor = selected ? COLOR.surface : COLOR.textMuted;
+  addIconSlot(comp, 'Home', 24, iconColor, 'icon', iconWrap);
 
   await addText(comp, '항목', FONT_SIZE.xs, selected ? BRAND.text : COLOR.textBase, selected);
   return comp;

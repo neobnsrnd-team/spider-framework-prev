@@ -19,8 +19,8 @@ async function createStatementHeroVariant(state: 'Visible' | 'Hidden'): Promise<
   setAutoLayout(comp, 'VERTICAL', SPACING.sm, 'MIN');
   setPadding(comp, SPACING['2xl'], SPACING['2xl']);
   comp.resize(CARD_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   await setFloatVar(comp, 'cornerRadius', SIZE_VAR.radiusXl, RADIUS.xl);
   /* 브랜드 배경 */
   await setFillWithVar(comp, COLOR_VAR.brandPrimary, BRAND.primary);
@@ -39,7 +39,7 @@ async function createStatementHeroVariant(state: 'Visible' | 'Hidden'): Promise<
   comp.appendChild(decoCircle);
 
   /* 레이블 */
-  await addTextWithVar(comp, '이번 달 명세서', FONT_SIZE.sm, COLOR_VAR.brandFg, { ...BRAND.fg, r: 1, g: 1, b: 1 }, false, SIZE_VAR.fontSizeSm);
+  await addTextWithVar(comp, '이번 달 명세서', FONT_SIZE.sm, COLOR_VAR.brandFg, { ...BRAND.fg, r: 1, g: 1, b: 1 }, false, SIZE_VAR.fontSizeSm, 'cardLabel');
 
   /* 금액 + 원 단위 */
   const amountRow = figma.createFrame();
@@ -49,12 +49,13 @@ async function createStatementHeroVariant(state: 'Visible' | 'Hidden'): Promise<
   amountRow.counterAxisSizingMode = 'AUTO';
   clearFill(amountRow);
 
-  const amountText = state === 'Visible' ? '1,250,000' : '금액 숨김 중';
-  await addTextWithVar(amountRow, amountText, FONT_SIZE['4xl'], COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSize4xl);
-  if (state === 'Visible') {
-    await addTextWithVar(amountRow, '원', FONT_SIZE.xl, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeXl);
-  }
+  /* amountRow를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(amountRow);
+  const amountText = state === 'Visible' ? '1,250,000' : '금액 숨김 중';
+  await addTextWithVar(amountRow, amountText, FONT_SIZE['4xl'], COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSize4xl, 'amountValue', comp);
+  if (state === 'Visible') {
+    await addTextWithVar(amountRow, '원', FONT_SIZE.xl, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeXl, 'amountUnit', comp);
+  }
 
   /* 결제일 pill + 화살표 */
   const bottomRow = figma.createFrame();
@@ -68,17 +69,19 @@ async function createStatementHeroVariant(state: 'Visible' | 'Hidden'): Promise<
   bottomRow.resize(CARD_WIDTH - SPACING['2xl'] * 2, 1);
   clearFill(bottomRow);
 
+  /* bottomRow → comp, pill → bottomRow 순서로 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(bottomRow);
+
   /* 결제일 pill */
   const pill = figma.createFrame();
   setAutoLayout(pill, 'HORIZONTAL', 0);
   setPadding(pill, SPACING.xs, SPACING.md);
   await setFloatVar(pill, 'cornerRadius', SIZE_VAR.radiusFull, RADIUS.full);
   pill.fills = [{ type: 'SOLID', color: BRAND.fg, opacity: 0.2 }];
-  await addTextWithVar(pill, '결제일: 12월 25일', FONT_SIZE.xs, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeXs);
   bottomRow.appendChild(pill);
+  await addTextWithVar(pill, '결제일: 12월 25일', FONT_SIZE.xs, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeXs, 'paymentDateLabel', comp);
 
   bottomRow.appendChild(createIcon('ChevronRight', 16, BRAND.fg));
-  comp.appendChild(bottomRow);
 
   return comp;
 }

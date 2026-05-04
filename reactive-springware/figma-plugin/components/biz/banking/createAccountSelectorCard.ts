@@ -4,7 +4,9 @@
  * 계좌 선택 영역을 표현하는 단일 ComponentNode를 반환한다.
  */
 import { COLOR, BRAND, SPACING, RADIUS, FONT_SIZE } from '../../../tokens';
-import { createComponent, setAutoLayout, setPadding, setFill, setStroke, addText } from '../../../helpers';
+import {
+  createComponent, setAutoLayout, setPadding, setFill, setStroke, addText, addIconSlot,
+} from '../../../helpers';
 import { createIcon } from '../../../icons';
 
 export async function createAccountSelectorCard(): Promise<ComponentNode> {
@@ -34,11 +36,19 @@ export async function createAccountSelectorCard(): Promise<ComponentNode> {
   await addText(left, '잔액 1,234,567원', FONT_SIZE.xs, COLOR.textMuted);
   comp.appendChild(left);
 
-  /* 우측 원형 버튼 */
-  const rightBtn = figma.createEllipse();
+  /* 우측 원형 액션 버튼 Frame — 이전의 createEllipse() 대체 */
+  const rightBtn = figma.createFrame();
+  setAutoLayout(rightBtn, 'HORIZONTAL', 0);
   rightBtn.resize(48, 48);
+  rightBtn.primaryAxisSizingMode = 'FIXED';
+  rightBtn.counterAxisSizingMode = 'FIXED';
+  rightBtn.primaryAxisAlignItems = 'CENTER';
+  rightBtn.counterAxisAlignItems = 'CENTER';
+  rightBtn.cornerRadius = RADIUS.full;
   setFill(rightBtn, BRAND.bg);
   comp.appendChild(rightBtn);
+  /* ChevronRight를 디폴트로 설정 — 디자이너가 액션 유형에 맞게 swap 가능 */
+  addIconSlot(comp, 'ChevronRight', 24, BRAND.primary, 'actionIcon', rightBtn);
 
   figma.currentPage.appendChild(comp);
   return comp;

@@ -3,32 +3,32 @@
  * @file createComponents.ts
  * @description React component-library의 모든 컴포넌트를 카테고리별 섹션으로 생성·배치한다.
  *
- * 캔버스 레이아웃:
- * ● Core            — Button, Button/WithIcon, Button/IconOnly, Button/FullWidth,
- *                     Badge,
- *                     Input, Input/WithLabel, Input/WithHelper, Input/WithIcon, Input/Format, Input/FullWidth,
- *                     Typography, Select
- * ● Modules/Common  — SectionHeader, AlertBanner, EmptyState, InfoRow, LabelValueRow,
- *                     DividerWithLabel, SelectableItem, ActionLinkItem, NoticeItem,
- *                     CollapsibleSection, SuccessHero, Card, BalanceToggle, DropdownMenu,
- *                     Checkbox, Divider, StepIndicator, ErrorState, SelectableListItem,
- *                     RecentRecipientItem, SidebarNav, BankSelectGrid/Item, BankSelectGrid,
- *                     TransferLimitInfo, DatePicker, PinConfirmSheet, BottomSheet, Modal, TabNav
- * ● Modules/Banking — AccountSelectItem, AmountInput, OtpInput,
- *                     NumberKeypad, PinDotIndicator, TransactionList,
- *                     TransactionSearchFilter, TransferForm
- * ● Layout          — PageHeader, HomeHeader, AppBrandHeader, BottomNav, ModalSlideOver,
- *                     PageLayouts(Blank|Page|Home),
- *                     Stack(Gap=sm|md|lg), Inline(Justify=Start|Between|End),
- *                     Grid(Cols=2|3|4), Section(HasTitle=True|False)
- * ● Biz/Banking     — AccountSummaryCard, AccountSelectorCard
- * ● Biz/Common      — QuickMenuGrid, BannerCarousel, UserProfile, BrandBanner
- * ● Biz/Card        — CardVisual, CardPillTab, CardSummaryCard, CardChipItem, CardInfoPanel,
- *                     CardPaymentItem, CardPaymentActions, CardPaymentSummary, CardBenefitSummary,
- *                     CardLinkedBalance, CardManagementPanel, CardPerformanceBar, BillingPeriodLabel,
- *                     AccountSelectCard, PaymentAccountCard, StatementHeroCard, StatementTotalCard,
- *                     SummaryCard, QuickShortcutCard, LoanMenuBar, UsageHistoryFilterSheet,
- *                     UsageTransactionItem
+ * 캔버스 레이아웃 (섹션 순서 → 섹션 내 알파벳 순 정렬):
+ * ● Core            — Badge,
+ *                     Button, Button/FullWidth, Button/IconOnly, Button/WithIcon,
+ *                     Input, Input/Format, Input/FullWidth, Input/WithHelper, Input/WithIcon, Input/WithLabel,
+ *                     Select, Typography
+ * ● Layout          — AppBrandHeader, BottomNav, Grid, HomeHeader, Inline,
+ *                     ModalSlideOver, PageHeader, PageLayouts(Blank|Page|Home),
+ *                     Section(HasTitle=True|False), Stack(Gap=sm|md|lg)
+ * ● Modules/Common  — ActionLinkItem, AlertBanner, BalanceToggle,
+ *                     BankSelectGrid, BankSelectGridItem, BottomSheet, Card, Checkbox,
+ *                     CollapsibleSection, DatePicker, Divider, DividerWithLabel, DropdownMenu,
+ *                     EmptyState, ErrorState, InfoRow, LabelValueRow, Modal, NoticeItem,
+ *                     PinConfirmSheet, RecentRecipientItem, SectionHeader,
+ *                     SelectableItem, SelectableListItem, SidebarNav, StepIndicator,
+ *                     SuccessHero, TabNav, TransferLimitInfo
+ * ● Modules/Banking — AccountSelectItem, AmountInput, NumberKeypad, OtpInput,
+ *                     PinDotIndicator, TransactionList, TransactionSearchFilter, TransferForm
+ * ● Biz/Common      — BannerCarousel, BrandBanner, QuickMenuGrid, UserProfile
+ * ● Biz/Banking     — AccountSelectorCard, AccountSummaryCard
+ * ● Biz/Card        — AccountSelectCard, BillingPeriodLabel,
+ *                     CardBenefitSummary, CardChipItem, CardInfoPanel, CardLinkedBalance,
+ *                     CardManagementPanel, CardPaymentActions, CardPaymentItem, CardPaymentSummary,
+ *                     CardPerformanceBar, CardPillTab, CardSummaryCard, CardVisual,
+ *                     LoanMenuBar, PaymentAccountCard, QuickShortcutCard,
+ *                     StatementHeroCard, StatementTotalCard, SummaryCard,
+ *                     UsageHistoryFilterSheet, UsageTransactionItem
  * ● Biz/Insurance   — InsuranceSummaryCard
  *
  * @returns 완료 메시지 문자열
@@ -55,45 +55,6 @@ import {
 import { createTypography }       from './components/core/createTypography';
 import { createSelect }           from './components/core/createSelect';
 
-/* modules/common */
-import { createSectionHeader }    from './components/modules/common/createSectionHeader';
-import { createAlertBanner }      from './components/modules/common/createAlertBanner';
-import { createEmptyState }       from './components/modules/common/createEmptyState';
-import { createInfoRow, createLabelValueRow } from './components/modules/common/createInfoRow';
-import { createDividerWithLabel } from './components/modules/common/createDividerWithLabel';
-import { createSelectableItem }   from './components/modules/common/createSelectableItem';
-import { createActionLinkItem }   from './components/modules/common/createActionLinkItem';
-import { createNoticeItem }       from './components/modules/common/createNoticeItem';
-import { createCollapsibleSection}from './components/modules/common/createCollapsibleSection';
-import { createSuccessHero }      from './components/modules/common/createSuccessHero';
-import { createCard }             from './components/modules/common/createCard';
-import { createBalanceToggle }    from './components/modules/common/createBalanceToggle';
-import { createDropdownMenu }     from './components/modules/common/createDropdownMenu';
-import { createCheckbox }         from './components/modules/common/createCheckbox';
-import { createDivider }          from './components/modules/common/createDivider';
-import { createStepIndicator }    from './components/modules/common/createStepIndicator';
-import { createErrorState }       from './components/modules/common/createErrorState';
-import { createSelectableListItem }  from './components/modules/common/createSelectableListItem';
-import { createRecentRecipientItem } from './components/modules/common/createRecentRecipientItem';
-import { createSidebarNav }       from './components/modules/common/createSidebarNav';
-import { createBankSelectGridItem, createBankSelectGrid } from './components/modules/common/createBankSelectGrid';
-import { createTransferLimitInfo } from './components/modules/common/createTransferLimitInfo';
-import { createDatePicker }       from './components/modules/common/createDatePicker';
-import { createPinConfirmSheet }  from './components/modules/common/createPinConfirmSheet';
-import { createModal }            from './components/modules/common/createModal';
-import { createBottomSheet }      from './components/modules/common/createBottomSheet';
-import { createTabNav }           from './components/modules/common/createTabNav';
-
-/* modules/banking */
-import { createAccountSelectItem }from './components/modules/banking/createAccountSelectItem';
-import { createAmountInput }      from './components/modules/banking/createAmountInput';
-import { createOtpInput }         from './components/modules/banking/createOtpInput';
-import { createNumberKeypad }          from './components/modules/banking/createNumberKeypad';
-import { createPinDotIndicator }       from './components/modules/banking/createPinDotIndicator';
-import { createTransactionList }       from './components/modules/banking/createTransactionList';
-import { createTransactionSearchFilter } from './components/modules/banking/createTransactionSearchFilter';
-import { createTransferForm }          from './components/modules/banking/createTransferForm';
-
 /* layout */
 import { createBottomNav }          from './components/layout/createBottomNav';
 import { createPageHeader, createHomeHeader } from './components/layout/createPageHeaders';
@@ -105,37 +66,76 @@ import { createInline }             from './components/layout/createInline';
 import { createGrid }               from './components/layout/createGrid';
 import { createSection }            from './components/layout/createSection';
 
-/* biz/banking */
-import { createAccountSummaryCard }  from './components/biz/banking/createAccountSummaryCard';
-import { createAccountSelectorCard } from './components/biz/banking/createAccountSelectorCard';
+/* modules/common */
+import { createActionLinkItem }   from './components/modules/common/createActionLinkItem';
+import { createAlertBanner }      from './components/modules/common/createAlertBanner';
+import { createBalanceToggle }    from './components/modules/common/createBalanceToggle';
+import { createBankSelectGridItem, createBankSelectGrid } from './components/modules/common/createBankSelectGrid';
+import { createBottomSheet }      from './components/modules/common/createBottomSheet';
+import { createCard }             from './components/modules/common/createCard';
+import { createCheckbox }         from './components/modules/common/createCheckbox';
+import { createCollapsibleSection}from './components/modules/common/createCollapsibleSection';
+import { createDatePicker }       from './components/modules/common/createDatePicker';
+import { createDivider }          from './components/modules/common/createDivider';
+import { createDividerWithLabel } from './components/modules/common/createDividerWithLabel';
+import { createDropdownMenu }     from './components/modules/common/createDropdownMenu';
+import { createEmptyState }       from './components/modules/common/createEmptyState';
+import { createErrorState }       from './components/modules/common/createErrorState';
+import { createInfoRow, createLabelValueRow } from './components/modules/common/createInfoRow';
+import { createModal }            from './components/modules/common/createModal';
+import { createNoticeItem }       from './components/modules/common/createNoticeItem';
+import { createPinConfirmSheet }  from './components/modules/common/createPinConfirmSheet';
+import { createRecentRecipientItem } from './components/modules/common/createRecentRecipientItem';
+import { createSectionHeader }    from './components/modules/common/createSectionHeader';
+import { createSelectableItem }   from './components/modules/common/createSelectableItem';
+import { createSelectableListItem }  from './components/modules/common/createSelectableListItem';
+import { createSidebarNav }       from './components/modules/common/createSidebarNav';
+import { createStepIndicator }    from './components/modules/common/createStepIndicator';
+import { createSuccessHero }      from './components/modules/common/createSuccessHero';
+import { createTabNav }           from './components/modules/common/createTabNav';
+import { createTransferLimitInfo } from './components/modules/common/createTransferLimitInfo';
+
+/* modules/banking */
+import { createAccountSelectItem }from './components/modules/banking/createAccountSelectItem';
+import { createAmountInput }      from './components/modules/banking/createAmountInput';
+import { createNumberKeypad }          from './components/modules/banking/createNumberKeypad';
+import { createOtpInput }         from './components/modules/banking/createOtpInput';
+import { createPinDotIndicator }       from './components/modules/banking/createPinDotIndicator';
+import { createTransactionList }       from './components/modules/banking/createTransactionList';
+import { createTransactionSearchFilter } from './components/modules/banking/createTransactionSearchFilter';
+import { createTransferForm }          from './components/modules/banking/createTransferForm';
 
 /* biz/common */
-import { createQuickMenuGrid }       from './components/biz/common/createQuickMenuGrid';
 import { createBannerCarousel }      from './components/biz/common/createBannerCarousel';
-import { createUserProfile }         from './components/biz/common/createUserProfile';
 import { createBrandBanner }         from './components/biz/common/createBrandBanner';
+import { createQuickMenuGrid }       from './components/biz/common/createQuickMenuGrid';
+import { createUserProfile }         from './components/biz/common/createUserProfile';
+
+/* biz/banking */
+import { createAccountSelectorCard } from './components/biz/banking/createAccountSelectorCard';
+import { createAccountSummaryCard }  from './components/biz/banking/createAccountSummaryCard';
 
 /* biz/card */
-import { createCardVisual }              from './components/biz/card/createCardVisual';
-import { createCardPillTab }             from './components/biz/card/createCardPillTab';
-import { createCardSummaryCard }         from './components/biz/card/createCardSummaryCard';
+import { createAccountSelectCard }       from './components/biz/card/createAccountSelectCard';
+import { createBillingPeriodLabel }      from './components/biz/card/createBillingPeriodLabel';
+import { createCardBenefitSummary }      from './components/biz/card/createCardBenefitSummary';
 import { createCardChipItem }            from './components/biz/card/createCardChipItem';
 import { createCardInfoPanel }           from './components/biz/card/createCardInfoPanel';
-import { createCardPaymentItem }         from './components/biz/card/createCardPaymentItem';
-import { createCardPaymentActions }      from './components/biz/card/createCardPaymentActions';
-import { createCardPaymentSummary }      from './components/biz/card/createCardPaymentSummary';
-import { createCardBenefitSummary }      from './components/biz/card/createCardBenefitSummary';
 import { createCardLinkedBalance }       from './components/biz/card/createCardLinkedBalance';
 import { createCardManagementPanel }     from './components/biz/card/createCardManagementPanel';
+import { createCardPaymentActions }      from './components/biz/card/createCardPaymentActions';
+import { createCardPaymentItem }         from './components/biz/card/createCardPaymentItem';
+import { createCardPaymentSummary }      from './components/biz/card/createCardPaymentSummary';
 import { createCardPerformanceBar }      from './components/biz/card/createCardPerformanceBar';
-import { createBillingPeriodLabel }      from './components/biz/card/createBillingPeriodLabel';
-import { createAccountSelectCard }       from './components/biz/card/createAccountSelectCard';
+import { createCardPillTab }             from './components/biz/card/createCardPillTab';
+import { createCardSummaryCard }         from './components/biz/card/createCardSummaryCard';
+import { createCardVisual }              from './components/biz/card/createCardVisual';
+import { createLoanMenuBar }             from './components/biz/card/createLoanMenuBar';
 import { createPaymentAccountCard }      from './components/biz/card/createPaymentAccountCard';
+import { createQuickShortcutCard }       from './components/biz/card/createQuickShortcutCard';
 import { createStatementHeroCard }       from './components/biz/card/createStatementHeroCard';
 import { createStatementTotalCard }      from './components/biz/card/createStatementTotalCard';
 import { createSummaryCard }             from './components/biz/card/createSummaryCard';
-import { createQuickShortcutCard }       from './components/biz/card/createQuickShortcutCard';
-import { createLoanMenuBar }             from './components/biz/card/createLoanMenuBar';
 import { createUsageHistoryFilterSheet } from './components/biz/card/createUsageHistoryFilterSheet';
 import { createUsageTransactionItem }    from './components/biz/card/createUsageTransactionItem';
 
@@ -218,88 +218,91 @@ export async function createComponents(): Promise<string> {
   await figma.loadFontAsync({ family: FONT_FAMILY.sans, style: 'Medium' });
   await figma.loadFontAsync({ family: FONT_FAMILY.sans, style: 'Bold' });
 
-  /* 2. 컴포넌트 생성 */
+  /* 2. 컴포넌트 생성 — 섹션 순서: Core → Layout → Modules/Common → Modules/Banking → Biz/Common → Biz/Banking → Biz/Card → Biz/Insurance */
+
+  /* ── Core (알파벳 순) ────────────────────────────────── */
   const coreNodes: SceneNode[] = [
-    await s('createButton',         createButton),
-    await s('createButtonWithIcon', createButtonWithIcon),
-    await s('createButtonIconOnly', createButtonIconOnly),
-    await s('createButtonFullWidth',createButtonFullWidth),
-    await s('createBadge',          createBadge),
-    await s('createInput',          createInput),
-    await s('createInputWithLabel', createInputWithLabel),
-    await s('createInputWithHelper',createInputWithHelper),
-    await s('createInputWithIcon',  createInputWithIcon),
-    await s('createInputFormat',    createInputFormat),
-    await s('createInputFullWidth', createInputFullWidth),
-    await s('createTypography',     createTypography),
-    await s('createSelect',         createSelect),
+    await s('createBadge',           createBadge),
+    await s('createButton',          createButton),
+    await s('createButtonFullWidth', createButtonFullWidth),
+    await s('createButtonIconOnly',  createButtonIconOnly),
+    await s('createButtonWithIcon',  createButtonWithIcon),
+    await s('createInput',           createInput),
+    await s('createInputFormat',     createInputFormat),
+    await s('createInputFullWidth',  createInputFullWidth),
+    await s('createInputWithHelper', createInputWithHelper),
+    await s('createInputWithIcon',   createInputWithIcon),
+    await s('createInputWithLabel',  createInputWithLabel),
+    await s('createSelect',          createSelect),
+    await s('createTypography',      createTypography),
   ];
 
-  const moduleCommonNodes: SceneNode[] = [
-    await s('createSectionHeader',     createSectionHeader),
-    await s('createAlertBanner',       createAlertBanner),
-    await s('createEmptyState',        createEmptyState),
-    await s('createInfoRow',           createInfoRow),
-    await s('createLabelValueRow',     createLabelValueRow),
-    await s('createDividerWithLabel',  createDividerWithLabel),
-    await s('createSelectableItem',    createSelectableItem),
-    await s('createActionLinkItem',    createActionLinkItem),
-    await s('createNoticeItem',        createNoticeItem),
-    await s('createCollapsibleSection',createCollapsibleSection),
-    await s('createSuccessHero',       createSuccessHero),
-    await s('createCard',              createCard),
-    await s('createBalanceToggle',     createBalanceToggle),
-    await s('createDropdownMenu',      createDropdownMenu),
-    await s('createCheckbox',          createCheckbox),
-    await s('createDivider',           createDivider),
-    await s('createStepIndicator',     createStepIndicator),
-    await s('createErrorState',        createErrorState),
-    await s('createSelectableListItem',createSelectableListItem),
-    await s('createRecentRecipientItem',createRecentRecipientItem),
-    await s('createSidebarNav',        createSidebarNav),
-    await s('createBankSelectGridItem',createBankSelectGridItem),
-    await s('createBankSelectGrid',    createBankSelectGrid),
-    await s('createTransferLimitInfo', createTransferLimitInfo),
-    await s('createDatePicker',        createDatePicker),
-    await s('createPinConfirmSheet',   createPinConfirmSheet),
-    await s('createBottomSheet',       createBottomSheet),
-    await s('createModal',             createModal),
-    await s('createTabNav',            createTabNav),
-  ];
-
-  const moduleBankingNodes: SceneNode[] = [
-    await s('createAccountSelectItem',      createAccountSelectItem),
-    await s('createAmountInput',            createAmountInput),
-    await s('createOtpInput',               createOtpInput),
-    await s('createNumberKeypad',           createNumberKeypad),
-    await s('createPinDotIndicator',        createPinDotIndicator),
-    await s('createTransactionList',        createTransactionList),
-    await s('createTransactionSearchFilter',createTransactionSearchFilter),
-    await s('createTransferForm',           createTransferForm),
-  ];
-
-  /* layout 컴포넌트 참조를 변수에 저장 — createPageLayouts에서 인스턴스 생성에 사용 */
-  const pageHeader     = await s('createPageHeader',    createPageHeader);
-  const homeHeader     = await s('createHomeHeader',    createHomeHeader);
-  const appBrandHeader = await s('createAppBrandHeader',createAppBrandHeader);
-  const bottomNav      = await s('createBottomNav',     createBottomNav);
-  const modalSlideOver = await s('createModalSlideOver',createModalSlideOver);
+  /* ── Layout (의존 관계 순 생성 → 알파벳 순 배치) ────── */
+  /* PageLayouts는 pageHeader / homeHeader / bottomNav 인스턴스를 내부에서 사용하므로
+   * 이 세 컴포넌트를 먼저 생성한 뒤 createPageLayouts에 전달해야 한다. */
+  const pageHeader     = await s('createPageHeader',     createPageHeader);
+  const homeHeader     = await s('createHomeHeader',     createHomeHeader);
+  const appBrandHeader = await s('createAppBrandHeader', createAppBrandHeader);
+  const bottomNav      = await s('createBottomNav',      createBottomNav);
+  const modalSlideOver = await s('createModalSlideOver', createModalSlideOver);
   _step = 'createPageLayouts';
   const pageLayouts    = await createPageLayouts(pageHeader, homeHeader, bottomNav);
+  const grid           = await s('createGrid',    createGrid);
+  const inline         = await s('createInline',  createInline);
+  const section        = await s('createSection', createSection);
+  const stack          = await s('createStack',   createStack);
 
   const layoutNodes: SceneNode[] = [
-    pageHeader, homeHeader, appBrandHeader, bottomNav, modalSlideOver, pageLayouts,
-    await s('createStack',   createStack),
-    await s('createInline',  createInline),
-    await s('createGrid',    createGrid),
-    await s('createSection', createSection),
+    appBrandHeader, bottomNav, grid, homeHeader, inline,
+    modalSlideOver, pageHeader, pageLayouts, section, stack,
   ];
 
-  const bizBankingNodes: SceneNode[] = [
-    await s('createAccountSummaryCard',  createAccountSummaryCard),
-    await s('createAccountSelectorCard', createAccountSelectorCard),
+  /* ── Modules/Common (알파벳 순) ──────────────────────── */
+  const moduleCommonNodes: SceneNode[] = [
+    await s('createActionLinkItem',      createActionLinkItem),
+    await s('createAlertBanner',         createAlertBanner),
+    await s('createBalanceToggle',       createBalanceToggle),
+    await s('createBankSelectGrid',      createBankSelectGrid),
+    await s('createBankSelectGridItem',  createBankSelectGridItem),
+    await s('createBottomSheet',         createBottomSheet),
+    await s('createCard',                createCard),
+    await s('createCheckbox',            createCheckbox),
+    await s('createCollapsibleSection',  createCollapsibleSection),
+    await s('createDatePicker',          createDatePicker),
+    await s('createDivider',             createDivider),
+    await s('createDividerWithLabel',    createDividerWithLabel),
+    await s('createDropdownMenu',        createDropdownMenu),
+    await s('createEmptyState',          createEmptyState),
+    await s('createErrorState',          createErrorState),
+    await s('createInfoRow',             createInfoRow),
+    await s('createLabelValueRow',       createLabelValueRow),
+    await s('createModal',               createModal),
+    await s('createNoticeItem',          createNoticeItem),
+    await s('createPinConfirmSheet',     createPinConfirmSheet),
+    await s('createRecentRecipientItem', createRecentRecipientItem),
+    await s('createSectionHeader',       createSectionHeader),
+    await s('createSelectableItem',      createSelectableItem),
+    await s('createSelectableListItem',  createSelectableListItem),
+    await s('createSidebarNav',          createSidebarNav),
+    await s('createStepIndicator',       createStepIndicator),
+    await s('createSuccessHero',         createSuccessHero),
+    await s('createTabNav',              createTabNav),
+    await s('createTransferLimitInfo',   createTransferLimitInfo),
   ];
 
+  /* ── Modules/Banking (알파벳 순) ─────────────────────── */
+  const moduleBankingNodes: SceneNode[] = [
+    await s('createAccountSelectItem',        createAccountSelectItem),
+    await s('createAmountInput',              createAmountInput),
+    await s('createNumberKeypad',             createNumberKeypad),
+    await s('createOtpInput',                 createOtpInput),
+    await s('createPinDotIndicator',          createPinDotIndicator),
+    await s('createTransactionList',          createTransactionList),
+    await s('createTransactionSearchFilter',  createTransactionSearchFilter),
+    await s('createTransferForm',             createTransferForm),
+  ];
+
+  /* ── Biz/Common (알파벳 순) ──────────────────────────── */
   const bizCommonNodes: SceneNode[] = [
     await s('createBannerCarousel', createBannerCarousel),
     await s('createBrandBanner',    createBrandBanner),
@@ -307,31 +310,39 @@ export async function createComponents(): Promise<string> {
     await s('createUserProfile',    createUserProfile),
   ];
 
-  const bizCardNodes: SceneNode[] = [
-    await s('createCardVisual',           createCardVisual),
-    await s('createCardPillTab',          createCardPillTab),
-    await s('createCardSummaryCard',      createCardSummaryCard),
-    await s('createCardChipItem',         createCardChipItem),
-    await s('createCardInfoPanel',        createCardInfoPanel),
-    await s('createCardPaymentItem',      createCardPaymentItem),
-    await s('createCardPaymentActions',   createCardPaymentActions),
-    await s('createCardPaymentSummary',   createCardPaymentSummary),
-    await s('createCardBenefitSummary',   createCardBenefitSummary),
-    await s('createCardLinkedBalance',    createCardLinkedBalance),
-    await s('createCardManagementPanel',  createCardManagementPanel),
-    await s('createCardPerformanceBar',   createCardPerformanceBar),
-    await s('createBillingPeriodLabel',   createBillingPeriodLabel),
-    await s('createAccountSelectCard',    createAccountSelectCard),
-    await s('createPaymentAccountCard',   createPaymentAccountCard),
-    await s('createStatementHeroCard',    createStatementHeroCard),
-    await s('createStatementTotalCard',   createStatementTotalCard),
-    await s('createSummaryCard',          createSummaryCard),
-    await s('createQuickShortcutCard',    createQuickShortcutCard),
-    await s('createLoanMenuBar',          createLoanMenuBar),
-    await s('createUsageHistoryFilterSheet',createUsageHistoryFilterSheet),
-    await s('createUsageTransactionItem', createUsageTransactionItem),
+  /* ── Biz/Banking (알파벳 순) ─────────────────────────── */
+  const bizBankingNodes: SceneNode[] = [
+    await s('createAccountSelectorCard', createAccountSelectorCard),
+    await s('createAccountSummaryCard',  createAccountSummaryCard),
   ];
 
+  /* ── Biz/Card (알파벳 순) ────────────────────────────── */
+  const bizCardNodes: SceneNode[] = [
+    await s('createAccountSelectCard',         createAccountSelectCard),
+    await s('createBillingPeriodLabel',        createBillingPeriodLabel),
+    await s('createCardBenefitSummary',        createCardBenefitSummary),
+    await s('createCardChipItem',              createCardChipItem),
+    await s('createCardInfoPanel',             createCardInfoPanel),
+    await s('createCardLinkedBalance',         createCardLinkedBalance),
+    await s('createCardManagementPanel',       createCardManagementPanel),
+    await s('createCardPaymentActions',        createCardPaymentActions),
+    await s('createCardPaymentItem',           createCardPaymentItem),
+    await s('createCardPaymentSummary',        createCardPaymentSummary),
+    await s('createCardPerformanceBar',        createCardPerformanceBar),
+    await s('createCardPillTab',               createCardPillTab),
+    await s('createCardSummaryCard',           createCardSummaryCard),
+    await s('createCardVisual',                createCardVisual),
+    await s('createLoanMenuBar',               createLoanMenuBar),
+    await s('createPaymentAccountCard',        createPaymentAccountCard),
+    await s('createQuickShortcutCard',         createQuickShortcutCard),
+    await s('createStatementHeroCard',         createStatementHeroCard),
+    await s('createStatementTotalCard',        createStatementTotalCard),
+    await s('createSummaryCard',               createSummaryCard),
+    await s('createUsageHistoryFilterSheet',   createUsageHistoryFilterSheet),
+    await s('createUsageTransactionItem',      createUsageTransactionItem),
+  ];
+
+  /* ── Biz/Insurance ───────────────────────────────────── */
   const bizInsuranceNodes: SceneNode[] = [
     await s('createInsuranceSummaryCard', createInsuranceSummaryCard),
   ];
@@ -340,16 +351,16 @@ export async function createComponents(): Promise<string> {
   let nextY = 0;
   _step = 'layoutSection:Core';
   nextY = layoutSection('Core',            coreNodes,          nextY);
+  _step = 'layoutSection:Layout';
+  nextY = layoutSection('Layout',          layoutNodes,        nextY);
   _step = 'layoutSection:Modules/Common';
   nextY = layoutSection('Modules/Common',  moduleCommonNodes,  nextY);
   _step = 'layoutSection:Modules/Banking';
   nextY = layoutSection('Modules/Banking', moduleBankingNodes, nextY);
-  _step = 'layoutSection:Layout';
-  nextY = layoutSection('Layout',          layoutNodes,        nextY);
-  _step = 'layoutSection:Biz/Banking';
-  nextY = layoutSection('Biz/Banking',     bizBankingNodes,    nextY);
   _step = 'layoutSection:Biz/Common';
   nextY = layoutSection('Biz/Common',      bizCommonNodes,     nextY);
+  _step = 'layoutSection:Biz/Banking';
+  nextY = layoutSection('Biz/Banking',     bizBankingNodes,    nextY);
   _step = 'layoutSection:Biz/Card';
   nextY = layoutSection('Biz/Card',        bizCardNodes,       nextY);
   _step = 'layoutSection:Biz/Insurance';
@@ -357,8 +368,8 @@ export async function createComponents(): Promise<string> {
 
   /* 4. 뷰포트 맞춤 */
   figma.viewport.scrollAndZoomIntoView([
-    ...coreNodes, ...moduleCommonNodes, ...moduleBankingNodes, ...layoutNodes,
-    ...bizBankingNodes, ...bizCommonNodes, ...bizCardNodes, ...bizInsuranceNodes,
+    ...coreNodes, ...layoutNodes, ...moduleCommonNodes, ...moduleBankingNodes,
+    ...bizCommonNodes, ...bizBankingNodes, ...bizCardNodes, ...bizInsuranceNodes,
   ]);
 
   return '✅ React Component Library 생성 완료! (총 89개 컴포넌트)';

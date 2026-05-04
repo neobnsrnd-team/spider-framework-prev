@@ -14,7 +14,7 @@ import {
 import { createIcon } from '../../../icons';
 
 export async function createQuickShortcutCard(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('QuickShortcutCard');
   setAutoLayout(comp, 'HORIZONTAL', SPACING.md);
   setPadding(comp, SPACING.lg, SPACING.lg);
   comp.primaryAxisAlignItems = 'SPACE_BETWEEN';
@@ -31,9 +31,10 @@ export async function createQuickShortcutCard(): Promise<ComponentNode> {
   setAutoLayout(textArea, 'VERTICAL', SPACING.xs, 'MIN');
   textArea.layoutGrow = 1;
   clearFill(textArea);
-  await addTextWithVar(textArea, '내 쿠폰', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm);
-  await addTextWithVar(textArea, '3장 사용가능', FONT_SIZE.xs, COLOR_VAR.brandText, BRAND.text, true, SIZE_VAR.fontSizeXs);
+  /* textArea를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(textArea);
+  await addTextWithVar(textArea, '내 쿠폰', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'cardTitle', comp);
+  await addTextWithVar(textArea, '3장 사용가능', FONT_SIZE.xs, COLOR_VAR.brandText, BRAND.text, true, SIZE_VAR.fontSizeXs, 'couponCount', comp);
 
   comp.appendChild(createIcon('Ticket', 20, COLOR.textMuted));
 

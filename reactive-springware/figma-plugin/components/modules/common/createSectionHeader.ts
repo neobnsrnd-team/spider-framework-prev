@@ -56,8 +56,11 @@ async function createSectionHeaderVariant(
   left.counterAxisAlignItems = 'CENTER';
   left.fills = [];
 
+  /* left를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(left);
+
   /* 섹션 제목 — React: text-xl font-bold text-text-heading */
-  await addTextWithVar(left, '섹션 제목', FONT_SIZE.xl, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeXl);
+  await addTextWithVar(left, '섹션 제목', FONT_SIZE.xl, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeXl, 'title', comp);
 
   if (hasBadge) {
     /* 배지 — React: rounded-full px-sm py-0.5 text-xs font-bold bg-brand-10 text-brand-text */
@@ -72,12 +75,11 @@ async function createSectionHeaderVariant(
     badge.counterAxisSizingMode = 'AUTO';
     await setFloatVar(badge, 'cornerRadius', SIZE_VAR.radiusFull, RADIUS.full);
     await setFillWithVar(badge, COLOR_VAR.brandBg, BRAND.bg);
-    /* Figma에서는 고정 문자열 '3'으로 표현 — React에서는 badge: number가 문자열로 변환됨 */
-    await addTextWithVar(badge, '3', FONT_SIZE.xs, COLOR_VAR.brandText, BRAND.text, true, SIZE_VAR.fontSizeXs);
+    /* badge를 left에 먼저 추가해야 TEXT property reference 바인딩 가능 */
     left.appendChild(badge);
+    /* Figma에서는 고정 문자열 '3'으로 표현 — React에서는 badge: number가 문자열로 변환됨 */
+    await addTextWithVar(badge, '3', FONT_SIZE.xs, COLOR_VAR.brandText, BRAND.text, true, SIZE_VAR.fontSizeXs, 'badgeCount', comp);
   }
-
-  comp.appendChild(left);
 
   /* ── 우측 영역: 액션 텍스트 + ChevronRight ─────────────────── */
   if (hasAction) {
@@ -90,12 +92,13 @@ async function createSectionHeaderVariant(
     actionRow.counterAxisAlignItems = 'CENTER';
     actionRow.fills = [];
 
+    /* actionRow를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+    comp.appendChild(actionRow);
+
     /* React: text-xs font-medium text-text-secondary / hover:text-brand-text */
-    await addTextWithVar(actionRow, '전체보기', FONT_SIZE.xs, COLOR_VAR.textSecondary, COLOR.textSecondary, false, SIZE_VAR.fontSizeXs);
+    await addTextWithVar(actionRow, '전체보기', FONT_SIZE.xs, COLOR_VAR.textSecondary, COLOR.textSecondary, false, SIZE_VAR.fontSizeXs, 'actionLabel', comp);
     /* React: ChevronRight size-3.5(14px) — 아이콘 색상은 텍스트와 동일 */
     actionRow.appendChild(createIcon('ChevronRight', 14, COLOR.textSecondary));
-
-    comp.appendChild(actionRow);
   }
 
   return comp;

@@ -45,24 +45,26 @@ async function createCardPaymentVariant(type: 'Normal' | 'Refund'): Promise<Comp
   info.layoutGrow = 1;
   clearFill(info);
 
-  await addTextWithVar(info, 'HANA MONEY CHECK', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
-  await addTextWithVar(info, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm);
+  /* info를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(info);
+  await addTextWithVar(info, 'HANA MONEY CHECK', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'cardNetworkLabel', comp);
+  await addTextWithVar(info, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'cardName', comp);
 
   /* 금액 + 상세보기 */
   const right = figma.createFrame();
   setAutoLayout(right, 'VERTICAL', 2, 'MAX');
   clearFill(right);
 
+  /* right를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  comp.appendChild(right);
   const amountText = isRefund ? '-15,000원' : '15,000원';
   await addTextWithVar(
     right, amountText, FONT_SIZE.sm,
     isRefund ? COLOR_VAR.brandText : COLOR_VAR.textHeading,
     isRefund ? BRAND.text         : COLOR.textHeading,
-    true, SIZE_VAR.fontSizeSm,
+    true, SIZE_VAR.fontSizeSm, 'transactionAmount', comp,
   );
-  await addTextWithVar(right, '상세보기', FONT_SIZE.xs, COLOR_VAR.brandText, BRAND.text, false, SIZE_VAR.fontSizeXs);
-  comp.appendChild(right);
+  await addTextWithVar(right, '상세보기', FONT_SIZE.xs, COLOR_VAR.brandText, BRAND.text, false, SIZE_VAR.fontSizeXs, 'detailLabel', comp);
 
   return comp;
 }

@@ -204,13 +204,22 @@ export async function setFloatVar(
  * TextNode를 생성·설정하고 fill과 fontSize를 Figma 변수에 바인딩한 뒤 부모에 추가한다.
  * addText + setFillWithVar + setFloatVar(fontSize) 세 단계를 하나로 합친 헬퍼다.
  *
- * @param parent       - 부모 노드
- * @param characters   - 표시할 텍스트
- * @param fontSize     - 폰트 크기 (fallback)
- * @param colorVar     - Figma 색상 변수 경로 (예: 'color/text/heading')
- * @param fallback     - 색상 변수를 찾지 못했을 때 사용할 RGB 값
- * @param bold         - 굵게 여부 (기본 false)
- * @param fontSizeVar  - Figma fontSize 변수 경로 (예: 'text/base/fontSize'). 생략 시 바인딩 건너뜀
+ * textPropertyName을 지정하면 해당 TextNode를 ComponentNode의 TEXT property로 등록한다.
+ * 등록 후 Figma 우측 패널에서 인스턴스별로 텍스트를 직접 수정할 수 있다.
+ * Figma 제한: componentPropertyReferences는 ComponentNode 기준 2단계 이내 자식까지만 설정 가능.
+ *
+ * @param parent           - 부모 노드
+ * @param characters       - 표시할 텍스트
+ * @param fontSize         - 폰트 크기 (fallback)
+ * @param colorVar         - Figma 색상 변수 경로 (예: 'color/text/heading')
+ * @param fallback         - 색상 변수를 찾지 못했을 때 사용할 RGB 값
+ * @param bold             - 굵게 여부 (기본 false)
+ * @param fontSizeVar      - Figma fontSize 변수 경로. 생략 시 바인딩 건너뜀
+ * @param textPropertyName - TEXT component property 이름 (예: 'label', 'placeholder').
+ *                           지정 시 Figma 인스턴스 패널에 텍스트 편집 필드가 노출된다.
+ * @param comp             - TEXT property를 등록할 최상위 ComponentNode.
+ *                           parent가 ComponentNode이면 생략 가능.
+ *                           parent가 중간 Frame인 경우 반드시 명시해야 한다.
  */
 export async function addTextWithVar(
   parent: FrameNode | ComponentNode,
@@ -220,6 +229,8 @@ export async function addTextWithVar(
   fallback: RGB,
   bold = false,
   fontSizeVar?: string,
+  textPropertyName?: string,
+  comp?: ComponentNode,
 ): Promise<TextNode> {
   const text = figma.createText();
   await applyText(text, characters, fontSize, fallback, bold);
@@ -228,6 +239,16 @@ export async function addTextWithVar(
     await setFloatVar(text, 'fontSize', fontSizeVar, fontSize);
   }
   parent.appendChild(text);
+
+  if (textPropertyName) {
+    /* parent가 ComponentNode이면 comp 생략 가능 — 직접 사용 */
+    const root = comp ?? (parent.type === 'COMPONENT' ? parent as ComponentNode : null);
+    if (root) {
+      const propKey = root.addComponentProperty(textPropertyName, 'TEXT', characters);
+      text.componentPropertyReferences = { characters: propKey };
+    }
+  }
+
   return text;
 }
 
@@ -402,11 +423,14 @@ function _recolorIcon(node: SceneNode, color: RGB): void {
  * 아이콘 컴포넌트가 없으면 동일한 색상의 rect 플레이스홀더로 대체한다.
  * → createIcons 커맨드를 먼저 실행해야 인스턴스 방식이 활성화된다.
  *
- * @param comp         - 아이콘을 추가할 부모 ComponentNode
+ * @param comp         - INSTANCE_SWAP Property를 등록할 최상위 ComponentNode
  * @param name         - 기본 아이콘 이름 (IconName)
  * @param size         - 아이콘 크기(px)
  * @param iconColor    - 아이콘 stroke 색상 (rect fallback에도 동일 적용)
  * @param propertyName - INSTANCE_SWAP Property 이름 (기본 'icon')
+ * @param parent       - 아이콘 인스턴스를 실제로 삽입할 부모 노드.
+ *                       생략 시 comp 자신에게 추가된다.
+ *                       아이콘 배경 Frame 내부에 배치할 때 사용한다.
  */
 export function addIconSlot(
   comp: ComponentNode,
@@ -414,13 +438,15 @@ export function addIconSlot(
   size: number,
   iconColor: RGB,
   propertyName = 'icon',
+  parent?: FrameNode | ComponentNode,
 ): void {
-  const iconComp = _findIconComponent(name);
+  const target    = parent ?? comp;
+  const iconComp  = _findIconComponent(name);
 
   if (iconComp) {
     const instance = iconComp.createInstance();
     instance.resize(size, size);
-    comp.appendChild(instance);
+    target.appendChild(instance);
     /* 컴포넌트별 텍스트 색으로 stroke 오버라이드 */
     _recolorIcon(instance, iconColor);
     /* INSTANCE_SWAP Property 등록 — Figma에서 아이콘 swap 드롭다운 표시 */
@@ -428,7 +454,7 @@ export function addIconSlot(
     instance.componentPropertyReferences = { mainComponent: propKey };
   } else {
     /* createIcons 미실행 시 동일 색상의 rect 플레이스홀더로 fallback */
-    addRect(comp, size, size, iconColor, 2);
+    addRect(target, size, size, iconColor, 2);
   }
 }
 

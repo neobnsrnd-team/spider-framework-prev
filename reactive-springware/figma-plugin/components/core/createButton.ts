@@ -180,7 +180,7 @@ export async function createButton(): Promise<ComponentSetNode> {
 
         /* 텍스트 레이블 — Loading 상태에서는 텍스트 없이 스피너만 표시 */
         if (text && state !== 'Loading') {
-          const label = await addTextWithVar(comp, '버튼', SIZE_CONFIG[size].fontSize, text.varName, text.fallback, true, SIZE_CONFIG[size].fontSizeVar);
+          const label = await addTextWithVar(comp, '버튼', SIZE_CONFIG[size].fontSize, text.varName, text.fallback, true, SIZE_CONFIG[size].fontSizeVar, 'label');
           label.textAlignHorizontal = 'CENTER';
         }
 
@@ -236,7 +236,7 @@ export async function createButtonWithIcon(): Promise<ComponentSetNode> {
         if (icon === 'Left') addIconPlaceholder(comp, size, variant);
 
         if (text) {
-          const label = await addTextWithVar(comp, '버튼', SIZE_CONFIG[size].fontSize, text.varName, text.fallback, true, SIZE_CONFIG[size].fontSizeVar);
+          const label = await addTextWithVar(comp, '버튼', SIZE_CONFIG[size].fontSize, text.varName, text.fallback, true, SIZE_CONFIG[size].fontSizeVar, 'label');
           label.textAlignHorizontal = 'CENTER';
         }
 
@@ -343,7 +343,7 @@ export async function createButtonFullWidth(): Promise<ComponentSetNode> {
       }
 
       if (text) {
-        const label = await addTextWithVar(comp, '버튼', FONT_SIZE.sm, text.varName, text.fallback, true, SIZE_VAR.fontSizeSm);
+        const label = await addTextWithVar(comp, '버튼', FONT_SIZE.sm, text.varName, text.fallback, true, SIZE_VAR.fontSizeSm, 'label');
         label.textAlignHorizontal = justify === 'Center' ? 'CENTER' : 'LEFT';
       }
 

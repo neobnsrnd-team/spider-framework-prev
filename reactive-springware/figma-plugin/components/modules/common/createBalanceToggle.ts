@@ -44,7 +44,7 @@ async function createBalanceToggleVariant(hidden: boolean): Promise<ComponentNod
     COLOR_VAR.textMuted, // Figma 변수 경로
     COLOR.textMuted,     // fallback RGB
     true,                // bold
-    SIZE_VAR.fontSizeXs,
+    SIZE_VAR.fontSizeXs, 'toggleLabel',
   );
 
   /* 토글 pill (React: w-12=48px, h-6=24px, rounded-full, p-1=4px) */

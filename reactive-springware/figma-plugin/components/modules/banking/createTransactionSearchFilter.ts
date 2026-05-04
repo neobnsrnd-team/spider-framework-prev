@@ -160,8 +160,8 @@ async function createFilterVariant(state: 'Collapsed' | 'Expanded'): Promise<Com
   const comp = createComponent(`State=${state}`);
   setAutoLayout(comp, 'VERTICAL', 0, 'MIN');
   comp.resize(FILTER_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'FIXED';
-  comp.counterAxisSizingMode = 'AUTO';
+  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
   await setFillWithVar(comp, COLOR_VAR.surfaceRaised, COLOR.surfaceRaised);
   await setStrokeWithVar(comp, COLOR_VAR.borderSubtle, COLOR.borderSubtle);
   /* 상하 구분선만 표시 */
@@ -178,8 +178,8 @@ async function createFilterVariant(state: 'Collapsed' | 'Expanded'): Promise<Com
     setAutoLayout(body, 'VERTICAL', SPACING.md, 'MIN');
     setPadding(body, 0, CONTENT_PX, 21, CONTENT_PX);
     body.resize(FILTER_WIDTH, 1);
-    body.primaryAxisSizingMode = 'FIXED';
-    body.counterAxisSizingMode = 'AUTO';
+    body.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
+    body.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
     clearFill(body);
 
     /* 퀵 기간 탭 */

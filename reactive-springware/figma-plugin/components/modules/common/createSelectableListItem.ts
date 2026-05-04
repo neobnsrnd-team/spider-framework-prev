@@ -36,7 +36,7 @@ async function createSelectableListItemVariant(state: SelectableListItemState): 
     state === 'Selected' ? COLOR_VAR.brandPrimary : COLOR_VAR.textHeading,
     state === 'Selected' ? BRAND.primary         : COLOR.textHeading,
     state === 'Selected', /* Selected: font-bold */
-    SIZE_VAR.fontSizeBase,
+    SIZE_VAR.fontSizeBase, 'label',
   );
   label.layoutGrow = 1;
 

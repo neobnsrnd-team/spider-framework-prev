@@ -14,7 +14,7 @@ import {
 import { createIcon } from '../../../icons';
 
 export async function createBillingPeriodLabel(): Promise<ComponentNode> {
-  const comp = createComponent('Default');
+  const comp = createComponent('BillingPeriodLabel');
   setAutoLayout(comp, 'HORIZONTAL', SPACING.sm);
   setPadding(comp, 0, SPACING.standard, SPACING.sm, SPACING.standard);
   comp.counterAxisAlignItems = 'CENTER';
@@ -28,7 +28,7 @@ export async function createBillingPeriodLabel(): Promise<ComponentNode> {
   comp.strokeBottomWeight = 1;
 
   comp.appendChild(createIcon('Clock', 14, COLOR.textMuted));
-  await addTextWithVar(comp, '이용기간 : 2026.03.01 ~ 2026.03.31', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
+  await addTextWithVar(comp, '이용기간 : 2026.03.01 ~ 2026.03.31', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'billingPeriodText');
 
   figma.currentPage.appendChild(comp);
   return comp;
