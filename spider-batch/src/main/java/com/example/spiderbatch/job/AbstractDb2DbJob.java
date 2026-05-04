@@ -19,7 +19,7 @@ import org.springframework.transaction.PlatformTransactionManager;
  * DB → DB 아카이브 배치 Job의 추상 기반 클래스.
  *
  * <p>파티셔닝 기반 병렬 처리 Job의 공통 설정(Job 빌더, 파티션 Step, 파티션 핸들러,
- * 스레드 풀, 워커 Step)을 템플릿 메서드로 제공한다. 소비자 {@code @Configuration}에서
+ * 스레드 풀, 워커 Step)을 템플릿 메서드로 제공한다. 내장 프로젝트의 {@code @Configuration}에서
  * {@code @Bean} 메서드가 이 클래스의 {@code build*} 메서드를 호출하는 방식으로 사용한다.</p>
  *
  * <pre>{@code
@@ -62,7 +62,7 @@ public abstract class AbstractDb2DbJob<T> {
 
     /**
      * 파티션 매니저 Step 이름. 기본값은 {@code getJobName() + "PartitionStep"}.
-     * 소비자가 이름을 변경하고 싶을 때 재정의한다.
+     * 내장 프로젝트에서 이름을 변경하고 싶을 때 재정의한다.
      */
     protected String getPartitionStepName() {
         return getJobName() + "PartitionStep";
@@ -112,7 +112,7 @@ public abstract class AbstractDb2DbJob<T> {
     /**
      * 파티션 병렬 실행용 스레드 풀을 설정한다.
      *
-     * <p>소비자 {@code @Configuration}에서 {@code @Bean} 메서드로 감싸 반환해야
+     * <p>내장 프로젝트의 {@code @Configuration}에서 {@code @Bean} 메서드로 감싸 반환해야
      * Spring이 {@code InitializingBean.afterPropertiesSet()}과 {@code DisposableBean.destroy()}를
      * 통해 초기화·graceful shutdown을 관리한다. {@code initialize()}는 직접 호출하지 않는다.</p>
      */

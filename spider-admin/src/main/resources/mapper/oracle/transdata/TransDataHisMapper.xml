@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    TransDataHis Query Mapper
+    - tranSeq 기준 상세 이력 조회
+    - resultType으로 DTO 직접 매핑
+-->
+<mapper namespace="com.example.spideradmin.domain.transdata.mapper.TransDataHisMapper">
+
+    <!-- ==================== 공통 SQL 조각 ==================== -->
+
+    <sql id="searchConditionsTransHis">
+        <if test="tranResult != null and tranResult != ''">
+            AND h.TRAN_RESULT = #{tranResult}
+        </if>
+        <if test="tranType != null and tranType != ''">
+            AND h.TRAN_TYPE = #{tranType}
+        </if>
+    </sql>
+
+    <sql id="orderByTransHis">
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'tranType'">h.TRAN_TYPE</when>
+            <when test="sortBy == 'tranId'">h.TRAN_ID</when>
+            <when test="sortBy == 'tranName'">h.TRAN_NAME</when>
+            <when test="sortBy == 'tranTime'">h.TRAN_TIME</when>
+            <when test="sortBy == 'tranResult'">h.TRAN_RESULT</when>
+            <otherwise>h.TRAN_TYPE, h.TRAN_ID</otherwise>
+        </choose>
+        <choose>
+            <when test="sortDirection == 'ASC'"> ASC</when>
+            <when test="sortDirection == 'DESC'"> DESC</when>
+            <otherwise></otherwise>
+        </choose>
+    </sql>
+
+    <!-- ==================== 비페이징 조회 ==================== -->
+
+    <!-- tranSeq 기준 상세 이력 조회 -->
+    <select id="findByTranSeq"
+            resultType="com.example.spideradmin.domain.transdata.dto.TransDataHisResponse">
+        SELECT
+            h.TRAN_SEQ       AS tranSeq,
+            h.TRAN_ID        AS tranId,
+            h.TRAN_TYPE      AS tranType,
+            h.TRAN_NAME      AS tranName,
+            h.TRAN_TIME      AS tranTime,
+            h.TRAN_RESULT    AS tranResult
+        FROM FWK_TRANS_DATA_HIS h
+        WHERE h.TRAN_SEQ = #{tranSeq}
+        ORDER BY h.TRAN_TYPE, h.TRAN_ID
+    </select>
+
+    <!-- ==================== 페이징 검색 조회 ==================== -->
+
+    <!-- tranSeq 기준 상세 이력 페이지네이션 + 필터 검색 -->
+    <select id="findByTranSeqWithSearch"
+            resultType="com.example.spideradmin.domain.transdata.dto.TransDataHisResponse">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT
+                    h.TRAN_SEQ       AS tranSeq,
+                    h.TRAN_ID        AS tranId,
+                    h.TRAN_TYPE      AS tranType,
+                    h.TRAN_NAME      AS tranName,
+                    h.TRAN_TIME      AS tranTime,
+                    h.TRAN_RESULT    AS tranResult
+                FROM FWK_TRANS_DATA_HIS h
+                WHERE h.TRAN_SEQ = #{tranSeq}
+                <include refid="searchConditionsTransHis"/>
+                <include refid="orderByTransHis"/>
+            ) INNER_QRY
+            WHERE ROWNUM &lt;= #{endRow}
+        )
+        WHERE RNUM &gt; #{offset}
+    </select>
+
+    <!-- 건수 조회 -->
+    <select id="countByTranSeqWithSearch" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_TRANS_DATA_HIS h
+        WHERE h.TRAN_SEQ = #{tranSeq}
+        <include refid="searchConditionsTransHis"/>
+    </select>
+
+    <!-- 이행 상세 이력 실패 상세 단건 조회 -->
+    <select id="findFailDetail"
+            resultType="com.example.spideradmin.domain.transdata.dto.TransDataHisFailResponse">
+        SELECT
+            h.TRAN_SEQ          AS tranSeq,
+            h.TRAN_ID           AS tranId,
+            h.TRAN_TYPE         AS tranType,
+            h.TRAN_NAME         AS tranName,
+            h.TRAN_RESULT       AS tranResult,
+            h.TRAN_FAIL_REASON  AS tranFailReason,
+            h.TRAN_FAIL_SQL     AS tranFailSql
+        FROM FWK_TRANS_DATA_HIS h
+        WHERE h.TRAN_SEQ = #{tranSeq}
+          AND h.TRAN_ID = #{tranId}
+          AND h.TRAN_TYPE = #{tranType}
+    </select>
+
+</mapper>

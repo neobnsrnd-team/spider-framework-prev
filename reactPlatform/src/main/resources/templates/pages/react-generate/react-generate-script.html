@@ -30,11 +30,20 @@
 
     // ─── 생성 ───────────────────────────────────────────────
     $('#btnGenerate').on('click', function () {
-        const figmaUrl = $('#figmaUrlInput').val().trim();
-        const brand = $('#brandSelect').val();
-        const domain = $('#domainSelect').val() || null;
+        const title         = $('#titleInput').val().trim() || null;
+        const category      = $('#categorySelect').val() || null;
         const componentName = $('#componentNameInput').val().trim() || null;
+        const description   = $('#descriptionInput').val().trim() || null;
+        const figmaUrl      = $('#figmaUrlInput').val().trim();
+        const brand         = $('#brandSelect').val();
+        const domain        = $('#domainSelect').val() || null;
+        const requirements  = $('#requirementsInput').val().trim() || null;
 
+        if (!title) {
+            Toast.warning('제목을 입력해주세요.');
+            $('#titleInput').focus();
+            return;
+        }
         if (!figmaUrl) {
             Toast.warning('Figma URL을 입력해주세요.');
             return;
@@ -62,7 +71,16 @@
             url: API_BASE_URL + '/react-generate/generate',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ figmaUrl: figmaUrl, brand: brand, domain: domain, componentName: componentName }),
+            data: JSON.stringify({
+                title: title,
+                category: category,
+                componentName: componentName,
+                description: description,
+                figmaUrl: figmaUrl,
+                brand: brand,
+                domain: domain,
+                requirements: requirements
+            }),
             success: function (res) {
                 if (res.success && res.data) {
                     renderResult(res.data);
@@ -116,6 +134,49 @@
         screenTab.show();
     }
 
+    // ─── PC / 모바일 미리보기 전환 ───────────────────────────
+    function resetPreviewMode() {
+        const frame   = document.getElementById('previewFrame');
+        const wrapper = document.getElementById('previewWrapper');
+        frame.style.cssText  = 'width:100%; height:500px; border:none; border-radius:0 0 4px 4px; display:block;';
+        wrapper.style.cssText = 'overflow-y:auto; background:#f8f9fa; border-radius:0 0 4px 4px;';
+        $('#previewModeGroup button').removeClass('active');
+        $('#btnPreviewPc').addClass('active');
+    }
+
+    $('#previewModeGroup').on('click', 'button', function () {
+        const mode    = $(this).data('mode');
+        const frame   = document.getElementById('previewFrame');
+        const wrapper = document.getElementById('previewWrapper');
+
+        $('#previewModeGroup button').removeClass('active');
+        $(this).addClass('active');
+
+        if (mode === 'mobile') {
+            // 모바일: 430×860 고정 폭 — 상세 모달과 동일한 비율로 통일
+            frame.style.cssText = [
+                'width:430px', 'height:860px', 'border:none',
+                'border-radius:0',
+                'box-shadow:0 0 0 1px #dee2e6, 0 8px 24px rgba(0,0,0,0.12)',
+                'display:block', 'margin:16px auto',
+            ].join(';');
+            wrapper.style.overflowY = 'auto';
+            wrapper.style.minHeight = '200px';
+        } else {
+            frame.style.cssText  = 'width:100%; height:500px; border:none; border-radius:0 0 4px 4px; display:block;';
+            wrapper.style.overflowY = 'auto';
+            wrapper.style.minHeight = '';
+        }
+    });
+
+    // 탭 전환 시 모드 버튼 표시/숨김
+    document.getElementById('tab-screen').addEventListener('shown.bs.tab', function () {
+        $('#previewModeGroup').removeClass('d-none');
+    });
+    document.getElementById('tab-code').addEventListener('shown.bs.tab', function () {
+        $('#previewModeGroup').addClass('d-none');
+    });
+
     // ─── 코드 복사 ───────────────────────────────────────────
     $('#btnCopyCode').on('click', function () {
         const code = document.getElementById('codeDisplay').textContent;
@@ -148,13 +209,68 @@
         });
     });
 
+    // ─── 재생성 ─────────────────────────────────────────────
+    // 재생성 패널 토글 시 chevron 방향 전환
+    document.getElementById('regenerateBody').addEventListener('shown.bs.collapse', function () {
+        document.getElementById('regenerateChevron').classList.replace('bi-chevron-down', 'bi-chevron-up');
+    });
+    document.getElementById('regenerateBody').addEventListener('hidden.bs.collapse', function () {
+        document.getElementById('regenerateChevron').classList.replace('bi-chevron-up', 'bi-chevron-down');
+    });
+
+    $('#btnRegenerate').on('click', function () {
+        if (!currentId) return;
+
+        const requirements = $('#regenerateRequirements').val().trim();
+        if (!requirements) {
+            Toast.warning('변경 요청사항을 입력해주세요.');
+            $('#regenerateRequirements').focus();
+            return;
+        }
+
+        $('#resultSection').addClass('d-none');
+        $('#generatingIndicator').removeClass('d-none');
+        $('#btnRegenerate').prop('disabled', true);
+        $('#btnGenerate').prop('disabled', true);
+
+        $.ajax({
+            url: API_BASE_URL + '/react-generate/' + currentId + '/regenerate',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ requirements: requirements }),
+            success: function (res) {
+                if (res.success && res.data) {
+                    renderResult(res.data);
+                    // 재생성 성공 후 패널 접기 및 입력 초기화
+                    bootstrap.Collapse.getInstance(document.getElementById('regenerateBody'))?.hide();
+                    $('#regenerateRequirements').val('');
+                    Toast.success('코드가 재생성되었습니다.');
+                } else {
+                    Toast.error(res.message || '재생성에 실패했습니다.');
+                }
+            },
+            error: function (xhr) {
+                Toast.error(xhr.responseJSON?.message || '재생성 중 오류가 발생했습니다.');
+            },
+            complete: function () {
+                $('#generatingIndicator').addClass('d-none');
+                $('#btnRegenerate').prop('disabled', false);
+                $('#btnGenerate').prop('disabled', false);
+            }
+        });
+    });
+
     // ─── 초기화 ─────────────────────────────────────────────
     $('#btnReset').on('click', function () {
         // 입력 폼 초기화
+        $('#titleInput').val('');
+        $('#categorySelect').val('');
+        $('#componentNameInput').val('');
+        $('#descriptionInput').val('');
         $('#figmaUrlInput').val('');
         $('#brandSelect').val('');
         $('#domainSelect').val('');
-        $('#componentNameInput').val('');
+        $('#requirementsInput').val('');
 
         // 결과 영역 숨김 및 내부 상태 초기화
         $('#resultSection').addClass('d-none');
@@ -162,6 +278,13 @@
         document.getElementById('codeDisplay').textContent = '';
         currentId = null;
         currentStatus = null;
+
+        // 재생성 패널 초기화
+        bootstrap.Collapse.getInstance(document.getElementById('regenerateBody'))?.hide();
+        $('#regenerateRequirements').val('');
+
+        // 미리보기 PC 모드로 리셋
+        resetPreviewMode();
 
         // Preview App에 빈 코드를 전달하여 미리보기 화면 초기화
         const frame = document.getElementById('previewFrame');
@@ -172,8 +295,8 @@
         $('#figmaUrlInput').focus();
     });
 
-    // ─── Enter 키 지원 ──────────────────────────────────────
-    $('#figmaUrlInput').on('keydown', function (e) {
+    // ─── Enter 키 지원 (단일 라인 입력 필드에만 적용) ─────────
+    $('#titleInput, #figmaUrlInput, #componentNameInput').on('keydown', function (e) {
         if (e.key === 'Enter') {
             $('#btnGenerate').trigger('click');
         }

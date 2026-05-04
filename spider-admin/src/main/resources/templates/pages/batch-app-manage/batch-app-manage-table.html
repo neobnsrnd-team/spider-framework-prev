@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Batch App Table Fragment -->
+<div th:fragment="table" class="table-responsive">
+    <table class="table table-sm table-hover sp-data-grid" id="batchAppTable">
+        <thead class="table-light">
+            <tr>
+                <th class="col-w-150 sortable" data-sort="batchAppId">배치 APP ID</th>
+                <th class="col-w-180 sortable" data-sort="batchAppName">배치 APP명</th>
+                <th class="col-w-200 sortable" data-sort="batchAppFileName">배치 APP FILE명</th>
+                <th class="col-w-150 sortable" data-sort="preBatchAppId">선행 배치APP ID</th>
+                <th class="col-w-100 sortable" data-sort="batchCycle">배치 실행주기</th>
+                <th class="col-w-80 text-center sortable" data-sort="retryableYn">재실행 가능 여부</th>
+                <th class="col-w-80 text-center sortable" data-sort="perWasYn">다중WAS<br>실행여부</th>
+                <th class="col-w-80 text-center sortable" data-sort="importantType">중요도</th>
+                <th class="col-w-80 text-center">SLA(초)</th>
+                <th class="col-w-80 text-center">수동실행</th>
+            </tr>
+        </thead>
+        <tbody id="batchAppTableBody">
+            <tr>
+                <td colspan="10" class="text-center py-4 text-body-secondary">
+                    조회 버튼을 클릭하여 데이터를 불러오세요.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

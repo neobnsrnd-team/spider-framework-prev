@@ -32,7 +32,7 @@ class AbstractDb2ForeignJobTest {
     }
 
     @Test
-    @DisplayName("getSkippableException — 소비자가 지정한 예외 타입을 반환한다")
+    @DisplayName("getSkippableException — 내장 프로젝트에서 지정한 예외 타입을 반환한다")
     void getSkippableException_returnsConfigured() {
         assertThat(job.getSkippableException()).isEqualTo(IllegalArgumentException.class);
     }

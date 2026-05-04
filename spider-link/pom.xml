@@ -29,6 +29,13 @@
     </properties>
 
     <dependencies>
+        <!-- spider-common — TCP 프로토콜 모델, 관리 명령 처리, 로그레벨 조정 기능 -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>spider-common</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
         <!-- Spring Boot Web (Jackson ObjectMapper 포함) — AP 서버가 제공하지 않을 경우 주입 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -96,11 +103,12 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <release>${java.version}</release>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
             <!-- classifier=exec: 실행용 fat JAR는 spider-link-exec.jar로 분리,
-                 spider-link.jar는 일반 라이브러리 JAR로 유지 → admin 등 의존 프로젝트에서 클래스 참조 가능 -->
+                 spider-link.jar는 일반 라이브러리 JAR로 유지 → spider-admin 등 의존 프로젝트에서 클래스 참조 가능 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
  * {@link BatchHistoryRecorder}의 기본 구현체.
  *
  * <p>Oracle MyBatis 매퍼({@link BatchHisMapper})를 사용하여 FWK_BATCH_HIS에 이력을 기록한다.
- * 소비자 프로젝트가 별도 {@link BatchHistoryRecorder} Bean을 등록하지 않으면
+ * 내장 프로젝트에서 별도 {@link BatchHistoryRecorder} Bean을 등록하지 않으면
  * {@link com.example.spiderbatch.config.SpiderBatchAutoConfiguration}이 이 Bean을 자동 등록한다.</p>
  */
 @RequiredArgsConstructor

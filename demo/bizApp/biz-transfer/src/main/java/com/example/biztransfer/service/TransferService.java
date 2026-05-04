@@ -1,8 +1,8 @@
 package com.example.biztransfer.service;
 
 import com.example.spiderlink.infra.tcp.client.TcpClient;
-import com.example.spiderlink.infra.tcp.model.JsonCommandRequest;
-import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +31,10 @@ public class TransferService {
     /** mock-core TCP 포트 (환경변수 MOCK_CORE_PORT 또는 기본값 19300) */
     @Value("${mock.core.port:19300}")
     private int mockCorePort;
+
+    /** FWK_MESSAGE 조회 기관 ID (기본값: DEMO) */
+    @Value("${app.org-id:DEMO}")
+    private String orgId;
 
     /**
      * 인바운드 요청의 페이로드를 그대로 사용해 mock-core로 전달한다.
@@ -68,7 +72,7 @@ public class TransferService {
                 .build();
 
         try {
-            JsonCommandResponse resp = tcpClient.sendJson(mockCoreHost, mockCorePort, coreRequest);
+            JsonCommandResponse resp = tcpClient.send(mockCoreHost, mockCorePort, orgId, coreRequest);
 
             // 응답 커맨드명을 인바운드 TRANSFER_* 이름으로 재기록하여 클라이언트가 구분할 수 있게 한다
             return JsonCommandResponse.builder()

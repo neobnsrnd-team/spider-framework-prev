@@ -284,7 +284,7 @@ const { data } = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts });
 | 체크박스 | `Checkbox` | |
 | 라디오 버튼 | `Radio` | |
 | 토글/스위치 | `Toggle` | |
-| 구분선 | `<hr className="border-border-subtle" />` | 별도 컴포넌트 없음 |
+| 구분선 | `Divider` | |
 | 카드 컨테이너 | `Card` | 테두리 있는 컨테이너 |
 | 목록 항목 (클릭) | `ListItem` | |
 | 레이블-값 행 | `InfoRow` | label·value 모두 string만; JSX 포함 시 `LabelValueRow` |
@@ -386,7 +386,8 @@ const { data } = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts });
 
 ## 10. 불명확한 경우 처리 원칙
 
-판단이 불명확한 경우 **임의로 결정하되, 해당 위치에 주석으로 가정 내용을 명시**한다.  
+판단이 불명확한 경우 **섹션 7 빠른 참조표와 섹션 4 레이아웃 변환표를 먼저 참조**하여 가장 유사한 `@cl` 컴포넌트를 선택한다.  
+**절대로 HTML 태그(`div`, `span`, `button` 등)로 대체하지 않는다.** 매핑이 불명확하더라도 HTML 태그는 금지이며, 주석으로 가정 내용을 명시한다.  
 확인 질문을 응답으로 보내지 않는다. 항상 tsx 파일을 생성한다.
 
 ```tsx

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<!--
+  배포 미리보기 래퍼 페이지 (#278)
+  - viewMode 에 따라 모바일은 390x844 폰 프레임, 그 외(web/PC/responsive)는 풀폭 iframe 으로 표시
+  - 배포된 HTML 자체는 ContentBuilder 런타임이 없어 viewMode 별 자동 렌더링이 불가능하므로
+    래퍼가 컨테이너 폭을 강제하여 작성 의도와 동일한 미리보기를 제공한다.
+  - 배포 서버(nginx) 가 X-Frame-Options 를 설정하지 않아 cross-origin iframe 임베드 가능
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>배포 미리보기</title>
+    <style>
+        :root {
+            --bg-stage:    #2a2a2a;
+            --bg-header:   #1f1f1f;
+            --text-light:  #e5e5e5;
+            --text-muted:  #9ca3af;
+            --frame-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; height: 100%; }
+        body {
+            background: var(--bg-stage);
+            color: var(--text-light);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple SD Gothic Neo',
+                         'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background: var(--bg-header);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 13px;
+            flex: 0 0 auto;
+        }
+        .preview-header .title { font-weight: 600; letter-spacing: 0.2px; }
+        .preview-header .meta  { color: var(--text-muted); font-size: 12px; }
+        .preview-header .url   {
+            color: var(--text-muted); font-size: 11px; max-width: 60%;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .preview-stage {
+            flex: 1 1 auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 24px 20px;
+            overflow: auto;
+        }
+        /* 모바일 — 폰 프레임 (iPhone 14 Pro 기준 390x844) */
+        .device-frame.mobile {
+            width: 390px;
+            height: 844px;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: var(--frame-shadow);
+            overflow: hidden;
+        }
+        /* 웹/PC — 풀폭, 창 높이에 맞춰 채움 */
+        .device-frame.web {
+            width: 100%;
+            max-width: 1280px;
+            height: calc(100vh - 70px);
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: var(--frame-shadow);
+            overflow: hidden;
+        }
+        .device-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- 상단 정보 바: 모드 라벨 + URL 표시 -->
+    <div class="preview-header"
+         th:with="modeLabel=${viewMode == 'mobile' ? '모바일 (390 × 844)' : '웹 / PC'}">
+        <div>
+            <span class="title">배포 미리보기</span>
+            <span class="meta" style="margin-left:10px;">— <span th:text="${modeLabel}">웹 / PC</span></span>
+        </div>
+        <div class="url" th:text="${deployedUrl}">https://example.com/cms/deployed/x.html</div>
+    </div>
+
+    <!-- 디바이스 프레임 + iframe — viewMode 가 'mobile' 인 경우만 폰 프레임, 그 외는 풀폭 -->
+    <div class="preview-stage">
+        <div th:classappend="${viewMode == 'mobile' ? 'device-frame mobile' : 'device-frame web'}">
+            <!-- iframe 은 sandbox 미적용 — 배포 페이지의 스크립트/폼/링크가 제약 없이 동작해야 함 -->
+            <iframe th:src="${deployedUrl}" title="배포 페이지 미리보기"></iframe>
+        </div>
+    </div>
+</body>
+</html>

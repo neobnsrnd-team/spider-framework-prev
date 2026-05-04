@@ -50,11 +50,11 @@ public class NoticeManager {
         });
         emitter.onError(e -> {
             clients.remove(emitter);
-            log.debug("[NoticeManager] SSE 클라이언트 오류로 제거: {}", e.getMessage());
+            log.debug("[NoticeManager] SSE client removed due to error: {}", e.getMessage());
         });
 
         clients.add(emitter);
-        log.debug("[NoticeManager] SSE 클라이언트 등록. 현재 연결 수={}", clients.size());
+        log.debug("[NoticeManager] SSE client registered. active connections={}", clients.size());
 
         // 신규 연결 시 현재 활성 공지가 있으면 즉시 전송
         if (currentNotice != null) {
@@ -71,7 +71,7 @@ public class NoticeManager {
      */
     public void broadcast(Map<String, Object> notice) {
         this.currentNotice = notice;
-        log.info("[NoticeManager] 공지 브로드캐스트. 클라이언트 수={}, notice={}", clients.size(), notice != null ? "있음" : "없음(종료)");
+        log.info("[NoticeManager] Broadcasting notice. clients={}, notice={}", clients.size(), notice != null ? "active" : "none(ended)");
 
         for (SseEmitter emitter : clients) {
             sendToEmitter(emitter, notice);
@@ -107,7 +107,7 @@ public class NoticeManager {
         } catch (IOException e) {
             // 연결이 끊어진 클라이언트 — 목록에서 제거
             clients.remove(emitter);
-            log.debug("[NoticeManager] SSE 전송 실패로 클라이언트 제거: {}", e.getMessage());
+            log.debug("[NoticeManager] SSE send failed, removing client: {}", e.getMessage());
         }
     }
 }

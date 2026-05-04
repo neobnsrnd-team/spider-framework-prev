@@ -333,6 +333,13 @@ export interface ModalSlideOverProps {
   direction?: 'right' | 'bottom';
   /** z-index 레벨 (기본: 50) */
   zIndex?: number;
+  /**
+   * Portal 렌더링 대상 요소. 기본값: document.body.
+   * CMS 캔버스처럼 특정 컨테이너 안에 오버레이를 가두고 싶을 때 전달한다.
+   * 전달 시 백드롭 포지션이 fixed → absolute로 전환되므로
+   * 컨테이너 요소에 `position: relative`와 `overflow: hidden`이 필요하다.
+   */
+  container?: HTMLElement;
 }
 ```
 
@@ -350,9 +357,9 @@ export interface PageLayoutProps extends React.HTMLAttributes<HTMLDivElement> {
   rightAction?:  React.ReactNode;
   /**
    * 화면 하단 고정 액션 바 슬롯 (iOS 스타일 하단 버튼 영역).
-   * 전달 시 화면 하단에 blur 배경 고정 바가 렌더링되며,
-   * 본문 스크롤 영역에 동일한 높이의 spacer가 추가되어
-   * 마지막 콘텐츠가 고정 바에 가려지지 않는다.
+   * 전달 시 화면 하단에 blur 배경 고정 바가 렌더링된다.
+   * flex 컨테이너(h-dvh) 구조상 main이 남은 높이를 차지하므로
+   * 별도 spacer 없이도 마지막 콘텐츠가 고정 바에 가려지지 않는다.
    */
   bottomBar?:    React.ReactNode;
   /**
@@ -610,7 +617,7 @@ import React from 'react';
  * 시트 최대 높이 프리셋.
  * - 'auto': 콘텐츠 높이에 맞춤 (최대 90dvh)
  * - 'half': 화면 절반(50dvh)
- * - 'full': 전체 화면(90dvh)
+ * - 'full': 최대 높이 90dvh (auto와 동일 값. 콘텐츠가 많은 시트에서 의도를 명시할 때 사용)
  */
 export type BottomSheetSnap = 'auto' | 'half' | 'full';
 
@@ -825,6 +832,15 @@ export interface DatePickerProps {
    * 미제공 시 내장 triggerRef를 사용한다.
    */
   anchorRef?:     React.RefObject<HTMLElement | null>;
+}
+```
+
+### Divider
+
+```typescript
+export interface DividerProps {
+  /** 추가 Tailwind 클래스 (색상·두께 override 시) */
+  className?: string;
 }
 ```
 
@@ -1116,6 +1132,8 @@ export interface PinConfirmSheetProps {
   onConfirm: (pin: string) => void | Promise<void>;
   /** 시트 상단 타이틀. 기본: '비밀번호 입력' */
   title?: string;
+  /** 도트 위에 표시할 안내 문구. 기본: '비밀번호를 입력하세요' */
+  subtitle?: string;
   /** PIN 자릿수. 기본: 4 */
   pinLength?: number;
   /**
@@ -1123,6 +1141,12 @@ export interface PinConfirmSheetProps {
    * 값이 설정되면 도트 아래에 표시하고 입력된 PIN을 초기화한다.
    */
   errorMessage?: string;
+  /**
+   * Portal 렌더링 대상 요소. 기본값: document.body.
+   * CMS 캔버스처럼 특정 컨테이너 안에 오버레이를 가두고 싶을 때 전달한다.
+   * 전달 시 내부 BottomSheet 백드롭 포지션이 fixed → absolute로 전환된다.
+   */
+  container?: HTMLElement;
 }
 ```
 
@@ -2066,6 +2090,12 @@ export interface UsageHistoryFilterSheetProps {
   cardOptions: CardOption[];
   /** 필터 확정 시 호출. filter.customMonth에 선택 월이 담긴다. */
   onApply: (filter: SearchFilter) => void;
+  /**
+   * Portal 렌더링 대상 요소. 기본값: document.body.
+   * CMS 캔버스처럼 특정 컨테이너 안에 오버레이를 가두고 싶을 때 전달한다.
+   * 전달 시 내부 BottomSheet 백드롭 포지션이 fixed → absolute로 전환된다.
+   */
+  container?: HTMLElement;
 }
 ```
 

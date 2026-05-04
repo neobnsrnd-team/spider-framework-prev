@@ -5,8 +5,9 @@ import com.example.spiderlink.domain.meta.dto.RelationParam;
 import com.example.spiderlink.domain.meta.dto.ServiceStep;
 import com.example.spiderlink.domain.meta.mapper.MetaRoutingMapper;
 import com.example.spiderlink.infra.tcp.biz.Biz;
-import com.example.spiderlink.infra.tcp.model.JsonCommandRequest;
-import com.example.spiderlink.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.handler.CommandHandler;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.example.spiderlink.infra.tcp.parser.JsonMessageParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -60,13 +61,27 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
     /** Biz 타입 컴포넌트 리플렉션 호출 시 스프링 빈 조회용 */
     private final ApplicationContext applicationContext;
 
-    /** 시작 시 FWK_LISTENER_TRX_MESSAGE에서 등록된 커맨드 목록 캐싱 — DB 조회 최소화 */
-    private Set<String> supportedCommands = new HashSet<>();
+    /**
+     * 시작 시 FWK_LISTENER_TRX_MESSAGE에서 등록된 커맨드 목록 캐싱 — DB 조회 최소화.
+     * volatile: refreshCommands()가 TCP 워커 스레드와 다른 스레드에서 참조를 교체하므로 가시성 보장 필요
+     */
+    private volatile Set<String> supportedCommands = new HashSet<>();
 
     @PostConstruct
     void init() {
         supportedCommands = new HashSet<>(metaRoutingMapper.selectRegisteredCommands(GW_ID));
         log.info("[MetaDrivenCommandHandler] 등록된 커맨드 {}개 로드: {}", supportedCommands.size(), supportedCommands);
+    }
+
+    /**
+     * 지원 커맨드 캐시를 DB에서 다시 로드한다.
+     *
+     * <p>Admin에서 FWK_LISTENER_TRX_MESSAGE 변경 후 재기동 없이 반영할 때
+     * {@code POST /api/management/reload} (gubun=request_app_mapping) 호출 시 실행된다.</p>
+     */
+    public void refreshCommands() {
+        supportedCommands = new HashSet<>(metaRoutingMapper.selectRegisteredCommands(GW_ID));
+        log.info("[MetaDrivenCommandHandler] 커맨드 캐시 갱신 완료: {}개 — {}", supportedCommands.size(), supportedCommands);
     }
 
     @Override
@@ -160,7 +175,7 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
         }
     }
 
-    /** Oracle 대문자 컬럼명(USER_ID)을 camelCase(userId)로 변환 — demo/backend가 camelCase 키를 기대함 */
+    /** Oracle 대문자 컬럼명(USER_ID)을 camelCase(userId)로 변환 — biz-channel API가 camelCase 키를 기대함 */
     private Map<String, Object> toCamelCaseKeys(Map<String, Object> map) {
         if (map == null) return null;
         Map<String, Object> result = new LinkedHashMap<>();
@@ -172,8 +187,9 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
 
     private String toCamelCase(String columnName) {
         if (columnName == null) return null;
+        // "_" 없으면 이미 camelCase 또는 단일 소문자 — 원본 유지
+        if (!columnName.contains("_")) return columnName;
         String lower = columnName.toLowerCase();
-        if (!lower.contains("_")) return lower;
         String[] parts = lower.split("_");
         StringBuilder sb = new StringBuilder(parts[0]);
         for (int i = 1; i < parts.length; i++) {

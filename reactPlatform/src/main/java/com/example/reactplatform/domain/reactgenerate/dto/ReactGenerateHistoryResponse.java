@@ -24,6 +24,21 @@ public class ReactGenerateHistoryResponse {
     /** 현재 처리 상태 (GENERATED / PENDING_APPROVAL / APPROVED / FAILED). */
     private String status;
 
+    /** 화면 제목 (사람이 읽는 이름). */
+    private String title;
+
+    /** 브랜드 (BrandType enum name). */
+    private String brand;
+
+    /** 서비스 도메인 (DomainType enum name). */
+    private String domain;
+
+    /** 화면 목적 분류 (AUTH / MAIN / LIST / DETAIL 등). */
+    private String category;
+
+    /** React 컴포넌트 식별자 (PascalCase). */
+    private String componentName;
+
     /** 코드 생성 요청자 ID. */
     private String createUserId;
 

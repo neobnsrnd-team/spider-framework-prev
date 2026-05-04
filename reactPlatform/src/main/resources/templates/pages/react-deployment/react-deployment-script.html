@@ -34,9 +34,9 @@ function isSafeUrl(url) {
     }
 }
 
-/** 배포 상태 뱃지 HTML을 반환한다. null이면 '-'를 반환한다. */
+/** 배포 상태 뱃지 HTML을 반환한다. null이면 '미배포' 뱃지를 반환한다. */
 function deployStatusBadge(status, prUrl) {
-    if (!status) return '<span class="text-body-secondary">-</span>';
+    if (!status) return '<span class="badge bg-light text-secondary border">미배포</span>';
     const info = DEPLOY_STATUS_LABEL[status] || { text: status, cls: 'bg-secondary' };
     let badge = `<span class="badge ${info.cls}">${info.text}</span>`;
     // SUCCESS이고 PR URL이 있으면 뱃지 옆에 링크 추가
@@ -93,7 +93,8 @@ const ReactDeployList = window.ReactDeployList = {
 
         const tbody = $('#deployListTableBody');
         tbody.empty();
-        const colCount = HAS_WRITE ? 9 : 8;
+        // 화면 제목·컴포넌트명·상세 컬럼이 추가되었으므로 쓰기 권한 여부에 따라 colspan 분기
+        const colCount = HAS_WRITE ? 12 : 11;
         if (!list || list.length === 0) {
             tbody.html(`<tr><td colspan="${colCount}" class="text-center py-4 text-body-secondary">
                 배포 가능한 코드가 없습니다.</td></tr>`);
@@ -103,6 +104,7 @@ const ReactDeployList = window.ReactDeployList = {
         const offset = (this.currentPage - 1) * this.pageSize;
         list.forEach((item, idx) => {
             const safeId = HtmlUtils.escape(item.codeId || '');
+            // 배포 버튼은 쓰기 권한이 있을 때만 렌더링한다
             const deployCell = !HAS_WRITE ? '' :
                 `<td class="text-center">
                     <button class="btn btn-sm btn-primary"
@@ -111,25 +113,49 @@ const ReactDeployList = window.ReactDeployList = {
                     </button>
                  </td>`;
 
-            tbody.append(`
-                <tr>
-                    <td class="text-center">${offset + idx + 1}</td>
-                    <td class="text-center">
-                        <span class="font-monospace small">${safeId}</span>
-                    </td>
-                    <td class="text-center">${HtmlUtils.escape(item.createUserId || '')}</td>
-                    <td class="text-center">${HtmlUtils.escape(item.approvalUserId || '')}</td>
-                    <td class="text-center">${formatDtime(item.approvalDtime)}</td>
-                    <td class="text-center">${deployStatusBadge(item.lastDeployStatus, item.lastPrUrl)}</td>
-                    <td class="text-center">${formatDtime(item.lastDeployDtime) || '<span class="text-body-secondary">-</span>'}</td>
-                    ${deployCell}
-                    <td class="text-center">
-                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2"
-                                onclick="ReactDeployHisModal.open('${safeId}')">
-                            이력
-                        </button>
-                    </td>
-                </tr>`);
+            // onclick 인라인 인수용 이스케이프: 역슬래시 먼저 처리 → HTML 특수문자(HtmlUtils) → 작은따옴표 순으로 적용
+            const escapedTitle = HtmlUtils.escape((item.title         || '—').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+            const escapedComp  = HtmlUtils.escape((item.componentName || '' ).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+
+            const tr = $('<tr></tr>');
+
+            // No
+            tr.append(`<td class="text-center">${offset + idx + 1}</td>`);
+
+            // 화면 제목
+            const $title = $('<td class="text-truncate" style="max-width:180px;"></td>');
+            $title.attr('title', item.title || '');
+            $title.text(item.title || '—');
+            tr.append($title);
+
+            // 컴포넌트명
+            const $comp = $('<td class="text-truncate font-monospace small" style="max-width:160px;"></td>');
+            $comp.attr('title', item.componentName || '');
+            $comp.text(item.componentName || '—');
+            tr.append($comp);
+
+            // 요청자·승인자·승인일시·배포상태·배포일시·상세·[배포]·이력
+            tr.append(`
+                <td class="text-center">${HtmlUtils.escape(item.createUserId || '')}</td>
+                <td class="text-center">${HtmlUtils.escape(item.approvalUserId || '')}</td>
+                <td class="text-center">${formatDtime(item.approvalDtime)}</td>
+                <td class="text-center">${deployStatusBadge(item.lastDeployStatus, item.lastPrUrl)}</td>
+                <td class="text-center">${formatDtime(item.lastDeployDtime) || '<span class="text-body-secondary">—</span>'}</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2"
+                            onclick="ReactCodeDetailModal.open('${safeId}', 'view')">
+                        상세
+                    </button>
+                </td>
+                ${deployCell}
+                <td class="text-center">
+                    <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2"
+                            onclick="ReactDeployHisModal.open('${safeId}', '${escapedTitle}', '${escapedComp}')">
+                        이력
+                    </button>
+                </td>
+            `);
+            tbody.append(tr);
         });
     },
 
@@ -203,6 +229,8 @@ const ReactDeployHis = window.ReactDeployHis = {
         this.appliedSearch = {
             search:   $('#hisSearchKeyword').val().trim(),
             onlyMine: $('#hisSearchOnlyMine').is(':checked'),
+            fromDate: ($('#hisSearchFromDate').val() || '').replace(/-/g, ''),
+            toDate:   ($('#hisSearchToDate').val()   || '').replace(/-/g, ''),
         };
         this.currentPage = 1;
         this.load();
@@ -237,27 +265,47 @@ const ReactDeployHis = window.ReactDeployHis = {
         const tbody = $('#deployHisTableBody');
         tbody.empty();
         if (!list || list.length === 0) {
-            tbody.html(`<tr><td colspan="7" class="text-center py-4 text-body-secondary">
+            tbody.html(`<tr><td colspan="9" class="text-center py-4 text-body-secondary">
                 조회된 데이터가 없습니다.</td></tr>`);
             return;
         }
 
         const offset = (this.currentPage - 1) * this.itemsPerPage;
         list.forEach((item, idx) => {
-            tbody.append(`
-                <tr>
-                    <td class="text-center">${offset + idx + 1}</td>
-                    <td class="text-center">
-                        <span class="font-monospace small">${HtmlUtils.escape(item.codeId || '')}</span>
-                    </td>
-                    <td class="text-center">
-                        <span class="badge bg-secondary">${HtmlUtils.escape(item.deployMode || '')}</span>
-                    </td>
-                    <td class="text-center">${deployStatusBadge(item.deployStatus, item.prUrl)}</td>
-                    <td class="text-center">${HtmlUtils.escape(item.lastUpdateUserId || '')}</td>
-                    <td class="text-center">${formatDtime(item.lastUpdateDtime)}</td>
-                    <td>${detailCell(item.deployStatus, item.prUrl, item.failReason)}</td>
-                </tr>`);
+            const row = $('<tr></tr>');
+
+            // No
+            row.append(`<td class="text-center">${offset + idx + 1}</td>`);
+
+            // 화면 제목
+            const $title = $('<td class="text-truncate" style="max-width:180px;"></td>');
+            $title.attr('title', item.title || '');
+            $title.text(item.title || '—');
+            row.append($title);
+
+            // 컴포넌트명
+            const $comp = $('<td class="text-truncate font-monospace small" style="max-width:160px;"></td>');
+            $comp.attr('title', item.componentName || '');
+            $comp.text(item.componentName || '—');
+            row.append($comp);
+
+            const safeHisCodeId = HtmlUtils.escape(item.codeId || '');
+            row.append(`
+                <td class="text-center">
+                    <span class="badge bg-secondary">${HtmlUtils.escape(item.deployMode || '')}</span>
+                </td>
+                <td class="text-center">${deployStatusBadge(item.deployStatus, item.prUrl)}</td>
+                <td class="text-center">${HtmlUtils.escape(item.lastUpdateUserId || '')}</td>
+                <td class="text-center">${formatDtime(item.lastUpdateDtime)}</td>
+                <td>${detailCell(item.deployStatus, item.prUrl, item.failReason)}</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2"
+                            onclick="ReactCodeDetailModal.open('${safeHisCodeId}', 'view')">
+                        상세
+                    </button>
+                </td>
+            `);
+            tbody.append(row);
         });
     },
 
@@ -314,10 +362,12 @@ const ReactDeployHisModal = window.ReactDeployHisModal = {
     totalItems:    0,
     pageSize:      20,
 
-    open: function (codeId) {
+    open: function (codeId, title, componentName) {
         this.currentCodeId = codeId;
         this.currentPage   = 1;
-        $('#deployHisModalCodeId').text(codeId);
+        // 모달 헤더에 화면 제목과 컴포넌트명을 표시한다 (코드 ID는 사용자에게 노출하지 않음)
+        document.getElementById('deployHisModalTitle').textContent       = title || codeId;
+        document.getElementById('deployHisModalComponentName').textContent = componentName ? '(' + componentName + ')' : '';
         new bootstrap.Modal(document.getElementById('deployHisModal')).show();
         this.load();
     },
@@ -435,6 +485,8 @@ $(document).ready(function () {
         $('#hisSearchMode').val('');
         $('#hisSearchKeyword').val('');
         $('#hisSearchOnlyMine').prop('checked', false);
+        $('#hisSearchFromDate').val('');
+        $('#hisSearchToDate').val('');
         ReactDeployHis.search();
     });
 
@@ -446,6 +498,11 @@ $(document).ready(function () {
     // ── 페이지당 건수 변경
     $('#limitRows').on('change', function () {
         ReactDeployHis.itemsPerPage = parseInt($(this).val()) || 10;
+        ReactDeployHis.search();
+    });
+
+    // ── 나의 배포 이력: 체크 시 즉시 재조회
+    $('#hisSearchOnlyMine').on('change', function () {
         ReactDeployHis.search();
     });
 

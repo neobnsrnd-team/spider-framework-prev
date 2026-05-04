@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.errorcode.mapper.ErrorDescMapper">
+
+    <select id="selectResponseById"
+            resultType="com.example.spideradmin.domain.errorcode.dto.ErrorDescResponse">
+        SELECT ERROR_CODE AS errorCode,
+               LOCALE_CODE AS localeCode,
+               ERROR_TITLE AS errorTitle,
+               PB_ERROR_TITLE AS pbErrorTitle,
+               ETC_ERROR_TITLE AS etcErrorTitle,
+               ERROR_CAUSE_DESC AS errorCauseDesc,
+               ERROR_GUIDE_DESC AS errorGuideDesc,
+               LAST_UPDATE_DTIME AS lastUpdateDtime,
+               LAST_UPDATE_USER_ID AS lastUpdateUserId,
+               HELP_PAGE_URL AS helpPageUrl,
+               IBS_ERROR_GUIDE_DESC AS ibsErrorGuideDesc,
+               CMS_ERROR_GUIDE_DESC AS cmsErrorGuideDesc,
+               ETC_ERROR_GUIDE_DESC AS etcErrorGuideDesc
+        FROM FWK_ERROR_DESC
+        WHERE ERROR_CODE = #{errorCode} AND LOCALE_CODE = #{localeCode}
+    </select>
+
+    <select id="selectByErrorCode"
+            resultType="com.example.spideradmin.domain.errorcode.dto.ErrorDescResponse">
+        SELECT ERROR_CODE AS errorCode,
+               LOCALE_CODE AS localeCode,
+               ERROR_TITLE AS errorTitle,
+               PB_ERROR_TITLE AS pbErrorTitle,
+               ETC_ERROR_TITLE AS etcErrorTitle,
+               ERROR_CAUSE_DESC AS errorCauseDesc,
+               ERROR_GUIDE_DESC AS errorGuideDesc,
+               LAST_UPDATE_DTIME AS lastUpdateDtime,
+               LAST_UPDATE_USER_ID AS lastUpdateUserId,
+               HELP_PAGE_URL AS helpPageUrl,
+               IBS_ERROR_GUIDE_DESC AS ibsErrorGuideDesc,
+               CMS_ERROR_GUIDE_DESC AS cmsErrorGuideDesc,
+               ETC_ERROR_GUIDE_DESC AS etcErrorGuideDesc
+        FROM FWK_ERROR_DESC
+        WHERE ERROR_CODE = #{errorCode}
+        ORDER BY LOCALE_CODE
+    </select>
+
+    <insert id="insert">
+        INSERT INTO FWK_ERROR_DESC (
+            ERROR_CODE, LOCALE_CODE, ERROR_TITLE, PB_ERROR_TITLE, ETC_ERROR_TITLE,
+            ERROR_CAUSE_DESC, ERROR_GUIDE_DESC, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID,
+            HELP_PAGE_URL, IBS_ERROR_GUIDE_DESC, CMS_ERROR_GUIDE_DESC, ETC_ERROR_GUIDE_DESC
+        ) VALUES (
+            #{dto.errorCode}, #{dto.localeCode}, #{dto.errorTitle}, #{dto.pbErrorTitle, jdbcType=VARCHAR}, #{dto.etcErrorTitle, jdbcType=VARCHAR},
+            #{dto.errorCauseDesc, jdbcType=VARCHAR}, #{dto.errorGuideDesc, jdbcType=VARCHAR}, #{lastUpdateDtime}, #{lastUpdateUserId},
+            #{dto.helpPageUrl, jdbcType=VARCHAR}, #{dto.ibsErrorGuideDesc, jdbcType=VARCHAR}, #{dto.cmsErrorGuideDesc, jdbcType=VARCHAR}, #{dto.etcErrorGuideDesc, jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE FWK_ERROR_DESC SET
+            ERROR_TITLE = #{dto.errorTitle},
+            PB_ERROR_TITLE = #{dto.pbErrorTitle, jdbcType=VARCHAR},
+            ETC_ERROR_TITLE = #{dto.etcErrorTitle, jdbcType=VARCHAR},
+            ERROR_CAUSE_DESC = #{dto.errorCauseDesc, jdbcType=VARCHAR},
+            ERROR_GUIDE_DESC = #{dto.errorGuideDesc, jdbcType=VARCHAR},
+            LAST_UPDATE_DTIME = #{lastUpdateDtime},
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId},
+            HELP_PAGE_URL = #{dto.helpPageUrl, jdbcType=VARCHAR},
+            IBS_ERROR_GUIDE_DESC = #{dto.ibsErrorGuideDesc, jdbcType=VARCHAR},
+            CMS_ERROR_GUIDE_DESC = #{dto.cmsErrorGuideDesc, jdbcType=VARCHAR},
+            ETC_ERROR_GUIDE_DESC = #{dto.etcErrorGuideDesc, jdbcType=VARCHAR}
+        WHERE ERROR_CODE = #{errorCode} AND LOCALE_CODE = #{localeCode}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM FWK_ERROR_DESC WHERE ERROR_CODE = #{errorCode} AND LOCALE_CODE = #{localeCode}
+    </delete>
+
+    <delete id="deleteByErrorCode">
+        DELETE FROM FWK_ERROR_DESC WHERE ERROR_CODE = #{errorCode}
+    </delete>
+
+    <select id="countById" resultType="int">
+        SELECT COUNT(*)
+        FROM FWK_ERROR_DESC
+        WHERE ERROR_CODE = #{errorCode} AND LOCALE_CODE = #{localeCode}
+    </select>
+
+</mapper>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Batch App Page Scripts -->
+<th:block th:fragment="script">
+<script>
+    var BatchApps = {
+        currentPage: 1,
+        totalItems: 0,
+        itemsPerPage: 20,
+        sortBy: null,
+        sortDirection: null,
+        batchAppsData: [],
+
+        load: function() {
+            const searchParams = {
+                searchField: $('#searchField').val(),
+                searchValue: $('#searchValue').val(),
+                instanceIdFilter: $('#instanceIdFilter').val(),
+                page: this.currentPage,
+                size: this.itemsPerPage,
+                sortBy: this.sortBy || null,
+                sortDirection: this.sortDirection || null
+            };
+
+            $.ajax({
+                url: API_BASE_URL + '/batch/apps/page',
+                method: 'GET',
+                data: searchParams,
+                success: (response) => {
+                    console.log('API Response:', response);
+
+                    if (response.success && response.data) {
+                        const pageData = response.data;
+                        const batchApps = pageData.content || [];
+
+                        this.batchAppsData = batchApps;
+                        this.renderTable(batchApps);
+                        this.totalItems = pageData.totalElements || 0;
+                        this.renderPagination();
+                    } else {
+                        this.renderTable([]);
+                        this.totalItems = 0;
+                        this.renderPagination();
+                    }
+                },
+                error: (xhr) => {
+                    console.error('Failed to load batch apps:', xhr);
+                    Toast.error('배치 APP 목록을 불러오는데 실패했습니다.');
+                    this.renderTable([]);
+                    this.totalItems = 0;
+                    this.renderPagination();
+                }
+            });
+        },
+
+        renderTable: function(batchApps) {
+            const tbody = $('#batchAppTableBody');
+            tbody.empty();
+
+            if (!batchApps || batchApps.length === 0) {
+                tbody.append(`
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-body-secondary">
+                            조회된 데이터가 없습니다.
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            // 배치주기 변환 함수
+            const getCycleText = (code) => {
+                switch(code) {
+                    case 'D': return '매일';
+                    case 'M': return '월';
+                    case 'W': return '매주';
+                    case 'Q': return '분기';
+                    case 'H': return '반기';
+                    case 'Y': return '매년';
+                    case 'O': return '수시';
+                    case 'P': return '수동';
+                    default: return code || '';
+                }
+            };
+
+            // 아이콘 생성 함수
+            const getYnIcon = (yn) => {
+                if (yn === 'Y') {
+                    return `<i class="bi bi-check-circle-fill text-success"></i>`;
+                } else {
+                    return `<i class="bi bi-x-circle-fill text-muted"></i>`;
+                }
+            };
+
+            // 중요도 텍스트 생성 함수 (DB값: 1=높음, 2=보통, 3=낮음)
+            const getImportantText = (type) => {
+                switch(type) {
+                    case '1': return '<span class="text-danger">높음(1)</span>';
+                    case '2': return '<span class="text-warning">보통(2)</span>';
+                    case '3': return '<span class="text-muted">낮음(3)</span>';
+                    default: return '';
+                }
+            };
+
+            batchApps.forEach((app, index) => {
+                const cycleText = getCycleText(app.batchCycle);
+                const retryIcon = getYnIcon(app.retryableYn);
+                const perWasIcon = getYnIcon(app.perWasYn);
+                const importantText = getImportantText(app.importantType);
+                const slaText = app.slaSeconds != null ? app.slaSeconds + '초' : '-';
+
+                const row = $(`
+                    <tr data-batch-app-index="${index}" class="cursor-pointer">
+                        <td>${HtmlUtils.escape(app.batchAppId)}</td>
+                        <td>${HtmlUtils.escape(app.batchAppName)}</td>
+                        <td>${HtmlUtils.escape(app.batchAppFileName)}</td>
+                        <td>${HtmlUtils.escape(app.preBatchAppId)}</td>
+                        <td class="text-center">${cycleText}</td>
+                        <td class="text-center">${retryIcon}</td>
+                        <td class="text-center">${perWasIcon}</td>
+                        <td class="text-center">${importantText}</td>
+                        <td class="text-center">${slaText}</td>
+                        <td class="text-center">
+                            ${hasBatchAppWrite ? `<button class="btn btn-sm btn-outline-primary btn-manual-run"
+                                    data-batch-app-id="${HtmlUtils.escape(app.batchAppId)}"
+                                    title="수동 실행"
+                                    onclick="event.stopPropagation();">
+                                <i class="bi bi-play-fill"></i>
+                            </button>` : '-'}
+                        </td>
+                    </tr>
+                `);
+
+                row.on('click', function() {
+                    const appIndex = $(this).data('batch-app-index');
+                    const appData = BatchApps.batchAppsData[appIndex];
+                    BatchAppModal.open('edit', appData);
+                });
+
+                tbody.append(row);
+            });
+
+            // 수동 실행 버튼 이벤트
+            $('.btn-manual-run').off('click').on('click', function(e) {
+                e.stopPropagation();
+                const batchAppId = $(this).data('batch-app-id');
+                BatchExecModal.open(batchAppId);
+            });
+        },
+
+        renderPagination: function() {
+            const totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+            const pagination = $('#pagination');
+            pagination.empty();
+
+            pagination.append(`
+                <li class="page-item ${this.currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="BatchApps.changePage(1); return false;">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item ${this.currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="BatchApps.changePage(${this.currentPage - 1}); return false;">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+            `);
+
+            const maxButtons = 5;
+            let startPage = Math.max(1, this.currentPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+            if (endPage - startPage + 1 < maxButtons) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                pagination.append(`
+                    <li class="page-item ${i === this.currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="BatchApps.changePage(${i}); return false;">${i}</a>
+                    </li>
+                `);
+            }
+
+            pagination.append(`
+                <li class="page-item ${this.currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="BatchApps.changePage(${this.currentPage + 1}); return false;">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                <li class="page-item ${this.currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="BatchApps.changePage(${totalPages}); return false;">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </a>
+                </li>
+            `);
+
+            const start = this.totalItems === 0 ? 0 : (this.currentPage - 1) * this.itemsPerPage + 1;
+            const end = Math.min(this.currentPage * this.itemsPerPage, this.totalItems);
+            $('#pageInfo').text(`${start} - ${end} of ${this.totalItems} items`);
+        },
+
+        changePage: function(page) {
+            const totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            this.currentPage = page;
+            this.load();
+        },
+
+        loadInstanceFilter: function() {
+            $.ajax({
+                url: API_BASE_URL + '/was/instance',
+                method: 'GET',
+                success: (response) => {
+                    if (response.success && response.data) {
+                        const select = $('#instanceIdFilter');
+                        select.find('option:not(:first)').remove();
+
+                        response.data.forEach(inst => {
+                            select.append(`
+                                <option value="${HtmlUtils.escape(inst.instanceId)}">
+                                    ${HtmlUtils.escape(inst.instanceId)} - ${HtmlUtils.escape(inst.instanceName || '')}
+                                </option>
+                            `);
+                        });
+                    }
+                },
+                error: (xhr) => {
+                    console.error('Failed to load instances:', xhr);
+                }
+            });
+        },
+
+        exportExcel: function() {
+            const params = {};
+            const searchField = $('#searchField').val();
+            const searchValue = $('#searchValue').val();
+            const instanceIdFilter = $('#instanceIdFilter').val();
+            if (searchField) params.searchField = searchField;
+            if (searchValue) params.searchValue = searchValue;
+            if (instanceIdFilter) params.instanceIdFilter = instanceIdFilter;
+            if (this.sortBy) { params.sortBy = this.sortBy; params.sortDirection = this.sortDirection || 'ASC'; }
+            const qs = $.param(params);
+            window.location.href = API_BASE_URL + '/batch/apps/export' + (qs ? '?' + qs : '');
+        },
+
+        print: function() {
+            const columns = [
+                { key: 'batchAppId', label: '배치APP ID' },
+                { key: 'batchAppName', label: '배치APP명' },
+                { key: 'batchAppFileName', label: '배치APP 파일명' },
+                { key: 'preBatchAppId', label: '선행배치APP ID' },
+                { key: 'batchCycle', label: '배치주기' },
+                { key: 'retryableYn', label: '재시도' },
+                { key: 'perWasYn', label: 'WAS별실행' },
+                { key: 'importantType', label: '중요도' }
+            ];
+            PrintUtil.print({ title: '배치APP 목록', columns: columns, data: this.batchAppsData });
+        }
+    };
+
+    // ==================== Sort Methods ====================
+
+    BatchApps.updateSortIndicators = function() {
+        const headers = $('#batchAppTable thead th[data-sort]');
+        headers.removeClass('sort-asc sort-desc');
+        if (!this.sortBy || !this.sortDirection) return;
+        headers.filter(`[data-sort="${this.sortBy}"]`)
+            .addClass(this.sortDirection === 'ASC' ? 'sort-asc' : 'sort-desc');
+    };
+
+    // ==================== Event Bindings ====================
+
+    // 정렬 헤더 클릭
+    $('#batchAppTable thead th[data-sort]').off('click').on('click', function() {
+        const sortKey = $(this).data('sort');
+        if (!sortKey) return;
+        if (BatchApps.sortBy === sortKey) {
+            if (BatchApps.sortDirection === 'ASC') {
+                BatchApps.sortDirection = 'DESC';
+            } else {
+                // DESC → 정렬 해제
+                BatchApps.sortBy = null;
+                BatchApps.sortDirection = null;
+            }
+        } else {
+            BatchApps.sortBy = sortKey;
+            BatchApps.sortDirection = 'ASC';
+        }
+        BatchApps.currentPage = 1;
+        BatchApps.updateSortIndicators();
+        BatchApps.load();
+    });
+
+    // 검색어 입력 후 Enter 키 이벤트
+    $('#searchValue').on('keydown', function(event) {
+        if (event.key === 'Enter') {
+            BatchApps.currentPage = 1;
+            BatchApps.load();
+        }
+    });
+
+    // Bind toolbar buttons
+    $('#btnExcel').off('click').on('click', function() {
+        BatchApps.exportExcel();
+    });
+
+    $('#btnPrint').off('click').on('click', function() {
+        BatchApps.print();
+    });
+
+    $('#btnRefresh').off('click').on('click', function() {
+        BatchApps.load();
+    });
+
+    // 등록 버튼
+    $('#btnRegister').off('click').on('click', function() {
+        BatchAppModal.open('create');
+    });
+
+    // limitRows 변경
+    $('#limitRows').change(function() {
+        BatchApps.itemsPerPage = parseInt($(this).val()) || 20;
+        BatchApps.currentPage = 1;
+        BatchApps.load();
+    });
+
+    // ==================== Initialization ====================
+
+    // 페이지 로드 시 인스턴스 필터 초기화
+    BatchApps.loadInstanceFilter();
+
+    // 페이지 로드 시 itemsPerPage 동기화
+    BatchApps.itemsPerPage = parseInt($('#limitRows').val()) || 20;
+    BatchApps.currentPage = 1;
+
+    // 페이지 로드 시 초기 데이터 조회
+    BatchApps.load();
+
+    // 캐시에서 복원 시(tab:activated) 배치APP 목록 최신화
+    $('[data-tab-page]').off('tab:activated.batchApp').on('tab:activated.batchApp', function () {
+        BatchApps.load();
+    });
+</script>
+</th:block>
+</body>
+</html>

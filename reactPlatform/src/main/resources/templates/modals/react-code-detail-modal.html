@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  React 코드 상세 공용 모달 Fragment.
+  생성 이력(react-generate-his)과 승인 관리(react-approval) 페이지에서 공용으로 사용한다.
+  JS 측에서 ReactCodeDetailModal.open(codeId, mode, callbacks) 호출 시
+  mode 값('history' | 'approval')에 따라 푸터 버튼을 동적으로 분기한다.
+-->
+<div th:fragment="modal">
+    <div class="modal fade" id="reactCodeDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title">
+                        <i class="bi bi-code-slash text-primary me-1"></i>
+                        React 코드 상세
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+
+                    <!-- 로딩 인디케이터 -->
+                    <div id="rcDetailLoading" class="text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-primary me-2"
+                             role="status" aria-hidden="true"></div>
+                        <span class="text-muted">불러오는 중...</span>
+                    </div>
+
+                    <!-- 상세 내용 (로딩 완료 후 표시) -->
+                    <div id="rcDetailContent" class="d-none">
+
+                        <!-- ── 기본 정보 섹션 ── -->
+                        <h6 class="fw-semibold small text-uppercase text-muted mb-2">
+                            <i class="bi bi-info-circle me-1"></i>기본 정보
+                        </h6>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-bordered small mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="table-light text-nowrap" style="width:110px;">화면 제목</th>
+                                        <td id="rcDetailTitle">—</td>
+                                        <th class="table-light text-nowrap" style="width:110px;">컴포넌트명</th>
+                                        <td id="rcDetailComponentName" class="font-monospace small">—</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light text-nowrap">브랜드</th>
+                                        <td id="rcDetailBrand">—</td>
+                                        <th class="table-light text-nowrap">도메인</th>
+                                        <td id="rcDetailDomain">—</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light text-nowrap">분류</th>
+                                        <td id="rcDetailCategory">—</td>
+                                        <th class="table-light text-nowrap">상태</th>
+                                        <td><span id="rcDetailStatusBadge" class="badge"></span></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light text-nowrap">화면 설명</th>
+                                        <td colspan="3" id="rcDetailDescription" style="white-space:pre-wrap;">—</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light text-nowrap">추가 요구사항</th>
+                                        <td colspan="3" id="rcDetailRequirements"
+                                            class="small text-muted" style="white-space:pre-wrap;">—</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light text-nowrap">Figma URL</th>
+                                        <td colspan="3">
+                                            <a id="rcDetailFigmaUrl" href="#" target="_blank" class="text-break">—</a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light text-nowrap">REF Code ID</th>
+                                        <td id="rcDetailRefCodeId" class="font-monospace small">—</td>
+                                        <th class="table-light text-nowrap">ROOT Code ID</th>
+                                        <td id="rcDetailRootCodeId" class="font-monospace small">—</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- ── 처리 정보 섹션 ── -->
+                        <h6 class="fw-semibold small text-uppercase text-muted mb-2">
+                            <i class="bi bi-clock-history me-1"></i>처리 정보
+                        </h6>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-bordered small mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="table-light text-nowrap" style="width:110px;">Code ID</th>
+                                        <td colspan="3" id="rcDetailCodeId" class="font-monospace small">—</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light text-nowrap">생성자</th>
+                                        <td id="rcDetailCreateUserId"></td>
+                                        <th class="table-light text-nowrap" style="width:110px;">생성일시</th>
+                                        <td id="rcDetailCreateDtime"></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light text-nowrap">승인자</th>
+                                        <td id="rcDetailApprovalUserId"></td>
+                                        <th class="table-light text-nowrap">승인일시</th>
+                                        <td id="rcDetailApprovalDtime"></td>
+                                    </tr>
+                                    <!-- 실패/반려 사유: FAILED 또는 REJECTED 상태일 때만 노출 -->
+                                    <tr id="rcDetailFailReasonRow" class="d-none">
+                                        <th class="table-light text-nowrap text-danger"
+                                            id="rcDetailFailReasonLabel">실패 사유</th>
+                                        <td colspan="3" class="text-danger" id="rcDetailFailReason"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- ── 미리보기 섹션: reactCode가 있을 때만 노출 ── -->
+                        <div id="rcDetailPreviewSection">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-semibold small text-uppercase text-muted mb-0">
+                                    <i class="bi bi-display me-1"></i>미리보기
+                                </h6>
+                                <!-- PC / 모바일 전환 버튼 -->
+                                <div class="btn-group btn-group-sm" id="rcDetailPreviewModeGroup" role="group"
+                                     aria-label="미리보기 화면 크기 선택">
+                                    <button type="button" class="btn btn-outline-secondary active"
+                                            id="rcDetailBtnPreviewPc" data-mode="pc">
+                                        <i class="bi bi-display me-1"></i>PC
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary"
+                                            id="rcDetailBtnPreviewMobile" data-mode="mobile">
+                                        <i class="bi bi-phone me-1"></i>모바일
+                                    </button>
+                                </div>
+                            </div>
+
+                            <ul class="nav nav-tabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active"
+                                            id="rcDetailTab-screen"
+                                            data-bs-toggle="tab"
+                                            data-bs-target="#rcDetailScreenPreview"
+                                            type="button" role="tab">
+                                        <i class="bi bi-display me-1"></i>화면 미리보기
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link"
+                                            id="rcDetailTab-code"
+                                            data-bs-toggle="tab"
+                                            data-bs-target="#rcDetailCodePreview"
+                                            type="button" role="tab">
+                                        <i class="bi bi-file-code me-1"></i>코드 미리보기
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content border border-top-0 rounded-bottom">
+                                <!-- 화면 미리보기 탭 -->
+                                <div class="tab-pane fade show active p-0"
+                                     id="rcDetailScreenPreview" role="tabpanel">
+                                    <!--
+                                        rcDetailPreviewWrapper: PC 모드 = 전체 너비 600px,
+                                        모바일 전환 시 iframe이 430×860으로 변경되며 wrapper가 스크롤 영역이 됨.
+                                    -->
+                                    <div id="rcDetailPreviewWrapper"
+                                         style="overflow-y:auto; background:#f8f9fa; border-radius:0 0 4px 4px;">
+                                        <iframe id="rcDetailPreviewFrame"
+                                                src="/preview-app/index.html"
+                                                title="화면 미리보기"
+                                                style="width:100%; height:600px; border:none; border-radius:0 0 4px 4px; display:block;"
+                                                sandbox="allow-scripts allow-same-origin">
+                                        </iframe>
+                                    </div>
+                                </div>
+
+                                <!-- 코드 미리보기 탭 -->
+                                <div class="tab-pane fade" id="rcDetailCodePreview" role="tabpanel">
+                                    <div class="position-relative">
+                                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2"
+                                                id="rcDetailBtnCopyCode" title="코드 복사">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                        <pre id="rcDetailCodeDisplay"
+                                             class="bg-dark text-light p-4 m-0 rounded-bottom"
+                                             style="overflow-x:auto; max-height:460px; font-size:0.85rem; white-space:pre-wrap;"></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- /rcDetailPreviewSection -->
+
+                    </div><!-- /rcDetailContent -->
+                </div><!-- /modal-body -->
+
+                <div class="modal-footer py-2">
+                    <!-- 생성 이력 모드: 코드가 있는 경우(GENERATED/FAILED/APPROVED/REJECTED) + REACT_GENERATE:W 일 때 노출 -->
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-none"
+                            id="rcDetailBtnRegenerate">
+                        <i class="bi bi-arrow-repeat me-1"></i>재생성
+                    </button>
+                    <!-- 생성 이력 모드: 작성자 본인 + GENERATED + REACT_GENERATE:W 일 때 노출 -->
+                    <button type="button" class="btn btn-outline-warning btn-sm d-none"
+                            id="rcDetailBtnRequestApproval">
+                        <i class="bi bi-send me-1"></i>승인 요청
+                    </button>
+                    <!-- 승인 관리 모드: 작성자 본인일 때 노출되는 안내 (me-auto로 좌측 배치) -->
+                    <span class="text-muted small me-auto d-none" id="rcDetailAuthorNotice">
+                        <i class="bi bi-info-circle me-1"></i>작성자 본인은 승인할 수 없습니다.
+                    </span>
+                    <!-- 승인 관리 모드: 비작성자 + PENDING_APPROVAL + REACT_APPROVAL:W 일 때 노출 -->
+                    <button type="button" class="btn btn-outline-danger btn-sm d-none"
+                            id="rcDetailBtnReject">
+                        <i class="bi bi-x-circle me-1"></i>반려
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm d-none"
+                            id="rcDetailBtnApprove">
+                        <i class="bi bi-check-circle me-1"></i>승인
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">닫기</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

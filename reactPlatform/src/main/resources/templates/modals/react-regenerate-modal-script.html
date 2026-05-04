@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="script">
+<script>
+/**
+ * 재생성 모달 컨트롤러.
+ * ReactCodeDetailModal 에서 "재생성" 버튼 클릭 시 ReactRegenerateModal.open(codeId, onSuccess) 를 호출한다.
+ * 재생성 성공 후 onSuccess(newCodeId) 콜백을 호출하고 모달을 닫는다.
+ */
+const ReactRegenerateModal = window.ReactRegenerateModal = (function () {
+    let _currentCodeId = null;
+    let _onSuccess     = null;
+    let _bsModal       = null;
+
+    // DOM 참조를 한 곳에서 관리 — IIFE 최상단에서 요소 부재 시 초기화를 조기 종료
+    const _el = {
+        modal:        document.getElementById('reactRegenerateModal'),
+        requirements: document.getElementById('rcRegenRequirements'),
+        charCount:    document.getElementById('rcRegenCharCount'),
+        progress:     document.getElementById('rcRegenProgress'),
+        btnSubmit:    document.getElementById('rcRegenBtnSubmit'),
+        btnCancel:    document.getElementById('rcRegenBtnCancel'),
+        btnClose:     document.getElementById('rcRegenBtnClose'),
+    };
+
+    // 모달 HTML fragment 가 로드되지 않은 경우 조기 종료 (include 순서 오류 방지)
+    if (!_el.modal) {
+        console.warn('ReactRegenerateModal: modal element not found — skipping init');
+        return { open: function () {} };
+    }
+
+    // 문자 카운터
+    _el.requirements.addEventListener('input', function () {
+        _el.charCount.textContent = this.value.length + ' / 4000';
+    });
+
+    // 취소·닫기
+    [_el.btnClose, _el.btnCancel].forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            _bsModal?.hide();
+        });
+    });
+
+    // 제출
+    _el.btnSubmit.addEventListener('click', function () {
+        const requirements = _el.requirements.value.trim();
+        if (!requirements) {
+            Toast.warning('변경 요청사항을 입력해주세요.');
+            _el.requirements.focus();
+            return;
+        }
+
+        _el.progress.classList.remove('d-none');
+        [_el.btnSubmit, _el.btnCancel, _el.btnClose].forEach(function (btn) {
+            btn.disabled = true;
+        });
+
+        $.ajax({
+            url: API_BASE_URL + '/react-generate/' + _currentCodeId + '/regenerate',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ requirements: requirements }),
+            success: function (res) {
+                if (res.success && res.data) {
+                    Toast.success('코드가 재생성되었습니다.');
+                    if (typeof _onSuccess === 'function') {
+                        // hide() 애니메이션(300ms) 완료 후 onSuccess 호출 — 백드롭 중첩 방지
+                        // 리스너를 hide() 호출 전에 등록해야 이벤트를 놓치지 않는다
+                        _el.modal.addEventListener('hidden.bs.modal', function handler() {
+                            _el.modal.removeEventListener('hidden.bs.modal', handler);
+                            _onSuccess(res.data.codeId);
+                        });
+                    }
+                    _bsModal?.hide();
+                } else {
+                    Toast.error(res.message || '재생성에 실패했습니다.');
+                    _resetButtons();
+                }
+            },
+            error: function (xhr) {
+                Toast.error(xhr.responseJSON?.message || '재생성 중 오류가 발생했습니다.');
+                _resetButtons();
+            }
+        });
+    });
+
+    function _resetButtons() {
+        _el.progress.classList.add('d-none');
+        [_el.btnSubmit, _el.btnCancel, _el.btnClose].forEach(function (btn) {
+            btn.disabled = false;
+        });
+    }
+
+    return {
+        /**
+         * 재생성 모달을 연다.
+         * @param {string}   codeId    재생성 대상 코드 ID
+         * @param {Function} onSuccess 재생성 완료 후 호출할 콜백 (newCodeId 전달)
+         */
+        open: function (codeId, onSuccess) {
+            _currentCodeId = codeId;
+            _onSuccess     = onSuccess;
+
+            _el.requirements.value = '';
+            _el.charCount.textContent = '0 / 4000';
+            _el.progress.classList.add('d-none');
+            _resetButtons();
+
+            // 기존 인스턴스 재사용 — 동일 DOM 요소에 중복 생성 방지
+            _bsModal = bootstrap.Modal.getInstance(_el.modal) || new bootstrap.Modal(_el.modal);
+            _bsModal.show();
+        }
+    };
+})();
+</script>
+</th:block>
+</body>
+</html>

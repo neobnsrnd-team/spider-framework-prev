@@ -63,6 +63,26 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Email 알림: spring.mail.* 설정 시 실 발송, 미설정 시 Mock(로그 출력) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <!-- Quartz 스케줄러: Cron 기반 배치 자동 실행 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-quartz</artifactId>
+        </dependency>
+
+        <!-- Redisson: Redis 분산 락 (멀티 인스턴스 중복 실행 방지) -->
+        <!-- TODO: 운영 환경에서는 RedissonClient를 Sentinel/Cluster 모드로 구성 필요 -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+            <version>3.27.2</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

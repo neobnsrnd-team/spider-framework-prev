@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.board.mapper.BoardMapper">
+
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.board.dto.BoardResponse">
+        SELECT BOARD_ID       AS boardId,
+               BOARD_NAME     AS boardName,
+               BOARD_TYPE     AS boardType,
+               ADMIN_ID       AS adminId,
+               LAST_UPDATE_DTIME  AS lastUpdateDtime,
+               LAST_UPDATE_USER_ID AS lastUpdateUserId
+        FROM FWK_BOARD
+        WHERE BOARD_ID = #{boardId}
+    </select>
+
+    <select id="selectAll" resultType="com.example.spideradmin.domain.board.dto.BoardResponse">
+        SELECT BOARD_ID       AS boardId,
+               BOARD_NAME     AS boardName,
+               BOARD_TYPE     AS boardType,
+               ADMIN_ID       AS adminId,
+               LAST_UPDATE_DTIME  AS lastUpdateDtime,
+               LAST_UPDATE_USER_ID AS lastUpdateUserId
+        FROM FWK_BOARD
+        ORDER BY BOARD_ID
+    </select>
+
+    <insert id="insertBoard">
+        INSERT INTO FWK_BOARD (BOARD_ID, BOARD_NAME, BOARD_TYPE, ADMIN_ID, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID)
+        VALUES (#{dto.boardId}, #{dto.boardName}, #{dto.boardType, jdbcType=VARCHAR}, #{dto.adminId, jdbcType=VARCHAR}, #{lastUpdateDtime}, #{lastUpdateUserId})
+    </insert>
+
+    <update id="updateBoard">
+        UPDATE FWK_BOARD
+        SET BOARD_NAME = #{dto.boardName},
+            BOARD_TYPE = #{dto.boardType, jdbcType=VARCHAR},
+            ADMIN_ID = #{dto.adminId, jdbcType=VARCHAR},
+            LAST_UPDATE_DTIME = #{lastUpdateDtime},
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId}
+        WHERE BOARD_ID = #{boardId}
+    </update>
+
+    <delete id="deleteBoardById">
+        DELETE FROM FWK_BOARD WHERE BOARD_ID = #{boardId}
+    </delete>
+
+    <select id="selectByBoardType" resultType="com.example.spideradmin.domain.board.dto.BoardResponse">
+        SELECT BOARD_ID       AS boardId,
+               BOARD_NAME     AS boardName,
+               BOARD_TYPE     AS boardType,
+               ADMIN_ID       AS adminId,
+               LAST_UPDATE_DTIME  AS lastUpdateDtime,
+               LAST_UPDATE_USER_ID AS lastUpdateUserId
+        FROM FWK_BOARD
+        WHERE BOARD_TYPE = #{boardType}
+        ORDER BY BOARD_ID
+    </select>
+
+    <select id="countById" resultType="int">
+        SELECT COUNT(*) FROM FWK_BOARD WHERE BOARD_ID = #{boardId}
+    </select>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <!-- ==================== 검색 조건 WHERE ==================== -->
+
+    <sql id="searchConditions">
+        <if test="search.boardId != null and search.boardId != ''">
+            AND BOARD_ID LIKE '%' || #{search.boardId} || '%'
+        </if>
+        <if test="search.boardName != null and search.boardName != ''">
+            AND BOARD_NAME LIKE '%' || #{search.boardName} || '%'
+        </if>
+        <if test="search.boardType != null and search.boardType != ''">
+            AND BOARD_TYPE = #{search.boardType}
+        </if>
+    </sql>
+
+    <!-- 전체 게시판 목록 조회 (ROW_NUMBER 페이징) -->
+    <select id="findAllWithPaging" resultType="com.example.spideradmin.domain.board.dto.BoardResponse">
+        SELECT * FROM (
+            SELECT A.*, ROW_NUMBER() OVER (ORDER BY A.boardId) AS RN
+            FROM (
+                SELECT BOARD_ID       AS boardId,
+                       BOARD_NAME     AS boardName,
+                       BOARD_TYPE     AS boardType,
+                       ADMIN_ID       AS adminId,
+                       LAST_UPDATE_DTIME  AS lastUpdateDtime,
+                       LAST_UPDATE_USER_ID AS lastUpdateUserId
+                FROM FWK_BOARD
+            ) A
+        ) WHERE RN BETWEEN #{offset} + 1 AND #{offset} + #{limit}
+        ORDER BY RN
+    </select>
+
+    <!-- 전체 게시판 건수 조회 -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM FWK_BOARD
+    </select>
+
+    <!-- 검색 조건 목록 조회 (ROW_NUMBER 페이징) -->
+    <select id="findAllWithSearch" resultType="com.example.spideradmin.domain.board.dto.BoardResponse">
+        <bind name="orderColumn" value="
+            search.sortBy == 'boardId'         ? 'boardId' :
+            search.sortBy == 'boardName'       ? 'boardName' :
+            search.sortBy == 'boardType'       ? 'boardType' :
+            search.sortBy == 'lastUpdateDtime' ? 'lastUpdateDtime' :
+            'boardId'
+        "/>
+        <bind name="orderDir" value="search.sortDirection == 'ASC' ? 'ASC' : 'DESC'"/>
+        SELECT * FROM (
+            SELECT A.*, ROW_NUMBER() OVER (ORDER BY ${orderColumn} ${orderDir}, boardId ASC) AS RN
+            FROM (
+                SELECT BOARD_ID       AS boardId,
+                       BOARD_NAME     AS boardName,
+                       BOARD_TYPE     AS boardType,
+                       ADMIN_ID       AS adminId,
+                       LAST_UPDATE_DTIME  AS lastUpdateDtime,
+                       LAST_UPDATE_USER_ID AS lastUpdateUserId
+                FROM FWK_BOARD
+                <where>
+                    <include refid="searchConditions"/>
+                </where>
+            ) A
+        ) WHERE RN BETWEEN #{offset} + 1 AND #{offset} + #{limit}
+        ORDER BY RN
+    </select>
+
+    <!-- 검색 조건 건수 조회 -->
+    <select id="countWithSearch" resultType="long">
+        SELECT COUNT(*) FROM FWK_BOARD
+        <where>
+            <include refid="searchConditions"/>
+        </where>
+    </select>
+
+
+    <!-- ==================== Board Auth ==================== -->
+
+    <select id="selectBoardAuthById" resultType="com.example.spideradmin.domain.board.dto.BoardAuthResponse">
+        SELECT USER_ID    AS userId,
+               BOARD_ID   AS boardId,
+               AUTH_CODE   AS authCode,
+               LAST_UPDATE_DTIME  AS lastUpdateDtime,
+               LAST_UPDATE_USER_ID AS lastUpdateUserId
+        FROM FWK_BOARD_AUTH
+        WHERE USER_ID = #{userId} AND BOARD_ID = #{boardId}
+    </select>
+
+    <select id="selectAllBoardAuth" resultType="com.example.spideradmin.domain.board.dto.BoardAuthResponse">
+        SELECT USER_ID    AS userId,
+               BOARD_ID   AS boardId,
+               AUTH_CODE   AS authCode,
+               LAST_UPDATE_DTIME  AS lastUpdateDtime,
+               LAST_UPDATE_USER_ID AS lastUpdateUserId
+        FROM FWK_BOARD_AUTH
+        ORDER BY BOARD_ID, USER_ID
+    </select>
+
+    <insert id="insertBoardAuth">
+        INSERT INTO FWK_BOARD_AUTH (USER_ID, BOARD_ID, AUTH_CODE, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID)
+        VALUES (#{userId}, #{boardId}, #{authCode}, #{lastUpdateDtime}, #{lastUpdateUserId})
+    </insert>
+
+    <update id="updateBoardAuth">
+        UPDATE FWK_BOARD_AUTH
+        SET AUTH_CODE = #{authCode},
+            LAST_UPDATE_DTIME = #{lastUpdateDtime},
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId}
+        WHERE USER_ID = #{userId} AND BOARD_ID = #{boardId}
+    </update>
+
+    <delete id="deleteBoardAuthById">
+        DELETE FROM FWK_BOARD_AUTH
+        WHERE USER_ID = #{userId} AND BOARD_ID = #{boardId}
+    </delete>
+
+    <select id="selectBoardAuthByUserId" resultType="com.example.spideradmin.domain.board.dto.BoardAuthResponse">
+        SELECT USER_ID    AS userId,
+               BOARD_ID   AS boardId,
+               AUTH_CODE   AS authCode,
+               LAST_UPDATE_DTIME  AS lastUpdateDtime,
+               LAST_UPDATE_USER_ID AS lastUpdateUserId
+        FROM FWK_BOARD_AUTH
+        WHERE USER_ID = #{userId}
+        ORDER BY BOARD_ID
+    </select>
+
+    <select id="selectBoardAuthByBoardId" resultType="com.example.spideradmin.domain.board.dto.BoardAuthResponse">
+        SELECT USER_ID    AS userId,
+               BOARD_ID   AS boardId,
+               AUTH_CODE   AS authCode,
+               LAST_UPDATE_DTIME  AS lastUpdateDtime,
+               LAST_UPDATE_USER_ID AS lastUpdateUserId
+        FROM FWK_BOARD_AUTH
+        WHERE BOARD_ID = #{boardId}
+        ORDER BY USER_ID
+    </select>
+
+    <select id="selectAuthCode" resultType="String">
+        SELECT AUTH_CODE FROM FWK_BOARD_AUTH
+        WHERE USER_ID = #{userId} AND BOARD_ID = #{boardId}
+    </select>
+
+    <delete id="deleteBoardAuthByBoardId">
+        DELETE FROM FWK_BOARD_AUTH WHERE BOARD_ID = #{boardId}
+    </delete>
+
+    <select id="countBoardAuthById" resultType="int">
+        SELECT COUNT(*) FROM FWK_BOARD_AUTH
+        WHERE USER_ID = #{userId} AND BOARD_ID = #{boardId}
+    </select>
+
+    <!-- ==================== Board Auth 필터 조건 WHERE ==================== -->
+
+    <sql id="boardAuthFilterConditions">
+        <if test="boardId != null and boardId != ''">
+            AND ba.BOARD_ID = #{boardId}
+        </if>
+        <if test="userKeyword != null and userKeyword != ''">
+            AND (ba.USER_ID LIKE '%' || #{userKeyword} || '%' OR u.USER_NAME LIKE '%' || #{userKeyword} || '%')
+        </if>
+        <if test="authCode != null and authCode != ''">
+            AND ba.AUTH_CODE = #{authCode}
+        </if>
+    </sql>
+
+    <!-- 필터 조건으로 권한 목록 조회 (ROW_NUMBER 페이징) -->
+    <select id="selectBoardAuthWithFilter" resultType="com.example.spideradmin.domain.board.dto.BoardAuthResponse">
+        <bind name="orderColumn" value="
+            sortBy == 'userId'          ? 'userId' :
+            sortBy == 'boardId'         ? 'boardId' :
+            sortBy == 'authCode'        ? 'authCode' :
+            sortBy == 'lastUpdateDtime' ? 'lastUpdateDtime' :
+            'boardId'
+        "/>
+        <bind name="orderDir" value="sortDirection == 'ASC' ? 'ASC' : 'DESC'"/>
+        SELECT * FROM (
+            SELECT A.*, ROW_NUMBER() OVER (ORDER BY A.${orderColumn} ${orderDir}, A.boardId ASC, A.userId ASC) AS RN
+            FROM (
+                SELECT ba.USER_ID    AS userId,
+                       ba.BOARD_ID   AS boardId,
+                       ba.AUTH_CODE   AS authCode,
+                       ba.LAST_UPDATE_DTIME  AS lastUpdateDtime,
+                       ba.LAST_UPDATE_USER_ID AS lastUpdateUserId
+                FROM FWK_BOARD_AUTH ba
+                LEFT JOIN FWK_USER u ON ba.USER_ID = u.USER_ID
+                <where>
+                    <include refid="boardAuthFilterConditions"/>
+                </where>
+            ) A
+        ) WHERE RN BETWEEN #{offset} + 1 AND #{offset} + #{limit}
+        ORDER BY RN
+    </select>
+
+    <!-- 필터 조건 건수 조회 -->
+    <select id="countBoardAuthWithFilter" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_BOARD_AUTH ba
+        LEFT JOIN FWK_USER u ON ba.USER_ID = u.USER_ID
+        <where>
+            <include refid="boardAuthFilterConditions"/>
+        </where>
+    </select>
+
+
+    <!-- ==================== Board Category ==================== -->
+
+    <select id="selectCategoryById" resultType="com.example.spideradmin.domain.board.dto.BoardCategoryResponse">
+        SELECT BOARD_ID      AS boardId,
+               CATEGORY_SEQ  AS categorySeq,
+               CATEGORY_NAME AS categoryName
+        FROM FWK_BOARD_CATEGORY
+        WHERE BOARD_ID = #{boardId} AND CATEGORY_SEQ = #{categorySeq}
+    </select>
+
+    <select id="selectAllCategories" resultType="com.example.spideradmin.domain.board.dto.BoardCategoryResponse">
+        SELECT BOARD_ID      AS boardId,
+               CATEGORY_SEQ  AS categorySeq,
+               CATEGORY_NAME AS categoryName
+        FROM FWK_BOARD_CATEGORY
+        ORDER BY BOARD_ID, CATEGORY_SEQ
+    </select>
+
+    <insert id="insertCategory">
+        INSERT INTO FWK_BOARD_CATEGORY (BOARD_ID, CATEGORY_SEQ, CATEGORY_NAME)
+        VALUES (#{boardId}, #{categorySeq}, #{categoryName})
+    </insert>
+
+    <update id="updateCategory">
+        UPDATE FWK_BOARD_CATEGORY
+        SET CATEGORY_NAME = #{categoryName}
+        WHERE BOARD_ID = #{boardId} AND CATEGORY_SEQ = #{categorySeq}
+    </update>
+
+    <delete id="deleteCategoryById">
+        DELETE FROM FWK_BOARD_CATEGORY
+        WHERE BOARD_ID = #{boardId} AND CATEGORY_SEQ = #{categorySeq}
+    </delete>
+
+    <select id="selectCategoriesByBoardId" resultType="com.example.spideradmin.domain.board.dto.BoardCategoryResponse">
+        SELECT BOARD_ID      AS boardId,
+               CATEGORY_SEQ  AS categorySeq,
+               CATEGORY_NAME AS categoryName
+        FROM FWK_BOARD_CATEGORY
+        WHERE BOARD_ID = #{boardId}
+        ORDER BY CATEGORY_SEQ
+    </select>
+
+    <!--
+        게시판별 MAX+1 방식으로 카테고리 순번 생성
+        동시성 이슈가 있을 수 있으나, 카테고리 생성 빈도가 낮아 실용적
+    -->
+    <select id="selectNextCategorySeq" resultType="String">
+        SELECT TO_CHAR(NVL(MAX(TO_NUMBER(CATEGORY_SEQ)), 0) + 1)
+        FROM FWK_BOARD_CATEGORY
+        WHERE BOARD_ID = #{boardId}
+    </select>
+
+    <select id="countCategoriesByBoardId" resultType="int">
+        SELECT COUNT(*) FROM FWK_BOARD_CATEGORY WHERE BOARD_ID = #{boardId}
+    </select>
+
+
+    <!-- ==================== Cascade Delete ==================== -->
+
+    <delete id="deleteArticleUsersByBoardId">
+        DELETE FROM FWK_ARTICLE_USER WHERE BOARD_ID = #{boardId}
+    </delete>
+
+    <delete id="deleteArticlesByBoardId">
+        DELETE FROM FWK_ARTICLE WHERE BOARD_ID = #{boardId}
+    </delete>
+
+    <delete id="deleteCategoriesByBoardId">
+        DELETE FROM FWK_BOARD_CATEGORY WHERE BOARD_ID = #{boardId}
+    </delete>
+
+</mapper>

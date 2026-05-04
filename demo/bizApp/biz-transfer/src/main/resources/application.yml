@@ -4,8 +4,6 @@ spring:
   config:
     import: optional:file:.env[.properties]
   main:
-    # TCP 서버만 사용하므로 내장 웹 서버를 비활성화한다
-    web-application-type: none
     keep-alive: true
   datasource:
     url: ${DB_URL}
@@ -16,17 +14,35 @@ spring:
       maximum-pool-size: 2
       minimum-idle: 1
 
+server:
+  # Admin reload API 수신용 HTTP 관리 포트 (TCP 포트와 별도)
+  port: ${HTTP_SERVER_PORT:19280}
+
 tcp:
   server:
     port: ${TCP_SERVER_PORT}
     handler-pool-size: ${TCP_SERVER_HANDLER_POOL_SIZE}
     queue-capacity: ${TCP_SERVER_QUEUE_CAPACITY}
+  ext:
+    # MetaDrivenCommandHandler B-type TcpCallBiz 가 호출할 외부시스템 (mock-core)
+    # TCP_EXT_HOST 미설정 시 기존 MOCK_CORE_HOST 로 폴백하여 .env 호환성 유지
+    host: ${TCP_EXT_HOST:${MOCK_CORE_HOST:localhost}}
+    port: ${TCP_EXT_PORT:${MOCK_CORE_PORT:19300}}
 
-mock:
-  core:
-    host: ${MOCK_CORE_HOST}
-    port: ${MOCK_CORE_PORT}
+app:
+  org-id: ${APP_ORG_ID:DEMO}
+
+mybatis:
+  # classpath*: 로 현재 프로젝트 + spider-link JAR 내부 XML 매퍼까지 탐색
+  mapper-locations: classpath*:mapper/oracle/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: VARCHAR
+    lazy-loading-enabled: false
+    cache-enabled: false
+    auto-mapping-behavior: PARTIAL
 
 logging:
   level:
     com.example.biztransfer: DEBUG
+    com.example.spiderlink: DEBUG

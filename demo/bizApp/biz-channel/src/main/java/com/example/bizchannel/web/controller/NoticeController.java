@@ -59,7 +59,7 @@ public class NoticeController {
      */
     @GetMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribeSse() {
-        log.debug("[NoticeController] SSE 클라이언트 연결 요청");
+        log.debug("[NoticeController] SSE client connect");
         return noticeManager.addClient();
     }
 
@@ -83,12 +83,12 @@ public class NoticeController {
             @RequestBody Map<String, Object> body) {
 
         if (!adminSecret.equals(adminSecretHeader)) {
-            log.warn("[NoticeController] 공지 sync 인증 실패 — X-Admin-Secret 불일치");
+            log.warn("[NoticeController] Notice sync rejected — invalid X-Admin-Secret");
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "어드민 시크릿이 올바르지 않습니다."));
         }
 
-        log.info("[NoticeController] 공지 동기화 요청: displayType={}", body.get("displayType"));
+        log.info("[NoticeController] Notice sync request: displayType={}", body.get("displayType"));
         noticeManager.broadcast(body);
 
         return ResponseEntity.ok(Map.of("success", true));
@@ -112,12 +112,12 @@ public class NoticeController {
             @RequestHeader(value = "X-Admin-Secret", required = false) String adminSecretHeader) {
 
         if (!adminSecret.equals(adminSecretHeader)) {
-            log.warn("[NoticeController] 공지 end 인증 실패 — X-Admin-Secret 불일치");
+            log.warn("[NoticeController] Notice end rejected — invalid X-Admin-Secret");
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "어드민 시크릿이 올바르지 않습니다."));
         }
 
-        log.info("[NoticeController] 공지 종료 처리");
+        log.info("[NoticeController] Notice end");
         // null 브로드캐스트 → NoticeManager 가 notice-end 이벤트 전송
         noticeManager.broadcast(null);
 

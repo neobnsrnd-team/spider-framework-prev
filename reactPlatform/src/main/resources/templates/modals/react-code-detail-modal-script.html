@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  React 코드 상세 공용 모달 스크립트 Fragment.
+  ReactCodeDetailModal 전역 모듈을 정의한다.
+
+  사용법:
+    ReactCodeDetailModal.open(codeId, mode, callbacks);
+    - mode      : 'history'  (생성 이력)   — 승인 요청·재생성 버튼 노출
+               | 'approval' (승인 관리)   — 승인·반려 버튼 노출
+               | 'view'     (읽기 전용)   — 액션 버튼 없음 (닫기만 표시)
+    - callbacks : {
+        onRequestApproval(codeId) — 승인 요청 성공 후 목록 갱신 (history 모드)
+        onRegenerate(newCodeId)   — 재생성 성공 후 목록 갱신 (history 모드)
+        onApprove(codeId)         — 승인 버튼 클릭 시 처리 위임 (approval 모드)
+        onReject(codeId)          — 반려 버튼 클릭 시 처리 위임 (approval 모드)
+      }
+-->
+<th:block th:fragment="script">
+<script th:inline="javascript">
+(function () {
+    // ─── 권한 플래그 ───────────────────────────────────────────
+    // 두 권한을 모두 주입해 mode에 따라 올바른 버튼을 노출한다.
+    const HAS_GENERATE_WRITE = /*[[${userAuthorities != null && userAuthorities.contains('REACT_GENERATE:W')}]]*/ false;
+    const HAS_APPROVAL_WRITE = /*[[${userAuthorities != null && userAuthorities.contains('REACT_APPROVAL:W')}]]*/ false;
+    const MODAL_CURRENT_USER = /*[[${currentUserId}]]*/ '';
+
+    // ─── 상태 배지 정의 ────────────────────────────────────────
+    const STATUS_LABEL = {
+        GENERATED:        { text: '생성 완료',  cls: 'bg-primary' },
+        FAILED:           { text: '실패',        cls: 'bg-danger' },
+        PENDING_APPROVAL: { text: '승인 대기',   cls: 'bg-warning text-dark' },
+        APPROVED:         { text: '승인 완료',   cls: 'bg-success' },
+        REJECTED:         { text: '반려',        cls: 'bg-secondary' },
+    };
+
+    const BRAND_LABEL = {
+        HANA: '하나', SHINHAN: '신한', KB: '국민',
+        NH: '농협',   IBK: '기업',    WOORI: '우리',
+    };
+
+    const DOMAIN_LABEL = {
+        BANKING: '뱅킹', CARD: '카드', GIRO: '지로', INSURANCE: '보험',
+    };
+
+    const CATEGORY_LABEL = {
+        AUTH: '인증', MAIN: '메인', LIST: '목록', DETAIL: '상세',
+        FORM: '폼',   MYPAGE: '마이페이지', ADMIN: '관리자',
+        EVENT: '이벤트', ERROR: '오류',
+    };
+
+    /** yyyyMMddHHmmss → yyyy-MM-dd HH:mm */
+    function formatDtime(dtime) {
+        if (!dtime || dtime.length < 12) return dtime || '';
+        return `${dtime.slice(0,4)}-${dtime.slice(4,6)}-${dtime.slice(6,8)} ` +
+               `${dtime.slice(8,10)}:${dtime.slice(10,12)}`;
+    }
+
+    /** http/https 프로토콜인지 검증한다 (XSS 방지용). */
+    function isSafeUrl(url) {
+        if (!url) return false;
+        try {
+            const { protocol } = new URL(url);
+            return protocol === 'https:' || protocol === 'http:';
+        } catch {
+            return false;
+        }
+    }
+
+    // ─── PC / 모바일 미리보기 전환 ────────────────────────────
+
+    /** iframe과 래퍼를 PC 모드(전체 너비 600px)로 초기화한다. */
+    function resetPreviewMode() {
+        const frame   = document.getElementById('rcDetailPreviewFrame');
+        const wrapper = document.getElementById('rcDetailPreviewWrapper');
+        frame.style.cssText = 'width:100%; height:600px; border:none; border-radius:0 0 4px 4px; display:block;';
+        wrapper.style.overflowY = 'auto';
+        wrapper.style.minHeight = '';
+        $('#rcDetailPreviewModeGroup button').removeClass('active');
+        $('#rcDetailBtnPreviewPc').addClass('active');
+    }
+
+    $('#rcDetailPreviewModeGroup').on('click', 'button', function () {
+        const mode   = $(this).data('mode');
+        const frame   = document.getElementById('rcDetailPreviewFrame');
+        const wrapper = document.getElementById('rcDetailPreviewWrapper');
+
+        $('#rcDetailPreviewModeGroup button').removeClass('active');
+        $(this).addClass('active');
+
+        if (mode === 'mobile') {
+            // 모바일: 430×860 고정 폭, 직사각형(PC와 동일한 모서리), 얇은 테두리 + 그림자
+            frame.style.cssText = [
+                'width:430px', 'height:860px', 'border:none',
+                'border-radius:0',
+                'box-shadow:0 0 0 1px #dee2e6, 0 8px 24px rgba(0,0,0,0.12)',
+                'display:block', 'margin:24px auto',
+            ].join(';');
+            wrapper.style.overflowY = 'auto';
+            wrapper.style.minHeight = '500px';
+        } else {
+            frame.style.cssText = 'width:100%; height:600px; border:none; border-radius:0 0 4px 4px; display:block;';
+            wrapper.style.overflowY = 'auto';
+            wrapper.style.minHeight = '';
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    //  공용 상세 모달 모듈
+    // ═══════════════════════════════════════════════════════════
+    const ReactCodeDetailModal = window.ReactCodeDetailModal = {
+        currentCodeId:  null,
+        currentStatus:  null,
+        _createUserId:  null,     // _render 시 저장 — DOM 텍스트 재읽기 방지
+        _mode:          null,     // 'history' | 'approval' | 'view'
+        _callbacks:     {},       // { onRequestApproval, onRegenerate, onApprove, onReject }
+
+        /**
+         * 모달을 열고 지정된 codeId 데이터를 불러온다.
+         *
+         * @param {string} codeId     조회할 CODE_ID
+         * @param {string} mode       'history' (생성 이력) | 'approval' (승인 관리) | 'view' (읽기 전용)
+         * @param {object} [callbacks] 페이지별 콜백
+         *   - onRequestApproval(codeId)  승인 요청 성공 후 목록 갱신 (history)
+         *   - onApprove(codeId)          승인 버튼 클릭 처리 위임 (approval)
+         *   - onReject(codeId)           반려 버튼 클릭 처리 위임 (approval)
+         */
+        open: function (codeId, mode, callbacks) {
+            this.currentCodeId = codeId;
+            this.currentStatus = null;
+            this._mode         = mode;
+            this._callbacks    = callbacks || {};
+
+            // 초기화
+            $('#rcDetailLoading').removeClass('d-none');
+            $('#rcDetailContent').addClass('d-none');
+            this._resetButtons();
+            resetPreviewMode();
+
+            // 기존 인스턴스 재사용 — 동일 DOM 요소에 중복 생성 방지
+            const modalEl = document.getElementById('reactCodeDetailModal');
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+
+            $.ajax({
+                url: API_BASE_URL + '/react-generate/' + codeId,
+                method: 'GET',
+                success: (res) => {
+                    if (res.success && res.data) {
+                        this._render(res.data);
+                    } else {
+                        Toast.error(res.message || '상세 정보를 불러오지 못했습니다.');
+                        modal.hide();
+                    }
+                },
+                error: (xhr) => {
+                    Toast.error(xhr.responseJSON?.message || '상세 조회 중 오류가 발생했습니다.');
+                    modal.hide();
+                },
+            });
+        },
+
+        /** 상세 데이터를 모달에 렌더링한다. */
+        _render: function (data) {
+            this.currentStatus = data.status;
+            this._createUserId = data.createUserId;
+
+            // 기본 정보
+            $('#rcDetailTitle').text(data.title || '—');
+            $('#rcDetailComponentName').text(data.componentName || '—');
+            $('#rcDetailBrand').text(BRAND_LABEL[data.brand] || data.brand || '—');
+            $('#rcDetailDomain').text(DOMAIN_LABEL[data.domain] || data.domain || '—');
+            $('#rcDetailCategory').text(CATEGORY_LABEL[data.category] || data.category || '—');
+            $('#rcDetailDescription').text(data.description || '—');
+            $('#rcDetailRequirements').text(data.requirements || '—');
+            $('#rcDetailRefCodeId').text(data.refCodeId || '—');
+            $('#rcDetailRootCodeId').text(data.rootCodeId || '—');
+
+            // Figma URL — 안전한 URL(http/https)만 href 바인딩 (XSS 방지)
+            const safeUrl = HtmlUtils.escape(data.figmaUrl || '');
+            if (isSafeUrl(data.figmaUrl)) {
+                $('#rcDetailFigmaUrl').attr('href', safeUrl).text(safeUrl || '—');
+            } else {
+                $('#rcDetailFigmaUrl').removeAttr('href').text(safeUrl || '—');
+            }
+
+            // 처리 정보
+            $('#rcDetailCodeId').text(data.codeId || '—');
+            $('#rcDetailCreateUserId').text(data.createUserId || '—');
+            $('#rcDetailCreateDtime').text(formatDtime(data.createDtime) || '—');
+            $('#rcDetailApprovalUserId').text(data.approvalUserId || '—');
+            $('#rcDetailApprovalDtime').text(formatDtime(data.approvalDtime) || '—');
+
+            // 상태 배지
+            const si = STATUS_LABEL[data.status] || { text: data.status, cls: 'bg-secondary' };
+            $('#rcDetailStatusBadge').text(si.text).removeClass().addClass('badge ' + si.cls);
+
+            // 실패/반려 사유 — FAILED 또는 REJECTED 일 때만 노출
+            if (data.status === 'FAILED' || data.status === 'REJECTED') {
+                $('#rcDetailFailReasonLabel').text(data.status === 'REJECTED' ? '반려 사유' : '실패 사유');
+                $('#rcDetailFailReason').text(data.failReason || '—');
+                $('#rcDetailFailReasonRow').removeClass('d-none');
+            } else {
+                $('#rcDetailFailReasonRow').addClass('d-none');
+            }
+
+            // 미리보기: reactCode가 있을 때만 노출
+            const hasCode = !!(data.reactCode && data.reactCode.trim());
+            if (hasCode) {
+                $('#rcDetailPreviewSection').removeClass('d-none');
+                const frame = document.getElementById('rcDetailPreviewFrame');
+                const sendCode = () => frame.contentWindow.postMessage(
+                    { type: 'UPDATE_CODE', code: data.reactCode, codeId: data.codeId },
+                    window.location.origin
+                );
+                // iframe이 이미 로드된 경우 즉시 전송, 아니면 onload 후 전송
+                if (frame.contentDocument?.readyState === 'complete') sendCode();
+                else frame.onload = sendCode;
+
+                // textContent 할당 — innerHTML 파싱 우회로 XSS 원천 차단
+                document.getElementById('rcDetailCodeDisplay').textContent = data.reactCode;
+                new bootstrap.Tab(document.getElementById('rcDetailTab-screen')).show();
+            } else {
+                $('#rcDetailPreviewSection').addClass('d-none');
+            }
+
+            // 모드에 따른 버튼 제어
+            this._updateButtons(data.status, data.createUserId);
+
+            $('#rcDetailLoading').addClass('d-none');
+            $('#rcDetailContent').removeClass('d-none');
+        },
+
+        /**
+         * mode와 상태·작성자 여부에 따라 푸터 버튼 노출 여부를 제어한다.
+         *
+         * history 모드:
+         *   - 승인 요청 버튼: REACT_GENERATE:W + 작성자 본인 + GENERATED 상태
+         *
+         * approval 모드:
+         *   - 승인·반려 버튼: REACT_APPROVAL:W + 비작성자 + PENDING_APPROVAL 상태
+         *   - 작성자 안내 메시지: REACT_APPROVAL:W + 작성자 본인 + PENDING_APPROVAL 상태
+         *
+         * view 모드: 액션 버튼 없음 (닫기만 표시)
+         */
+        _updateButtons: function (status, createUserId) {
+            const isAuthor = MODAL_CURRENT_USER && createUserId && createUserId === MODAL_CURRENT_USER;
+
+            if (this._mode === 'history') {
+                const canRequest = HAS_GENERATE_WRITE && isAuthor && status === 'GENERATED';
+                $('#rcDetailBtnRequestApproval').toggleClass('d-none', !canRequest);
+
+                // 재생성: REACT_GENERATE:W 권한 보유 시 GENERATED·FAILED·APPROVED·REJECTED 상태에서 노출
+                const canRegen = HAS_GENERATE_WRITE &&
+                    ['GENERATED', 'FAILED', 'APPROVED', 'REJECTED'].includes(status);
+                $('#rcDetailBtnRegenerate').toggleClass('d-none', !canRegen);
+
+            } else if (this._mode === 'approval') {
+                if (HAS_APPROVAL_WRITE && status === 'PENDING_APPROVAL') {
+                    if (isAuthor) {
+                        $('#rcDetailAuthorNotice').removeClass('d-none');
+                    } else {
+                        $('#rcDetailBtnApprove, #rcDetailBtnReject').removeClass('d-none');
+                    }
+                }
+            }
+        },
+
+        /** 모달 열기 전 버튼·안내 메시지를 모두 초기 상태(hidden)로 되돌린다. */
+        _resetButtons: function () {
+            this._createUserId = null;
+            $('#rcDetailBtnRegenerate').addClass('d-none');
+            $('#rcDetailBtnRequestApproval').addClass('d-none');
+            $('#rcDetailAuthorNotice').addClass('d-none');
+            $('#rcDetailBtnApprove, #rcDetailBtnReject').addClass('d-none');
+        },
+    };
+
+    // ─── 모달 내 재생성 (history 모드) ───────────────────────
+    // 상세 모달을 닫고 재생성 모달을 연다.
+    // 재생성 성공 후: 신규 코드의 상세 모달을 열고, onRegenerate 콜백으로 목록 갱신 위임.
+    $('#rcDetailBtnRegenerate').on('click', function () {
+        const codeId    = ReactCodeDetailModal.currentCodeId;
+        const callbacks = ReactCodeDetailModal._callbacks;
+        if (!codeId) return;
+
+        // hide()는 300ms 애니메이션이 있으므로, hidden.bs.modal 이벤트 완료 후 재생성 모달을 열어
+        // 두 모달 백드롭이 중첩되는 현상을 방지한다.
+        const detailModalEl = document.getElementById('reactCodeDetailModal');
+        detailModalEl.addEventListener('hidden.bs.modal', function handler() {
+            detailModalEl.removeEventListener('hidden.bs.modal', handler);
+            ReactRegenerateModal.open(codeId, function (newCodeId) {
+                ReactCodeDetailModal.open(newCodeId, 'history', callbacks);
+                if (typeof callbacks.onRegenerate === 'function') {
+                    callbacks.onRegenerate(newCodeId);
+                }
+            });
+        });
+        bootstrap.Modal.getInstance(detailModalEl)?.hide();
+    });
+
+    // ─── 모달 내 승인 요청 (history 모드) ─────────────────────
+    $('#rcDetailBtnRequestApproval').on('click', function () {
+        if (!ReactCodeDetailModal.currentCodeId) return;
+        if (!confirm('승인을 요청하시겠습니까?')) return;
+
+        $.ajax({
+            url: API_BASE_URL + '/react-generate/' + ReactCodeDetailModal.currentCodeId + '/request-approval',
+            method: 'POST',
+            success: function (res) {
+                if (res.success && res.data) {
+                    const newStatus = res.data.status;
+                    ReactCodeDetailModal.currentStatus = newStatus;
+
+                    // 상태 배지 갱신
+                    const si = STATUS_LABEL[newStatus] || { text: newStatus, cls: 'bg-secondary' };
+                    $('#rcDetailStatusBadge').text(si.text).removeClass().addClass('badge ' + si.cls);
+
+                    // 버튼 재평가 (_createUserId 에 저장된 값 사용 — DOM 텍스트 의존 제거)
+                    ReactCodeDetailModal._resetButtons();
+                    ReactCodeDetailModal._updateButtons(newStatus, ReactCodeDetailModal._createUserId);
+
+                    Toast.success('승인 요청이 완료되었습니다.');
+
+                    // 목록 갱신 위임 — 호출 측에서 콜백으로 등록
+                    if (typeof ReactCodeDetailModal._callbacks.onRequestApproval === 'function') {
+                        ReactCodeDetailModal._callbacks.onRequestApproval(ReactCodeDetailModal.currentCodeId);
+                    }
+                } else {
+                    Toast.error(res.message || '승인 요청에 실패했습니다.');
+                }
+            },
+            error: function (xhr) {
+                Toast.error(xhr.responseJSON?.message || '승인 요청 중 오류가 발생했습니다.');
+            },
+        });
+    });
+
+    // ─── 모달 내 승인 버튼 (approval 모드) ───────────────────
+    // 실제 승인 처리는 approval 페이지 스크립트에 위임한다.
+    $('#rcDetailBtnApprove').on('click', function () {
+        if (!ReactCodeDetailModal.currentCodeId) return;
+        bootstrap.Modal.getInstance(document.getElementById('reactCodeDetailModal'))?.hide();
+        if (typeof ReactCodeDetailModal._callbacks.onApprove === 'function') {
+            ReactCodeDetailModal._callbacks.onApprove(ReactCodeDetailModal.currentCodeId);
+        }
+    });
+
+    // ─── 모달 내 반려 버튼 (approval 모드) ───────────────────
+    // 반려 사유 입력 모달 표시는 approval 페이지 스크립트에 위임한다.
+    $('#rcDetailBtnReject').on('click', function () {
+        if (!ReactCodeDetailModal.currentCodeId) return;
+        bootstrap.Modal.getInstance(document.getElementById('reactCodeDetailModal'))?.hide();
+        if (typeof ReactCodeDetailModal._callbacks.onReject === 'function') {
+            ReactCodeDetailModal._callbacks.onReject(ReactCodeDetailModal.currentCodeId);
+        }
+    });
+
+    // ─── 코드 복사 ────────────────────────────────────────────
+    $('#rcDetailBtnCopyCode').on('click', function () {
+        const code = document.getElementById('rcDetailCodeDisplay').textContent;
+        navigator.clipboard.writeText(code)
+            .then(() => Toast.success('코드가 클립보드에 복사되었습니다.'))
+            .catch(() => Toast.error('복사에 실패했습니다.'));
+    });
+
+    // ─── 모달 닫힐 때 초기화 ─────────────────────────────────
+    document.getElementById('reactCodeDetailModal').addEventListener('hidden.bs.modal', function () {
+        // Preview App 초기화 (렌더링 누수 방지)
+        const frame = document.getElementById('rcDetailPreviewFrame');
+        if (frame.contentDocument?.readyState === 'complete') {
+            frame.contentWindow.postMessage({ type: 'UPDATE_CODE', code: '' }, window.location.origin);
+        }
+        document.getElementById('rcDetailCodeDisplay').textContent = '';
+
+        // 버튼·안내 메시지·반려 사유 초기화
+        ReactCodeDetailModal._resetButtons();
+        $('#rcDetailAuthorNotice').addClass('d-none');
+        $('#rcDetailFailReasonRow').addClass('d-none');
+        $('#rcDetailFailReason').text('');
+
+        // 미리보기 PC 모드로 리셋
+        resetPreviewMode();
+
+        // 로딩 상태로 복귀 (다음 열기 시 내용 갱신 보장)
+        $('#rcDetailContent').addClass('d-none');
+        $('#rcDetailLoading').removeClass('d-none');
+
+        ReactCodeDetailModal.currentCodeId = null;
+        ReactCodeDetailModal.currentStatus = null;
+        ReactCodeDetailModal._mode         = null;
+        ReactCodeDetailModal._callbacks    = {};
+    });
+})();
+</script>
+</th:block>
+</body>
+</html>

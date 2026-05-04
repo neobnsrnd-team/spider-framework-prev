@@ -19,6 +19,12 @@ public class ReactDeployListResponse {
     /** 코드 ID */
     private String codeId;
 
+    /** 화면 제목 */
+    private String title;
+
+    /** 컴포넌트명 */
+    private String componentName;
+
     /** 원본 Figma URL */
     private String figmaUrl;
 

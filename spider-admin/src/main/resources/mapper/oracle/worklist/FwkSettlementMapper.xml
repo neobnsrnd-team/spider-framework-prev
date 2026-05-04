@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.worklist.mapper.FwkSettlementMapper">
+
+    <!--
+        APPROVAL_ID 채번.
+        오늘 날짜로 시작하는 레코드가 있으면 MAX + 1, 없으면 YYYYMMDD101.
+        APPROVAL_ID 형식: YYYYMMDD + 3자리 순번 (예: 20260428101, 20260428102 ...)
+    -->
+    <select id="generateApprovalId" resultType="String">
+        SELECT
+            CASE
+                WHEN SUBSTR(MAX(APPROVAL_ID), 1, 8) = TO_CHAR(SYSDATE, 'YYYYMMDD')
+                THEN TO_CHAR(TO_NUMBER(MAX(APPROVAL_ID)) + 1)
+                ELSE TO_CHAR(SYSDATE, 'YYYYMMDD') || '101'
+            END AS APPROVAL_ID
+        FROM FWK_SETTLEMENT
+        WHERE APPROVAL_ID LIKE TO_CHAR(SYSDATE, 'YYYYMMDD') || '%'
+    </select>
+
+    <!-- 결재 레코드 신규 등록. -->
+    <insert id="insert" parameterType="map">
+        INSERT INTO FWK_SETTLEMENT (
+            APPROVAL_ID,
+            APPROVAL_NAME,
+            APPROVAL_DESC,
+            PRESENTER,
+            FINAL_MANAGER,
+            APPROVAL_REQ_TIME,
+            LAST_UPDATE_DTIME,
+            LAST_UPDATE_USER_ID
+        ) VALUES (
+            #{approvalId},
+            #{approvalName},
+            #{approvalDesc},
+            #{presenter},
+            #{finalManager},
+            TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'),
+            TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'),
+            #{presenter}
+        )
+    </insert>
+
+</mapper>

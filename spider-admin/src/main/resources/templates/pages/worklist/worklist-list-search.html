@@ -1,0 +1,76 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!-- 나의 작업함 검색 폼 -->
+    <div th:fragment="search" class="card border p-2 mb-3">
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <label class="form-label mb-0 small fw-medium">그룹</label>
+        <select
+          id="searchGroup"
+          class="form-select form-select-sm flex-fixed-150"
+        >
+          <option value="">전체</option>
+          <!-- 동적 그룹 옵션 — renderGroupOptions에서 주입 -->
+        </select>
+
+        <label class="form-label mb-0 small fw-medium ms-2">항목</label>
+        <select
+          id="searchWorkId"
+          class="form-select form-select-sm flex-fixed-150"
+        >
+          <option value="">전체</option>
+          <option value="Message">전문</option>
+          <option value="Trx">거래</option>
+          <option value="P_SERVICE">웹서비스</option>
+          <option value="B_Service">업무서비스</option>
+          <option value="P_Component">웹컴포넌트</option>
+          <option value="B_Component">업무컴포넌트</option>
+          <option value="SQL_QUERY">SQL쿼리</option>
+          <option value="SQL_CONF">데이터소스</option>
+          <option value="Errorcode">에러코드</option>
+          <option value="Codegroup">코드그룹</option>
+          <option value="Board_Service">게시판</option>
+        </select>
+
+        <label class="form-label mb-0 small fw-medium ms-2">검색</label>
+        <select
+          id="searchField"
+          class="form-select form-select-sm flex-fixed-150"
+        >
+          <option value="workDataPk">식별자</option>
+          <option value="crudType">작업내용</option>
+          <option value="approvalSeq">결재일련번호</option>
+        </select>
+        <input
+          type="text"
+          id="searchKeyword"
+          class="form-control form-control-sm flex-fixed-200"
+          placeholder="검색어"
+          onkeypress="if (event.key === 'Enter') WorkListPage.applySearch();"
+        />
+
+        <div class="flex-grow-1"></div>
+
+        <select
+          id="limitRows"
+          class="form-select form-select-sm sp-limit-select"
+        >
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        <label class="form-label mb-0 small fw-medium ms-1 me-2 fs-xs"
+          >건씩</label
+        >
+
+        <button
+          class="btn btn-primary btn-sm"
+          onclick="WorkListPage.applySearch()"
+        >
+          <i class="bi bi-search"></i> 조회
+        </button>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.datasource.mapper.DataSourceMapper">
+
+    <!-- 단건 조회 -->
+    <select id="selectResponseById"
+            resultType="com.example.spideradmin.domain.datasource.dto.DataSourceResponse">
+        SELECT
+            TRIM(d.DB_ID)               AS dbId,
+            TRIM(d.DB_NAME)             AS dbName,
+            TRIM(d.DB_DESC)             AS dbDesc,
+            TRIM(d.CONNECTION_URL)      AS connectionUrl,
+            TRIM(d.DRIVER_CLASS)        AS driverClass,
+            TRIM(d.DB_USER_ID)          AS dbUserId,
+            d.DB_PASSWORD               AS dbPassword,
+            d.JNDI_YN                   AS jndiYn,
+            TRIM(d.JNDI_ID)             AS jndiId,
+            TRIM(d.JNDI_PROVIDER_URL)   AS jndiProviderUrl,
+            TRIM(d.JNDI_CONTEXT_FACTORY) AS jndiContextFactory,
+            d.LAST_UPDATE_DTIME         AS lastUpdateDtime,
+            TRIM(d.LAST_UPDATE_USER_ID) AS lastUpdateUserId
+        FROM FWK_SQL_CONF d
+        WHERE d.DB_ID = #{dbId}
+    </select>
+
+    <!-- 존재 확인용 카운트 -->
+    <select id="countByDbId" resultType="int">
+        SELECT COUNT(*) FROM FWK_SQL_CONF WHERE DB_ID = #{dbId}
+    </select>
+
+    <!-- 생성 -->
+    <insert id="insert">
+        INSERT INTO FWK_SQL_CONF (
+            DB_ID,
+            DB_NAME,
+            DB_DESC,
+            CONNECTION_URL,
+            DRIVER_CLASS,
+            DB_USER_ID,
+            DB_PASSWORD,
+            JNDI_YN,
+            JNDI_ID,
+            JNDI_PROVIDER_URL,
+            JNDI_CONTEXT_FACTORY,
+            LAST_UPDATE_DTIME,
+            LAST_UPDATE_USER_ID
+        ) VALUES (
+            #{dto.dbId},
+            #{dto.dbName, jdbcType=VARCHAR},
+            #{dto.dbDesc, jdbcType=VARCHAR},
+            #{dto.connectionUrl, jdbcType=VARCHAR},
+            #{dto.driverClass, jdbcType=VARCHAR},
+            #{dto.dbUserId, jdbcType=VARCHAR},
+            #{dto.dbPassword, jdbcType=VARCHAR},
+            #{dto.jndiYn, jdbcType=VARCHAR},
+            #{dto.jndiId, jdbcType=VARCHAR},
+            #{dto.jndiProviderUrl, jdbcType=VARCHAR},
+            #{dto.jndiContextFactory, jdbcType=VARCHAR},
+            #{lastUpdateDtime},
+            #{lastUpdateUserId}
+        )
+    </insert>
+
+    <!-- 수정 — dbPassword 가 null/빈 문자열이면 기존 값 유지 -->
+    <update id="update">
+        UPDATE FWK_SQL_CONF
+        <set>
+            DB_NAME             = #{dto.dbName, jdbcType=VARCHAR},
+            DB_DESC             = #{dto.dbDesc, jdbcType=VARCHAR},
+            CONNECTION_URL      = #{dto.connectionUrl, jdbcType=VARCHAR},
+            DRIVER_CLASS        = #{dto.driverClass, jdbcType=VARCHAR},
+            DB_USER_ID          = #{dto.dbUserId, jdbcType=VARCHAR},
+            <if test="dto.dbPassword != null and dto.dbPassword != ''">
+                DB_PASSWORD = #{dto.dbPassword, jdbcType=VARCHAR},
+            </if>
+            JNDI_YN             = #{dto.jndiYn, jdbcType=VARCHAR},
+            JNDI_ID             = #{dto.jndiId, jdbcType=VARCHAR},
+            JNDI_PROVIDER_URL   = #{dto.jndiProviderUrl, jdbcType=VARCHAR},
+            JNDI_CONTEXT_FACTORY = #{dto.jndiContextFactory, jdbcType=VARCHAR},
+            LAST_UPDATE_DTIME   = #{lastUpdateDtime},
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId}
+        </set>
+        WHERE DB_ID = #{dbId}
+    </update>
+
+    <!-- 삭제 -->
+    <delete id="deleteById">
+        DELETE FROM FWK_SQL_CONF WHERE DB_ID = #{dbId}
+    </delete>
+
+    <!-- ==================== SQL Fragment ==================== -->
+
+    <sql id="baseColumns">
+        d.DB_ID, d.DB_NAME, d.DB_DESC, d.CONNECTION_URL, d.DRIVER_CLASS,
+        d.DB_USER_ID, d.DB_PASSWORD, d.JNDI_YN, d.JNDI_ID,
+        d.JNDI_PROVIDER_URL, d.JNDI_CONTEXT_FACTORY,
+        d.LAST_UPDATE_DTIME, d.LAST_UPDATE_USER_ID
+    </sql>
+
+    <sql id="searchConditions">
+        <if test="searchField != null and searchField != '' and searchValue != null and searchValue != ''">
+            <choose>
+                <when test="searchField == 'dbId'">
+                    AND UPPER(d.DB_ID) LIKE '%' || UPPER(#{searchValue}) || '%'
+                </when>
+                <when test="searchField == 'dbName'">
+                    AND UPPER(d.DB_NAME) LIKE '%' || UPPER(#{searchValue}) || '%'
+                </when>
+                <when test="searchField == 'dbUserId'">
+                    AND UPPER(d.DB_USER_ID) LIKE '%' || UPPER(#{searchValue}) || '%'
+                </when>
+            </choose>
+        </if>
+        <if test="jndiYnFilter != null and jndiYnFilter != ''">
+            AND d.JNDI_YN = #{jndiYnFilter}
+        </if>
+    </sql>
+
+    <!-- 목록 조회 (ROWNUM 페이징) -->
+    <select id="findAllWithSearch"
+            resultType="com.example.spideradmin.domain.datasource.dto.DataSourceResponse">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT
+                    TRIM(d.DB_ID)               AS dbId,
+                    TRIM(d.DB_NAME)             AS dbName,
+                    TRIM(d.DB_DESC)             AS dbDesc,
+                    TRIM(d.CONNECTION_URL)      AS connectionUrl,
+                    TRIM(d.DRIVER_CLASS)        AS driverClass,
+                    TRIM(d.DB_USER_ID)          AS dbUserId,
+                    d.DB_PASSWORD               AS dbPassword,
+                    d.JNDI_YN                   AS jndiYn,
+                    TRIM(d.JNDI_ID)             AS jndiId,
+                    TRIM(d.JNDI_PROVIDER_URL)   AS jndiProviderUrl,
+                    TRIM(d.JNDI_CONTEXT_FACTORY) AS jndiContextFactory,
+                    d.LAST_UPDATE_DTIME         AS lastUpdateDtime,
+                    TRIM(d.LAST_UPDATE_USER_ID) AS lastUpdateUserId
+                FROM FWK_SQL_CONF d
+                <where>
+                    <include refid="searchConditions"/>
+                </where>
+                ORDER BY
+                <choose>
+                    <when test="sortBy == 'dbId'">d.DB_ID</when>
+                    <when test="sortBy == 'dbName'">d.DB_NAME</when>
+                    <when test="sortBy == 'dbUserId'">d.DB_USER_ID</when>
+                    <when test="sortBy == 'jndiYn'">d.JNDI_YN</when>
+                    <when test="sortBy == 'lastUpdateDtime'">d.LAST_UPDATE_DTIME</when>
+                    <otherwise>d.DB_ID</otherwise>
+                </choose>
+                <choose>
+                    <when test="sortDirection == 'ASC'"> ASC</when>
+                    <when test="sortDirection == 'DESC'"> DESC</when>
+                    <otherwise> ASC</otherwise>
+                </choose>
+            ) INNER_QRY
+            WHERE ROWNUM <![CDATA[<=]]> #{endRow}
+        ) WHERE RNUM > #{offset}
+    </select>
+
+    <!-- 전체 건수 -->
+    <select id="countAllWithSearch" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_SQL_CONF d
+        <where>
+            <include refid="searchConditions"/>
+        </where>
+    </select>
+
+    <!-- 엑셀 내보내기용 전체 조회 -->
+    <select id="findAllForExport"
+            resultType="com.example.spideradmin.domain.datasource.dto.DataSourceResponse">
+        SELECT
+            TRIM(d.DB_ID)               AS dbId,
+            TRIM(d.DB_NAME)             AS dbName,
+            TRIM(d.DB_DESC)             AS dbDesc,
+            TRIM(d.CONNECTION_URL)      AS connectionUrl,
+            TRIM(d.DRIVER_CLASS)        AS driverClass,
+            TRIM(d.DB_USER_ID)          AS dbUserId,
+            d.DB_PASSWORD               AS dbPassword,
+            d.JNDI_YN                   AS jndiYn,
+            TRIM(d.JNDI_ID)             AS jndiId,
+            TRIM(d.JNDI_PROVIDER_URL)   AS jndiProviderUrl,
+            TRIM(d.JNDI_CONTEXT_FACTORY) AS jndiContextFactory,
+            d.LAST_UPDATE_DTIME         AS lastUpdateDtime,
+            TRIM(d.LAST_UPDATE_USER_ID) AS lastUpdateUserId
+        FROM FWK_SQL_CONF d
+        <where>
+            <include refid="searchConditions"/>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'dbId'">d.DB_ID</when>
+            <when test="sortBy == 'dbName'">d.DB_NAME</when>
+            <when test="sortBy == 'dbUserId'">d.DB_USER_ID</when>
+            <when test="sortBy == 'jndiYn'">d.JNDI_YN</when>
+            <when test="sortBy == 'lastUpdateDtime'">d.LAST_UPDATE_DTIME</when>
+            <otherwise>d.DB_ID</otherwise>
+        </choose>
+        <choose>
+            <when test="sortDirection == 'ASC'"> ASC</when>
+            <when test="sortDirection == 'DESC'"> DESC</when>
+            <otherwise> ASC</otherwise>
+        </choose>
+    </select>
+
+</mapper>

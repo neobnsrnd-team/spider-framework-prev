@@ -1,8 +1,10 @@
 package com.example.spiderbatch.job.db2db;
 
 import com.example.spiderbatch.job.AbstractDb2DbJob;
+import com.example.spiderbatch.job.common.BatchJobParametersValidator;
 import com.example.spiderbatch.job.common.CardUsage;
 import com.example.spiderbatch.job.common.CardUsageQuery;
+import com.example.spiderbatch.job.listener.BatchNotificationListener;
 import java.util.Map;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
@@ -39,6 +42,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 public class Db2DbJobConfig extends AbstractDb2DbJob<CardUsage> {
 
     private final DataSource dataSource;
+    private final BatchNotificationListener batchNotificationListener;
 
     @Override
     protected String getJobName() {
@@ -61,7 +65,11 @@ public class Db2DbJobConfig extends AbstractDb2DbJob<CardUsage> {
 
     @Bean(name = "db2db")
     public Job db2DbJob(JobRepository jobRepository, Step db2DbPartitionStep) {
-        return buildJob(jobRepository, db2DbPartitionStep);
+        return new JobBuilder("db2db", jobRepository)
+                .validator(new BatchJobParametersValidator())
+                .listener(batchNotificationListener)
+                .start(db2DbPartitionStep)
+                .build();
     }
 
     /**

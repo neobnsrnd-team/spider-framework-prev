@@ -1,0 +1,210 @@
+menu-resource:
+  permissions:
+    v3_user_manage:
+      R: USER:R
+      W: USER:W
+    v3_my_info_manage:
+      R: PROFILE:R
+      W: PROFILE:W
+    v3_role_manage:
+      R: ROLE:R, MENU:R
+      W: ROLE:W, MENU:R
+    v3_menu_manage:
+      R: MENU:R
+      W: MENU:W
+    v3_access_user_id:
+      R: ACCESS_USER:R
+      W: ACCESS_USER:W
+    v3_approval_workspace:
+      R: WORK_TASK:R
+      W: WORK_TASK:W
+    v3_user_page_log:
+      R: USER_ACCESS_HIS:R
+    v3_neb_code_group_manage:
+      R: CODE_GROUP:R
+      W: CODE_GROUP:W
+    v3_code_manage:
+      R: CODE_MANAGEMENT:R, CODE_GROUP:R
+      W: CODE_MANAGEMENT:W, CODE_GROUP:R
+    v3_code_mapping_manage:
+      R: ORG_CODE:R, ORG:R, CODE_GROUP:R
+      W: ORG_CODE:W, ORG:R, CODE_GROUP:R
+    v3_connect_org_manage:
+      R: ORG:R
+      W: ORG:W
+    v3_was_group_manage:
+      R: WAS_GROUP:R, WAS_INSTANCE:R
+      W: WAS_GROUP:W, WAS_INSTANCE:R
+    v3_was_instance:
+      R: WAS_INSTANCE:R, WAS_GROUP:R
+      W: WAS_INSTANCE:W, WAS_GROUP:R
+    v3_emergency_notice_manage:
+      R: EMERGENCY_NOTICE:R
+      W: EMERGENCY_NOTICE:W
+    v3_emergency_notice_deploy_manage:
+      R: EMERGENCY_NOTICE:R
+      W: EMERGENCY_NOTICE:W
+    v3_was_status:
+      R: WAS_GATEWAY_STATUS:R
+      W: WAS_GATEWAY_STATUS:W
+    v3_was_status_monitor:
+      R: WAS_STATUS_MONITOR:R, WAS_GATEWAY_STATUS:R
+    v3_gw_manage:
+      R: GATEWAY_MANAGEMENT:R
+      W: GATEWAY_MANAGEMENT:W
+    v3_org_trans_manage:
+      R: GATEWAY_MAPPING:R, ORG:R
+      W: GATEWAY_MAPPING:W, ORG:R
+    v3_msg_handle_manage:
+      R: MESSAGE_HANDLER:R, ORG:R, GATEWAY_MANAGEMENT:R
+      W: MESSAGE_HANDLER:W, ORG:R, GATEWAY_MANAGEMENT:R
+    v3_listener_connector_manage:
+      R: LISTENER_CONNECTOR_MAPPING:R, GATEWAY_MANAGEMENT:R
+      W: LISTENER_CONNECTOR_MAPPING:W, GATEWAY_MANAGEMENT:R
+    v3_app_mapping_manage:
+      R: APP_MAPPING:R, ORG:R, GATEWAY_MANAGEMENT:R, TRX:R, WAS_INSTANCE:R, WAS_GROUP:R
+      W: APP_MAPPING:W, ORG:R, GATEWAY_MANAGEMENT:R, TRX:R, WAS_INSTANCE:R, WAS_GROUP:R
+    v3_msg_trx_manage:
+      R: TRX:R
+      W: TRX:W
+    v3_trx:
+      R: TRX_STOP:R
+      W: TRX_STOP:W
+    v3_trx_stop_his:
+      R: TRX_STOP_HISTORY:R
+    v3_message_manage:
+      R: MESSAGE:R
+      W: MESSAGE:W
+    v3_code_template_manage:
+      R: CODE_TEMPLATE:R
+      W: CODE_TEMPLATE:W
+    v3_db_log:
+      R: MESSAGE_INSTANCE:R
+      W: MESSAGE_INSTANCE:W
+    v3_message_parsing_test:
+      R: MESSAGE_PARSING:R
+    v3_message_parsing_json:
+      R: MESSAGE_PARSING:R
+    v3_req_message_test:
+      R: TRX_TEST:R, ORG:R
+      W: TRX_TEST:W, ORG:R
+    v3_proxy_testdata:
+      R: PROXY_TESTDATA:R
+      W: PROXY_TESTDATA:W
+    v3_trx_validator:
+      R: VALIDATOR:R
+      W: VALIDATOR:W
+    v3_trans_data_popup:
+      R: TRANS_DATA_POPUP:R
+      W: TRANS_DATA_POPUP:W
+    v3_trans_data_exec:
+      R: TRANS_DATA_EXEC:R
+    v3_trans_data_list:
+      R: TRANS_DATA_LIST:R
+      W: TRANS_DATA_LIST:W
+    v3_batch_app_manage:
+      R: BATCH_APP:R
+      W: BATCH_APP:W
+    v3_batch_his_list:
+      R: BATCH_HISTORY:R
+      W: BATCH_HISTORY:W
+    v3_batch_running_list:
+      R: BATCH_RUNNING:R
+      W: BATCH_RUNNING:W
+    v3_error_cause_his:
+      R: ERROR_HIS:R
+      W: ERROR_HIS:W
+    v3_error_code:
+      R: ERROR_CODE:R
+      W: ERROR_CODE:W
+    v3_system_biz_reg:
+      R: MONITOR:R
+      W: MONITOR:W
+    v3_log_level_manage:
+      R: LOG_LEVEL:R
+      W: LOG_LEVEL:W
+    v3_system_oper_manage:
+      R: RELOAD:R
+      W: RELOAD:W
+    v3_xml_property_manage:
+      R: XML_PROPERTY:R
+      W: XML_PROPERTY:W
+    v3_property_db_manage:
+      R: PROPERTY_DB:R
+      W: PROPERTY_DB:W
+    v3_board_manage:
+      R: BOARD_MANAGEMENT:R
+      W: BOARD_MANAGEMENT:W
+    v3_BOARD_AUTH:
+      R: BOARD_AUTH:R
+      W: BOARD_AUTH:W
+    v3_FWKB_NOTICE_BOARD:
+      R: BOARD_MANAGEMENT:R
+      W: BOARD_MANAGEMENT:W
+    v3_FWKB_TEST_BOARD:
+      R: BOARD_MANAGEMENT:R
+      W: BOARD_MANAGEMENT:W
+    v3_neb_service_base_info:
+      R: FWK_SERVICE:R
+      W: FWK_SERVICE:W
+    v3_neb_biz_component:
+      R: COMPONENT:R
+      W: COMPONENT:W
+    v3_validator_component:
+      R: VALIDATION:R
+      W: VALIDATION:W
+    v3_biz_app:
+      R: BIZ_APP:R
+      W: BIZ_APP:W
+    v3_sql_query_manage:
+      R: SQL_QUERY:R
+      W: SQL_QUERY:W
+    v3_sql_dataSource_manage:
+      R: DATASOURCE:R
+      W: DATASOURCE:W
+    v3_react_generate:
+      R: REACT_GENERATE:R
+      W: REACT_GENERATE:W
+    v3_react_generate_his:
+      R: REACT_GENERATE:R
+      W: REACT_GENERATE:W
+    v3_react_approval:
+      R: REACT_APPROVAL:R
+      W: REACT_APPROVAL:W
+    v3_react_cms_manage:
+      R: REACT_CMS:R
+      W: REACT_CMS:W
+    v3_react_cms_dashboard:
+      R: REACT_CMS:R
+      W: REACT_CMS:W
+    v3_react_cms_admin_approvals:
+      R: REACT_CMS:R
+      W: REACT_CMS:W
+    v3_react_cms_admin_approval:
+      R: REACT_CMS:R
+      W: REACT_CMS:W
+    v3_react_cms_admin_deployments:
+      R: REACT_CMS:R
+      W: REACT_CMS:W
+    v3_cms_manage:
+      R: CMS:R
+      W: CMS:W
+    v3_cms_dashboard:
+      R: CMS:R
+    v3_cms_edit:
+      R: CMS:R
+      W: CMS:W
+    v3_cms_admin_approvals:
+      W: CMS:W
+    v3_cms_admin_asset_requests:
+      W: CMS:W
+    v3_cms_admin_asset_approvals:
+      W: CMS:W
+    v3_cms_admin_ab_tests:
+      W: CMS:W
+    v3_cms_admin_deployments:
+      W: CMS:W
+    v3_cms_admin_statistics:
+      W: CMS:W
+    v3_cms_admin_components:
+      W: CMS:W

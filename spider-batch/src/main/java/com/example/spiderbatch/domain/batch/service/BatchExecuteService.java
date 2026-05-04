@@ -1,10 +1,12 @@
 package com.example.spiderbatch.domain.batch.service;
 
 import com.example.spiderbatch.constant.BatchConstants;
+import com.example.spiderbatch.domain.batch.dto.BatchAppInfo;
 import com.example.spiderbatch.domain.batch.dto.BatchExecuteRequest;
 import com.example.spiderbatch.domain.batch.dto.BatchExecuteResponse;
 import com.example.spiderbatch.domain.batch.mapper.BatchAppMapper;
 import com.example.spiderbatch.config.BatchConfigurationProperties;
+import com.example.spiderbatch.global.notification.NotificationService;
 import com.example.spiderbatch.spi.BatchHistoryRecorder;
 import com.example.spiderbatch.global.log.BatchAuditLogger;
 import io.micrometer.core.instrument.Counter;
@@ -47,6 +49,8 @@ public class BatchExecuteService {
     /** Micrometer MeterRegistry: batch.job.duration / batch.job.status / batch.step.write.count 기록 */
     private final MeterRegistry meterRegistry;
     private final BatchAuditLogger auditLogger;
+    /** 알림 서비스 목록 — Slack·Email 등 다중 구현체 지원 (미등록 시 빈 리스트) */
+    private final List<NotificationService> notificationServices;
 
     /**
      * 배치 Job을 동기 실행하고 FWK_BATCH_HIS에 이력을 기록한다.
@@ -72,11 +76,15 @@ public class BatchExecuteService {
         // 실행 요청 감사 로그 — 누가 어느 배치를 어디서 요청했는지 기록
         auditLogger.logRequest(request.getBatchAppId(), userId, requestIp);
 
-        // 1. FWK_BATCH_APP에서 Job Bean 이름 조회
+        // 1. FWK_BATCH_APP에서 Job Bean 이름 및 배치 앱 정보 조회
         String batchAppFileName = batchAppMapper.selectBatchAppFileName(request.getBatchAppId());
         if (batchAppFileName == null || batchAppFileName.isBlank()) {
             throw new IllegalArgumentException("등록되지 않은 배치입니다: batchAppId=" + request.getBatchAppId());
         }
+        // batchAppName·slaSeconds 조회 — JobParameter 전달 및 SLA 체크에 재사용
+        BatchAppInfo appInfo = batchAppMapper.selectBatchAppInfo(request.getBatchAppId());
+        String batchAppName = (appInfo != null && appInfo.getBatchAppName() != null)
+                ? appInfo.getBatchAppName() : request.getBatchAppId();
 
         // 2. 다음 실행 회차 계산
         int nextSeq = batchHistoryRecorder.nextExecuteSeq(
@@ -98,7 +106,7 @@ public class BatchExecuteService {
         JobExecution jobExecution;
         try {
             Job job = jobRegistry.getJob(batchAppFileName);
-            JobParameters params = buildJobParameters(request, nextSeq);
+            JobParameters params = buildJobParameters(request, nextSeq, batchAppName);
             jobExecution = jobLauncher.run(job, params);
         } catch (NoSuchJobException e) {
             // JobRegistry에 등록되지 않은 Job 이름
@@ -142,6 +150,19 @@ public class BatchExecuteService {
             auditLogger.logFailure(request.getBatchAppId(), nextSeq, response.getErrorReason());
         }
 
+        // 7. SLA 초과 확인 — FWK_BATCH_APP.SLA_SECONDS가 설정된 경우에만 동작
+        if (!notificationServices.isEmpty() && appInfo != null && appInfo.getSlaSeconds() != null) {
+            long elapsedSeconds = durationMs / 1000;
+            if (elapsedSeconds > appInfo.getSlaSeconds()) {
+                log.warn("SLA 초과 감지: batchAppId={}, 소요={}초, 기준={}초",
+                        request.getBatchAppId(), elapsedSeconds, appInfo.getSlaSeconds());
+                long slaSeconds = appInfo.getSlaSeconds();
+                notificationServices.forEach(svc ->
+                        svc.sendSlaViolation(request.getBatchAppId(), batchAppName,
+                                elapsedSeconds, slaSeconds));
+            }
+        }
+
         return response;
     }
 
@@ -149,9 +170,10 @@ public class BatchExecuteService {
      * JobParameters 구성.
      * run.id에 타임스탬프를 포함해 동일 파라미터로 재실행 가능하게 한다.
      */
-    private JobParameters buildJobParameters(BatchExecuteRequest request, int seq) {
+    private JobParameters buildJobParameters(BatchExecuteRequest request, int seq, String batchAppName) {
         JobParametersBuilder builder = new JobParametersBuilder()
                 .addString("batchAppId", request.getBatchAppId())
+                .addString("batchAppName", batchAppName)
                 .addString("batchDate", request.getBatchDate())
                 .addString("userId", resolveUserId(request.getUserId()))
                 .addLong("batchExecuteSeq", (long) seq)

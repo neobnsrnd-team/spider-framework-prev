@@ -2,8 +2,8 @@ package com.example.spiderlink.infra.tcp.server;
 
 import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
 import com.example.spiderlink.infra.tcp.codec.MessageCodec;
-import com.example.spiderlink.infra.tcp.handler.CommandDispatcher;
-import com.example.spiderlink.infra.tcp.model.HasCommand;
+import com.example.spidercommon.infra.tcp.handler.CommandDispatcher;
+import com.example.spidercommon.infra.tcp.model.HasCommand;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.net.ServerSocket;

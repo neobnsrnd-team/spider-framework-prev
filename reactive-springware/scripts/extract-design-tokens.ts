@@ -24,11 +24,11 @@ const ROOT = join(__dirname, '..');
 const CSS_FILE = join(ROOT, 'design-tokens', 'globals.css');
 const OUTPUT_DIR = join(ROOT, 'generated');
 const OUTPUT_FILE = join(OUTPUT_DIR, 'design-tokens.md');
-// Admin 프로젝트의 Claude 시스템 프롬프트 디렉토리에도 동기화
-const ADMIN_OUTPUT_FILE = join(
+// reactPlatform 프로젝트의 Claude 시스템 프롬프트 디렉토리에도 동기화
+const REACT_PLATFORM_OUTPUT_FILE = join(
   ROOT,
   '..',
-  'admin',
+  'reactPlatform',
   'src',
   'main',
   'resources',
@@ -307,12 +307,12 @@ function main() {
   console.log(`✅ design-tokens.md 생성 완료 (${totalTokens}개 토큰)`);
   console.log(`   출력: ${OUTPUT_FILE}`);
 
-  // Admin 프로젝트의 prompts 디렉토리에도 동기화한다.
+  // reactPlatform 프로젝트의 prompts 디렉토리에도 동기화한다.
   try {
-    writeFileSync(ADMIN_OUTPUT_FILE, content, 'utf-8');
-    console.log(`   동기화: ${ADMIN_OUTPUT_FILE}`);
+    writeFileSync(REACT_PLATFORM_OUTPUT_FILE, content, 'utf-8');
+    console.log(`   동기화: ${REACT_PLATFORM_OUTPUT_FILE}`);
   } catch {
-    console.warn(`   ⚠️  Admin 동기화 실패 (경로 확인 필요): ${ADMIN_OUTPUT_FILE}`);
+    console.warn(`   ⚠️  reactPlatform 동기화 실패 (경로 확인 필요): ${REACT_PLATFORM_OUTPUT_FILE}`);
   }
 }
 

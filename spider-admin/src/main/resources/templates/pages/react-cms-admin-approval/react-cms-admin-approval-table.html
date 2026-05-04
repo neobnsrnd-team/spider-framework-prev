@@ -1,0 +1,43 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!-- React CMS Admin 승인 관리 테이블 프래그먼트 -->
+    <div th:fragment="table" class="table-responsive">
+      <table
+        class="table table-sm table-hover sp-data-grid"
+        id="reactCmsAdminApprovalTable"
+      >
+        <thead class="table-light">
+          <tr>
+            <th class="sortable" data-sort="pageName">페이지명</th>
+            <th class="col-w-80 sortable" data-sort="viewMode">뷰모드</th>
+            <th class="col-w-90 sortable" data-sort="createUserName">작성자</th>
+            <th class="col-w-100 sortable" data-sort="approveState">
+              승인상태
+            </th>
+            <th class="col-w-80 sortable" data-sort="isPublic">공개여부</th>
+            <th class="col-w-100 sortable" data-sort="beginningDate">
+              노출시작일
+            </th>
+            <th class="col-w-100 sortable" data-sort="expiredDate">
+              노출종료일
+            </th>
+            <th class="col-w-150 sortable" data-sort="lastModifiedDtime">
+              최종수정일시
+            </th>
+            <th class="col-w-70">미리보기</th>
+            <th class="col-w-70">결재</th>
+            <th class="col-w-70">이력</th>
+          </tr>
+        </thead>
+        <tbody id="reactCmsAdminApprovalTableBody">
+          <tr>
+            <td colspan="11" class="text-center py-4 text-body-secondary">
+              조회 버튼을 클릭하여 데이터를 불러오세요.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>

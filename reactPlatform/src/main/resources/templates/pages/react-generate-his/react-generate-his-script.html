@@ -4,8 +4,7 @@
 <th:block th:fragment="script">
 <script th:inline="javascript">
 (function () {
-    const HAS_REACT_WRITE = /*[[${userAuthorities != null && userAuthorities.contains('REACT_GENERATE:W')}]]*/ false;
-    // 현재 로그인 사용자 ID — 승인 요청 버튼 노출 여부 판단에 사용
+    // 내 것만 보기 체크박스에서 생성자 ID 고정 시 사용
     const CURRENT_USER_ID = /*[[${currentUserId}]]*/ '';
 
     // ─── 상태 배지 정의 ────────────────────────────────────────
@@ -17,6 +16,37 @@
         REJECTED:         { text: '반려',        cls: 'bg-secondary' },
     };
 
+    // ─── 카테고리 한글 레이블 ──────────────────────────────────
+    const CATEGORY_LABEL = {
+        AUTH:    '인증',
+        MAIN:    '메인',
+        LIST:    '목록',
+        DETAIL:  '상세',
+        FORM:    '폼',
+        MYPAGE:  '마이페이지',
+        ADMIN:   '관리자',
+        EVENT:   '이벤트',
+        ERROR:   '오류',
+    };
+
+    // ─── 브랜드 한글 레이블 ────────────────────────────────────
+    const BRAND_LABEL = {
+        HANA:    '하나',
+        SHINHAN: '신한',
+        KB:      '국민',
+        NH:      '농협',
+        IBK:     '기업',
+        WOORI:   '우리',
+    };
+
+    // ─── 도메인 한글 레이블 ────────────────────────────────────
+    const DOMAIN_LABEL = {
+        BANKING:   '뱅킹',
+        CARD:      '카드',
+        GIRO:      '지로',
+        INSURANCE: '보험',
+    };
+
     /** yyyyMMddHHmmss → yyyy-MM-dd HH:mm 형식으로 변환한다. */
     function formatDtime(dtime) {
         if (!dtime || dtime.length < 12) return dtime || '';
@@ -25,31 +55,6 @@
                dtime.substring(6, 8) + ' ' +
                dtime.substring(8, 10) + ':' +
                dtime.substring(10, 12);
-    }
-
-    /** yyyyMMdd → yyyy-MM-dd 형식으로 변환한다. */
-    function formatDate(d) {
-        if (!d || d.length < 8) return d || '';
-        return d.substring(0, 4) + '-' + d.substring(4, 6) + '-' + d.substring(6, 8);
-    }
-
-    /**
-     * URL이 http/https 프로토콜을 사용하는지 검증한다.
-     * javascript: 등 위험 프로토콜을 가진 URL을 href에 바인딩하지 않기 위해 사용한다.
-     *
-     * @param {string} url - 검증할 URL 문자열
-     * @returns {boolean} http/https 프로토콜이면 true, 그 외 또는 파싱 불가이면 false
-     */
-    function isSafeUrl(url) {
-        if (!url) return false;
-        try {
-            const parsed = new URL(url);
-            // http/https 프로토콜만 허용 — javascript:, data: 등 위험 프로토콜 차단
-            return parsed.protocol === 'https:' || parsed.protocol === 'http:';
-        } catch {
-            // URL 파싱 실패 = 유효하지 않은 URL
-            return false;
-        }
     }
 
     // ─── 이력 목록 모듈 ────────────────────────────────────────
@@ -66,7 +71,11 @@
             const myOnly = $('#chkMyOnly').is(':checked');
             // date input은 yyyy-MM-dd로 오므로 하이픈 제거 후 yyyyMMdd로 전달
             this.appliedSearch = {
-                codeId:         $('#searchCodeId').val().trim(),
+                title:          $('#searchTitle').val().trim(),
+                brand:          $('#searchBrand').val(),
+                domain:         $('#searchDomain').val(),
+                category:       $('#searchCategory').val(),
+                componentName:  $('#searchComponentName').val().trim(),
                 status:         $('#searchStatus').val(),
                 createUserId:   myOnly ? CURRENT_USER_ID : $('#searchCreateUserId').val().trim(),
                 fromDate:       ($('#searchFromDate').val() || '').replace(/-/g, ''),
@@ -112,7 +121,7 @@
             if (!list || list.length === 0) {
                 tbody.append(`
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-body-secondary">
+                        <td colspan="7" class="text-center py-4 text-body-secondary">
                             조회된 데이터가 없습니다.
                         </td>
                     </tr>
@@ -123,38 +132,48 @@
             const offset = (this.currentPage - 1) * this.itemsPerPage;
             list.forEach((item, idx) => {
                 const statusInfo = STATUS_LABEL[item.status] || { text: item.status, cls: 'bg-secondary' };
-
-                // figmaUrl은 길 수 있으므로 말줄임 처리 (title 속성으로 전체 URL 제공)
-                const safeUrl = HtmlUtils.escape(item.figmaUrl || '');
-                const safeUserId = HtmlUtils.escape(item.createUserId || '');
                 const safeCodeId = HtmlUtils.escape(item.codeId || '');
 
-                // 안전한 URL(http/https)만 href에 바인딩 — javascript: 등 위험 프로토콜 차단
-                const figmaLinkHtml = isSafeUrl(item.figmaUrl)
-                    ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer"
-                           class="text-decoration-none text-reset"
-                           onclick="event.stopPropagation();">${safeUrl || '—'}</a>`
-                    : `<span>${safeUrl || '—'}</span>`;
+                const row = $('<tr></tr>');
 
-                const row = $(`
-                    <tr>
-                        <td class="text-center">${offset + idx + 1}</td>
-                        <td class="text-truncate" style="max-width: 300px;" title="${safeUrl}">
-                            ${figmaLinkHtml}
-                        </td>
-                        <td class="text-center">
-                            <span class="badge ${statusInfo.cls}">${statusInfo.text}</span>
-                        </td>
-                        <td class="text-center">${safeUserId}</td>
-                        <td class="text-center">${formatDtime(item.createDtime)}</td>
-                        <td class="text-center">
-                            <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2"
-                                    onclick="ReactGenerateHis.openDetail('${safeCodeId}')">
-                                보기
-                            </button>
-                        </td>
-                    </tr>
+                // No
+                row.append(`<td class="text-center">${offset + idx + 1}</td>`);
+
+                // 화면 제목 (브랜드·도메인·분류는 상세 모달에서 확인)
+                const $title = $('<td class="text-truncate" style="max-width:180px;"></td>');
+                $title.attr('title', item.title || '');
+                $title.text(item.title || '—');
+                row.append($title);
+
+                // 컴포넌트명
+                const $comp = $('<td class="text-truncate font-monospace small" style="max-width:160px;"></td>');
+                $comp.attr('title', item.componentName || '');
+                $comp.text(item.componentName || '—');
+                row.append($comp);
+
+                // 상태
+                row.append(`<td class="text-center"><span class="badge ${statusInfo.cls}">${statusInfo.text}</span></td>`);
+
+                // 생성자
+                const $user = $('<td class="text-center"></td>');
+                $user.text(item.createUserId || '—');
+                row.append($user);
+
+                // 생성일시
+                const $dtime = $('<td class="text-center"></td>');
+                $dtime.text(formatDtime(item.createDtime));
+                row.append($dtime);
+
+                // 상세 버튼 — onclick은 textContent 기반 safeCodeId를 사용하므로 XSS 위험 없음
+                row.append(`
+                    <td class="text-center">
+                        <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2"
+                                onclick="ReactGenerateHis.openDetail('${safeCodeId}')">
+                            보기
+                        </button>
+                    </td>
                 `);
+
                 tbody.append(row);
             });
         },
@@ -228,183 +247,18 @@
         },
 
         // ─── 상세 모달 ───────────────────────────────────────────
-
-        currentDetailId: null,
-        currentDetailStatus: null,
+        // 공용 ReactCodeDetailModal 모듈에 위임한다.
+        // 승인 요청 성공 후 목록 갱신 콜백을 함께 전달한다.
 
         /** 상세 모달을 열고 지정된 codeId 데이터를 불러온다. */
         openDetail: function (codeId) {
-            this.currentDetailId = codeId;
-            this.currentDetailStatus = null;
-
-            // 모달 초기화: 로딩 표시, 내용 숨김
-            $('#detailLoading').removeClass('d-none');
-            $('#detailContent').addClass('d-none');
-
-            const modal = new bootstrap.Modal(document.getElementById('reactHisDetailModal'));
-            modal.show();
-
-            $.ajax({
-                url: API_BASE_URL + '/react-generate/' + codeId,
-                method: 'GET',
-                success: (res) => {
-                    if (res.success && res.data) {
-                        this.renderDetail(res.data);
-                    } else {
-                        Toast.error(res.message || '상세 정보를 불러오지 못했습니다.');
-                        modal.hide();
-                    }
-                },
-                error: (xhr) => {
-                    Toast.error(xhr.responseJSON?.message || '상세 조회 중 오류가 발생했습니다.');
-                    modal.hide();
-                }
+            ReactCodeDetailModal.open(codeId, 'history', {
+                onRequestApproval: () => ReactGenerateHis.load(),
+                // 재생성 완료 후 목록 갱신
+                onRegenerate: () => ReactGenerateHis.load(),
             });
         },
-
-        /** 상세 데이터를 모달에 렌더링한다. */
-        renderDetail: function (data) {
-            this.currentDetailStatus = data.status;
-
-            // ── 상세 정보 섹션 ──
-            $('#detailCodeId').text(data.codeId || '—');
-            const safeUrl = HtmlUtils.escape(data.figmaUrl || '');
-            // 안전한 URL(http/https)만 href 속성을 설정하고, 그 외에는 링크 없이 텍스트만 표시 (XSS 방지)
-            if (isSafeUrl(data.figmaUrl)) {
-                $('#detailFigmaUrl').attr('href', safeUrl).text(safeUrl || '—');
-            } else {
-                $('#detailFigmaUrl').removeAttr('href').text(safeUrl || '—');
-            }
-            $('#detailCreateUserId').text(data.createUserId || '—');
-            $('#detailCreateDtime').text(formatDtime(data.createDtime) || '—');
-            $('#detailApprovalUserId').text(data.approvalUserId || '—');
-            $('#detailApprovalDtime').text(formatDtime(data.approvalDtime) || '—');
-
-            // 상태 배지
-            const statusInfo = STATUS_LABEL[data.status] || { text: data.status, cls: 'bg-secondary' };
-            $('#detailStatusBadge')
-                .text(statusInfo.text)
-                .removeClass()
-                .addClass('badge ' + statusInfo.cls);
-
-            // 실패/반려 사유: FAILED 또는 REJECTED 상태일 때 노출, 레이블도 상태에 맞게 변경
-            if (data.status === 'FAILED' || data.status === 'REJECTED') {
-                $('#detailFailReasonLabel').text(data.status === 'REJECTED' ? '반려 사유' : '실패 사유');
-                $('#detailFailReason').text(data.failReason || '—');
-                $('#detailFailReasonRow').removeClass('d-none');
-            } else {
-                $('#detailFailReasonRow').addClass('d-none');
-            }
-
-            // ── 미리보기 섹션: reactCode가 있을 때만 노출 ──
-            const hasCode = !!(data.reactCode && data.reactCode.trim());
-            if (hasCode) {
-                $('#detailPreviewSection').removeClass('d-none');
-
-                // 화면 미리보기: postMessage로 Preview App에 코드 전달
-                const frame = document.getElementById('detailPreviewFrame');
-                const sendCode = () => {
-                    // 같은 출처(origin)로만 메시지 전송하여 외부 수신 차단
-                    frame.contentWindow.postMessage(
-                        { type: 'UPDATE_CODE', code: data.reactCode, codeId: data.codeId },
-                        window.location.origin
-                    );
-                };
-                if (frame.contentDocument?.readyState === 'complete') {
-                    sendCode();
-                } else {
-                    frame.onload = sendCode;
-                }
-
-                // 코드 미리보기: textContent 할당으로 HTML 파싱을 우회해 XSS를 원천 차단
-                document.getElementById('detailCodeDisplay').textContent = data.reactCode;
-
-                // 화면 미리보기 탭을 기본으로 활성화
-                new bootstrap.Tab(document.getElementById('detailTab-screen')).show();
-            } else {
-                $('#detailPreviewSection').addClass('d-none');
-            }
-
-            // 모달 푸터 버튼 상태 갱신 (작성자 여부 함께 전달)
-            this.updateDetailButtons(data.status, data.createUserId);
-
-            // 로딩 숨기고 내용 표시
-            $('#detailLoading').addClass('d-none');
-            $('#detailContent').removeClass('d-none');
-        },
-
-        /** 상태와 작성자 여부에 따라 모달 내 버튼 노출 여부를 제어한다. */
-        updateDetailButtons: function (status, createUserId) {
-            const $btnReq = $('#detailBtnRequestApproval');
-
-            // 승인 요청 버튼 노출 조건:
-            //   1. 쓰기 권한(REACT_GENERATE:W) 보유
-            //   2. 로그인 사용자가 작성자
-            //   3. 생성 완료(GENERATED) 상태
-            const canRequest = HAS_REACT_WRITE
-                && createUserId && CURRENT_USER_ID && createUserId === CURRENT_USER_ID
-                && status === 'GENERATED';
-            $btnReq.toggleClass('d-none', !canRequest);
-        }
     };
-
-    // ─── 모달 내 코드 복사 ─────────────────────────────────────
-    $('#detailBtnCopyCode').on('click', function () {
-        const code = document.getElementById('detailCodeDisplay').textContent;
-        navigator.clipboard.writeText(code).then(function () {
-            Toast.success('코드가 클립보드에 복사되었습니다.');
-        }).catch(function () {
-            Toast.error('복사에 실패했습니다.');
-        });
-    });
-
-    // ─── 모달 내 승인 요청 ────────────────────────────────────
-    $('#detailBtnRequestApproval').on('click', function () {
-        if (!ReactGenerateHis.currentDetailId) return;
-        if (!confirm('승인을 요청하시겠습니까?')) return;
-
-        $.ajax({
-            url: API_BASE_URL + '/react-generate/' + ReactGenerateHis.currentDetailId + '/request-approval',
-            method: 'POST',
-            success: function (res) {
-                if (res.success && res.data) {
-                    ReactGenerateHis.currentDetailStatus = res.data.status;
-                    // 상태 변경 후 버튼 재평가 (작성자 정보는 변하지 않으므로 저장된 값 재사용)
-                    const currentCreateUserId = $('#detailCreateUserId').text();
-                    ReactGenerateHis.updateDetailButtons(res.data.status, currentCreateUserId);
-
-                    // 상태 배지 갱신
-                    const info = STATUS_LABEL[res.data.status] || { text: res.data.status, cls: 'bg-secondary' };
-                    $('#detailStatusBadge').text(info.text).removeClass().addClass('badge ' + info.cls);
-
-                    Toast.success('승인 요청이 완료되었습니다.');
-                    // 목록도 갱신하여 상태 변경을 반영
-                    ReactGenerateHis.load();
-                } else {
-                    Toast.error(res.message || '승인 요청에 실패했습니다.');
-                }
-            },
-            error: function (xhr) {
-                Toast.error(xhr.responseJSON?.message || '승인 요청 중 오류가 발생했습니다.');
-            }
-        });
-    });
-
-    // ─── 모달이 닫힐 때 내용 초기화 ─────────────────────────
-    document.getElementById('reactHisDetailModal').addEventListener('hidden.bs.modal', function () {
-        // 미리보기 섹션이 열려 있었으면 Preview App 초기화
-        const frame = document.getElementById('detailPreviewFrame');
-        if (frame.contentDocument?.readyState === 'complete') {
-            frame.contentWindow.postMessage({ type: 'UPDATE_CODE', code: '' }, window.location.origin);
-        }
-        // textContent로 초기화하여 innerHTML 사용에 따른 잠재적 XSS 위험 제거
-        document.getElementById('detailCodeDisplay').textContent = '';
-        // 다음 열기 시 로딩 상태로 리셋
-        $('#detailContent').addClass('d-none');
-        $('#detailLoading').removeClass('d-none');
-        ReactGenerateHis.currentDetailId = null;
-        ReactGenerateHis.currentDetailStatus = null;
-    });
 
     // ─── 검색 폼 이벤트 ──────────────────────────────────────
     $('#btnSearch').on('click', function () {
@@ -412,7 +266,11 @@
     });
 
     $('#btnSearchReset').on('click', function () {
-        $('#searchCodeId').val('');
+        $('#searchTitle').val('');
+        $('#searchBrand').val('');
+        $('#searchDomain').val('');
+        $('#searchCategory').val('');
+        $('#searchComponentName').val('');
         $('#searchStatus').val('');
         $('#searchCreateUserId').val('').prop('disabled', false);
         $('#searchFromDate').val('');
@@ -457,24 +315,22 @@
     // ─── 출력 ─────────────────────────────────────────────────
     // 현재 페이지에 표시된 데이터를 PrintUtil로 출력
     $('#btnPrint').off('click').on('click', function () {
+        // 브랜드·도메인·분류는 테이블에서 제거되었으므로 출력에서도 제외
         const columns = [
-            { key: 'figmaUrl',        label: 'Figma URL' },
-            { key: 'statusLabel',     label: '상태' },
-            { key: 'createUserId',    label: '생성자' },
-            { key: 'createDtimeFmt',  label: '생성일시' },
-            { key: 'approvalUserId',  label: '승인자' },
-            { key: 'approvalDtimeFmt', label: '승인일시' }
+            { key: 'title',          label: '화면 제목' },
+            { key: 'componentName',  label: '컴포넌트명' },
+            { key: 'statusLabel',    label: '상태' },
+            { key: 'createUserId',   label: '생성자' },
+            { key: 'createDtimeFmt', label: '생성일시' },
         ];
-        // 출력용 데이터: 상태·일시를 사람이 읽기 쉬운 형태로 변환
         const printData = ReactGenerateHis.currentData.map(function (item) {
             const statusInfo = STATUS_LABEL[item.status] || { text: item.status };
             return {
-                figmaUrl:        item.figmaUrl || '',
-                statusLabel:     statusInfo.text,
-                createUserId:    item.createUserId || '',
-                createDtimeFmt:  formatDtime(item.createDtime),
-                approvalUserId:  item.approvalUserId || '',
-                approvalDtimeFmt: formatDtime(item.approvalDtime)
+                title:          item.title || '',
+                componentName:  item.componentName || '',
+                statusLabel:    statusInfo.text,
+                createUserId:   item.createUserId || '',
+                createDtimeFmt: formatDtime(item.createDtime),
             };
         });
         PrintUtil.print({ title: 'React 코드 생성 이력', columns: columns, data: printData });
@@ -483,9 +339,10 @@
     // ─── 초기 조회 ─────────────────────────────────────────────
     ReactGenerateHis.search();
 
-    // 캐시에서 복원 시(tab:activated) React 코드 생성 이력 최신화
+    // 캐시에서 복원 시(tab:activated) 현재 페이지를 유지하며 목록을 최신화한다.
+    // search()는 currentPage를 1로 리셋하므로 load()를 사용한다.
     $('[data-tab-page]').on('tab:activated', function () {
-        ReactGenerateHis.search();
+        ReactGenerateHis.load();
     });
 })();
 </script>

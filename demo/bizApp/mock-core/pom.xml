@@ -14,7 +14,7 @@
 
     <artifactId>mock-core</artifactId>
     <name>mock-core</name>
-    <description>계정계 Mock — SpiderTcpServer(19300) + Oracle JDBC</description>
+    <description>계정계 Mock — LegacyTcpServer(19300) 고정길이 바이너리 프로토콜 + Oracle JDBC</description>
 
     <dependencies>
         <!-- Spring Boot 기본 (내장 웹 서버 불필요 — TCP 서버만 사용) -->
@@ -23,22 +23,10 @@
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
-        <!-- Jackson — ObjectMapper 빈 자동 구성 (JsonMessageCodec, TcpClient 의존) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-json</artifactId>
-        </dependency>
-
         <!-- JDBC (Oracle 연동) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
-        </dependency>
-
-        <!-- spider-link TCP 연계엔진 -->
-        <dependency>
-            <groupId>com.example</groupId>
-            <artifactId>spider-link</artifactId>
         </dependency>
 
         <!-- 모듈 간 공통 커맨드 상수 -->

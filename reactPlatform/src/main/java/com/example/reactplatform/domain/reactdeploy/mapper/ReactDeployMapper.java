@@ -39,7 +39,7 @@ public interface ReactDeployMapper {
      *
      * @param offset  시작 행 오프셋 (0-based)
      * @param endRow  종료 행 번호
-     * @param search  코드 ID 또는 요청자 ID 키워드 (null·빈 문자열이면 전체)
+     * @param search  화면 제목·컴포넌트명·요청자 ID 키워드 (null·빈 문자열이면 전체)
      */
     List<ReactDeployListResponse> selectDeployList(
             @Param("offset") int offset,
@@ -55,18 +55,27 @@ public interface ReactDeployMapper {
      *
      * @param offset  시작 행 오프셋 (0-based)
      * @param endRow  종료 행 번호
-     * @param search  코드 ID 또는 실행자 ID 키워드 (null·빈 문자열이면 전체)
-     * @param userId  실행자 ID 일치 필터 (null이면 전체)
+     * @param search    화면 제목·컴포넌트명·실행자 ID 키워드 (null·빈 문자열이면 전체)
+     * @param userId    실행자 ID 일치 필터 (null이면 전체)
+     * @param fromDate  배포 일시 시작 (yyyyMMdd, null이면 미적용)
+     * @param toDate    배포 일시 종료 (yyyyMMdd, null이면 미적용)
      */
     List<ReactDeployHistoryResponse> selectAllHistoryList(
-            @Param("offset") int offset,
-            @Param("endRow") int endRow,
-            @Param("search") String search,
-            @Param("userId") String userId
+            @Param("offset")   int offset,
+            @Param("endRow")   int endRow,
+            @Param("search")   String search,
+            @Param("userId")   String userId,
+            @Param("fromDate") String fromDate,
+            @Param("toDate")   String toDate
     );
 
     /** 전체 배포 이력 건수 */
-    int selectAllHistoryCount(@Param("search") String search, @Param("userId") String userId);
+    int selectAllHistoryCount(
+            @Param("search")   String search,
+            @Param("userId")   String userId,
+            @Param("fromDate") String fromDate,
+            @Param("toDate")   String toDate
+    );
 
     /**
      * 특정 코드의 배포 이력 목록을 최근 순으로 반환한다 (모달용).

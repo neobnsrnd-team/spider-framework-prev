@@ -53,6 +53,14 @@ public class JwtAuthFilter implements Filter {
     );
 
     /**
+     * JWT 인증을 건너뛸 공개 경로 prefix 목록.
+     * 해당 prefix로 시작하는 모든 하위 경로에 대해 인증을 면제한다.
+     */
+    private static final Set<String> PUBLIC_PATH_PREFIXES = Set.of(
+            "/api/management/"   // Admin 내부 관리 API (IP 기반 접근 제어로 보호)
+    );
+
+    /**
      * @param jwtSecret application.yml 의 jwt.secret 값 (HMAC-SHA256 서명 키)
      */
     public JwtAuthFilter(@Value("${jwt.secret}") String jwtSecret) {
@@ -105,12 +113,12 @@ public class JwtAuthFilter implements Filter {
             // 이후 컨트롤러에서 request.getAttribute("userId") 로 참조
             httpReq.setAttribute("userId", userId);
 
-            log.debug("[JwtAuthFilter] 인증 성공: userId={}, path={}", userId, path);
+            log.debug("[JwtAuthFilter] Auth success: userId={}, path={}", userId, path);
             chain.doFilter(request, response);
 
         } catch (JwtException e) {
             // 서명 불일치, 토큰 만료, 형식 오류 등 모든 JWT 관련 예외
-            log.warn("[JwtAuthFilter] 토큰 검증 실패: path={}, error={}", path, e.getMessage());
+            log.warn("[JwtAuthFilter] Token validation failed: path={}, error={}", path, e.getMessage());
             sendUnauthorized(httpRes, "유효하지 않거나 만료된 토큰입니다.");
         }
     }
@@ -122,7 +130,10 @@ public class JwtAuthFilter implements Filter {
      * @return 공개 경로이면 {@code true}
      */
     private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.contains(path);
+        if (PUBLIC_PATHS.contains(path)) {
+            return true;
+        }
+        return PUBLIC_PATH_PREFIXES.stream().anyMatch(path::startsWith);
     }
 
     /**

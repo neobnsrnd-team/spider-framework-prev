@@ -22,14 +22,22 @@
         <label class="form-label mb-0 small fw-medium ms-2">검색</label>
         <input type="text" id="hisSearchKeyword"
                class="form-control form-control-sm flex-fixed-200"
-               placeholder="코드 ID / 실행자 ID">
+               placeholder="화면 제목 / 컴포넌트명 / 실행자 ID">
 
+        <label class="form-label mb-0 small fw-medium ms-2">배포일 시작</label>
+        <input type="date" id="hisSearchFromDate"
+               class="form-control form-control-sm flex-fixed-140">
+
+        <label class="form-label mb-0 small fw-medium ms-2">배포일 종료</label>
+        <input type="date" id="hisSearchToDate"
+               class="form-control form-control-sm flex-fixed-140">
+
+        <div class="flex-grow-1"></div>
+        
         <div class="form-check ms-2 mb-0">
             <input class="form-check-input" type="checkbox" id="hisSearchOnlyMine">
             <label class="form-check-label small fw-medium" for="hisSearchOnlyMine">나의 배포 이력</label>
         </div>
-
-        <div class="flex-grow-1"></div>
 
         <select id="limitRows" class="form-select form-select-sm sp-limit-select">
             <option value="10" selected>10</option>
