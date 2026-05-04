@@ -28,34 +28,40 @@
         SELECT * FROM (
             SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
                 SELECT
-                    p.PAGE_ID                                               AS pageId,
-                    p.PAGE_NAME                                             AS pageName,
-                    p.VIEW_MODE                                             AS viewMode,
-                    CASE WHEN lh.FILE_ID IS NOT NULL
-                        THEN 'http://' || si.INSTANCE_IP || ':' || TO_CHAR(si.INSTANCE_PORT)
-                             || '/cms/deployed/' || p.PAGE_ID || '.html'
+                    s.PAGE_ID                                               AS pageId,
+                    s.PAGE_NAME                                             AS pageName,
+                    s.VIEW_MODE                                             AS viewMode,
+                    CASE WHEN MAX(h.FILE_ID) IS NOT NULL
+                        THEN 'http://'
+                             || MAX(si.INSTANCE_IP) KEEP (
+                                    DENSE_RANK LAST ORDER BY h.LAST_MODIFIED_DTIME, h.FILE_ID, h.INSTANCE_ID
+                                )
+                             || ':'
+                             || TRIM(TO_CHAR(MAX(si.INSTANCE_PORT) KEEP (
+                                    DENSE_RANK LAST ORDER BY h.LAST_MODIFIED_DTIME, h.FILE_ID, h.INSTANCE_ID
+                                )))
+                             || '/cms/deployed/' || s.PAGE_ID || '.html'
                     END                                                     AS deployedUrl,
-                    COUNT(CASE WHEN l.EVENT_TYPE = 'VIEW'  THEN 1 END)     AS viewCount,
-                    COUNT(CASE WHEN l.EVENT_TYPE = 'CLICK' THEN 1 END)     AS clickCount
-                FROM SPW_CMS_PAGE_VIEW_LOG l
-                JOIN SPW_CMS_PAGE p ON l.PAGE_ID = p.PAGE_ID
-                LEFT JOIN (
+                    s.VIEW_COUNT                                            AS viewCount,
+                    s.CLICK_COUNT                                           AS clickCount
+                FROM (
                     SELECT
-                        REGEXP_REPLACE(FILE_ID, '_v\d+\.html$', '') AS PAGE_ID,
-                        FILE_ID,
-                        INSTANCE_ID,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY REGEXP_REPLACE(FILE_ID, '_v\d+\.html$', '')
-                            ORDER BY LAST_MODIFIED_DTIME DESC
-                        ) AS RN
-                    FROM FWK_CMS_FILE_SEND_HIS
-                    WHERE FILE_ID LIKE '%_v%.html'
-                      AND FILE_ID NOT LIKE '%_expired.html'
-                ) lh ON lh.PAGE_ID = p.PAGE_ID AND lh.RN = 1
-                LEFT JOIN FWK_CMS_SERVER_INSTANCE si ON lh.INSTANCE_ID = si.INSTANCE_ID
-                <include refid="statConditions"/>
-                GROUP BY p.PAGE_ID, p.PAGE_NAME, p.VIEW_MODE, lh.FILE_ID, si.INSTANCE_IP, si.INSTANCE_PORT
-                ORDER BY viewCount DESC, p.PAGE_NAME ASC
+                        p.PAGE_ID                                           AS PAGE_ID,
+                        p.PAGE_NAME                                         AS PAGE_NAME,
+                        p.VIEW_MODE                                         AS VIEW_MODE,
+                        COUNT(CASE WHEN l.EVENT_TYPE = 'VIEW'  THEN 1 END) AS VIEW_COUNT,
+                        COUNT(CASE WHEN l.EVENT_TYPE = 'CLICK' THEN 1 END) AS CLICK_COUNT
+                    FROM SPW_CMS_PAGE_VIEW_LOG l
+                    JOIN SPW_CMS_PAGE p ON l.PAGE_ID = p.PAGE_ID
+                    <include refid="statConditions"/>
+                    GROUP BY p.PAGE_ID, p.PAGE_NAME, p.VIEW_MODE
+                ) s
+                LEFT JOIN FWK_CMS_FILE_SEND_HIS h
+                    ON h.FILE_ID LIKE s.PAGE_ID || '\_v%.html' ESCAPE '\'
+                   AND h.FILE_ID NOT LIKE '%\_expired.html' ESCAPE '\'
+                LEFT JOIN FWK_CMS_SERVER_INSTANCE si ON h.INSTANCE_ID = si.INSTANCE_ID
+                GROUP BY s.PAGE_ID, s.PAGE_NAME, s.VIEW_MODE, s.VIEW_COUNT, s.CLICK_COUNT
+                ORDER BY s.VIEW_COUNT DESC, s.PAGE_NAME ASC
             ) INNER_QRY
             WHERE ROWNUM <![CDATA[<=]]> #{endRow}
         ) WHERE RNUM > #{offset}
