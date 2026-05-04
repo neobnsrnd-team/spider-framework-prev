@@ -30,12 +30,31 @@
                 SELECT
                     p.PAGE_ID                                               AS pageId,
                     p.PAGE_NAME                                             AS pageName,
+                    p.VIEW_MODE                                             AS viewMode,
+                    CASE WHEN lh.FILE_ID IS NOT NULL
+                        THEN 'http://' || si.INSTANCE_IP || ':' || TO_CHAR(si.INSTANCE_PORT)
+                             || '/cms/deployed/' || p.PAGE_ID || '.html'
+                    END                                                     AS deployedUrl,
                     COUNT(CASE WHEN l.EVENT_TYPE = 'VIEW'  THEN 1 END)     AS viewCount,
                     COUNT(CASE WHEN l.EVENT_TYPE = 'CLICK' THEN 1 END)     AS clickCount
                 FROM SPW_CMS_PAGE_VIEW_LOG l
                 JOIN SPW_CMS_PAGE p ON l.PAGE_ID = p.PAGE_ID
+                LEFT JOIN (
+                    SELECT
+                        REGEXP_REPLACE(FILE_ID, '_v\d+\.html$', '') AS PAGE_ID,
+                        FILE_ID,
+                        INSTANCE_ID,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY REGEXP_REPLACE(FILE_ID, '_v\d+\.html$', '')
+                            ORDER BY LAST_MODIFIED_DTIME DESC
+                        ) AS RN
+                    FROM FWK_CMS_FILE_SEND_HIS
+                    WHERE FILE_ID LIKE '%_v%.html'
+                      AND FILE_ID NOT LIKE '%_expired.html'
+                ) lh ON lh.PAGE_ID = p.PAGE_ID AND lh.RN = 1
+                LEFT JOIN FWK_CMS_SERVER_INSTANCE si ON lh.INSTANCE_ID = si.INSTANCE_ID
                 <include refid="statConditions"/>
-                GROUP BY p.PAGE_ID, p.PAGE_NAME
+                GROUP BY p.PAGE_ID, p.PAGE_NAME, p.VIEW_MODE, lh.FILE_ID, si.INSTANCE_IP, si.INSTANCE_PORT
                 ORDER BY viewCount DESC, p.PAGE_NAME ASC
             ) INNER_QRY
             WHERE ROWNUM <![CDATA[<=]]> #{endRow}
