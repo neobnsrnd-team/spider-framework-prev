@@ -114,14 +114,17 @@ function addSpinnerOverlay(comp: ComponentNode, size: ButtonSize, spinnerColor: 
 /**
  * 아이콘 슬롯 추가.
  * Icons/{name} 컴포넌트가 있으면 인스턴스 + INSTANCE_SWAP, 없으면 rect fallback.
+ * fallback rect 색상은 variant별 텍스트 색과 동일하게 적용한다.
  */
 function addIconPlaceholder(
   comp: ComponentNode,
   size: ButtonSize,
+  variant: ButtonVariant,
   propertyName = 'icon',
 ) {
   const { iconSize } = SIZE_CONFIG[size];
-  addIconSlot(comp, 'ChevronRight', iconSize, BRAND.fg, propertyName);
+  const iconColor = getTextStyle(variant, 'Default').fallback;
+  addIconSlot(comp, 'ChevronRight', iconSize, iconColor, propertyName);
 }
 
 /* ── ComponentSet 생성 함수 ──────────────────────────────────── */
@@ -230,14 +233,14 @@ export async function createButtonWithIcon(): Promise<ComponentSetNode> {
           clearStroke(comp);
         }
 
-        if (icon === 'Left') addIconPlaceholder(comp, size);
+        if (icon === 'Left') addIconPlaceholder(comp, size, variant);
 
         if (text) {
           const label = await addTextWithVar(comp, '버튼', SIZE_CONFIG[size].fontSize, text.varName, text.fallback, true, SIZE_CONFIG[size].fontSizeVar);
           label.textAlignHorizontal = 'CENTER';
         }
 
-        if (icon === 'Right') addIconPlaceholder(comp, size);
+        if (icon === 'Right') addIconPlaceholder(comp, size, variant);
 
         components.push(comp);
       }
@@ -336,7 +339,7 @@ export async function createButtonFullWidth(): Promise<ComponentSetNode> {
       }
 
       if (justify === 'Between') {
-        addIconPlaceholder(comp, 'Medium', 'leftIcon');
+        addIconPlaceholder(comp, 'Medium', variant, 'leftIcon');
       }
 
       if (text) {
@@ -345,7 +348,7 @@ export async function createButtonFullWidth(): Promise<ComponentSetNode> {
       }
 
       if (justify === 'Between') {
-        addIconPlaceholder(comp, 'Medium', 'rightIcon');
+        addIconPlaceholder(comp, 'Medium', variant, 'rightIcon');
       }
 
       components.push(comp);

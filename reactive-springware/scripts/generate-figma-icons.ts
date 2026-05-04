@@ -1,13 +1,13 @@
 /**
  * @file generate-figma-icons.ts
  * @description lucide-react 패키지의 모든 아이콘을 SVG 문자열로 추출해
- *              figma-plugin/icons-generated.ts 파일을 자동 생성한다.
+ *              figma-plugin/icons.ts 파일을 자동 생성한다.
  *
  * @usage
  *   npm run generate:icons
  *
  * @outputs
- *   figma-plugin/icons-generated.ts  — ICON_SVGS_GENERATED Record<string, string>
+ *   figma-plugin/icons.ts — ICON_SVGS, IconName, createIcon 포함
  *
  * @note
  *   - 이 스크립트는 빌드 타임에만 실행되며, 플러그인 번들에는 포함되지 않는다.
@@ -45,14 +45,13 @@ const entries: string[] = iconNames.map(name => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Icon = (lucide as Record<string, unknown>)[name] as any;
 
-  /* renderToStaticMarkup으로 SVG 문자열 추출 후 {COLOR} 치환 삽입 */
+  /* renderToStaticMarkup으로 SVG 문자열 추출 후 {COLOR} 플레이스홀더 삽입 */
   let svg: string;
   try {
     svg = renderToStaticMarkup(
       createElement(Icon, { color: '{COLOR}', size: 24, strokeWidth: 2 }),
     );
   } catch {
-    /* 렌더 실패 시 빈 SVG fallback */
     svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"></svg>`;
   }
 
@@ -62,14 +61,48 @@ const entries: string[] = iconNames.map(name => {
 });
 
 const banner = [
+  '/// <reference types="@figma/plugin-typings" />',
   '// AUTO-GENERATED — 직접 편집하지 마세요.',
   '// 갱신: npm run generate:icons (scripts/generate-figma-icons.ts)',
   `// lucide-react 아이콘 수: ${iconNames.length}`,
 ].join('\n');
 
-const output = `${banner}\nexport const ICON_SVGS_GENERATED: Record<string, string> = {\n${entries.join(',\n')},\n};\n\nexport type GeneratedIconName = keyof typeof ICON_SVGS_GENERATED;\n`;
+/* createIcon 함수와 toHex 헬퍼는 스크립트가 생성하는 icons.ts에 포함된다.
+   Figma API(figma.createNodeFromSvg)를 사용하므로 플러그인 런타임에서만 실행된다. */
+const runtime = `
+import type { RGB } from './tokens';
 
-const outPath = resolve(__dirname, '../figma-plugin/icons-generated.ts');
+function toHex({ r, g, b }: RGB): string {
+  const ch = (v: number) => Math.round(v * 255).toString(16).padStart(2, '0');
+  return \`#\${ch(r)}\${ch(g)}\${ch(b)}\`;
+}
+
+export const ICON_SVGS: Record<string, string> = {
+${entries.join(',\n')},
+};
+
+export type IconName = keyof typeof ICON_SVGS;
+
+/**
+ * Lucide 아이콘을 Figma FrameNode로 생성한다.
+ *
+ * @param name  아이콘 이름 (예: 'ChevronLeft')
+ * @param size  아이콘 크기(px). 정방형으로 리사이즈된다.
+ * @param color 아이콘 stroke 색상 (RGB 0~1)
+ * @returns     Figma FrameNode (아이콘 SVG가 내부에 벡터로 포함됨)
+ */
+export function createIcon(name: IconName, size: number, color: RGB): FrameNode {
+  const svg = ICON_SVGS[name].replace(/\\{COLOR\\}/g, toHex(color));
+  const node = figma.createNodeFromSvg(svg);
+  node.name = name as string;
+  node.resize(size, size);
+  return node;
+}
+`;
+
+const output = `${banner}\n${runtime}`;
+
+const outPath = resolve(__dirname, '../figma-plugin/icons.ts');
 writeFileSync(outPath, output, 'utf-8');
 
 console.log(`✅ ${outPath} 생성 완료 (${iconNames.length}개)`);

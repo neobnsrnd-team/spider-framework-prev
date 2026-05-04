@@ -380,26 +380,39 @@ export async function setLineHeightVar(
 }
 
 /**
+ * 아이콘 인스턴스 내부 벡터 노드의 stroke를 재귀적으로 오버라이드한다.
+ * Lucide 아이콘은 fill="none" + stroke로 구성되므로 stroke만 교체한다.
+ */
+function _recolorIcon(node: SceneNode, color: RGB): void {
+  if ('strokes' in node && (node.strokes as Paint[]).length > 0) {
+    node.strokes = [{ type: 'SOLID', color }];
+  }
+  if ('children' in node) {
+    (node as ChildrenMixin).children.forEach(child => _recolorIcon(child, color));
+  }
+}
+
+/**
  * 아이콘 슬롯을 ComponentNode에 추가한다.
  *
  * Icons/{name} 컴포넌트가 현재 페이지에 존재하면
- * 인스턴스를 생성하고 INSTANCE_SWAP Property로 등록한다.
+ * 인스턴스를 생성하고 iconColor로 stroke를 오버라이드한 뒤 INSTANCE_SWAP Property로 등록한다.
  * → Figma 우측 패널에서 원하는 아이콘으로 swap 가능
  *
- * 아이콘 컴포넌트가 없으면 rect 플레이스홀더로 대체한다.
+ * 아이콘 컴포넌트가 없으면 동일한 색상의 rect 플레이스홀더로 대체한다.
  * → createIcons 커맨드를 먼저 실행해야 인스턴스 방식이 활성화된다.
  *
  * @param comp         - 아이콘을 추가할 부모 ComponentNode
  * @param name         - 기본 아이콘 이름 (IconName)
  * @param size         - 아이콘 크기(px)
- * @param fallbackColor - 아이콘 컴포넌트 미존재 시 rect에 사용할 색상
+ * @param iconColor    - 아이콘 stroke 색상 (rect fallback에도 동일 적용)
  * @param propertyName - INSTANCE_SWAP Property 이름 (기본 'icon')
  */
 export function addIconSlot(
   comp: ComponentNode,
   name: IconName,
   size: number,
-  fallbackColor: RGB,
+  iconColor: RGB,
   propertyName = 'icon',
 ): void {
   const iconComp = _findIconComponent(name);
@@ -408,12 +421,14 @@ export function addIconSlot(
     const instance = iconComp.createInstance();
     instance.resize(size, size);
     comp.appendChild(instance);
+    /* 컴포넌트별 텍스트 색으로 stroke 오버라이드 */
+    _recolorIcon(instance, iconColor);
     /* INSTANCE_SWAP Property 등록 — Figma에서 아이콘 swap 드롭다운 표시 */
     const propKey = comp.addComponentProperty(propertyName, 'INSTANCE_SWAP', iconComp.id);
     instance.componentPropertyReferences = { mainComponent: propKey };
   } else {
-    /* createIcons 미실행 시 rect 플레이스홀더로 fallback */
-    addRect(comp, size, size, fallbackColor, 2);
+    /* createIcons 미실행 시 동일 색상의 rect 플레이스홀더로 fallback */
+    addRect(comp, size, size, iconColor, 2);
   }
 }
 
