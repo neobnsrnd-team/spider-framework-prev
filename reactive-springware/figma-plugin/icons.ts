@@ -21,7 +21,7 @@ function toHex({ r, g, b }: RGB): string {
  * Lucide 아이콘 SVG 템플릿.
  * `{COLOR}` 플레이스홀더에 실제 hex 색상이 치환된다.
  */
-const ICON_SVGS: Record<string, string> = {
+export const ICON_SVGS: Record<string, string> = {
   /* ── Navigation ──────────────────────────────────────────── */
   ChevronLeft: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{COLOR}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>`,
 

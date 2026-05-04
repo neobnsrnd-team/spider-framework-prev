@@ -15,6 +15,7 @@ import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '.
 import {
   createComponent, combineVariants, setAutoLayout, setPadding,
   setFill, setFillWithVar, setStroke, clearStroke, addTextWithVar, addRect, setFloatVar,
+  addIconSlot,
 } from '../../helpers';
 
 type ButtonVariant = 'Primary' | 'Outline' | 'Ghost' | 'Danger';
@@ -110,10 +111,17 @@ function addSpinnerOverlay(comp: ComponentNode, size: ButtonSize, spinnerColor: 
   comp.appendChild(spinner);
 }
 
-/** 아이콘 플레이스홀더 사각형 추가 */
-function addIconPlaceholder(comp: ComponentNode, size: ButtonSize) {
+/**
+ * 아이콘 슬롯 추가.
+ * Icons/{name} 컴포넌트가 있으면 인스턴스 + INSTANCE_SWAP, 없으면 rect fallback.
+ */
+function addIconPlaceholder(
+  comp: ComponentNode,
+  size: ButtonSize,
+  propertyName = 'icon',
+) {
   const { iconSize } = SIZE_CONFIG[size];
-  addRect(comp, iconSize, iconSize, BRAND.fg, RADIUS.xs);
+  addIconSlot(comp, 'ChevronRight', iconSize, BRAND.fg, propertyName);
 }
 
 /* ── ComponentSet 생성 함수 ──────────────────────────────────── */
@@ -328,7 +336,7 @@ export async function createButtonFullWidth(): Promise<ComponentSetNode> {
       }
 
       if (justify === 'Between') {
-        addIconPlaceholder(comp, 'Medium');
+        addIconPlaceholder(comp, 'Medium', 'leftIcon');
       }
 
       if (text) {
@@ -337,7 +345,7 @@ export async function createButtonFullWidth(): Promise<ComponentSetNode> {
       }
 
       if (justify === 'Between') {
-        addIconPlaceholder(comp, 'Medium');
+        addIconPlaceholder(comp, 'Medium', 'rightIcon');
       }
 
       components.push(comp);

@@ -1,3 +1,4 @@
+/// <reference types="@figma/plugin-typings" />
 /**
  * @file main.ts
  * @description Figma 플러그인 진입점.
@@ -35,6 +36,7 @@
 
 import { FONT_FAMILY } from './tokens';
 import { createVariables } from './createVariables';
+import { createIcons } from './createIcons';
 
 /* core */
 import {
@@ -218,6 +220,12 @@ async function s<T extends SceneNode>(name: string, fn: () => Promise<T>): Promi
    * ────────────────────────────────────────────────────── */
   if (figma.command === 'createVariables') {
     const message = await createVariables();
+    figma.closePlugin(message);
+    return;
+  }
+
+  if (figma.command === 'createIcons') {
+    const message = await createIcons();
     figma.closePlugin(message);
     return;
   }

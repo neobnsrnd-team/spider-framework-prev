@@ -5,6 +5,9 @@
   "scripts": {
     "build:css": "tailwindcss -i component-library/styles.css -o component-library/dist/styles.css",
     "build:css:watch": "tailwindcss -i component-library/styles.css -o component-library/dist/styles.css --watch",
+    "build:plugin": "esbuild figma-plugin/main.ts --bundle --outfile=figma-plugin/dist/main.js --platform=browser --target=es6",
+    "watch:plugin": "esbuild figma-plugin/main.ts --bundle --outfile=figma-plugin/dist/main.js --platform=browser --target=es6 --watch",
+    "generate:icons": "tsx scripts/generate-figma-icons.ts",
     "generate:prompts": "npx tsx scripts/extract-components.ts && npx tsx scripts/extract-design-tokens.ts && npx tsx scripts/extract-page-generation-rules.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx",
@@ -22,6 +25,7 @@
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
+    "@figma/plugin-typings": "^1.96.0",
     "@storybook/react-vite": "^10.3.3",
     "@tailwindcss/cli": "^4.2.4",
     "@tokens-studio/sd-transforms": "^2.0.3",
@@ -29,6 +33,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
+    "esbuild": "^0.21.0",
     "sd-tailwindcss-transformer": "^2.2.1",
     "storybook": "^10.3.3",
     "style-dictionary": "^5.4.0",

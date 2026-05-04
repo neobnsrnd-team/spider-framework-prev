@@ -6,6 +6,7 @@
 
 import type { RGB } from './tokens';
 import { FONT_FAMILY, FONT_VAR } from './tokens';
+import type { IconName } from './icons';
 
 /** SolidPaint 생성 */
 export function solid(color: RGB, opacity = 1): SolidPaint {
@@ -376,4 +377,59 @@ export async function setLineHeightVar(
     }
   } catch { /* fallback */ }
   node.lineHeight = { value: fallback, unit: 'PIXELS' };
+}
+
+/**
+ * 아이콘 슬롯을 ComponentNode에 추가한다.
+ *
+ * Icons/{name} 컴포넌트가 현재 페이지에 존재하면
+ * 인스턴스를 생성하고 INSTANCE_SWAP Property로 등록한다.
+ * → Figma 우측 패널에서 원하는 아이콘으로 swap 가능
+ *
+ * 아이콘 컴포넌트가 없으면 rect 플레이스홀더로 대체한다.
+ * → createIcons 커맨드를 먼저 실행해야 인스턴스 방식이 활성화된다.
+ *
+ * @param comp         - 아이콘을 추가할 부모 ComponentNode
+ * @param name         - 기본 아이콘 이름 (IconName)
+ * @param size         - 아이콘 크기(px)
+ * @param fallbackColor - 아이콘 컴포넌트 미존재 시 rect에 사용할 색상
+ * @param propertyName - INSTANCE_SWAP Property 이름 (기본 'icon')
+ */
+export function addIconSlot(
+  comp: ComponentNode,
+  name: IconName,
+  size: number,
+  fallbackColor: RGB,
+  propertyName = 'icon',
+): void {
+  const iconComp = _findIconComponent(name);
+
+  if (iconComp) {
+    const instance = iconComp.createInstance();
+    instance.resize(size, size);
+    comp.appendChild(instance);
+    /* INSTANCE_SWAP Property 등록 — Figma에서 아이콘 swap 드롭다운 표시 */
+    const propKey = comp.addComponentProperty(propertyName, 'INSTANCE_SWAP', iconComp.id);
+    instance.componentPropertyReferences = { mainComponent: propKey };
+  } else {
+    /* createIcons 미실행 시 rect 플레이스홀더로 fallback */
+    addRect(comp, size, size, fallbackColor, 2);
+  }
+}
+
+/**
+ * Icons/* 컴포넌트를 이름으로 검색한다.
+ * 최초 호출 시 페이지 전체를 스캔하고 이후엔 캐시를 반환한다.
+ */
+let _iconCache: Map<string, ComponentNode> | null = null;
+
+function _findIconComponent(name: IconName): ComponentNode | null {
+  if (_iconCache === null) {
+    _iconCache = new Map();
+    figma.currentPage
+      .findAllWithCriteria({ types: ['COMPONENT'] })
+      .filter(c => c.name.startsWith('Icons/'))
+      .forEach(c => _iconCache!.set(c.name, c as ComponentNode));
+  }
+  return _iconCache.get(`Icons/${name}`) ?? null;
 }
