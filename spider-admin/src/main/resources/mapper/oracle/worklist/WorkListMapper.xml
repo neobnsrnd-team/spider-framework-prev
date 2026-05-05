@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.worklist.mapper.WorkListMapper">
+
+    <resultMap id="WorkListResultMap"
+               type="com.example.spideradmin.domain.worklist.dto.WorkListResponse">
+        <result property="workSeq"            column="WORK_SEQ"/>
+        <result property="workId"             column="WORK_ID"/>
+        <result property="workOriId"          column="WORK_ORI_ID"/>
+        <result property="workDataPk"         column="WORK_DATA_PK"/>
+        <result property="workName"           column="WORK_NAME"/>
+        <result property="crudType"           column="CRUD_TYPE"/>
+        <result property="approvalSeq"        column="APPROVAL_SEQ"/>
+        <result property="lastUpdateUserId"   column="LAST_UPDATE_USER_ID"/>
+        <result property="distYn"             column="DIST_YN"/>
+        <result property="distDtime"          column="DIST_DTIME"/>
+        <result property="groupId"            column="GROUP_ID"/>
+        <result property="fileName"           column="FILE_NAME"/>
+        <result property="deleteYn"           column="DELETE_YN"/>
+        <result property="lastUpdateDtime"    column="LAST_UPDATE_DTIME"/>
+    </resultMap>
+
+    <!--
+        작업함 목록 조회.
+        사용자 소속 항목: GROUP_ID LIKE userId||'%' AND LENGTH(userId)+3 = LENGTH(GROUP_ID)
+        그룹 필터: groupId가 있으면 AND GROUP_ID = groupId
+    -->
+    <select id="findByUserId" resultMap="WorkListResultMap">
+        SELECT
+            WORK_SEQ,
+            (CASE WORK_ID
+                WHEN 'Message'            THEN '전문'
+                WHEN 'Trx'                THEN '거래'
+                WHEN 'P_SERVICE'          THEN '웹 서비스'
+                WHEN 'B_Service'          THEN '업무 서비스'
+                WHEN 'UI_LAYOUT'          THEN '레이아웃'
+                WHEN 'P_Component'        THEN '웹 컴포넌트'
+                WHEN 'B_Component'        THEN '업무 컴포넌트'
+                WHEN 'P_POPUP'            THEN '팝업관리'
+                WHEN 'SQL_QUERY'          THEN 'SQL쿼리관리'
+                WHEN 'SQL_CONF'           THEN '데이터소스관리'
+                WHEN 'SQL_GROUP'          THEN 'SQL그룹관리'
+                WHEN 'P_TEMPLET'          THEN '템플릿관리'
+                WHEN 'P_BIZ_GROUP'        THEN '하위그룹'
+                WHEN 'Errorcode'          THEN '에러코드'
+                WHEN 'Codegroup'          THEN '코드그룹'
+                WHEN 'BoardTemplet_Service' THEN '게시판템플릿'
+                WHEN 'Board_Service'      THEN '게시판'
+                WHEN 'BANNER'             THEN '배너'
+                WHEN 'BANNER_AREA'        THEN '배너영역'
+                WHEN 'CAMPAIGN'           THEN '캠페인'
+                ELSE WORK_ID
+            END)                                                        AS WORK_ID,
+            WORK_ID                                                     AS WORK_ORI_ID,
+            WORK_DATA_PK,
+            WORK_NAME,
+            (CASE CRUD_TYPE
+                WHEN 'C' THEN '생성'
+                WHEN 'R' THEN '조회'
+                WHEN 'U' THEN '수정'
+                WHEN 'D' THEN '삭제'
+                ELSE CRUD_TYPE
+            END)                                                        AS CRUD_TYPE,
+            NVL(APPROVAL_SEQ, '결재미신청')                              AS APPROVAL_SEQ,
+            LAST_UPDATE_USER_ID,
+            NVL(DIST_YN, 'N')                                          AS DIST_YN,
+            DIST_DTIME,
+            GROUP_ID,
+            FILE_NAME,
+            NVL2(APPROVAL_SEQ, 'N', 'Y')                               AS DELETE_YN,
+            TO_CHAR(
+                TO_DATE(LAST_UPDATE_DTIME, 'YYYYMMDDHH24MISS'),
+                'YYYY-MM-DD HH24:MI:SS'
+            )                                                           AS LAST_UPDATE_DTIME
+        FROM FWK_WORK_LIST
+        WHERE GROUP_ID LIKE #{userId} || '%'
+          AND LENGTH(#{userId}) + 3 = LENGTH(GROUP_ID)
+        <if test="groupId != null and groupId != ''">
+            AND GROUP_ID = #{groupId}
+        </if>
+        ORDER BY LAST_UPDATE_DTIME DESC
+    </select>
+
+    <!-- 그룹 이동: 선택 WORK_SEQ 목록의 GROUP_ID를 변경 -->
+    <update id="moveGroup" parameterType="map">
+        UPDATE FWK_WORK_LIST
+        SET GROUP_ID = #{groupId}
+        WHERE WORK_SEQ IN
+        <foreach collection="workSeqs" item="seq" open="(" separator="," close=")">
+            #{seq}
+        </foreach>
+    </update>
+
+    <!--
+        권한이양: GROUP_ID를 toUserId+'001'로, LAST_UPDATE_USER_ID를 toUserId로 변경.
+        FIRST_INSERT_USER_ID는 유지 (as-is 동일).
+        fromUserId 소속 항목만 이양 (보안 — 타인 항목 이양 불가).
+    -->
+    <update id="transfer" parameterType="map">
+        UPDATE FWK_WORK_LIST
+        SET GROUP_ID              = #{toUserId} || '001',
+            LAST_UPDATE_USER_ID   = #{toUserId},
+            LAST_UPDATE_DTIME     = TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+        WHERE WORK_SEQ IN
+        <foreach collection="workSeqs" item="seq" open="(" separator="," close=")">
+            #{seq}
+        </foreach>
+          AND GROUP_ID LIKE #{fromUserId} || '%'
+          AND LENGTH(#{fromUserId}) + 3 = LENGTH(GROUP_ID)
+    </update>
+
+
+    <!--
+        변경 이력 UPSERT (AOP Hook 전용).
+        (WORK_ID, WORK_DATA_PK) 기준으로 사용자 소속 항목이 있으면 UPDATE, 없으면 INSERT.
+        GROUP_ID 기본값: userId + '001' (사용자 기본 그룹).
+        WORK_SEQ: INSERT 시 MAX+1 채번 (동시성 이슈가 낮은 관리자 화면 용도).
+    -->
+    <update id="upsertHistory" parameterType="map">
+        MERGE INTO FWK_WORK_LIST T
+        USING (SELECT 1 FROM DUAL) S
+        ON (
+            T.WORK_ID       = #{workId}
+            AND T.WORK_DATA_PK   = #{workDataPk}
+            AND T.GROUP_ID LIKE #{userId} || '%'
+            AND LENGTH(#{userId}) + 3 = LENGTH(T.GROUP_ID)
+        )
+        WHEN MATCHED THEN
+            UPDATE SET
+                T.WORK_NAME           = #{workName},
+                T.CRUD_TYPE           = #{crudType},
+                T.LAST_UPDATE_DTIME   = TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'),
+                T.LAST_UPDATE_USER_ID = #{userId}
+        WHEN NOT MATCHED THEN
+            INSERT (
+                WORK_SEQ, WORK_ID, WORK_DATA_PK, WORK_NAME, CRUD_TYPE,
+                LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID,
+                DIST_YN, GROUP_ID, FIRST_INSERT_USER_ID
+            ) VALUES (
+                (SELECT NVL(MAX(WORK_SEQ), 0) + 1 FROM FWK_WORK_LIST),
+                #{workId}, #{workDataPk}, #{workName}, #{crudType},
+                TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'), #{userId},
+                'N', #{userId} || '001', #{userId}
+            )
+    </update>
+
+
+    <!-- 결재요청 — 선택 항목의 APPROVAL_SEQ를 채번된 APPROVAL_ID로 갱신 -->
+    <update id="updateApprovalSeq" parameterType="map">
+        UPDATE FWK_WORK_LIST
+        SET APPROVAL_SEQ = #{approvalId}
+        WHERE WORK_SEQ IN
+        <foreach collection="workSeqs" item="seq" open="(" separator="," close=")">
+            #{seq}
+        </foreach>
+    </update>
+
+    <!-- 이행스크립트용 단건 조회 (workOriId, workDataPk, fileName) -->
+    <select id="findByWorkSeq" parameterType="int" resultMap="WorkListResultMap">
+        SELECT WORK_SEQ,
+               WORK_ID AS WORK_ORI_ID,
+               WORK_DATA_PK,
+               FILE_NAME
+        FROM FWK_WORK_LIST
+        WHERE WORK_SEQ = #{workSeq}
+    </select>
+
+    <!-- 이행스크립트 파일명 업데이트 -->
+    <update id="updateFileName">
+        UPDATE FWK_WORK_LIST
+        SET FILE_NAME = #{fileName}
+        WHERE WORK_SEQ = #{workSeq}
+    </update>
+
+</mapper>

@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    Menu Mapper (CRUD + Query)
+    - Entity 제거 후 MenuResponse 직접 반환
+    - resultType 사용, typeHandler 제거
+-->
+<mapper namespace="com.example.spideradmin.domain.menu.mapper.MenuMapper">
+
+    <!-- ==================== SQL Fragment 정의 ==================== -->
+
+    <!-- 기본 Menu 컬럼 (AS alias로 DTO 필드에 매핑) -->
+    <sql id="baseColumns">
+        m.MENU_ID       AS "menuId",
+        m.MENU_NAME     AS "menuName",
+        m.MENU_URL      AS "menuUrl",
+        m.MENU_IMAGE    AS "menuImage",
+        m.SORT_ORDER    AS "sortOrder",
+        m.DISPLAY_YN    AS "displayYn",
+        m.USE_YN        AS "useYn",
+        m.PRIOR_MENU_ID AS "priorMenuId",
+        m.WEB_APP_ID    AS "webAppId",
+        m.LAST_UPDATE_DTIME   AS "lastUpdateDtime",
+        m.LAST_UPDATE_USER_ID AS "lastUpdateUserId"
+    </sql>
+
+    <!-- hasChildren 서브쿼리 포함 컬럼 -->
+    <sql id="columnsWithHasChildren">
+        m.MENU_ID       AS "menuId",
+        m.MENU_NAME     AS "menuName",
+        m.MENU_URL      AS "menuUrl",
+        m.MENU_IMAGE    AS "menuImage",
+        m.SORT_ORDER    AS "sortOrder",
+        m.DISPLAY_YN    AS "displayYn",
+        m.USE_YN        AS "useYn",
+        m.PRIOR_MENU_ID AS "priorMenuId",
+        m.WEB_APP_ID    AS "webAppId",
+        m.LAST_UPDATE_DTIME   AS "lastUpdateDtime",
+        m.LAST_UPDATE_USER_ID AS "lastUpdateUserId",
+        CASE WHEN EXISTS (
+            SELECT 1 FROM FWK_MENU c
+            WHERE c.PRIOR_MENU_ID = m.MENU_ID
+            AND c.MENU_ID != m.MENU_ID
+        ) THEN 1 ELSE 0 END AS "hasChildren"
+    </sql>
+
+    <!-- Menu 테이블 FROM 절 -->
+    <sql id="fromMenu">
+        FROM FWK_MENU m
+    </sql>
+
+    <!-- 검색 조건 WHERE 절 -->
+    <sql id="searchConditions">
+        <if test="menuId != null and menuId != ''">
+            AND m.MENU_ID LIKE '%' || #{menuId} || '%'
+        </if>
+        <if test="menuName != null and menuName != ''">
+            AND m.MENU_NAME LIKE '%' || #{menuName} || '%'
+        </if>
+        <if test="menuUrl != null and menuUrl != ''">
+            AND m.MENU_URL LIKE '%' || #{menuUrl} || '%'
+        </if>
+        <if test="parentMenuId != null and parentMenuId != ''">
+            AND m.PRIOR_MENU_ID = #{parentMenuId}
+        </if>
+    </sql>
+
+    <!-- 기본 정렬 ORDER BY 절 -->
+    <sql id="defaultOrderBy">
+        ORDER BY m.SORT_ORDER, m.MENU_ID
+    </sql>
+
+    <!-- ==================== 단건 조회 ==================== -->
+
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
+        SELECT <include refid="baseColumns"/>
+        <include refid="fromMenu"/>
+        WHERE m.MENU_ID = #{menuId}
+    </select>
+
+    <!-- ==================== 존재 확인 ==================== -->
+
+    <select id="countById" resultType="int">
+        SELECT COUNT(*) FROM FWK_MENU WHERE MENU_ID = #{menuId}
+    </select>
+
+    <select id="findExistingMenuIds" resultType="string">
+        SELECT MENU_ID FROM FWK_MENU
+        WHERE MENU_ID IN
+        <foreach collection="menuIds" item="menuId" open="(" separator="," close=")">
+            #{menuId}
+        </foreach>
+    </select>
+
+    <select id="countByMenuName" resultType="int">
+        SELECT COUNT(*) FROM FWK_MENU WHERE MENU_NAME = #{menuName}
+    </select>
+
+    <select id="countByPriorMenuIdExcludeSelf" resultType="long">
+        SELECT COUNT(*) FROM FWK_MENU
+        WHERE PRIOR_MENU_ID = #{priorMenuId} AND MENU_ID != #{menuId}
+    </select>
+
+    <!-- ==================== 생성 ==================== -->
+
+    <insert id="insert">
+        INSERT INTO FWK_MENU (
+            MENU_ID, MENU_NAME, MENU_URL, MENU_IMAGE, SORT_ORDER,
+            DISPLAY_YN, USE_YN, PRIOR_MENU_ID, WEB_APP_ID,
+            LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID
+        ) VALUES (
+            #{dto.menuId},
+            #{dto.menuName},
+            #{dto.menuUrl, jdbcType=VARCHAR},
+            #{dto.menuImage, jdbcType=VARCHAR},
+            #{dto.sortOrder, jdbcType=NUMERIC},
+            #{dto.displayYn, jdbcType=VARCHAR},
+            #{dto.useYn, jdbcType=VARCHAR},
+            #{dto.priorMenuId, jdbcType=VARCHAR},
+            #{dto.webAppId, jdbcType=VARCHAR},
+            #{now},
+            #{currentUserId}
+        )
+    </insert>
+
+    <!-- ==================== 수정 ==================== -->
+
+    <update id="update">
+        UPDATE FWK_MENU
+        SET MENU_NAME = #{dto.menuName},
+            MENU_URL = #{dto.menuUrl, jdbcType=VARCHAR},
+            MENU_IMAGE = #{dto.menuImage, jdbcType=VARCHAR},
+            SORT_ORDER = #{dto.sortOrder, jdbcType=NUMERIC},
+            DISPLAY_YN = #{dto.displayYn, jdbcType=VARCHAR},
+            USE_YN = #{dto.useYn, jdbcType=VARCHAR},
+            PRIOR_MENU_ID = #{dto.priorMenuId, jdbcType=VARCHAR},
+            WEB_APP_ID = #{dto.webAppId, jdbcType=VARCHAR},
+            LAST_UPDATE_DTIME = #{now},
+            LAST_UPDATE_USER_ID = #{currentUserId}
+        WHERE MENU_ID = #{menuId}
+    </update>
+
+    <!-- ==================== 삭제 ==================== -->
+
+    <delete id="deleteById">
+        DELETE FROM FWK_MENU WHERE MENU_ID = #{menuId}
+    </delete>
+
+    <!-- ==================== 목록 조회 ==================== -->
+
+    <!-- 전체 메뉴 목록 조회 -->
+    <select id="findAll" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
+        SELECT <include refid="baseColumns"/>
+        <include refid="fromMenu"/>
+        <include refid="defaultOrderBy"/>
+    </select>
+
+    <!-- 활성화된 메뉴 목록 조회 -->
+    <select id="findAllActive" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
+        SELECT <include refid="baseColumns"/>
+        <include refid="fromMenu"/>
+        WHERE m.USE_YN = 'Y' AND m.DISPLAY_YN = 'Y'
+              AND (m.MENU_URL IS NULL OR m.MENU_URL NOT IN ('NaN', 'NAN'))
+        <include refid="defaultOrderBy"/>
+    </select>
+
+    <!-- 상위 메뉴 ID로 하위 메뉴 목록 조회 -->
+    <select id="findByPriorMenuId" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
+        SELECT <include refid="baseColumns"/>
+        <include refid="fromMenu"/>
+        WHERE m.PRIOR_MENU_ID = #{priorMenuId}
+        <include refid="defaultOrderBy"/>
+    </select>
+
+    <!-- ==================== 검색 조회 ==================== -->
+
+    <!-- 검색 조건으로 메뉴 목록 조회 (페이징 + hasChildren 포함) -->
+    <select id="findAllWithSearchPaging" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
+        SELECT * FROM (
+            SELECT
+                <include refid="columnsWithHasChildren"/>,
+                ROW_NUMBER() OVER (
+                    <choose>
+                        <when test="sortBy != null and sortBy != ''">
+                            ORDER BY
+                            <choose>
+                                <when test="sortBy == 'menuId'">UPPER(m.MENU_ID)</when>
+                                <when test="sortBy == 'menuName'">UPPER(m.MENU_NAME)</when>
+                                <when test="sortBy == 'menuUrl'">UPPER(m.MENU_URL)</when>
+                                <otherwise>m.SORT_ORDER, m.MENU_ID</otherwise>
+                            </choose>
+                            <choose>
+                                <when test="sortDirection != null and sortDirection.toUpperCase() == 'DESC'">DESC</when>
+                                <otherwise>ASC</otherwise>
+                            </choose>
+                        </when>
+                        <otherwise>ORDER BY m.SORT_ORDER, m.MENU_ID</otherwise>
+                    </choose>
+                ) AS RN
+            <include refid="fromMenu"/>
+            <where>
+                <include refid="searchConditions"/>
+            </where>
+        )
+        WHERE RN BETWEEN #{offset} + 1 AND #{offset} + #{limit}
+    </select>
+
+    <!-- 검색 결과 총 개수 -->
+    <select id="countBySearchCondition" resultType="long">
+        SELECT COUNT(*)
+        <include refid="fromMenu"/>
+        <where>
+            <include refid="searchConditions"/>
+        </where>
+    </select>
+
+    <!-- ==================== 엑셀 내보내기 (페이징 없음) ==================== -->
+
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
+        SELECT
+            <include refid="columnsWithHasChildren"/>
+        <include refid="fromMenu"/>
+        <where>
+            <include refid="searchConditions"/>
+        </where>
+        <choose>
+            <when test="sortBy != null and sortBy != ''">
+                ORDER BY
+                <choose>
+                    <when test="sortBy == 'menuId'">UPPER(m.MENU_ID)</when>
+                    <when test="sortBy == 'menuName'">UPPER(m.MENU_NAME)</when>
+                    <when test="sortBy == 'menuUrl'">UPPER(m.MENU_URL)</when>
+                    <otherwise>m.SORT_ORDER, m.MENU_ID</otherwise>
+                </choose>
+                <choose>
+                    <when test="sortDirection != null and sortDirection.toUpperCase() == 'DESC'">DESC</when>
+                    <otherwise>ASC</otherwise>
+                </choose>
+            </when>
+            <otherwise>ORDER BY m.SORT_ORDER, m.MENU_ID</otherwise>
+        </choose>
+    </select>
+
+    <!-- ==================== 사이드바용 전체 메뉴 계층 조회 ==================== -->
+
+    <select id="findAllHierarchy" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
+        SELECT
+            m.MENU_ID       AS "menuId",
+            m.MENU_NAME     AS "menuName",
+            m.MENU_URL      AS "menuUrl",
+            m.MENU_IMAGE    AS "menuImage",
+            m.SORT_ORDER    AS "sortOrder",
+            m.DISPLAY_YN    AS "displayYn",
+            m.USE_YN        AS "useYn",
+            m.PRIOR_MENU_ID AS "priorMenuId",
+            m.WEB_APP_ID    AS "webAppId",
+            m.LAST_UPDATE_DTIME   AS "lastUpdateDtime",
+            m.LAST_UPDATE_USER_ID AS "lastUpdateUserId"
+        FROM FWK_MENU m
+        WHERE m.USE_YN = 'Y'
+          AND m.DISPLAY_YN = 'Y'
+        START WITH m.PRIOR_MENU_ID IS NULL
+        CONNECT BY PRIOR m.MENU_ID = m.PRIOR_MENU_ID
+        ORDER SIBLINGS BY m.SORT_ORDER, m.MENU_ID
+    </select>
+
+    <!-- ==================== 계층 조회: 메뉴 ID 목록 기반 ==================== -->
+
+    <select id="findMenuHierarchyByMenuIds" resultType="com.example.spideradmin.domain.menu.dto.MenuResponse">
+        WITH ASSIGNED_MENUS AS (
+            SELECT MENU_ID FROM (
+                <foreach item="item" collection="menuIds" separator=" UNION ALL ">
+                    SELECT #{item} AS MENU_ID FROM DUAL
+                </foreach>
+            )
+        )
+        SELECT DISTINCT
+            m.MENU_ID       AS "menuId",
+            m.MENU_NAME     AS "menuName",
+            m.MENU_URL      AS "menuUrl",
+            m.MENU_IMAGE    AS "menuImage",
+            m.SORT_ORDER    AS "sortOrder",
+            m.DISPLAY_YN    AS "displayYn",
+            m.USE_YN        AS "useYn",
+            m.PRIOR_MENU_ID AS "priorMenuId",
+            m.WEB_APP_ID    AS "webAppId",
+            m.LAST_UPDATE_DTIME   AS "lastUpdateDtime",
+            m.LAST_UPDATE_USER_ID AS "lastUpdateUserId"
+        FROM FWK_MENU m
+        WHERE m.USE_YN = #{useYn}
+          AND m.DISPLAY_YN = #{displayYn}
+          AND (
+              m.MENU_ID IN (SELECT MENU_ID FROM ASSIGNED_MENUS)
+              OR m.MENU_ID IN (
+                  SELECT DISTINCT PRIOR_MENU_ID
+                  FROM FWK_MENU
+                  START WITH MENU_ID IN (SELECT MENU_ID FROM ASSIGNED_MENUS)
+                  CONNECT BY MENU_ID = PRIOR PRIOR_MENU_ID
+              )
+          )
+        ORDER BY m.SORT_ORDER, m.MENU_ID
+    </select>
+
+</mapper>

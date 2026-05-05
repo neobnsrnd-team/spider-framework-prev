@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.batch.mapper.BatchHisPartitionMapper">
+
+    <!-- 파티션 개수 조회 (파티셔닝 적용 여부 확인) -->
+    <select id="countPartitions" resultType="int">
+        SELECT COUNT(*)
+        FROM USER_TAB_PARTITIONS
+        WHERE TABLE_NAME = 'FWK_BATCH_HIS'
+    </select>
+
+    <!-- 삭제 대상 파티션 목록 조회 -->
+    <!-- 파티션 명명 규칙: P_YYYYMM (예: P_202401) -->
+    <select id="selectPartitionsToDelete" resultType="string">
+        SELECT PARTITION_NAME
+        FROM USER_TAB_PARTITIONS
+        WHERE TABLE_NAME = 'FWK_BATCH_HIS'
+          AND PARTITION_NAME LIKE 'P_%'
+          AND SUBSTR(PARTITION_NAME, 3, 6) &lt; #{cutoffYearMonth}
+        ORDER BY PARTITION_NAME
+    </select>
+
+    <!-- 파티션 DROP (DDL) -->
+    <!-- 주의: ${} 사용 - partitionName은 서비스 레이어에서 반드시 검증 필요 -->
+    <update id="dropPartition">
+        ALTER TABLE FWK_BATCH_HIS DROP PARTITION ${partitionName}
+    </update>
+
+    <!-- 파티션 예상 행 수 조회 -->
+    <select id="getPartitionRowCount" resultType="java.lang.Long">
+        SELECT NUM_ROWS
+        FROM USER_TAB_PARTITIONS
+        WHERE TABLE_NAME = 'FWK_BATCH_HIS'
+          AND PARTITION_NAME = #{partitionName}
+    </select>
+
+    <!-- 파티션 실존 여부 확인 (SQL Injection 방어용 Whitelist 검증) -->
+    <select id="existsPartition" resultType="int">
+        SELECT COUNT(*)
+        FROM USER_TAB_PARTITIONS
+        WHERE TABLE_NAME = 'FWK_BATCH_HIS'
+          AND PARTITION_NAME = #{partitionName}
+    </select>
+
+</mapper>

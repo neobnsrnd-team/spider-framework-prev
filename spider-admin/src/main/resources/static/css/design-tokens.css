@@ -1,0 +1,228 @@
+/* ===== LIGHT MODE (default) ===== */
+:root, [data-bs-theme="light"] {
+    /* --- Brand / Primary (강조 요소에만 사용) --- */
+    --sp-primary: #4a6fa5;
+    --sp-primary-hover: #3a5f95;
+    --sp-primary-subtle: #dce8f5;
+    --sp-primary-rgb: 74, 111, 165;
+
+    /* --- Semantic --- */
+    --sp-success:     #16a34a;
+    --sp-danger:      #dc2626;
+    --sp-warning:     #d97706;
+    --sp-info:        #0e7490;
+    --sp-danger-rgb:  220, 38, 38;
+    --sp-success-rgb: 22, 163, 74;
+
+    /* --- Neutral (사이드바/탑바/배경 공통 계열) --- */
+    --sp-neutral-950: #0a0a0a;
+    --sp-neutral-900: #171717;
+    --sp-neutral-800: #262626;
+    --sp-neutral-700: #404040;
+    --sp-neutral-600: #525252;
+    --sp-neutral-500: #737373;
+    --sp-neutral-400: #a3a3a3;
+    --sp-neutral-300: #d4d4d4;
+    --sp-neutral-200: #e5e5e5;
+    --sp-neutral-100: #f5f5f5;
+    --sp-neutral-50:  #fafafa;
+
+    /* --- Semantic Surface (라이트 모드) --- */
+    --sp-body-bg: #f8f9fa;
+    --sp-surface: #ffffff;
+    --sp-surface-raised: #ffffff;
+    --sp-border: var(--sp-neutral-200);
+    --sp-border-strong: var(--sp-neutral-300);
+
+    /* --- Text --- */
+    --sp-text: var(--sp-neutral-900);
+    --sp-text-heading: var(--sp-neutral-800);
+    --sp-text-secondary: var(--sp-neutral-600);
+    --sp-text-label: var(--sp-neutral-500);
+    --sp-text-muted: var(--sp-neutral-400);
+    --sp-text-on-dark: #ffffff;
+    --sp-text-on-primary: #ffffff;
+
+    /* --- Sidebar & Topbar (라이트: 브랜드 컬러 배경) --- */
+    --sp-sidebar-bg:            var(--sp-primary);
+    --sp-sidebar-text:          #ffffff;
+    --sp-sidebar-text-active:   #ffffff;
+    --sp-sidebar-hover:         rgba(255,255,255,0.1);
+    --sp-sidebar-active-bg:     rgba(255,255,255,0.18);
+    --sp-sidebar-border:        rgba(255,255,255,0.12);
+    /* 사이드바 내부 섹션 배경 */
+    --sp-sidebar-section-bg:    rgba(0,0,0,0.08);
+    --sp-sidebar-sub-bg:        rgba(0,0,0,0.05);
+    --sp-sidebar-header-bg:     rgba(0,0,0,0.1);
+    --sp-sidebar-footer-bg:     rgba(0,0,0,0.1);
+    --sp-sidebar-l1-text:       rgba(255,255,255,0.7);
+    --sp-sidebar-l2-text:       rgba(255,255,255,0.95);
+    --sp-sidebar-search-bg:     #ffffff;
+    --sp-sidebar-divider:       rgba(255,255,255,0.25);
+    --sp-sidebar-shadow:        2px 0 4px rgba(0,0,0,0.15);
+    --sp-topbar-bg:             #ffffff;
+    --sp-topbar-text:           var(--sp-neutral-700);
+    --sp-topbar-shadow:         0 1px 0 var(--sp-neutral-200);
+    --sp-tabbar-bg:             var(--sp-neutral-50);
+    --sp-tabbar-border:         var(--sp-neutral-200);
+
+    /* --- Table --- */
+    --sp-table-header-bg: var(--sp-neutral-100);
+    --sp-table-hover-bg: var(--sp-neutral-100);
+    --sp-table-stripe-bg: var(--sp-neutral-50);
+
+    /* --- Row State --- */
+    --sp-row-modified: #fef9c3;
+    --sp-row-new:      #dbeafe;
+    --sp-row-deleted:  #fee2e2;
+
+    /* --- Warning 컴포넌트 (패널 서브헤더 등) --- */
+    --sp-warning-subtle: #fef9c3;
+    --sp-warning-border: #fde68a;
+    --sp-warning-text:   #92400e;
+
+    /* --- 스크롤바 --- */
+    --sp-scrollbar-track:       var(--sp-neutral-100);
+    --sp-scrollbar-thumb:       var(--sp-neutral-300);
+    --sp-scrollbar-thumb-hover: var(--sp-neutral-400);
+
+    /* --- Typography --- */
+    --sp-font-family: 'Malgun Gothic', system-ui, -apple-system, sans-serif;
+    --sp-font-size-page-title: 1.125rem;  /* 18px — 페이지 제목 */
+    --sp-font-size-lg: 0.875rem;          /* 14px — 모달 제목 등 */
+    --sp-font-size-base: 0.8125rem;       /* 13px */
+    --sp-font-size-sm: 0.75rem;           /* 12px */
+    --sp-font-size-xs: 0.6875rem;         /* 11px */
+
+    /* --- Form Table (Korean form-table: th/td 구조) --- */
+    --sp-form-header-bg: #dce4f0;
+    --sp-form-header-border: #c0ccd8;
+    --sp-form-header-text: #2c3e50;
+
+    /* --- Section Header (strip bar) --- */
+    --sp-section-header-bg: #c8d4e4;
+    --sp-section-header-border: #a8b8cc;
+
+    /* --- Modal Body --- */
+    --sp-modal-body-bg: #f0f2f5;
+
+    /* --- Overlay --- */
+    --sp-overlay-bg: rgba(0,0,0,0.4);
+
+    /* --- Gradient Table (domain modals) --- */
+    --sp-table-grad-start: #e8f0ff;
+    --sp-table-grad-end:   #dde8f8;
+    --sp-table-grad-border: #b8c8dc;
+    --sp-table-grad-hover:  #d0dcf0;
+    --sp-selection-bg:      #dce8f8;
+    --sp-selection-bg-strong: #c0d4f0;
+
+    /* --- Extra Font Size --- */
+    --sp-font-size-2xs: 0.625rem;      /* 10px */
+
+    /* --- Spacing --- */
+    --sp-content-padding: 1rem;
+
+    /* --- Border Radius --- */
+    --sp-radius: 0.375rem;
+    --sp-radius-sm: 0.25rem;
+    --sp-radius-lg: 0.5rem;
+
+    /* --- Layout --- */
+    --sp-sidebar-width: 220px;
+    --sp-topbar-height: 48px;
+    --sp-tabbar-height: 38px;
+
+    /* --- Shadows --- */
+    --sp-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --sp-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --sp-shadow-lg: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+}
+
+/* ===== DARK MODE (One Dark) ===== */
+[data-bs-theme="dark"] {
+    --sp-primary: #6b8fc4;
+    --sp-primary-hover: #7fa0d4;
+    --sp-primary-subtle: #1e3a5f;
+    --sp-primary-rgb: 107, 143, 196;
+
+    --sp-success:     #98c379;
+    --sp-danger:      #e06c75;
+    --sp-warning:     #e5c07b;
+    --sp-info:        #56b6c2;
+    --sp-danger-rgb:  224, 108, 117;
+    --sp-success-rgb: 152, 195, 121;
+
+    --sp-body-bg: #21252b;
+    --sp-surface: #282c34;
+    --sp-surface-raised: #2c313a;
+    --sp-border: #3e4451;
+    --sp-border-strong: #4b5263;
+
+    --sp-text: #abb2bf;
+    --sp-text-heading: #e0e4eb;
+    --sp-text-secondary: #7f848e;
+    --sp-text-label: #5c6370;
+    --sp-text-muted: #4b5263;
+    --sp-text-on-dark: #abb2bf;
+
+    --sp-sidebar-bg:            #1c1f25;
+    --sp-sidebar-text:          #ffffff;
+    --sp-sidebar-text-active:   #ffffff;
+    --sp-sidebar-hover:         rgba(var(--sp-primary-rgb), 0.15);
+    --sp-sidebar-active-bg:     var(--sp-primary);
+    --sp-sidebar-border:        rgba(255,255,255,0.08);
+    --sp-sidebar-section-bg:    rgba(0,0,0,0.15);
+    --sp-sidebar-sub-bg:        rgba(0,0,0,0.08);
+    --sp-sidebar-header-bg:     rgba(0,0,0,0.25);
+    --sp-sidebar-footer-bg:     rgba(0,0,0,0.25);
+    --sp-sidebar-l1-text:       #ffffff;
+    --sp-sidebar-l2-text:       #ffffff;
+    --sp-sidebar-search-bg:     #22262d;
+    --sp-sidebar-divider:       rgba(255,255,255,0.1);
+    --sp-sidebar-shadow:        2px 0 6px rgba(0,0,0,0.3);
+
+    --sp-topbar-bg:             #282c34;
+    --sp-topbar-text:           #7f848e;
+    --sp-topbar-shadow:         0 1px 0 #3e4451;
+    --sp-tabbar-bg:             #1e2127;
+    --sp-tabbar-border:         #3e4451;
+
+    --sp-table-header-bg: #2c313a;
+    --sp-table-hover-bg: rgba(var(--sp-primary-rgb), 0.06);
+    --sp-table-stripe-bg: #21252b;
+
+    --sp-row-modified: #332e1a;
+    --sp-row-new:      #1a2838;
+    --sp-row-deleted:  #361c1e;
+
+    --sp-warning-subtle: #332e1a;
+    --sp-warning-border: #4d4420;
+    --sp-warning-text:   #e5c07b;
+
+    --sp-form-header-bg: #2c313a;
+    --sp-form-header-border: #3e4451;
+    --sp-form-header-text: #abb2bf;
+
+    --sp-section-header-bg: #2c313a;
+    --sp-section-header-border: #3e4451;
+
+    --sp-modal-body-bg: #282c34;
+
+    --sp-overlay-bg: rgba(0,0,0,0.65);
+
+    --sp-table-grad-start: #2c313a;
+    --sp-table-grad-end:   #323842;
+    --sp-table-grad-border: #4b5263;
+    --sp-table-grad-hover:  #323842;
+    --sp-selection-bg:      rgba(var(--sp-primary-rgb), 0.12);
+    --sp-selection-bg-strong: rgba(var(--sp-primary-rgb), 0.22);
+
+    --sp-scrollbar-track:       #282c34;
+    --sp-scrollbar-thumb:       #3e4451;
+    --sp-scrollbar-thumb-hover: #4b5263;
+
+    --sp-shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+    --sp-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    --sp-shadow-lg: 0 4px 12px rgba(0,0,0,0.6);
+}

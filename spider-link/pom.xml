@@ -103,11 +103,12 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <release>${java.version}</release>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
             <!-- classifier=exec: 실행용 fat JAR는 spider-link-exec.jar로 분리,
-                 spider-link.jar는 일반 라이브러리 JAR로 유지 → admin 등 의존 프로젝트에서 클래스 참조 가능 -->
+                 spider-link.jar는 일반 라이브러리 JAR로 유지 → spider-admin 등 의존 프로젝트에서 클래스 참조 가능 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

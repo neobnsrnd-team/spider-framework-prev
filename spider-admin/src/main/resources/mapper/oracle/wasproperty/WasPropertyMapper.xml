@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.wasproperty.mapper.WasPropertyMapper">
+
+    <sql id="wasPropertyColumns">
+        INSTANCE_ID AS "instanceId",
+        PROPERTY_GROUP_ID AS "propertyGroupId",
+        PROPERTY_ID AS "propertyId",
+        PROPERTY_VALUE AS "propertyValue",
+        PROPERTY_DESC AS "propertyDesc",
+        CUR_VERSION AS "curVersion"
+    </sql>
+
+    <!-- ==================== Property 조회 ==================== -->
+
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.wasproperty.dto.WasPropertyResponse">
+        SELECT <include refid="wasPropertyColumns"/>
+        FROM FWK_WAS_PROPERTY
+        WHERE INSTANCE_ID = #{instanceId}
+          AND PROPERTY_GROUP_ID = #{propertyGroupId}
+          AND PROPERTY_ID = #{propertyId}
+    </select>
+
+    <select id="countById" resultType="int">
+        SELECT COUNT(*)
+        FROM FWK_WAS_PROPERTY
+        WHERE INSTANCE_ID = #{instanceId}
+          AND PROPERTY_GROUP_ID = #{propertyGroupId}
+          AND PROPERTY_ID = #{propertyId}
+    </select>
+
+    <select id="selectByInstanceId" resultType="com.example.spideradmin.domain.wasproperty.dto.WasPropertyResponse">
+        SELECT <include refid="wasPropertyColumns"/>
+        FROM FWK_WAS_PROPERTY
+        WHERE INSTANCE_ID = #{instanceId}
+        ORDER BY PROPERTY_GROUP_ID, PROPERTY_ID
+    </select>
+
+    <select id="selectByInstanceIdWithDefaults" resultType="map">
+        SELECT
+            wp.INSTANCE_ID as "instanceId",
+            wp.PROPERTY_GROUP_ID as "propertyGroupId",
+            wp.PROPERTY_ID as "propertyId",
+            wp.PROPERTY_VALUE as "propertyValue",
+            wp.PROPERTY_DESC as "propertyDesc",
+            wp.CUR_VERSION as "curVersion",
+            COALESCE(p.DEFAULT_VALUE, 'USE_DEFAULT') as "defaultValue",
+            p.PROPERTY_NAME as "propertyName",
+            p.DATA_TYPE as "dataType"
+        FROM FWK_WAS_PROPERTY wp
+        LEFT JOIN FWK_PROPERTY p
+            ON wp.PROPERTY_GROUP_ID = p.PROPERTY_GROUP_ID
+            AND wp.PROPERTY_ID = p.PROPERTY_ID
+        WHERE wp.INSTANCE_ID = #{instanceId}
+        ORDER BY wp.PROPERTY_GROUP_ID, wp.PROPERTY_ID
+    </select>
+
+    <!-- ==================== Property 생성/수정/삭제 ==================== -->
+
+    <insert id="insert">
+        INSERT INTO FWK_WAS_PROPERTY (
+            INSTANCE_ID,
+            PROPERTY_GROUP_ID,
+            PROPERTY_ID,
+            PROPERTY_VALUE,
+            PROPERTY_DESC
+        ) VALUES (
+            #{instanceId},
+            #{propertyGroupId},
+            #{propertyId},
+            #{propertyValue, jdbcType=VARCHAR},
+            #{propertyDesc, jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE FWK_WAS_PROPERTY
+        SET PROPERTY_VALUE = #{propertyValue, jdbcType=VARCHAR},
+            PROPERTY_DESC = #{propertyDesc, jdbcType=VARCHAR}
+        WHERE INSTANCE_ID = #{instanceId}
+          AND PROPERTY_GROUP_ID = #{propertyGroupId}
+          AND PROPERTY_ID = #{propertyId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM FWK_WAS_PROPERTY
+        WHERE INSTANCE_ID = #{instanceId}
+          AND PROPERTY_GROUP_ID = #{propertyGroupId}
+          AND PROPERTY_ID = #{propertyId}
+    </delete>
+
+    <!-- ==================== Property 도메인에서 이동된 SQL ==================== -->
+
+    <delete id="deleteByGroupAndProperty">
+        DELETE FROM FWK_WAS_PROPERTY
+        WHERE PROPERTY_GROUP_ID = #{propertyGroupId}
+          AND PROPERTY_ID = #{propertyId}
+    </delete>
+
+    <delete id="deleteByPropertyGroupId">
+        DELETE FROM FWK_WAS_PROPERTY
+        WHERE PROPERTY_GROUP_ID = #{propertyGroupId}
+    </delete>
+
+    <delete id="deleteByInstanceId">
+        DELETE FROM FWK_WAS_PROPERTY
+        WHERE INSTANCE_ID = #{instanceId}
+    </delete>
+
+    <update id="mergeProperty">
+        MERGE INTO FWK_WAS_PROPERTY T
+        USING (
+            SELECT
+                #{instanceId} AS INSTANCE_ID,
+                #{propertyGroupId} AS PROPERTY_GROUP_ID,
+                #{propertyId} AS PROPERTY_ID
+            FROM DUAL
+        ) S
+        ON (
+            T.INSTANCE_ID = S.INSTANCE_ID
+            AND T.PROPERTY_GROUP_ID = S.PROPERTY_GROUP_ID
+            AND T.PROPERTY_ID = S.PROPERTY_ID
+        )
+        WHEN MATCHED THEN
+            UPDATE SET
+                T.PROPERTY_VALUE = #{propertyValue, jdbcType=VARCHAR},
+                T.PROPERTY_DESC = #{propertyDesc, jdbcType=VARCHAR}
+        WHEN NOT MATCHED THEN
+            INSERT (INSTANCE_ID, PROPERTY_GROUP_ID, PROPERTY_ID, PROPERTY_VALUE, PROPERTY_DESC)
+            VALUES (#{instanceId}, #{propertyGroupId}, #{propertyId}, #{propertyValue, jdbcType=VARCHAR}, #{propertyDesc, jdbcType=VARCHAR})
+    </update>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <resultMap id="WasPropertyForPropertyResultMap" type="com.example.spideradmin.domain.wasproperty.dto.WasPropertyForPropertyResponse">
+        <result property="instanceId" column="INSTANCE_ID"/>
+        <result property="instanceName" column="INSTANCE_NAME"/>
+        <result property="propertyGroupId" column="PROPERTY_GROUP_ID"/>
+        <result property="propertyId" column="PROPERTY_ID"/>
+        <result property="propertyValue" column="PROPERTY_VALUE"/>
+        <result property="propertyDesc" column="PROPERTY_DESC"/>
+        <result property="hasExistingData" column="HAS_EXISTING_DATA"/>
+    </resultMap>
+
+    <!-- 특정 프로퍼티에 대한 WAS 인스턴스별 설정 값 조회 -->
+    <select id="selectWasPropertiesByProperty" resultMap="WasPropertyForPropertyResultMap">
+        SELECT
+            wi.INSTANCE_ID,
+            wi.INSTANCE_NAME,
+            #{propertyGroupId} AS PROPERTY_GROUP_ID,
+            #{propertyId} AS PROPERTY_ID,
+            NVL(wp.PROPERTY_VALUE, 'NO DATA') AS PROPERTY_VALUE,
+            wp.PROPERTY_DESC,
+            CASE WHEN wp.INSTANCE_ID IS NOT NULL THEN 'Y' ELSE 'N' END AS HAS_EXISTING_DATA
+        FROM FWK_WAS_INSTANCE wi
+        LEFT JOIN FWK_WAS_PROPERTY wp
+            ON wi.INSTANCE_ID = wp.INSTANCE_ID
+            AND wp.PROPERTY_GROUP_ID = #{propertyGroupId}
+            AND wp.PROPERTY_ID = #{propertyId}
+        ORDER BY wi.INSTANCE_ID
+    </select>
+
+    <!-- WAS 인스턴스 목록 조회 (인스턴스 선택용) -->
+    <select id="selectAllInstances" resultType="com.example.spideradmin.domain.wasproperty.dto.WasInstanceSimpleResponse">
+        SELECT
+            INSTANCE_ID AS instanceId,
+            INSTANCE_NAME AS instanceName
+        FROM FWK_WAS_INSTANCE
+        ORDER BY INSTANCE_ID
+    </select>
+
+    <!-- ==================== 프로퍼티 페이지네이션 조회 ==================== -->
+
+    <select id="selectByInstanceIdPaging" resultType="com.example.spideradmin.domain.wasproperty.dto.WasPropertyWithDefaultResponse">
+        <bind name="orderColumn" value="
+            (sortBy == 'propertyGroupId') ? 'wp.PROPERTY_GROUP_ID' :
+            (sortBy == 'propertyId') ? 'wp.PROPERTY_ID' :
+            (sortBy == 'defaultValue') ? 'p.DEFAULT_VALUE' :
+            (sortBy == 'propertyValue') ? 'wp.PROPERTY_VALUE' :
+            (sortBy == 'propertyDesc') ? 'wp.PROPERTY_DESC' :
+            'wp.PROPERTY_GROUP_ID, wp.PROPERTY_ID'
+        "/>
+        <bind name="orderDir" value="(sortDirection != null &amp;&amp; sortDirection.toUpperCase() == 'DESC') ? 'DESC' : 'ASC'"/>
+        SELECT "instanceId", "propertyGroupId", "propertyId",
+               "propertyValue", "propertyDesc", "curVersion",
+               "defaultValue", "propertyName", "dataType"
+        FROM (
+            SELECT
+                wp.INSTANCE_ID AS "instanceId",
+                wp.PROPERTY_GROUP_ID AS "propertyGroupId",
+                wp.PROPERTY_ID AS "propertyId",
+                wp.PROPERTY_VALUE AS "propertyValue",
+                wp.PROPERTY_DESC AS "propertyDesc",
+                wp.CUR_VERSION AS "curVersion",
+                COALESCE(p.DEFAULT_VALUE, 'USE_DEFAULT') AS "defaultValue",
+                p.PROPERTY_NAME AS "propertyName",
+                p.DATA_TYPE AS "dataType",
+                ROW_NUMBER() OVER (ORDER BY ${orderColumn} ${orderDir}) AS RN
+            FROM FWK_WAS_PROPERTY wp
+            LEFT JOIN FWK_PROPERTY p
+                ON wp.PROPERTY_GROUP_ID = p.PROPERTY_GROUP_ID
+                AND wp.PROPERTY_ID = p.PROPERTY_ID
+            WHERE wp.INSTANCE_ID = #{instanceId}
+            <if test="propertyGroupId != null and propertyGroupId != ''">
+                AND wp.PROPERTY_GROUP_ID = #{propertyGroupId}
+            </if>
+        )
+        WHERE RN BETWEEN #{offset} + 1 AND #{offset} + #{limit}
+        ORDER BY RN
+    </select>
+
+    <select id="countByInstanceId" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_WAS_PROPERTY
+        WHERE INSTANCE_ID = #{instanceId}
+        <if test="propertyGroupId != null and propertyGroupId != ''">
+            AND PROPERTY_GROUP_ID = #{propertyGroupId}
+        </if>
+    </select>
+
+</mapper>

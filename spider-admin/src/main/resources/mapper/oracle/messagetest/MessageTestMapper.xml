@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    MessageTest Command Mapper (CRUD)
+    - insert / update / delete / 단건 조회
+-->
+<mapper namespace="com.example.spideradmin.domain.messagetest.mapper.MessageTestMapper">
+
+    <!-- ==================== Common (merged) ==================== -->
+
+    <!-- Response DTO Columns -->
+    <sql id="responseColumns">
+        mt.TEST_SNO             AS testSno,
+        mt.USER_ID              AS userId,
+        mt.ORG_ID               AS orgId,
+        mt.MESSAGE_ID           AS messageId,
+        mt.HEADER_YN            AS headerYn,
+        mt.XML_YN               AS xmlYn,
+        mt.TEST_NAME            AS testName,
+        mt.TEST_DESC            AS testDesc,
+        mt.TEST_DATA            AS testData,
+        mt.TEST_DATA1           AS testData1,
+        mt.TEST_DATA2           AS testData2,
+        mt.TEST_DATA3           AS testData3,
+        mt.TEST_DATA4           AS testData4,
+        mt.TEST_GROUP_ID        AS testGroupId,
+        mt.TRX_ID               AS trxId,
+        mt.DEFAULT_PROXY_YN     AS defaultProxyYn,
+        mt.TEST_HEADER_DATA     AS testHeaderData,
+        mt.TEST_HEADER_USE_YN   AS testHeaderUseYn,
+        mt.PROXY_FIELD          AS proxyField,
+        mt.PROXY_VALUE          AS proxyValue,
+        mt.LAST_UPDATE_DTIME    AS lastUpdateDtime,
+        mt.LAST_UPDATE_USERID   AS lastUpdateUserId,
+        mt.TEST_HEADER_DATA1    AS testHeaderData1
+    </sql>
+
+    <!-- From Clause -->
+    <sql id="fromMessageTest">
+        FROM FWK_MESSAGE_TEST mt
+    </sql>
+
+
+    <!-- ==================== Command ==================== -->
+
+    <!-- 단건 조회 (PK) -->
+    <select id="selectResponseByTestSno" resultType="com.example.spideradmin.domain.messagetest.dto.MessageTestResponse">
+        SELECT <include refid="responseColumns"/>
+        <include refid="fromMessageTest"/>
+        WHERE mt.TEST_SNO = #{testSno}
+    </select>
+
+    <!-- 테스트 케이스 생성 -->
+    <insert id="insertMessageTest">
+        <selectKey keyProperty="dto.testSno" resultType="long" order="BEFORE">
+            SELECT NVL(MAX(TEST_SNO), 0) + 1 FROM FWK_MESSAGE_TEST
+        </selectKey>
+        INSERT INTO FWK_MESSAGE_TEST (
+            TEST_SNO, USER_ID, ORG_ID, MESSAGE_ID, HEADER_YN, XML_YN,
+            TEST_NAME, TEST_DESC, TEST_DATA, TEST_DATA1, TEST_DATA2,
+            TEST_DATA3, TEST_DATA4, TEST_GROUP_ID, TRX_ID, DEFAULT_PROXY_YN,
+            TEST_HEADER_DATA, TEST_HEADER_USE_YN, PROXY_FIELD, PROXY_VALUE,
+            LAST_UPDATE_DTIME, LAST_UPDATE_USERID, TEST_HEADER_DATA1
+        ) VALUES (
+            #{dto.testSno}, #{lastUpdateUserId}, #{dto.orgId}, #{dto.messageId},
+            NVL(#{dto.headerYn, jdbcType=VARCHAR}, 'N'), NVL(#{dto.xmlYn, jdbcType=VARCHAR}, 'N'),
+            #{dto.testName}, #{dto.testDesc}, #{dto.testData},
+            #{dto.testData1, jdbcType=VARCHAR}, #{dto.testData2, jdbcType=VARCHAR},
+            #{dto.testData3, jdbcType=VARCHAR}, #{dto.testData4, jdbcType=VARCHAR},
+            NVL(#{dto.testGroupId, jdbcType=VARCHAR}, 'DEFAULT'), #{dto.trxId},
+            NVL(#{dto.defaultProxyYn, jdbcType=VARCHAR}, 'N'),
+            #{dto.testHeaderData, jdbcType=VARCHAR}, #{dto.testHeaderUseYn, jdbcType=VARCHAR},
+            #{dto.proxyField, jdbcType=VARCHAR}, #{dto.proxyValue, jdbcType=VARCHAR},
+            #{lastUpdateDtime}, #{lastUpdateUserId}, #{dto.testHeaderData1, jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- 테스트 케이스 수정 -->
+    <update id="updateMessageTest">
+        UPDATE FWK_MESSAGE_TEST
+        SET USER_ID = #{lastUpdateUserId},
+            ORG_ID = #{dto.orgId},
+            MESSAGE_ID = #{dto.messageId},
+            HEADER_YN = #{dto.headerYn, jdbcType=VARCHAR},
+            XML_YN = #{dto.xmlYn, jdbcType=VARCHAR},
+            TEST_NAME = #{dto.testName},
+            TEST_DESC = #{dto.testDesc, jdbcType=VARCHAR},
+            TEST_DATA = #{dto.testData, jdbcType=VARCHAR},
+            TEST_DATA1 = #{dto.testData1, jdbcType=VARCHAR},
+            TEST_DATA2 = #{dto.testData2, jdbcType=VARCHAR},
+            TEST_DATA3 = #{dto.testData3, jdbcType=VARCHAR},
+            TEST_DATA4 = #{dto.testData4, jdbcType=VARCHAR},
+            TEST_GROUP_ID = #{dto.testGroupId, jdbcType=VARCHAR},
+            TRX_ID = #{dto.trxId, jdbcType=VARCHAR},
+            DEFAULT_PROXY_YN = #{dto.defaultProxyYn, jdbcType=VARCHAR},
+            TEST_HEADER_DATA = #{dto.testHeaderData, jdbcType=VARCHAR},
+            TEST_HEADER_USE_YN = #{dto.testHeaderUseYn, jdbcType=VARCHAR},
+            PROXY_FIELD = #{dto.proxyField, jdbcType=VARCHAR},
+            PROXY_VALUE = #{dto.proxyValue, jdbcType=VARCHAR},
+            LAST_UPDATE_DTIME = #{lastUpdateDtime},
+            LAST_UPDATE_USERID = #{lastUpdateUserId},
+            TEST_HEADER_DATA1 = #{dto.testHeaderData1, jdbcType=VARCHAR}
+        WHERE TEST_SNO = #{dto.testSno}
+    </update>
+
+    <!-- 테스트 케이스 삭제 (PK) -->
+    <delete id="deleteByTestSno">
+        DELETE FROM FWK_MESSAGE_TEST
+        WHERE TEST_SNO = #{testSno}
+    </delete>
+
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <!-- 사용자별 테스트 케이스 목록 조회 -->
+    <select id="findByUserId" resultType="com.example.spideradmin.domain.messagetest.dto.MessageTestResponse">
+        SELECT <include refid="responseColumns"/>
+        <include refid="fromMessageTest"/>
+        WHERE mt.USER_ID = #{userId}
+        ORDER BY mt.TEST_SNO DESC
+    </select>
+
+    <!-- 메시지ID로 테스트 케이스 조회 (모든 사용자) -->
+    <select id="findByMessageId" resultType="com.example.spideradmin.domain.messagetest.dto.MessageTestResponse">
+        SELECT <include refid="responseColumns"/>
+        <include refid="fromMessageTest"/>
+        <where>
+            AND mt.MESSAGE_ID = #{messageId}
+            <if test="headerYn != null and headerYn != ''">
+                AND mt.HEADER_YN = #{headerYn}
+            </if>
+        </where>
+        ORDER BY mt.TEST_SNO DESC
+    </select>
+
+    <!-- 메시지ID로 테스트 케이스 조회 with 검색 조건 (모든 사용자) -->
+    <select id="findByMessageIdWithFilters" resultType="com.example.spideradmin.domain.messagetest.dto.MessageTestResponse">
+        SELECT <include refid="responseColumns"/>
+        <include refid="fromMessageTest"/>
+        <where>
+            AND mt.MESSAGE_ID = #{messageId}
+            <if test="headerYn != null and headerYn != ''">
+                AND mt.HEADER_YN = #{headerYn}
+            </if>
+            <if test="testName != null and testName != ''">
+                AND mt.TEST_NAME LIKE '%' || #{testName} || '%'
+            </if>
+            <if test="testData != null and testData != ''">
+                AND DBMS_LOB.INSTR(mt.TEST_DATA, #{testData}) > 0
+            </if>
+            <if test="userId != null and userId != ''">
+                AND mt.USER_ID LIKE '%' || #{userId} || '%'
+            </if>
+        </where>
+        ORDER BY mt.TEST_SNO DESC
+    </select>
+
+
+</mapper>

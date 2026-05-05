@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.wasgroup.mapper.WasGroupMapper">
+
+    <!-- ==================== WAS Group CRUD ==================== -->
+
+    <select id="selectResponseById" resultType="com.example.spideradmin.domain.wasgroup.dto.WasGroupResponse">
+        SELECT WAS_GROUP_ID AS "wasGroupId",
+               WAS_GROUP_NAME AS "wasGroupName",
+               WAS_GROUP_DESC AS "wasGroupDesc"
+        FROM FWK_WAS_GROUP
+        WHERE WAS_GROUP_ID = #{wasGroupId}
+    </select>
+
+    <select id="countById" resultType="int">
+        SELECT COUNT(*)
+        FROM FWK_WAS_GROUP
+        WHERE WAS_GROUP_ID = #{wasGroupId}
+    </select>
+
+    <select id="selectAll" resultType="com.example.spideradmin.domain.wasgroup.dto.WasGroupResponse">
+        SELECT WAS_GROUP_ID AS "wasGroupId",
+               WAS_GROUP_NAME AS "wasGroupName",
+               WAS_GROUP_DESC AS "wasGroupDesc"
+        FROM FWK_WAS_GROUP
+        ORDER BY WAS_GROUP_ID
+    </select>
+
+    <insert id="insert">
+        INSERT INTO FWK_WAS_GROUP (
+            WAS_GROUP_ID,
+            WAS_GROUP_NAME,
+            WAS_GROUP_DESC
+        ) VALUES (
+            #{dto.wasGroupId},
+            #{dto.wasGroupName},
+            #{dto.wasGroupDesc}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE FWK_WAS_GROUP
+        SET WAS_GROUP_NAME = #{dto.wasGroupName},
+            WAS_GROUP_DESC = #{dto.wasGroupDesc}
+        WHERE WAS_GROUP_ID = #{wasGroupId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM FWK_WAS_GROUP
+        WHERE WAS_GROUP_ID = #{wasGroupId}
+    </delete>
+
+    <!-- ==================== Group-Instance 매핑 ==================== -->
+
+    <insert id="insertGroupInstance">
+        INSERT INTO FWK_WAS_GROUP_INSTANCE (
+            WAS_GROUP_ID,
+            INSTANCE_ID
+        ) VALUES (
+            #{wasGroupId},
+            #{instanceId}
+        )
+    </insert>
+
+    <delete id="deleteAllGroupInstances">
+        DELETE FROM FWK_WAS_GROUP_INSTANCE
+        WHERE WAS_GROUP_ID = #{wasGroupId}
+    </delete>
+
+    <select id="selectInstanceIdsByGroupId" resultType="string">
+        SELECT INSTANCE_ID
+        FROM FWK_WAS_GROUP_INSTANCE
+        WHERE WAS_GROUP_ID = #{wasGroupId}
+        ORDER BY INSTANCE_ID
+    </select>
+    
+    <select id="selectInstanceDetailsByGroupId" resultType="map">
+        SELECT 
+            i.INSTANCE_ID as instanceId,
+            i.INSTANCE_NAME as instanceName,
+            i.INSTANCE_DESC as instanceDesc,
+            i.INSTANCE_TYPE as instanceType,
+            i.IP as ip,
+            i.PORT as port,
+            i.OPER_MODE_TYPE as operModeType
+        FROM FWK_WAS_GROUP_INSTANCE gi
+        INNER JOIN FWK_WAS_INSTANCE i ON gi.INSTANCE_ID = i.INSTANCE_ID
+        WHERE gi.WAS_GROUP_ID = #{wasGroupId}
+        ORDER BY i.INSTANCE_ID
+    </select>
+
+    <select id="existsGroupInstance" resultType="int">
+        SELECT COUNT(*)
+        FROM FWK_WAS_GROUP_INSTANCE
+        WHERE WAS_GROUP_ID = #{wasGroupId}
+          AND INSTANCE_ID = #{instanceId}
+    </select>
+
+    <select id="countInstancesByGroupId" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_WAS_GROUP_INSTANCE
+        WHERE WAS_GROUP_ID = #{wasGroupId}
+    </select>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <select id="findBySearchPaging" resultType="com.example.spideradmin.domain.wasgroup.dto.WasGroupResponse">
+        <bind name="orderColumn" value="
+            (sortBy == 'wasGroupId') ? 'g.WAS_GROUP_ID' :
+            (sortBy == 'wasGroupName') ? 'g.WAS_GROUP_NAME' :
+            (sortBy == 'wasGroupDesc') ? 'g.WAS_GROUP_DESC' :
+            (sortBy == 'instanceCount') ? '(SELECT COUNT(*) FROM FWK_WAS_GROUP_INSTANCE gi WHERE gi.WAS_GROUP_ID = g.WAS_GROUP_ID)' :
+            'g.WAS_GROUP_ID'
+        "/>
+        <bind name="orderDir" value="(sortDirection != null &amp;&amp; sortDirection.toUpperCase() == 'DESC') ? 'DESC' : 'ASC'"/>
+        SELECT WAS_GROUP_ID AS "wasGroupId",
+               WAS_GROUP_NAME AS "wasGroupName",
+               WAS_GROUP_DESC AS "wasGroupDesc"
+        FROM (
+            SELECT
+                g.WAS_GROUP_ID,
+                g.WAS_GROUP_NAME,
+                g.WAS_GROUP_DESC,
+                ROW_NUMBER() OVER (ORDER BY ${orderColumn} ${orderDir}) AS RN
+            FROM FWK_WAS_GROUP g
+            <where>
+                <if test="wasGroupId != null and wasGroupId != ''">
+                    AND g.WAS_GROUP_ID LIKE '%' || #{wasGroupId} || '%'
+                </if>
+                <if test="wasGroupName != null and wasGroupName != ''">
+                    AND g.WAS_GROUP_NAME LIKE '%' || #{wasGroupName} || '%'
+                </if>
+                <if test="wasGroupDesc != null and wasGroupDesc != ''">
+                    AND g.WAS_GROUP_DESC LIKE '%' || #{wasGroupDesc} || '%'
+                </if>
+            </where>
+        )
+        WHERE RN BETWEEN #{offset} + 1 AND #{offset} + #{limit}
+        ORDER BY RN
+    </select>
+
+    <select id="countBySearch" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_WAS_GROUP
+        <where>
+            <if test="wasGroupId != null and wasGroupId != ''">
+                AND WAS_GROUP_ID LIKE '%' || #{wasGroupId} || '%'
+            </if>
+            <if test="wasGroupName != null and wasGroupName != ''">
+                AND WAS_GROUP_NAME LIKE '%' || #{wasGroupName} || '%'
+            </if>
+            <if test="wasGroupDesc != null and wasGroupDesc != ''">
+                AND WAS_GROUP_DESC LIKE '%' || #{wasGroupDesc} || '%'
+            </if>
+        </where>
+    </select>
+
+    <!-- ==================== 엑셀 내보내기 (페이징 없음) ==================== -->
+
+    <select id="findAllForExport" resultType="com.example.spideradmin.domain.wasgroup.dto.WasGroupResponse">
+        <bind name="orderColumn" value="
+            (sortBy == 'wasGroupId') ? 'g.WAS_GROUP_ID' :
+            (sortBy == 'wasGroupName') ? 'g.WAS_GROUP_NAME' :
+            (sortBy == 'wasGroupDesc') ? 'g.WAS_GROUP_DESC' :
+            (sortBy == 'instanceCount') ? '(SELECT COUNT(*) FROM FWK_WAS_GROUP_INSTANCE gi WHERE gi.WAS_GROUP_ID = g.WAS_GROUP_ID)' :
+            'g.WAS_GROUP_ID'
+        "/>
+        <bind name="orderDir" value="(sortDirection != null &amp;&amp; sortDirection.toUpperCase() == 'DESC') ? 'DESC' : 'ASC'"/>
+        SELECT WAS_GROUP_ID AS "wasGroupId",
+               WAS_GROUP_NAME AS "wasGroupName",
+               WAS_GROUP_DESC AS "wasGroupDesc"
+        FROM FWK_WAS_GROUP g
+        <where>
+            <if test="wasGroupId != null and wasGroupId != ''">
+                AND g.WAS_GROUP_ID LIKE '%' || #{wasGroupId} || '%'
+            </if>
+            <if test="wasGroupName != null and wasGroupName != ''">
+                AND g.WAS_GROUP_NAME LIKE '%' || #{wasGroupName} || '%'
+            </if>
+            <if test="wasGroupDesc != null and wasGroupDesc != ''">
+                AND g.WAS_GROUP_DESC LIKE '%' || #{wasGroupDesc} || '%'
+            </if>
+        </where>
+        ORDER BY ${orderColumn} ${orderDir}
+    </select>
+
+
+</mapper>

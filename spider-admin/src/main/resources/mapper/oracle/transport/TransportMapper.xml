@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.transport.mapper.TransportMapper">
+
+    <select id="countByPk" resultType="int">
+        SELECT COUNT(*)
+        FROM FWK_TRANSPORT
+        WHERE ORG_ID = #{orgId}
+          AND TRX_TYPE = #{trxType}
+          AND IO_TYPE = #{ioType}
+          AND REQ_RES_TYPE = #{reqResType}
+    </select>
+
+    <insert id="insertTransport">
+        INSERT INTO FWK_TRANSPORT (
+            ORG_ID,
+            TRX_TYPE,
+            IO_TYPE,
+            REQ_RES_TYPE,
+            GW_ID
+        ) VALUES (
+            #{dto.orgId},
+            #{dto.trxType},
+            #{dto.ioType},
+            #{dto.reqResType},
+            #{dto.gwId}
+        )
+    </insert>
+
+    <update id="updateTransport">
+        UPDATE FWK_TRANSPORT
+        SET GW_ID = #{dto.gwId}
+        WHERE ORG_ID = #{dto.orgId}
+          AND TRX_TYPE = #{dto.trxType}
+          AND IO_TYPE = #{dto.ioType}
+          AND REQ_RES_TYPE = #{dto.reqResType}
+    </update>
+
+    <delete id="deleteTransport">
+        DELETE FROM FWK_TRANSPORT
+        WHERE ORG_ID = #{orgId}
+          AND TRX_TYPE = #{trxType}
+          AND IO_TYPE = #{ioType}
+          AND REQ_RES_TYPE = #{reqResType}
+    </delete>
+
+
+    <!-- ==================== Common (merged) ==================== -->
+
+
+    <!-- Transport 컬럼 (AS aliases for TransportResponse) -->
+    <sql id="transportColumns">
+        t.ORG_ID AS orgId,
+        t.TRX_TYPE AS trxType,
+        t.IO_TYPE AS ioType,
+        t.REQ_RES_TYPE AS reqResType,
+        t.GW_ID AS gwId
+    </sql>
+
+    <!-- Transport FROM 절 -->
+    <sql id="fromTransport">
+        FROM FWK_TRANSPORT t
+    </sql>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <select id="findBySearchPaging"
+            resultType="com.example.spideradmin.domain.transport.dto.TransportResponse">
+        <bind name="orderColumn" value="
+            (sortBy == 'orgId') ? 't.ORG_ID' :
+            (sortBy == 'trxType') ? 't.TRX_TYPE' :
+            (sortBy == 'ioType') ? 't.IO_TYPE' :
+            (sortBy == 'reqResType') ? 't.REQ_RES_TYPE' :
+            (sortBy == 'gwId') ? 't.GW_ID' :
+            't.ORG_ID'
+        "/>
+        <bind name="orderDir" value="(sortDirection != null &amp;&amp; sortDirection.toUpperCase() == 'DESC') ? 'DESC' : 'ASC'"/>
+        SELECT * FROM (
+            SELECT
+                <include refid="transportColumns"/>,
+                ROW_NUMBER() OVER (ORDER BY ${orderColumn} ${orderDir}) AS RN
+            <include refid="fromTransport"/>
+            <where>
+                <if test="orgId != null and orgId != ''">
+                    AND t.ORG_ID = #{orgId}
+                </if>
+                <if test="trxType != null and trxType != ''">
+                    AND t.TRX_TYPE = #{trxType}
+                </if>
+                <if test="ioType != null and ioType != ''">
+                    AND t.IO_TYPE = #{ioType}
+                </if>
+                <if test="reqResType != null and reqResType != ''">
+                    AND t.REQ_RES_TYPE = #{reqResType}
+                </if>
+            </where>
+        )
+        WHERE RN BETWEEN #{offset} + 1 AND #{offset} + #{limit}
+        ORDER BY RN
+    </select>
+
+    <select id="countBySearch" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_TRANSPORT
+        <where>
+            <if test="orgId != null and orgId != ''">
+                AND ORG_ID = #{orgId}
+            </if>
+            <if test="trxType != null and trxType != ''">
+                AND TRX_TYPE = #{trxType}
+            </if>
+            <if test="ioType != null and ioType != ''">
+                AND IO_TYPE = #{ioType}
+            </if>
+            <if test="reqResType != null and reqResType != ''">
+                AND REQ_RES_TYPE = #{reqResType}
+            </if>
+        </where>
+    </select>
+
+    <select id="findByGatewayId"
+            resultType="com.example.spideradmin.domain.transport.dto.TransportResponse">
+        SELECT
+            <include refid="transportColumns"/>
+        <include refid="fromTransport"/>
+        WHERE t.GW_ID = #{gwId}
+        ORDER BY t.ORG_ID, t.TRX_TYPE, t.IO_TYPE, t.REQ_RES_TYPE
+    </select>
+
+    <select id="findTrxTypeOptions" resultType="com.example.spideradmin.domain.transport.dto.TrxTypeOptionResponse">
+        SELECT DISTINCT
+            t.TRX_TYPE AS trxType,
+            NVL(
+                c.CODE_NAME,
+                CASE t.TRX_TYPE
+                    WHEN '1' THEN 'ONLINE'
+                    WHEN '2' THEN 'BATCH'
+                    WHEN '3' THEN 'ASYNC'
+                    WHEN '4' THEN 'ASYNC 비온라인'
+                    WHEN '5' THEN '전문변환'
+                    WHEN '6' THEN 'POS'
+                    WHEN '7' THEN 'FHM'
+                    WHEN '8' THEN 'RETRY'
+                    ELSE t.TRX_TYPE
+                END
+            ) AS trxTypeName
+        FROM FWK_TRANSPORT t
+        LEFT JOIN FWK_CODE c
+            ON c.CODE = t.TRX_TYPE
+            AND c.CODE_GROUP_ID = 'TRX_TYPE'
+        ORDER BY t.TRX_TYPE
+    </select>
+
+    <select id="countByTrxType" resultType="long">
+        SELECT COUNT(*)
+        FROM FWK_TRANSPORT
+        WHERE TRX_TYPE = #{trxType}
+    </select>
+
+    <!-- 엑셀 내보내기용 전체 조회 (페이징 없음) -->
+    <select id="findAllForExport"
+            resultType="com.example.spideradmin.domain.transport.dto.TransportResponse">
+        <bind name="orderColumn" value="
+            (sortBy == 'orgId') ? 't.ORG_ID' :
+            (sortBy == 'trxType') ? 't.TRX_TYPE' :
+            (sortBy == 'ioType') ? 't.IO_TYPE' :
+            (sortBy == 'reqResType') ? 't.REQ_RES_TYPE' :
+            (sortBy == 'gwId') ? 't.GW_ID' :
+            't.ORG_ID'
+        "/>
+        <bind name="orderDir" value="(sortDirection != null &amp;&amp; sortDirection.toUpperCase() == 'DESC') ? 'DESC' : 'ASC'"/>
+        SELECT
+            <include refid="transportColumns"/>
+        <include refid="fromTransport"/>
+        <where>
+            <if test="orgId != null and orgId != ''">
+                AND t.ORG_ID = #{orgId}
+            </if>
+            <if test="trxType != null and trxType != ''">
+                AND t.TRX_TYPE = #{trxType}
+            </if>
+            <if test="ioType != null and ioType != ''">
+                AND t.IO_TYPE = #{ioType}
+            </if>
+            <if test="reqResType != null and reqResType != ''">
+                AND t.REQ_RES_TYPE = #{reqResType}
+            </if>
+        </where>
+        ORDER BY ${orderColumn} ${orderDir}
+    </select>
+
+
+</mapper>

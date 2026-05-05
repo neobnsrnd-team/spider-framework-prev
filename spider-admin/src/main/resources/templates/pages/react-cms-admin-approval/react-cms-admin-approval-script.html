@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="script">
+<script th:inline="javascript">
+/*<![CDATA[*/
+    const HAS_REACT_CMS_WRITE = /*[[${userAuthorities != null && userAuthorities.contains('REACT_CMS:W')}]]*/ false;
+    // 미리보기 서버 URL — 하드코딩 대신 서버에서 주입 (환경변수 CMS_PREVIEW_URL)
+    const REACT_CMS_PREVIEW_URL = /*[[${cmsPreviewUrl}]]*/ '';
+/*]]>*/
+</script>
+<script>
+    // ==================== ReactCmsAdminApprovalPage ====================
+
+    window.ReactCmsAdminApprovalPage = {
+        currentPage: 1,
+        totalItems: 0,
+        itemsPerPage: 10,
+        sortBy: null,
+        sortDirection: null,
+        rowsByPageId: {},
+
+        APPROVE_STATE_BADGE: {
+            WORK:     '<span class="badge bg-secondary">작업중</span>',
+            PENDING:  '<span class="badge bg-warning text-dark">승인대기</span>',
+            APPROVED: '<span class="badge bg-success">승인완료</span>',
+            REJECTED: '<span class="badge bg-danger">반려</span>',
+            '만료':   '<span class="badge bg-dark">만료</span>',
+            '비공개': '<span class="badge bg-secondary">비공개</span>',
+        },
+
+        load: function(page) {
+            if (page !== undefined) this.currentPage = page;
+            const params = new URLSearchParams({
+                page:         this.currentPage,
+                size:         this.itemsPerPage,
+                approveState: $('#filterApproveState').val(),
+                search:       $('#filterSearch').val().trim(),
+            });
+            if (this.sortBy) {
+                params.append('sortBy', this.sortBy);
+                params.append('sortDirection', this.sortDirection);
+            }
+
+            fetch('/api/react-cms-admin/approval?' + params)
+                .then(r => r.json())
+                .then(res => {
+                    if (!res.success) { Toast.error(res.message); return; }
+                    const pageData = res.data;
+                    this.totalItems = pageData.totalElements;
+                    this.renderTable(pageData.content);
+                    this.renderPagination();
+                    this.updateSortIndicators();
+                })
+                .catch(() => Toast.error('목록 조회 중 오류가 발생했습니다.'));
+        },
+
+        attachSortHandlers: function() {
+            $('#reactCmsAdminApprovalTable thead th[data-sort]').addClass('sortable cursor-pointer');
+            $(document)
+                .off('click.reactCmsAdminApprovalSort', '#reactCmsAdminApprovalTable thead th[data-sort]')
+                .on('click.reactCmsAdminApprovalSort', '#reactCmsAdminApprovalTable thead th[data-sort]', function() {
+                    const sortKey = $(this).data('sort');
+                    if (!sortKey) return;
+
+                    if (ReactCmsAdminApprovalPage.sortBy === sortKey) {
+                        if (ReactCmsAdminApprovalPage.sortDirection === 'ASC') {
+                            ReactCmsAdminApprovalPage.sortDirection = 'DESC';
+                        } else {
+                            ReactCmsAdminApprovalPage.sortBy = null;
+                            ReactCmsAdminApprovalPage.sortDirection = null;
+                        }
+                    } else {
+                        ReactCmsAdminApprovalPage.sortBy = sortKey;
+                        ReactCmsAdminApprovalPage.sortDirection = 'ASC';
+                    }
+
+                    ReactCmsAdminApprovalPage.updateSortIndicators();
+                    ReactCmsAdminApprovalPage.load(1);
+                });
+        },
+
+        updateSortIndicators: function() {
+            const headers = $('#reactCmsAdminApprovalTable thead th.sortable');
+            headers.removeClass('sort-asc sort-desc');
+            if (!this.sortBy || !this.sortDirection) return;
+
+            headers.filter(`[data-sort="${this.sortBy}"]`)
+                .addClass(this.sortDirection === 'ASC' ? 'sort-asc' : 'sort-desc');
+        },
+
+        renderTable: function(rows) {
+            const $tbody = $('#reactCmsAdminApprovalTableBody');
+            if (!rows || rows.length === 0) {
+                this.rowsByPageId = {};
+                $tbody.html('<tr><td colspan="11" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>');
+                return;
+            }
+
+            this.rowsByPageId = rows.reduce((map, row) => {
+                if (row.pageId) map[row.pageId] = row;
+                return map;
+            }, {});
+
+            const html = rows.map(row => {
+                const badge      = this.APPROVE_STATE_BADGE[row.displayState] || HtmlUtils.escape(row.displayState);
+                const expiredCls = this._isExpired(row.expiredDate) ? 'text-danger fw-bold' : '';
+                const pid        = HtmlUtils.escape(row.pageId);
+
+                // 공개여부 — XSS 방지: pageId·isPublic을 data-* 속성에만 저장
+                const isPublicBtn = HAS_REACT_CMS_WRITE
+                    ? `<button class="btn btn-xs js-approval-toggle-public ${row.isPublic === 'Y' ? 'btn-primary' : 'btn-outline-secondary'}"
+                               title="${row.isPublic === 'Y' ? '클릭하여 비공개 전환' : '클릭하여 공개 전환'}"
+                               data-page-id="${pid}" data-current-state="${HtmlUtils.escape(row.isPublic)}">
+                               ${row.isPublic === 'Y' ? '공개' : '비공개'}
+                       </button>`
+                    : `<span class="badge ${row.isPublic === 'Y' ? 'bg-primary' : 'bg-secondary'}">${row.isPublic === 'Y' ? '공개' : '비공개'}</span>`;
+
+                // 결재 컬럼 — XSS 방지: pageId를 data-* 속성에만 저장
+                const tdApproval = (HAS_REACT_CMS_WRITE && row.approveState === 'PENDING')
+                    ? `<div class="d-flex flex-column gap-1">
+                           <button class="btn btn-success btn-xs js-approval-approve" data-page-id="${pid}">승인</button>
+                           <button class="btn btn-danger btn-xs js-approval-reject"   data-page-id="${pid}">반려</button>
+                       </div>`
+                    : '-';
+
+                // 미리보기 버튼 — XSS 방지: pageId를 data-* 속성에만 저장
+                const previewBtn = `<button class="btn btn-outline-info btn-xs js-approval-preview"
+                    data-page-id="${pid}"><i class="bi bi-box-arrow-up-right"></i> 보기</button>`;
+
+                // 이력 컬럼 — XSS 방지: pageId를 data-* 속성에만 저장
+                const tdHistory = `<button class="btn btn-outline-dark btn-xs js-approval-history"
+                    data-page-id="${pid}">이력</button>`;
+
+                return `<tr>
+                    <td>${HtmlUtils.escape(row.pageName)}</td>
+                    <td class="text-center">${HtmlUtils.escape(row.viewMode || '')}</td>
+                    <td>${HtmlUtils.escape(row.createUserName || '')}</td>
+                    <td class="text-center">${badge}</td>
+                    <td class="text-center">${isPublicBtn}</td>
+                    <td class="text-center">${HtmlUtils.escape(row.beginningDate || '-')}</td>
+                    <td class="text-center ${expiredCls}">${HtmlUtils.escape(row.expiredDate || '-')}</td>
+                    <td class="text-center small">${HtmlUtils.escape(row.lastModifiedDtime || '-')}</td>
+                    <td class="text-center">${previewBtn}</td>
+                    <td class="text-center">${tdApproval}</td>
+                    <td class="text-center">${tdHistory}</td>
+                </tr>`;
+            }).join('');
+
+            $tbody.html(html);
+        },
+
+        renderPagination: function() {
+            const totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+            const pagination = $('#pagination');
+            pagination.empty();
+
+            pagination.append(`
+                <li class="page-item ${this.currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="ReactCmsAdminApprovalPage.changePage(1); return false;"><i class="bi bi-chevron-double-left"></i></a>
+                </li>
+                <li class="page-item ${this.currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="ReactCmsAdminApprovalPage.changePage(${this.currentPage - 1}); return false;"><i class="bi bi-chevron-left"></i></a>
+                </li>
+            `);
+
+            const maxButtons = 5;
+            let startPage = Math.max(1, this.currentPage - Math.floor(maxButtons / 2));
+            let endPage   = Math.min(totalPages, startPage + maxButtons - 1);
+            if (endPage - startPage + 1 < maxButtons) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                pagination.append(`
+                    <li class="page-item ${i === this.currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="ReactCmsAdminApprovalPage.changePage(${i}); return false;">${i}</a>
+                    </li>
+                `);
+            }
+
+            pagination.append(`
+                <li class="page-item ${this.currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="ReactCmsAdminApprovalPage.changePage(${this.currentPage + 1}); return false;"><i class="bi bi-chevron-right"></i></a>
+                </li>
+                <li class="page-item ${this.currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="ReactCmsAdminApprovalPage.changePage(${totalPages}); return false;"><i class="bi bi-chevron-double-right"></i></a>
+                </li>
+            `);
+
+            const start = this.totalItems === 0 ? 0 : (this.currentPage - 1) * this.itemsPerPage + 1;
+            const end   = Math.min(this.currentPage * this.itemsPerPage, this.totalItems);
+            $('#pageInfo').text(`${start} - ${end} of ${this.totalItems} items`);
+        },
+
+        changePage: function(page) {
+            const totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            this.currentPage = page;
+            this.load();
+        },
+
+        reset: function() {
+            $('#filterApproveState').val('');
+            $('#filterSearch').val('');
+            this.sortBy = null;
+            this.sortDirection = null;
+            this.updateSortIndicators();
+            this.itemsPerPage = parseInt($('#limitRows').val()) || 10;
+            this.load(1);
+        },
+
+        // ── CMS 페이지 미리보기 (HTML CMS 런타임 서버) ──
+        openPreview: function(pageId) {
+            const url = REACT_CMS_PREVIEW_URL.replace(/\/$/, '') + '/cms/view?bank=' + encodeURIComponent(pageId) + '&preview=1';
+            window.open(url, 'reactCmsPreview', 'width=1280,height=800,scrollbars=yes,resizable=yes');
+        },
+
+        // ── React CMS 페이지 프리뷰 (/react-cms/preview?pageType=REACT&pageId=xxx) ──
+        openReactPreview: function(pageId) {
+            const url = '/react-cms/preview?pageType=REACT&pageId=' + encodeURIComponent(pageId);
+            window.open(url, 'reactCmsBuilderPreview', 'width=430,height=860,scrollbars=yes,resizable=yes');
+        },
+
+        // ── 승인 모달 ──
+        openApproveModal: function(pageId) {
+            const row = this.rowsByPageId[pageId] || {};
+            $('#approvePageId').val(pageId);
+            $('#approvePageName').text(row.pageName || '-');
+            $('#approveRequesterName').text(row.createUserName || '-');
+            $('#approveRequestedDtime').text(row.lastModifiedDtime || '-');
+            // 승인 요청 시 작성자가 지정한 날짜를 표시만 하고 수정 불가 처리
+            $('#approveBeginningDate').val(row.beginningDate || '').prop('readonly', true);
+            $('#approveExpiredDate').val(row.expiredDate || '').prop('readonly', true);
+            new bootstrap.Modal('#reactCmsAdminApproveModal').show();
+        },
+
+        _submitApprove: function() {
+            const pageId        = $('#approvePageId').val();
+            const beginningDate = $('#approveBeginningDate').val();
+            const expiredDate   = $('#approveExpiredDate').val();
+
+            // 날짜는 readonly — 승인 요청 시 미지정이면 빈 값으로 승인 허용
+            // 둘 다 입력된 경우에만 순서 유효성 검사
+            if (beginningDate && expiredDate && expiredDate < beginningDate) {
+                Toast.warning('노출 종료일은 시작일보다 빠를 수 없습니다.'); return;
+            }
+
+            fetch(`/api/react-cms-admin/pages/${pageId}/approval/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ beginningDate, expiredDate }),
+            })
+                .then(r => r.json())
+                .then(res => {
+                    bootstrap.Modal.getInstance('#reactCmsAdminApproveModal').hide();
+                    if (res.success) { Toast.success(res.message); this.load(); }
+                    else             { Toast.error(res.message); }
+                })
+                .catch(() => Toast.error('승인 처리 중 오류가 발생했습니다.'));
+        },
+
+        // ── 반려 모달 ──
+        openRejectModal: function(pageId) {
+            $('#rejectPageId').val(pageId);
+            $('#rejectReason').val('');
+            new bootstrap.Modal('#reactCmsAdminRejectModal').show();
+        },
+
+        _submitReject: function() {
+            const pageId         = $('#rejectPageId').val();
+            const rejectedReason = $('#rejectReason').val().trim();
+            if (!rejectedReason) { Toast.warning('반려 사유를 입력하세요.'); return; }
+
+            fetch(`/api/react-cms-admin/pages/${pageId}/approval/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rejectedReason }),
+            })
+                .then(r => r.json())
+                .then(res => {
+                    bootstrap.Modal.getInstance('#reactCmsAdminRejectModal').hide();
+                    if (res.success) { Toast.success(res.message); this.load(); }
+                    else             { Toast.error(res.message); }
+                })
+                .catch(() => Toast.error('반려 처리 중 오류가 발생했습니다.'));
+        },
+
+        // ── 공개 상태 토글 ──
+        togglePublicState: function(pageId, currentState) {
+            const isPublic = currentState === 'Y' ? 'N' : 'Y';
+            const label    = isPublic === 'Y' ? '공개' : '비공개';
+            if (!confirm(`해당 페이지를 ${label} 처리하시겠습니까?`)) return;
+
+            fetch(`/api/react-cms-admin/pages/${pageId}/public-state`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isPublic }),
+            })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) { Toast.success(res.message); this.load(); }
+                    else             { Toast.error(res.message); }
+                })
+                .catch(() => Toast.error('공개 상태 변경 중 오류가 발생했습니다.'));
+        },
+
+        // ── 이력 / 롤백 모달 ──
+        openHistoryModal: function(pageId) {
+            $('#historyPageId').val(pageId);
+            $('#reactCmsAdminHistoryTableBody').html('<tr><td colspan="5" class="text-center">불러오는 중...</td></tr>');
+            new bootstrap.Modal('#reactCmsAdminHistoryModal').show();
+
+            fetch(`/api/react-cms-admin/pages/${pageId}/approval-history`)
+                .then(r => r.json())
+                .then(res => {
+                    if (!res.success || !res.data || res.data.length === 0) {
+                        $('#reactCmsAdminHistoryTableBody').html('<tr><td colspan="5" class="text-center text-body-secondary">이력이 없습니다.</td></tr>');
+                        return;
+                    }
+                    const row = this.rowsByPageId[pageId];
+                    // 롤백 가능 조건:
+                    //  1) 쓰기 권한 보유
+                    //  2) 비공개(isPublic=N) 상태가 아닐 것
+                    //  3) APPROVED 이거나, WORK 상태이면서 이전 승인 이력이 존재(hasApproveHistory=1)
+                    const canRollback = HAS_REACT_CMS_WRITE
+                        && row
+                        && row.isPublic !== 'N'
+                        && (row.approveState === 'APPROVED'
+                            || (row.approveState === 'WORK' && row.hasApproveHistory === 1));
+
+                    const html = res.data.map((h, index) => {
+                        const badge = this.APPROVE_STATE_BADGE[h.approveState] || HtmlUtils.escape(h.approveState);
+                        // index === 0 은 최신 버전 — 이미 현재 상태이므로 롤백 불필요
+                        const isLatest = index === 0;
+                        // PENDING(승인대기) / REJECTED(반려)는 확정된 버전이 아니므로 복원 대상에서 제외
+                        const isRollbackableState = h.approveState === 'APPROVED' || h.approveState === 'WORK';
+                        const rollbackBtn = (canRollback && !isLatest && isRollbackableState)
+                            ? `<button class="btn btn-outline-warning btn-sm"
+                                   onclick="ReactCmsAdminApprovalPage.submitRollback('${pageId}', ${h.version})">롤백</button>`
+                            : '';
+                        return `<tr>
+                            <td class="text-center">${h.version}</td>
+                            <td class="text-center">${badge}</td>
+                            <td>${HtmlUtils.escape(h.lastModifierName || '')}</td>
+                            <td class="text-center">${HtmlUtils.escape(h.approveDate || '-')}</td>
+                            <td class="text-center">${rollbackBtn}</td>
+                        </tr>`;
+                    }).join('');
+                    $('#reactCmsAdminHistoryTableBody').html(html);
+                })
+                .catch(() => {
+                    $('#reactCmsAdminHistoryTableBody').html('<tr><td colspan="5" class="text-center text-danger">이력 조회 실패</td></tr>');
+                });
+        },
+
+        submitRollback: function(pageId, version) {
+            if (!confirm(`버전 ${version}으로 롤백하시겠습니까? 현재 내용이 해당 버전으로 복원됩니다.`)) return;
+
+            fetch(`/api/react-cms-admin/pages/${pageId}/rollback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ version }),
+            })
+                .then(r => r.json())
+                .then(res => {
+                    bootstrap.Modal.getInstance('#reactCmsAdminHistoryModal').hide();
+                    if (res.success) { Toast.success(res.message); this.load(); }
+                    else             { Toast.error(res.message); }
+                })
+                .catch(() => Toast.error('롤백 처리 중 오류가 발생했습니다.'));
+        },
+
+        _isExpired: function(dateStr) {
+            if (!dateStr) return false;
+            const expiredDate = new Date(dateStr);
+            expiredDate.setHours(23, 59, 59, 999);
+            return expiredDate < new Date();
+        },
+    };
+
+    // ==================== 이벤트 바인딩 ====================
+
+    $(document).ready(function() {
+        ReactCmsAdminApprovalPage.itemsPerPage = parseInt($('#limitRows').val()) || 10;
+        ReactCmsAdminApprovalPage.attachSortHandlers();
+        ReactCmsAdminApprovalPage.load(1);
+
+        $('#limitRows').on('change', function() {
+            ReactCmsAdminApprovalPage.itemsPerPage = parseInt($(this).val()) || 10;
+            ReactCmsAdminApprovalPage.load(1);
+        });
+
+        $('#btnApproveConfirm').on('click', function() { ReactCmsAdminApprovalPage._submitApprove(); });
+        $('#btnRejectConfirm').on('click',  function() { ReactCmsAdminApprovalPage._submitReject(); });
+
+        $(document).on('click', '.js-approval-preview', function() {
+            ReactCmsAdminApprovalPage.openReactPreview($(this).data('page-id'));
+        });
+
+        $(document).on('click', '.js-approval-history', function() {
+            ReactCmsAdminApprovalPage.openHistoryModal($(this).data('page-id'));
+        });
+
+        $(document).on('click', '.js-approval-toggle-public', function() {
+            ReactCmsAdminApprovalPage.togglePublicState($(this).data('page-id'), $(this).data('current-state'));
+        });
+
+        $(document).on('click', '.js-approval-approve', function() {
+            ReactCmsAdminApprovalPage.openApproveModal($(this).data('page-id'));
+        });
+
+        $(document).on('click', '.js-approval-reject', function() {
+            ReactCmsAdminApprovalPage.openRejectModal($(this).data('page-id'));
+        });
+
+        $('#btnRefresh').off('click').on('click', function() { ReactCmsAdminApprovalPage.load(); });
+        $('#btnExcel').off('click').on('click', function() { Toast.warning('엑셀 내보내기는 지원되지 않습니다.'); });
+        $('#btnPrint').off('click').on('click', function() { window.print(); });
+    });
+</script>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,80 @@
+# ============================================
+# Test Configuration (H2 In-Memory Database)
+# ============================================
+
+spring:
+  config:
+    import: classpath:menu-resource-permissions.yml
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;MODE=Oracle;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: false
+
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+    encoding: UTF-8
+    mode: HTML
+
+# MyBatis Configuration
+mybatis:
+  mapper-locations: classpath:mapper/oracle/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: NULL
+    lazy-loading-enabled: false
+    cache-enabled: false
+    auto-mapping-behavior: PARTIAL
+
+# Server Configuration
+server:
+  port: 0  # 테스트 시 임의 포트 할당 (포트 충돌 방지)
+
+# Logging Configuration
+logging:
+  level:
+    root: WARN
+    com.example.spideradmin: INFO
+
+# Security Configuration
+app:
+  security:
+    remember-me-key: test-remember-me-key
+    authority-source: user-menu
+
+# XML Property 디렉토리 (테스트용 임시 경로)
+xml-property:
+  directory: ${java.io.tmpdir}/xml-properties-test
+
+# Reload 설정 (테스트 환경용 더미 그룹 — 실제 WAS 없음)
+reload:
+  default-was-group: test-group
+
+# CMS (테스트 환경용 더미 URL — 실제 외부 서버 호출 없음)
+cms:
+  user-url: http://localhost:3001/
+  preview-url: http://localhost
+
+# Claude API (테스트 환경에서는 실제 호출 없음 — 0초 타임아웃 방지를 위해 더미 값 설정)
+claude:
+  api:
+    url: https://api.anthropic.com/v1/messages
+    key: test-key
+    model: claude-sonnet-4-6
+    max-tokens: 8192
+    connect-timeout-seconds: 10
+    read-timeout-seconds: 120
+
+# Figma API (테스트 환경에서는 실제 호출 없음 — 0초 타임아웃 방지를 위해 더미 값 설정)
+figma:
+  api:
+    url: https://api.figma.com
+    token: test-token
+    connect-timeout-seconds: 10
+    read-timeout-seconds: 30

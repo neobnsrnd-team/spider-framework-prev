@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spideradmin.domain.errorcode.mapper.ErrorMapper">
+
+    <select id="selectResponseById"
+            resultType="com.example.spideradmin.domain.errorcode.dto.ErrorResponse">
+        SELECT ERROR_CODE AS errorCode,
+               TRX_ID AS trxId,
+               ERROR_TITLE AS errorTitle,
+               LAST_UPDATE_DTIME AS lastUpdateDtime,
+               LAST_UPDATE_USER_ID AS lastUpdateUserId,
+               ORG_ID AS orgId,
+               ORG_ERROR_CODE AS orgErrorCode,
+               ERROR_LEVEL AS errorLevel,
+               ERROR_HTTPCODE AS errorHttpcode,
+               FINAL_APPROVAL_STATE AS finalApprovalState,
+               FINAL_APPROVAL_DTIME AS finalApprovalDtime,
+               FINAL_APPROVAL_USER_ID AS finalApprovalUserId,
+               FINAL_APPROVAL_USER_NAME AS finalApprovalUserName
+        FROM FWK_ERROR
+        WHERE ERROR_CODE = #{errorCode}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO FWK_ERROR (
+            ERROR_CODE, TRX_ID, ERROR_TITLE, LAST_UPDATE_DTIME, LAST_UPDATE_USER_ID,
+            ORG_ID, ORG_ERROR_CODE, ERROR_LEVEL, ERROR_HTTPCODE,
+            FINAL_APPROVAL_STATE, FINAL_APPROVAL_DTIME, FINAL_APPROVAL_USER_ID, FINAL_APPROVAL_USER_NAME
+        ) VALUES (
+            #{dto.errorCode}, #{dto.trxId, jdbcType=VARCHAR}, #{dto.errorTitle}, #{lastUpdateDtime}, #{lastUpdateUserId},
+            #{dto.orgId, jdbcType=VARCHAR}, #{dto.orgErrorCode, jdbcType=VARCHAR}, #{dto.errorLevel}, #{dto.errorHttpcode, jdbcType=VARCHAR},
+            NULL, NULL, NULL, NULL
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE FWK_ERROR SET
+            TRX_ID = #{dto.trxId, jdbcType=VARCHAR},
+            ERROR_TITLE = #{dto.errorTitle},
+            LAST_UPDATE_DTIME = #{lastUpdateDtime},
+            LAST_UPDATE_USER_ID = #{lastUpdateUserId},
+            ORG_ID = #{dto.orgId, jdbcType=VARCHAR},
+            ORG_ERROR_CODE = #{dto.orgErrorCode, jdbcType=VARCHAR},
+            ERROR_LEVEL = #{dto.errorLevel},
+            ERROR_HTTPCODE = #{dto.errorHttpcode, jdbcType=VARCHAR}
+        WHERE ERROR_CODE = #{errorCode}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM FWK_ERROR WHERE ERROR_CODE = #{errorCode}
+    </delete>
+
+    <select id="countByErrorCode" resultType="int">
+        SELECT COUNT(*) FROM FWK_ERROR WHERE ERROR_CODE = #{errorCode}
+    </select>
+
+
+    <!-- ==================== Query (merged) ==================== -->
+
+
+    <resultMap id="ErrorDTOResultMap" type="com.example.spideradmin.domain.errorcode.dto.ErrorWithHandleAppsResponse">
+        <result property="errorCode" column="ERROR_CODE"/>
+        <result property="trxId" column="TRX_ID"/>
+        <result property="errorTitle" column="ERROR_TITLE"/>
+        <result property="lastUpdateDtime" column="LAST_UPDATE_DTIME"/>
+        <result property="lastUpdateUserId" column="LAST_UPDATE_USER_ID"/>
+        <result property="orgId" column="ORG_ID"/>
+        <result property="orgErrorCode" column="ORG_ERROR_CODE"/>
+        <result property="errorCauseDesc" column="ERROR_CAUSE_DESC"/>
+        <result property="errorLevel" column="ERROR_LEVEL"/>
+        <result property="errorHttpcode" column="ERROR_HTTPCODE"/>
+        <result property="finalApprovalState" column="FINAL_APPROVAL_STATE"/>
+        <result property="finalApprovalDtime" column="FINAL_APPROVAL_DTIME"/>
+        <result property="finalApprovalUserId" column="FINAL_APPROVAL_USER_ID"/>
+        <result property="finalApprovalUserName" column="FINAL_APPROVAL_USER_NAME"/>
+        <result property="handleApps" column="HANDLE_APPS"/>
+        <result property="errorCount" column="ERROR_COUNT"/>
+    </resultMap>
+
+    <!-- ==================== 공통 SQL 조각 ==================== -->
+
+    <sql id="searchConditionsError">
+        <if test="searchValue != null and searchValue != ''">
+            <choose>
+                <when test="searchField == 'errorCode'">
+                    AND e.ERROR_CODE LIKE '%' || #{searchValue, jdbcType=VARCHAR} || '%'
+                </when>
+                <when test="searchField == 'errorTitle'">
+                    AND e.ERROR_TITLE LIKE '%' || #{searchValue, jdbcType=VARCHAR} || '%'
+                </when>
+                <otherwise>
+                    AND (e.ERROR_CODE LIKE '%' || #{searchValue, jdbcType=VARCHAR} || '%'
+                         OR e.ERROR_TITLE LIKE '%' || #{searchValue, jdbcType=VARCHAR} || '%')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="trxId != null and trxId != ''">
+            AND e.TRX_ID = #{trxId, jdbcType=VARCHAR}
+        </if>
+        <if test="handleAppId != null and handleAppId != ''">
+            AND eha.HANDLE_APP_ID = #{handleAppId, jdbcType=VARCHAR}
+        </if>
+    </sql>
+
+    <sql id="orderByError">
+        <choose>
+            <when test="sortBy != null and sortBy != ''">
+                <choose>
+                    <when test="sortBy == 'errorCode'">
+                        ORDER BY e.ERROR_CODE <if test="sortDirection == 'DESC'">DESC</if><if test="sortDirection != 'DESC'">ASC</if>
+                    </when>
+                    <when test="sortBy == 'errorTitle'">
+                        ORDER BY e.ERROR_TITLE <if test="sortDirection == 'DESC'">DESC</if><if test="sortDirection != 'DESC'">ASC</if>
+                    </when>
+                    <when test="sortBy == 'errorCauseDesc'">
+                        ORDER BY (SELECT ed.ERROR_CAUSE_DESC FROM FWK_ERROR_DESC ed WHERE ed.ERROR_CODE = e.ERROR_CODE AND ed.LOCALE_CODE = 'KO' AND ROWNUM = 1) <if test="sortDirection == 'DESC'">DESC</if><if test="sortDirection != 'DESC'">ASC</if>
+                    </when>
+                    <when test="sortBy == 'errorLevel'">
+                        ORDER BY e.ERROR_LEVEL <if test="sortDirection == 'DESC'">DESC</if><if test="sortDirection != 'DESC'">ASC</if>
+                    </when>
+                    <otherwise>
+                        ORDER BY e.ERROR_CODE ASC
+                    </otherwise>
+                </choose>
+            </when>
+            <otherwise>
+                ORDER BY e.ERROR_CODE ASC
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- ==================== 검색 페이징 조회 ==================== -->
+
+    <select id="searchWithHandleApps" resultMap="ErrorDTOResultMap">
+        SELECT * FROM (
+            SELECT INNER_QRY.*, ROWNUM AS RNUM FROM (
+                SELECT DISTINCT e.ERROR_CODE,
+                       e.TRX_ID,
+                       e.ERROR_TITLE,
+                       e.LAST_UPDATE_DTIME,
+                       e.LAST_UPDATE_USER_ID,
+                       e.ORG_ID,
+                       e.ORG_ERROR_CODE,
+                       (SELECT ed.ERROR_CAUSE_DESC FROM FWK_ERROR_DESC ed
+                        WHERE ed.ERROR_CODE = e.ERROR_CODE AND ed.LOCALE_CODE = 'KO' AND ROWNUM = 1) AS ERROR_CAUSE_DESC,
+                       e.ERROR_LEVEL,
+                       e.ERROR_HTTPCODE,
+                       e.FINAL_APPROVAL_STATE,
+                       e.FINAL_APPROVAL_DTIME,
+                       e.FINAL_APPROVAL_USER_ID,
+                       e.FINAL_APPROVAL_USER_NAME,
+                       (SELECT LISTAGG(ha.HANDLE_APP_NAME, ', ') WITHIN GROUP (ORDER BY ha.HANDLE_APP_NAME)
+                        FROM FWK_ERROR_HANDLE_APP eha2
+                        INNER JOIN FWK_HANDLE_APP ha ON eha2.HANDLE_APP_ID = ha.HANDLE_APP_ID
+                        WHERE eha2.ERROR_CODE = e.ERROR_CODE) AS HANDLE_APPS,
+                       (SELECT COUNT(*) FROM FWK_ERROR_HIS eh WHERE eh.ERROR_CODE = e.ERROR_CODE) AS ERROR_COUNT
+                FROM FWK_ERROR e
+                <if test="handleAppId != null and handleAppId != ''">
+                    INNER JOIN FWK_ERROR_HANDLE_APP eha ON e.ERROR_CODE = eha.ERROR_CODE
+                </if>
+                WHERE 1=1
+                <include refid="searchConditionsError"/>
+                <include refid="orderByError"/>
+            ) INNER_QRY
+            WHERE ROWNUM &lt;= #{endRow}
+        )
+        WHERE RNUM &gt; #{offset}
+    </select>
+
+    <!-- 건수 조회 -->
+    <select id="countWithHandleApps" resultType="long">
+        SELECT COUNT(*) FROM (
+            SELECT DISTINCT e.ERROR_CODE
+            FROM FWK_ERROR e
+            <if test="handleAppId != null and handleAppId != ''">
+                INNER JOIN FWK_ERROR_HANDLE_APP eha ON e.ERROR_CODE = eha.ERROR_CODE
+            </if>
+            WHERE 1=1
+            <include refid="searchConditionsError"/>
+        )
+    </select>
+
+    <!-- 엑셀 내보내기용 전체 조회 (페이징 없음) -->
+    <select id="findAllForExport" resultMap="ErrorDTOResultMap">
+        SELECT DISTINCT e.ERROR_CODE,
+               e.TRX_ID,
+               e.ERROR_TITLE,
+               e.LAST_UPDATE_DTIME,
+               e.LAST_UPDATE_USER_ID,
+               e.ORG_ID,
+               e.ORG_ERROR_CODE,
+               ed.ERROR_CAUSE_DESC,
+               e.ERROR_LEVEL,
+               e.ERROR_HTTPCODE,
+               e.FINAL_APPROVAL_STATE,
+               e.FINAL_APPROVAL_DTIME,
+               e.FINAL_APPROVAL_USER_ID,
+               e.FINAL_APPROVAL_USER_NAME,
+               (SELECT LISTAGG(ha.HANDLE_APP_NAME, ', ') WITHIN GROUP (ORDER BY ha.HANDLE_APP_NAME)
+                FROM FWK_ERROR_HANDLE_APP eha2
+                INNER JOIN FWK_HANDLE_APP ha ON eha2.HANDLE_APP_ID = ha.HANDLE_APP_ID
+                WHERE eha2.ERROR_CODE = e.ERROR_CODE) AS HANDLE_APPS,
+               (SELECT COUNT(*) FROM FWK_ERROR_HIS eh WHERE eh.ERROR_CODE = e.ERROR_CODE) AS ERROR_COUNT
+        FROM FWK_ERROR e
+        LEFT JOIN FWK_ERROR_DESC ed ON e.ERROR_CODE = ed.ERROR_CODE AND ed.LOCALE_CODE = 'KO'
+        <if test="handleAppId != null and handleAppId != ''">
+            INNER JOIN FWK_ERROR_HANDLE_APP eha ON e.ERROR_CODE = eha.ERROR_CODE
+        </if>
+        WHERE 1=1
+        <include refid="searchConditionsError"/>
+        <include refid="orderByError"/>
+    </select>
+
+
+</mapper>

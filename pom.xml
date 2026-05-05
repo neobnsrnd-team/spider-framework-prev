@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>poc-hnc</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>poc-hnc</name>
+    <description>POC HNC 루트 집계 POM — 빌드 순서: spider-common → spider-link → spider-admin / spider-batch</description>
+
+    <!--
+        집계(aggregator) 전용 POM. 각 자식 모듈은 spring-boot-starter-parent를 직접 상속하므로
+        이 POM은 빌드 순서 제어와 IntelliJ 멀티모듈 인식만 담당한다.
+    -->
+    <modules>
+        <!-- 의존 순서 보장: common → link → 소비 모듈 -->
+        <module>spider-common</module>
+        <module>spider-link</module>
+        <module>spider-admin</module>
+        <module>spider-batch</module>
+    </modules>
+
+</project>
