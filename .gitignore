@@ -77,9 +77,7 @@ logs/
 nul
 docs/plan
 # Claude Code internal files
-.claude/worktrees/
-.claude/launch.json
-.claude/skills/
+.claude/*
 
 ### Oh My Claude Code ###
 .omc/
