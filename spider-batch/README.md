@@ -145,13 +145,38 @@ batch:
 
 ## 빌드 & 설치
 
-다른 모듈에서 참조하기 전에 반드시 먼저 설치해야 한다. (spider-common과 spider-link가 선행 설치되어 있어야 함)
+spider-batch는 `spider-common` → `spider-link` 순서로 의존한다.
+**처음 설치하거나 두 라이브러리가 변경된 경우**, 반드시 선행 설치가 필요하다.
+
+### 1단계. 선행 라이브러리 설치 (첫 설치 또는 라이브러리 변경 시)
+
+프로젝트 루트(`Spider-Framework/`)에서 실행한다.
 
 ```bash
-# 사전 조건: spider-common → spider-link 순서로 로컬 저장소에 설치되어 있어야 함
-cd spider-batch
+# 방법 A — 의존 라이브러리만 선택 설치 (빠름)
+./mvnw clean install -pl spider-common,spider-link -am
+
+# 방법 B — 전체 모듈 일괄 빌드
 ./mvnw clean install
 ```
+
+### 2단계. spider-batch 설치
+
+`spider-batch/` 디렉터리에서 실행한다.
+
+```bash
+./mvnw clean install
+```
+
+설치가 완료되면 `~/.m2/repository/com/example/` 아래에
+`spider-batch-0.0.1-SNAPSHOT.jar`가 생성된다.
+이후 `batch-was`의 `pom.xml`에 의존성을 추가하면 참조할 수 있다.
+
+> **IntelliJ 사용자**: 루트 `pom.xml`을 프로젝트로 열면 멀티모듈을 소스 레벨에서 인식한다.
+> Maven 패널 → Reload All Maven Projects → `Build > Build Project`(Ctrl+F9)로 빌드하면
+> 별도 `mvn install` 없이도 spider-batch를 참조하는 모듈을 실행할 수 있다.
+
+> **라이브러리 변경이 없는 경우** 1단계는 생략하고 2단계만 실행하면 된다.
 
 ## DB 테이블
 
