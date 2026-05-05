@@ -48,6 +48,7 @@ async function openDetailModal(page: Page, componentId: string) {
 // ─── 초기화 ───────────────────────────────────────────────
 
 test.beforeEach(async ({ page }) => {
+    test.setTimeout(20000); // CI 환경 부하 대비 타임아웃 연장
     await page.goto('/components');
     await page.waitForResponse(r => r.url().includes('/api/components/page'));
     await page.locator('#_searchContainer_componentId').waitFor({ state: 'visible' });

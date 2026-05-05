@@ -637,8 +637,8 @@ test.describe('배치 실행 모달', () => {
                 await expect(page.locator('#batchExecModal')).toBeVisible();
             }
 
-            // 성공/실패 모두 Toast가 표시되어야 한다
-            await expect(page.locator('.toast')).toBeVisible();
+            // 성공/실패 모두 Toast가 표시되어야 한다 (2개 동시 노출 가능하므로 first() 사용)
+            await expect(page.locator('.toast').first()).toBeVisible();
         } finally {
             await deleteBatchApp(request, id);
             await deleteWasInstance(request, instanceId);

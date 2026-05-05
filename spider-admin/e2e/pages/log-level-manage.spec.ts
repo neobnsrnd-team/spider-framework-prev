@@ -313,7 +313,7 @@ test.describe('로그레벨 권한', () => {
 
     test('읽기 전용 사용자에게는 저장 버튼이 표시되지 않아야 한다', async ({ browser }) => {
         const context = await browser.newContext({
-            storageState: 'e2e/.auth/readonly-session.json',
+            storageState: 'e2e/.auth/session-readonly.json',
         });
         const page = await context.newPage();
         await page.goto('/log-levels');
@@ -327,7 +327,7 @@ test.describe('로그레벨 권한', () => {
 
     test('읽기 전용 사용자는 레벨이 뱃지 텍스트로만 표시되어야 한다', async ({ browser }) => {
         const context = await browser.newContext({
-            storageState: 'e2e/.auth/readonly-session.json',
+            storageState: 'e2e/.auth/session-readonly.json',
         });
         const page = await context.newPage();
         await page.goto('/log-levels');
