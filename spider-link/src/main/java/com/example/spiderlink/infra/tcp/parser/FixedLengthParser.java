@@ -262,7 +262,12 @@ public class FixedLengthParser {
 
         for (Map<String, Object> item : items) {
             for (MessageField child : loop.getChildren()) {
-                serializeField(child, item.get(child.getName()), out);
+                if (child instanceof LoopField nestedLoop) {
+                    // 파싱과 대칭: 중첩 반복 구조도 재귀 직렬화
+                    serializeLoopField(nestedLoop, item, out);
+                } else {
+                    serializeField(child, item.get(child.getName()), out);
+                }
             }
         }
     }
