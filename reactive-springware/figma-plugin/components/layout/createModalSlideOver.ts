@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file createModalSlideOver.ts
  * @description Figma ModalSlideOver 컴포넌트 세트 생성.
  * Route 기반 슬라이드 오버 모달 레이아웃.
@@ -7,11 +7,11 @@
  * - Bottom: 하단에서 슬라이드 — black/40 백드롭 + rounded-t-2xl 패널 (90dvh 근사)
  * 컴포넌트 이름: "ModalSlideOver"
  */
-import { COLOR, RADIUS, COLOR_VAR, SIZE_VAR } from '../../tokens';
+import { COLOR, RADIUS, COLOR_VAR, SIZE_VAR } from '../../utils/tokens';
 import {
   createComponent, combineVariants, setAutoLayout, clearFill,
   setFillWithVar, setFloatVar,
-} from '../../helpers';
+} from '../../utils/helpers';
 
 const SCREEN_WIDTH  = 390;
 const SCREEN_HEIGHT = 844; /* iPhone 14 기준 전체 높이 */

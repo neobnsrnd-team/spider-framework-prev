@@ -1,15 +1,17 @@
-/**
+﻿/**
  * @file createBalanceToggle.ts
  * @description Figma BalanceToggle 컴포넌트 세트 생성.
  *
  * 잔액 숨김/표시 토글 컴포넌트를 2개의 variant로 구성한다.
- * - Hidden=False : 레이블 "숨기기", 비활성 pill (surfaceRaised), thumb 왼쪽
- * - Hidden=True  : 레이블 "보이기", 활성 pill (brand/primary), thumb 오른쪽
+ * - Hidden=False : 고정 텍스트 "숨기기", 비활성 pill (surfaceRaised), thumb 왼쪽
+ * - Hidden=True  : 고정 텍스트 "보이기", 활성 pill (brand/primary), thumb 오른쪽
+ *
+ * 레이블("숨기기"/"보이기")은 variant에 따라 고정되므로 TEXT property로 노출하지 않는다.
  *
  * React 대응 컴포넌트: packages/component-library/modules/common/BalanceToggle
  * React props: hidden(boolean), onToggle(() => void)
  */
-import { COLOR, BRAND, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../tokens';
+import { COLOR, BRAND, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
 import {
   createComponent,
   combineVariants,
@@ -17,9 +19,9 @@ import {
   setPadding,
   setFillWithVar,
   clearFill,
-  addTextWithVar,
+  addText,
   setFloatVar,
-} from '../../../helpers';
+} from '../../../utils/helpers';
 
 /**
  * Hidden 상태에 따라 단일 BalanceToggle ComponentNode를 생성한다.
@@ -36,16 +38,8 @@ async function createBalanceToggleVariant(hidden: boolean): Promise<ComponentNod
   comp.counterAxisSizingMode = 'AUTO';
   clearFill(comp);
 
-  /* 레이블 텍스트: hidden 상태에 따라 "보이기" / "숨기기" 전환 */
-  await addTextWithVar(
-    comp,
-    hidden ? '보이기' : '숨기기',
-    FONT_SIZE.xs,        // 12px — React: text-[10px] 의 최근접 토큰
-    COLOR_VAR.textMuted, // Figma 변수 경로
-    COLOR.textMuted,     // fallback RGB
-    true,                // bold
-    SIZE_VAR.fontSizeXs, 'toggleLabel',
-  );
+  /* 고정 레이블: variant에 따라 텍스트가 결정되므로 TEXT property 불필요 */
+  await addText(comp, hidden ? '보이기' : '숨기기', FONT_SIZE.xs, COLOR.textMuted, true);
 
   /* 토글 pill (React: w-12=48px, h-6=24px, rounded-full, p-1=4px) */
   const pill = figma.createFrame();

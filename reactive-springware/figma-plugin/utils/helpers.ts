@@ -446,6 +446,10 @@ export function addIconSlot(
   if (iconComp) {
     const instance = iconComp.createInstance();
     instance.resize(size, size);
+    /* 내부 vector 프레임도 명시적으로 리사이즈
+     * — 아이콘 컴포넌트에 SCALE constraints가 없으면 외부 프레임만 줄고 벡터는 원래 크기로 남음 */
+    const vectorChild = instance.children[0] as FrameNode | undefined;
+    if (vectorChild) vectorChild.resize(size, size);
     target.appendChild(instance);
     /* 컴포넌트별 텍스트 색으로 stroke 오버라이드 */
     _recolorIcon(instance, iconColor);

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file createErrorState.ts
  * @description Figma ErrorState 컴포넌트 세트 생성.
  * API 요청 실패·네트워크 오류 시 표시하는 에러 상태 컴포넌트.
@@ -6,12 +6,12 @@
  * 컴포넌트 이름: "ErrorState"
  */
 
-import { COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../tokens';
+import { COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
 import {
   createComponent, combineVariants, setAutoLayout, setPadding, clearFill,
   setFillWithVar, setStrokeWithVar, addTextWithVar, setFloatVar,
-} from '../../../helpers';
-import { createIcon } from '../../../icons';
+} from '../../../utils/helpers';
+import { createIcon } from '../../../utils/icons';
 
 type ErrorStateVariant = 'WithRetry' | 'WithoutRetry';
 

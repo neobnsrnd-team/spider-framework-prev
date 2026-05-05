@@ -1,12 +1,25 @@
-/**
+﻿/**
  * @file createInfoRow.ts
  * @description Figma InfoRow / LabelValueRow 컴포넌트 세트 생성.
  * 두 컴포넌트 모두 레이블-값 수평 배치 패턴이나 역할이 다르므로 각각 생성한다.
- * - InfoRow: 레이블(secondary) + 값(heading), 선택적 구분선
- * - LabelValueRow: 레이블(xs/muted) + 값(sm/bold)
+ *
+ * InfoRow TEXT properties:
+ *   - label — 좌측 레이블 (기본값: '레이블')
+ *   - value — 우측 값 (기본값: '값')
+ *
+ * LabelValueRow TEXT properties:
+ *   - label — 좌측 레이블 (기본값: '레이블')
+ *   - value — 우측 값 (기본값: '값')
+ *
+ * [레이아웃]
+ *   InfoRow:       HORIZONTAL SPACE_BETWEEN, FIXED 390×44, ShowBorder(True|False)
+ *   LabelValueRow: HORIZONTAL SPACE_BETWEEN, FIXED 390×36, 단일 컴포넌트
  */
-import { COLOR, SPACING, FONT_SIZE } from '../../../tokens';
-import { createComponent, combineVariants, setAutoLayout, setPadding, clearFill, addText, setStroke } from '../../../helpers';
+import { COLOR, SPACING, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
+import {
+  createComponent, combineVariants, setAutoLayout, setPadding,
+  clearFill, addTextWithVar, setStroke,
+} from '../../../utils/helpers';
 
 /* ── InfoRow ──────────────────────────────────────────────── */
 async function createInfoRowVariant(showBorder: boolean): Promise<ComponentNode> {
@@ -20,17 +33,28 @@ async function createInfoRowVariant(showBorder: boolean): Promise<ComponentNode>
   clearFill(comp);
   if (showBorder) setStroke(comp, COLOR.borderSubtle);
 
-  const lbl = await addText(comp, '레이블', FONT_SIZE.sm, COLOR.textSecondary);
-  lbl.layoutGrow = 0;
-  const val = await addText(comp, '값', FONT_SIZE.sm, COLOR.textHeading, true);
-  val.layoutGrow = 0;
+  /* label — comp 직접 자식, 자동 바인딩 */
+  await addTextWithVar(
+    comp, '레이블', FONT_SIZE.sm,
+    COLOR_VAR.textSecondary, COLOR.textSecondary,
+    false, SIZE_VAR.fontSizeSm, 'label',
+  );
+
+  /* value */
+  await addTextWithVar(
+    comp, '값', FONT_SIZE.sm,
+    COLOR_VAR.textHeading, COLOR.textHeading,
+    true, SIZE_VAR.fontSizeSm, 'value',
+  );
+
   return comp;
 }
 
 export async function createInfoRow(): Promise<ComponentSetNode> {
   return combineVariants(
     await Promise.all([createInfoRowVariant(false), createInfoRowVariant(true)]),
-    'InfoRow', 2,
+    'InfoRow',
+    2,
   );
 }
 
@@ -45,8 +69,20 @@ async function createLabelValueRowNode(): Promise<ComponentNode> {
   comp.primaryAxisAlignItems = 'SPACE_BETWEEN';
   clearFill(comp);
 
-  await addText(comp, '레이블', FONT_SIZE.xs, COLOR.textMuted);
-  await addText(comp, '값', FONT_SIZE.sm, COLOR.textHeading, true);
+  /* label — xs/muted */
+  await addTextWithVar(
+    comp, '레이블', FONT_SIZE.xs,
+    COLOR_VAR.textMuted, COLOR.textMuted,
+    false, SIZE_VAR.fontSizeXs, 'label',
+  );
+
+  /* value — sm/bold/heading */
+  await addTextWithVar(
+    comp, '값', FONT_SIZE.sm,
+    COLOR_VAR.textHeading, COLOR.textHeading,
+    true, SIZE_VAR.fontSizeSm, 'value',
+  );
+
   return comp;
 }
 

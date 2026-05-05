@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file createVariables.ts
  * @description Figma Variables 패널에 디자인 토큰 변수를 일괄 등록(upsert)한다.
  *
@@ -33,7 +33,7 @@ import {
   FONT_SIZE, LINE_HEIGHT, LETTER_SPACING,
   FONT_FAMILY,
   COLOR_VAR, SIZE_VAR, FONT_VAR,
-} from './tokens';
+} from '../utils/tokens';
 
 /* ── 타입 ────────────────────────────────────────────────────── */
 

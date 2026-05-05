@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file createTransactionList.ts
  * @description Figma TransactionList 컴포넌트 세트 생성.
  * 날짜별 그룹 헤더 + 거래 항목 목록 컴포넌트.
@@ -16,11 +16,11 @@
  * 컴포넌트 이름: "TransactionList"
  */
 
-import { COLOR, SPACING, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../tokens';
+import { COLOR, SPACING, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
 import {
   createComponent, combineVariants, setAutoLayout, setPadding, clearFill,
   setFillWithVar, addTextWithVar, addRect,
-} from '../../../helpers';
+} from '../../../utils/helpers';
 
 const LIST_WIDTH = 390;
 

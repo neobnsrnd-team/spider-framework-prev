@@ -1,21 +1,39 @@
-/**
+﻿/**
  * @file createAccountSelectCard.ts
  * @description Figma AccountSelectCard 컴포넌트 세트 생성.
  * 출금계좌 선택 카드 컴포넌트.
- * State(Default|Selected) = 2 variants.
+ * isSelected(True|False) = 2 variants.
+ *
+ * TEXT properties:
+ *   - bankName      — 은행명 (기본값: '하나은행')
+ *   - maskedAccount — 마스킹된 계좌번호 (기본값: '123-****-5678')
+ *
+ * [레이아웃]
+ *   isSelected=False: comp(HORIZONTAL, MIN, FIXED 390, AUTO height, p-md, radiusXl, surface, border)
+ *   isSelected=True:  comp(HORIZONTAL, SPACE_BETWEEN, FIXED 390, AUTO height, p-md, radiusXl, brandBg, brandPrimary stroke)
+ *     left(HORIZONTAL, gap=sm, MIN, CENTER)
+ *       iconCircle(32×32, radiusFull, surfaceRaised)
+ *         Building2(16px, textMuted)
+ *       info(VERTICAL, gap=xs, MIN)
+ *         bankName(TEXT sm bold, textHeading)
+ *         maskedAccount(TEXT xs, textMuted)
+ *     CheckCircle(20px, brandPrimary) — isSelected=True만
+ *
  * 컴포넌트 이름: "AccountSelectCard"
  */
-import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../tokens';
+import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
 import {
   createComponent, combineVariants, setAutoLayout, setPadding, clearFill,
   setFillWithVar, setStrokeWithVar, addTextWithVar, setFloatVar,
-} from '../../../helpers';
-import { createIcon } from '../../../icons';
+} from '../../../utils/helpers';
+import { createIcon } from '../../../utils/icons';
 
 async function createAccountSelectCardVariant(selected: boolean): Promise<ComponentNode> {
-  const comp = createComponent(`State=${selected ? 'Selected' : 'Default'}`);
+  const comp = createComponent(`isSelected=${selected ? 'True' : 'False'}`);
   setAutoLayout(comp, 'HORIZONTAL', 0);
-  comp.primaryAxisAlignItems = 'SPACE_BETWEEN';
+  /* isSelected=True: 체크 아이콘 우측 배치를 위해 SPACE_BETWEEN
+     isSelected=False: 콘텐츠 왼쪽 정렬을 위해 MIN */
+  comp.primaryAxisAlignItems = selected ? 'SPACE_BETWEEN' : 'MIN';
   comp.counterAxisAlignItems = 'CENTER';
   setPadding(comp, SPACING.md, SPACING.md);
   comp.resize(390, 1);
@@ -33,6 +51,7 @@ async function createAccountSelectCardVariant(selected: boolean): Promise<Compon
 
   const left = figma.createFrame();
   setAutoLayout(left, 'HORIZONTAL', SPACING.sm);
+  left.primaryAxisAlignItems = 'MIN'; /* setAutoLayout 기본값 CENTER를 LEFT로 덮어씀 */
   left.counterAxisAlignItems = 'CENTER';
   left.primaryAxisSizingMode = 'AUTO';
   left.counterAxisSizingMode = 'AUTO';
@@ -58,7 +77,7 @@ async function createAccountSelectCardVariant(selected: boolean): Promise<Compon
   left.appendChild(info);
   comp.appendChild(left);
   await addTextWithVar(info, '하나은행', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'bankName', comp);
-  await addTextWithVar(info, '123-****-5678', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'accountNumber', comp);
+  await addTextWithVar(info, '123-****-5678', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'maskedAccount', comp);
 
   if (selected) {
     comp.appendChild(createIcon('CheckCircle', 20, BRAND.primary));

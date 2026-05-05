@@ -1,60 +1,97 @@
-/**
+﻿/**
  * @file createCollapsibleSection.ts
  * @description Figma CollapsibleSection 컴포넌트 세트 생성.
- * Expanded(true|false) 2 variants.
+ * 항상 열린(expanded) 상태만 표현한다. HeaderAlign(Left|Center) = 2 variants.
+ *
+ * TEXT properties:
+ *   - header — 섹션 제목 (기본값: '섹션 제목')
+ *
+ * [레이아웃 구조]
+ *   HeaderRow: [title(grow, textAlign=Left|Center)] [ChevronUp]
+ *   Divider   (1px, border-subtle)
+ *   Content   (Slot, FILL, FIXED 80px — 인스턴스에서 자유롭게 컴포넌트 배치 가능)
+ *
+ * [TEXT property 바인딩 타이밍]
+ *   comp.appendChild(headerRow) 이후에 header TEXT 프로퍼티를 바인딩한다.
+ *
  * 컴포넌트 이름: "CollapsibleSection"
  */
-import { COLOR, SPACING, RADIUS, FONT_SIZE } from '../../../tokens';
-import { createComponent, combineVariants, setAutoLayout, setPadding, setFill, addText } from '../../../helpers';
-import { createIcon } from '../../../icons';
+import { COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
+import {
+  createComponent, combineVariants, setAutoLayout, setPadding,
+  setFillWithVar, clearFill, setFill, addTextWithVar,
+} from '../../../utils/helpers';
+import { createIcon } from '../../../utils/icons';
 
-async function createCollapsibleVariant(expanded: boolean): Promise<ComponentNode> {
-  const comp = createComponent(`Expanded=${expanded ? 'True' : 'False'}`);
-  setAutoLayout(comp, 'VERTICAL', 0);
+const COMP_W      = 390;
+const HEADER_H    = 40;
+const SLOT_H      = 80;
+const DIVIDER_H   = 1;
+const COMP_GAP    = SPACING.xs; /* header ↔ divider ↔ slot 간격 */
+const COMP_H      = SPACING.md * 2 + HEADER_H + COMP_GAP + DIVIDER_H + COMP_GAP + SLOT_H; /* 160px */
+
+async function createCollapsibleVariant(
+  headerAlign: 'Left' | 'Center',
+): Promise<ComponentNode> {
+  const comp = createComponent(`HeaderAlign=${headerAlign}`);
+  setAutoLayout(comp, 'VERTICAL', COMP_GAP);
   setPadding(comp, SPACING.md, SPACING.md);
-  comp.resize(328, expanded ? 120 : 56);
-  comp.primaryAxisSizingMode = 'AUTO';
+  comp.resize(COMP_W, COMP_H);
+  comp.primaryAxisSizingMode = 'FIXED';
   comp.counterAxisSizingMode = 'FIXED';
   comp.cornerRadius = RADIUS.sm;
-  setFill(comp, COLOR.surface);
+  await setFillWithVar(comp, COLOR_VAR.surface, COLOR.surface);
 
-  /* 헤더 행 */
-  const header = figma.createFrame();
-  setAutoLayout(header, 'HORIZONTAL', SPACING.sm);
-  header.layoutAlign = 'STRETCH';
-  header.primaryAxisSizingMode = 'FIXED';
-  header.counterAxisSizingMode = 'AUTO';
-  header.primaryAxisAlignItems = 'SPACE_BETWEEN';
-  header.fills = [];
+  /* ── Header Row ──────────────────────────────────────────── */
+  const headerRow = figma.createFrame();
+  headerRow.name = 'HeaderRow';
+  setAutoLayout(headerRow, 'HORIZONTAL', SPACING.sm);
+  headerRow.resize(COMP_W - SPACING.md * 2, HEADER_H);
+  headerRow.primaryAxisSizingMode = 'FIXED';
+  headerRow.counterAxisSizingMode = 'FIXED';
+  clearFill(headerRow);
+  comp.appendChild(headerRow);
+  headerRow.layoutSizingHorizontal = 'FILL';
 
-  await addText(header, '섹션 제목', FONT_SIZE.sm, COLOR.textHeading, true);
-  /* 펼침/닫힘 상태를 아이콘으로 표현 */
-  header.appendChild(createIcon(expanded ? 'ChevronUp' : 'ChevronDown', 16, COLOR.textMuted));
-  comp.appendChild(header);
+  /* title TEXT property (comp → headerRow → title, 2단계 ✓) */
+  const titleText = await addTextWithVar(
+    headerRow, '섹션 제목', FONT_SIZE.sm,
+    COLOR_VAR.textHeading, COLOR.textHeading,
+    true, SIZE_VAR.fontSizeSm,
+  );
+  titleText.layoutGrow = 1;
+  titleText.textAlignHorizontal = headerAlign === 'Center' ? 'CENTER' : 'LEFT';
+  const headerKey = comp.addComponentProperty('header', 'TEXT', '섹션 제목');
+  titleText.componentPropertyReferences = { characters: headerKey };
 
-  /* 펼침 콘텐츠 */
-  if (expanded) {
-    const divider = figma.createRectangle();
-    divider.resize(300, 1);
-    divider.layoutAlign = 'STRETCH';
-    setFill(divider, COLOR.borderSubtle);
-    comp.appendChild(divider);
+  /* ChevronUp — 항상 열린 상태이므로 고정 */
+  headerRow.appendChild(createIcon('ChevronUp', 16, COLOR.textMuted));
 
-    const content = figma.createFrame();
-    setAutoLayout(content, 'VERTICAL', SPACING.xs);
-    content.layoutAlign = 'STRETCH';
-    content.paddingTop = SPACING.sm;
-    content.fills = [];
-    await addText(content, '펼쳐진 내용이 여기에 표시됩니다.', FONT_SIZE.sm, COLOR.textBase);
-    comp.appendChild(content);
-  }
+  /* ── Divider ──────────────────────────────────────────────── */
+  const divider = figma.createRectangle();
+  divider.name = 'Divider';
+  divider.resize(COMP_W - SPACING.md * 2, DIVIDER_H);
+  setFill(divider, COLOR.borderSubtle);
+  comp.appendChild(divider);
+  divider.layoutSizingHorizontal = 'FILL';
+
+  /* ── Content Slot ─────────────────────────────────────────── */
+  const slot = comp.createSlot();
+  slot.name = 'Content';
+  slot.primaryAxisSizingMode = 'FIXED';
+  slot.counterAxisSizingMode = 'FIXED';
+  slot.resize(COMP_W - SPACING.md * 2, SLOT_H);
+  clearFill(slot);
+  slot.layoutSizingHorizontal = 'FILL';
 
   return comp;
 }
 
 export async function createCollapsibleSection(): Promise<ComponentSetNode> {
-  return combineVariants(
-    await Promise.all([createCollapsibleVariant(false), createCollapsibleVariant(true)]),
-    'CollapsibleSection', 2,
-  );
+  const components = await Promise.all([
+    createCollapsibleVariant('Left'),
+    createCollapsibleVariant('Center'),
+  ]);
+  /* cols=2: HeaderAlign 2종 나란히 배치 */
+  return combineVariants(components, 'CollapsibleSection', 2);
 }

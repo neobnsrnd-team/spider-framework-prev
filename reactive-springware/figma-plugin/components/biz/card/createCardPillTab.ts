@@ -1,18 +1,22 @@
-/**
+﻿/**
  * @file createCardPillTab.ts
  * @description Figma CardPillTab 컴포넌트 세트 생성.
  * 카드 목록 가로 스크롤 pill 형태 탭 버튼.
- * State(Default|Selected) = 2 variants.
+ * isSelected(False|True) = 2 variants.
+ *
+ * TEXT properties:
+ *   - label — 탭 레이블 (기본값: '하나 머니 체크카드')
+ *
  * 컴포넌트 이름: "CardPillTab"
  */
-import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../tokens';
+import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
 import {
   createComponent, combineVariants, setAutoLayout, setPadding, clearFill,
   setFillWithVar, addTextWithVar, setFloatVar,
-} from '../../../helpers';
+} from '../../../utils/helpers';
 
 async function createCardPillTabVariant(selected: boolean): Promise<ComponentNode> {
-  const comp = createComponent(`State=${selected ? 'Selected' : 'Default'}`);
+  const comp = createComponent(`isSelected=${selected ? 'True' : 'False'}`);
   setAutoLayout(comp, 'HORIZONTAL', 0);
   setPadding(comp, SPACING.xs, SPACING.md);
   comp.primaryAxisSizingMode = 'AUTO';
@@ -21,10 +25,10 @@ async function createCardPillTabVariant(selected: boolean): Promise<ComponentNod
 
   if (selected) {
     await setFillWithVar(comp, COLOR_VAR.brandPrimary, BRAND.primary);
-    await addTextWithVar(comp, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeSm, 'tabLabel');
+    await addTextWithVar(comp, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.brandFg, BRAND.fg, true, SIZE_VAR.fontSizeSm, 'label');
   } else {
     await setFillWithVar(comp, COLOR_VAR.surfaceRaised, COLOR.surfaceRaised);
-    await addTextWithVar(comp, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textSecondary, COLOR.textSecondary, false, SIZE_VAR.fontSizeSm, 'tabLabel');
+    await addTextWithVar(comp, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textSecondary, COLOR.textSecondary, false, SIZE_VAR.fontSizeSm, 'label');
   }
 
   return comp;

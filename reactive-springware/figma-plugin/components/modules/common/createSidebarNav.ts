@@ -1,74 +1,116 @@
-/**
+﻿/**
  * @file createSidebarNav.ts
- * @description Figma SidebarNav 컴포넌트 생성.
- * 세로 방향 사이드바 탭 네비게이션.
- * 활성 항목: 흰 배경 + 브랜드 텍스트 + 좌측 4px 인디케이터 바.
- * 비활성 항목: secondary 텍스트.
- * 단일 variant (4개 항목, 2번째 활성).
- * 컴포넌트 이름: "SidebarNav"
+ * @description Figma SidebarNav 컴포넌트 세트 생성.
+ *
+ * SidebarNav/Item — State(default|selected) = 2 variants.
+ * TEXT properties:
+ *   - label — 항목 레이블 (기본값: '항목')
+ *
+ * [SidebarNav/Item 레이아웃]
+ *   comp(HORIZONTAL, gap=standard, FIXED 117×56)
+ *     Indicator(4px×56, BRAND.primary | transparent)
+ *     label(TEXT, grow=1)
+ *
+ * SidebarNav — 단일 컴포넌트.
+ * [SidebarNav 레이아웃]
+ *   comp(VERTICAL, FIXED 117, AUTO, surfaceRaised)
+ *     Items(Slot, VERTICAL, FILL) — SidebarNav/Item 인스턴스 추가·교체 가능
+ *       [default × 3] + [selected × 1]  ← 시각 프리뷰용
+ *
+ * 컴포넌트 이름: "SidebarNav/Item", "SidebarNav"
  */
-
-import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../tokens';
+import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
 import {
-  createComponent, setAutoLayout, clearFill,
+  createComponent, combineVariants, setAutoLayout, clearFill,
   setFillWithVar, addTextWithVar, setFloatVar,
-} from '../../../helpers';
+} from '../../../utils/helpers';
 
-const NAV_WIDTH  = 117;  /* 예시 usage: className="w-[117px]" */
-const ITEM_HEIGHT = 56;  /* h-14 = 56px */
+const NAV_W   = 117;  /* 사이드바 너비 (w-[117px]) */
+const ITEM_H  = 56;   /* 항목 높이 h-14 */
 
-/** 네비게이션 단일 항목 프레임 생성 */
-async function createNavItem(label: string, isActive: boolean): Promise<FrameNode> {
-  const item = figma.createFrame();
-  setAutoLayout(item, 'HORIZONTAL', 0);
-  item.paddingLeft = SPACING.standard;
-  item.resize(NAV_WIDTH, ITEM_HEIGHT);
-  item.primaryAxisSizingMode = 'FIXED';
-  item.counterAxisSizingMode = 'FIXED';
+type ItemState = 'default' | 'selected';
 
-  if (isActive) {
-    /* 활성: 흰 배경 */
-    await setFillWithVar(item, COLOR_VAR.surface, COLOR.surface);
-
-    /* 좌측 브랜드 인디케이터 바 (4px 너비, 상하 25% 여백) */
-    const bar = figma.createRectangle();
-    bar.resize(4, Math.round(ITEM_HEIGHT * 0.5)); /* 상하 25% 여백 → 높이 50% */
-    bar.cornerRadius = RADIUS.xs;
-    bar.fills = [{ type: 'SOLID', color: BRAND.primary }];
-    /* 절대 위치: 좌측 0, 수직 중앙 ((56 - 28) / 2 = 14) */
-    bar.x = 0;
-    bar.y = Math.round((ITEM_HEIGHT - bar.height) / 2);
-    item.appendChild(bar);
-
-    const text = await addTextWithVar(
-      item, label, FONT_SIZE.sm,
-      COLOR_VAR.brandText, BRAND.text, false, SIZE_VAR.fontSizeSm,
-    );
-    text.layoutGrow = 1;
-  } else {
-    clearFill(item);
-    const text = await addTextWithVar(
-      item, label, FONT_SIZE.sm,
-      COLOR_VAR.textSecondary, COLOR.textSecondary, false, SIZE_VAR.fontSizeSm,
-    );
-    text.layoutGrow = 1;
-  }
-
-  return item;
-}
-
-export async function createSidebarNav(): Promise<ComponentNode> {
-  const comp = createComponent('SidebarNav');
-  setAutoLayout(comp, 'VERTICAL', 0, 'MIN');
-  comp.resize(NAV_WIDTH, ITEM_HEIGHT * 4);
+async function createSidebarNavItemVariant(state: ItemState): Promise<ComponentNode> {
+  const comp = createComponent(`State=${state}`);
+  setAutoLayout(comp, 'HORIZONTAL', SPACING.standard, 'CENTER');
+  comp.resize(NAV_W, ITEM_H);
   comp.primaryAxisSizingMode = 'FIXED';
   comp.counterAxisSizingMode = 'FIXED';
-  /* 우측 구분선 */
+
+  if (state === 'selected') {
+    await setFillWithVar(comp, COLOR_VAR.surface, COLOR.surface);
+  } else {
+    await setFillWithVar(comp, COLOR_VAR.surfaceRaised, COLOR.surfaceRaised);
+  }
+
+  /* 좌측 인디케이터 바 (4px × ITEM_H) — selected: brand 색상, default: 투명 */
+  const bar = figma.createFrame();
+  bar.name = 'Indicator';
+  bar.resize(4, ITEM_H);
+  bar.primaryAxisSizingMode = 'FIXED';
+  bar.counterAxisSizingMode = 'FIXED';
+  await setFloatVar(bar, 'cornerRadius', SIZE_VAR.radiusXs, RADIUS.xs);
+  if (state === 'selected') {
+    await setFillWithVar(bar, COLOR_VAR.brandPrimary, BRAND.primary);
+  } else {
+    clearFill(bar);
+  }
+  comp.appendChild(bar);
+
+  /* label TEXT property — comp 직접 자식, 자동 바인딩 */
+  const label = await addTextWithVar(
+    comp, '항목', FONT_SIZE.sm,
+    state === 'selected' ? COLOR_VAR.brandText      : COLOR_VAR.textSecondary,
+    state === 'selected' ? BRAND.text               : COLOR.textSecondary,
+    state === 'selected', /* selected: font-semibold */
+    SIZE_VAR.fontSizeSm, 'label',
+  );
+  label.layoutGrow = 1;
+
+  return comp;
+}
+
+export async function createSidebarNavItem(): Promise<ComponentSetNode> {
+  return combineVariants(
+    [
+      await createSidebarNavItemVariant('default'),
+      await createSidebarNavItemVariant('selected'),
+    ],
+    'SidebarNav/Item',
+    2,
+  );
+}
+
+export async function createSidebarNav(
+  itemSet: ComponentSetNode,
+): Promise<ComponentNode> {
+  const comp = createComponent('SidebarNav');
+  setAutoLayout(comp, 'VERTICAL', 0, 'MIN');
+  comp.resize(NAV_W, 1);
+  comp.primaryAxisSizingMode = 'AUTO';
+  comp.counterAxisSizingMode = 'FIXED';
+  /* 우측 구분선을 암시하는 배경 */
   await setFillWithVar(comp, COLOR_VAR.surfaceRaised, COLOR.surfaceRaised);
 
-  const labels = ['뱅킹', '카드', '보험', '전체'];
-  for (let i = 0; i < labels.length; i++) {
-    comp.appendChild(await createNavItem(labels[i], i === 1 /* 2번째 항목 활성 */));
+  /* Items 슬롯 — SidebarNav/Item 인스턴스 추가·교체 가능 */
+  const slot = comp.createSlot();
+  slot.name = 'Items';
+  slot.layoutSizingHorizontal = 'FILL';
+  slot.primaryAxisSizingMode = 'AUTO';
+  (slot as any).layoutMode    = 'VERTICAL';
+  (slot as any).itemSpacing   = 0;
+
+  /* 시각 프리뷰: default 3개 + selected 1개 */
+  const defaultVariant  = itemSet.children.find(c => c.name.includes('State=default'))  as ComponentNode | undefined;
+  const selectedVariant = itemSet.children.find(c => c.name.includes('State=selected')) as ComponentNode | undefined;
+
+  const previewLabels = ['뱅킹', '카드', '보험', '전체'];
+  for (let i = 0; i < previewLabels.length; i++) {
+    const source = i === 1 ? selectedVariant : defaultVariant;
+    if (!source) continue;
+    const inst = source.createInstance();
+    slot.appendChild(inst);
+    inst.layoutSizingHorizontal = 'FILL';
   }
 
   return comp;

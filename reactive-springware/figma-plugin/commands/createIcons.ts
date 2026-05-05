@@ -1,4 +1,4 @@
-/// <reference types="@figma/plugin-typings" />
+﻿/// <reference types="@figma/plugin-typings" />
 /**
  * @file createIcons.ts
  * @description icons.ts의 lucide-react SVG 데이터를 Figma ComponentNode로 일괄 생성하고
@@ -11,7 +11,7 @@
  * @returns 완료 메시지 문자열
  */
 
-import { ICON_SVGS } from './icons';
+import { ICON_SVGS } from '../utils/icons';
 
 const ICON_SIZE       = 24;
 const COLS            = 10;
@@ -33,6 +33,8 @@ function buildIconComponent(name: string): ComponentNode {
   frame.name  = 'vector';
   frame.resize(ICON_SIZE, ICON_SIZE);
   frame.fills = [];
+  /* SCALE constraints — 인스턴스를 resize() 해도 벡터가 프레임에 맞게 비례 축소·확대 */
+  frame.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
   comp.appendChild(frame);
   frame.x = 0;
   frame.y = 0;

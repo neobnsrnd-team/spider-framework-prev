@@ -1,13 +1,13 @@
 /**
  * @file generate-figma-icons.ts
  * @description lucide-react 패키지의 모든 아이콘을 SVG 문자열로 추출해
- *              figma-plugin/icons.ts 파일을 자동 생성한다.
+ *              figma-plugin/utils/icons.ts 파일을 자동 생성한다.
  *
  * @usage
  *   npm run generate:icons
  *
  * @outputs
- *   figma-plugin/icons.ts — ICON_SVGS, IconName, createIcon 포함
+ *   figma-plugin/utils/icons.ts — ICON_SVGS, IconName, createIcon 포함
  *
  * @note
  *   - 이 스크립트는 빌드 타임에만 실행되며, 플러그인 번들에는 포함되지 않는다.
@@ -67,7 +67,7 @@ const banner = [
   `// lucide-react 아이콘 수: ${iconNames.length}`,
 ].join('\n');
 
-/* createIcon 함수와 toHex 헬퍼는 스크립트가 생성하는 icons.ts에 포함된다.
+/* createIcon 함수와 toHex 헬퍼는 스크립트가 생성하는 utils/icons.ts에 포함된다.
    Figma API(figma.createNodeFromSvg)를 사용하므로 플러그인 런타임에서만 실행된다. */
 const runtime = `
 import type { RGB } from './tokens';
@@ -102,7 +102,7 @@ export function createIcon(name: IconName, size: number, color: RGB): FrameNode 
 
 const output = `${banner}\n${runtime}`;
 
-const outPath = resolve(__dirname, '../figma-plugin/icons.ts');
+const outPath = resolve(__dirname, '../figma-plugin/utils/icons.ts');
 writeFileSync(outPath, output, 'utf-8');
 
 console.log(`✅ ${outPath} 생성 완료 (${iconNames.length}개)`);

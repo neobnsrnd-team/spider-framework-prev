@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file createNumberKeypad.ts
  * @description Figma NumberKeypad 컴포넌트 생성.
  * 계좌 비밀번호 입력용 보안 숫자 키패드.
@@ -10,12 +10,12 @@
  * 컴포넌트 이름: "NumberKeypad"
  */
 
-import { COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../tokens';
+import { COLOR, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
 import {
   createComponent, setAutoLayout, clearFill,
-  setFillWithVar, addTextWithVar, setFloatVar,
-} from '../../../helpers';
-import { createIcon } from '../../../icons';
+  addTextWithVar, setFloatVar,
+} from '../../../utils/helpers';
+import { createIcon } from '../../../utils/icons';
 
 const KEYPAD_WIDTH = 390;
 const CELL_HEIGHT  = 56; /* h-14 */

@@ -1,69 +1,136 @@
-/**
+﻿/**
  * @file createCardInfoPanel.ts
- * @description Figma CardInfoPanel 컴포넌트 생성.
+ * @description Figma CardInfoPanel 컴포넌트 세트 생성.
  * 섹션 제목 + 레이블-값 행 목록을 렌더링하는 정보 패널.
- * 2개 섹션, 구분선 포함. 단일 variant.
- * 컴포넌트 이름: "CardInfoPanel"
+ * 3개 컴포넌트로 구성: CardInfoRow → CardInfoSection → CardInfoPanel.
+ *
+ * ── CardInfoPanel/CardInfoRow ───────────────────────────────────
+ * TEXT properties:
+ *   - label — 레이블 (기본값: '레이블')
+ *   - value — 값    (기본값: '값')
+ *
+ * ── CardInfoPanel/CardInfoSection ──────────────────────────────
+ * TEXT properties:
+ *   - title — 섹션 제목 (기본값: '섹션 제목')
+ * SLOT:
+ *   - Rows (CardInfoRow 인스턴스를 추가할 수 있는 슬롯)
+ *
+ * ── CardInfoPanel ──────────────────────────────────────────────
+ * SLOT:
+ *   - Sections (CardInfoSection 인스턴스를 추가할 수 있는 슬롯)
+ *
+ * [레이아웃]
+ *   CardInfoRow (HORIZONTAL SPACE_BETWEEN, MIN, py-xs, FIXED 358)
+ *     label (TEXT xs, textMuted, 바인딩)
+ *     value (TEXT xs, textHeading, RIGHT, 바인딩)
+ *
+ *   CardInfoSection (VERTICAL gap=xs, MIN, FIXED 358)
+ *     title (TEXT sm bold, textHeading, 바인딩)
+ *     Rows SlotNode (VERTICAL, FIXED 358, CardInfoRow×2)
+ *
+ *   CardInfoPanel (VERTICAL gap=0, p-standard, FIXED 390)
+ *     Sections SlotNode (VERTICAL itemSpacing=md, FIXED 358, CardInfoSection×2)
+ *
+ * 컴포넌트 이름: "CardInfoPanel/CardInfoRow", "CardInfoPanel/CardInfoSection", "CardInfoPanel"
  */
-import { COLOR, SPACING, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../tokens';
+import { COLOR, SPACING, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
 import {
   createComponent, setAutoLayout, setPadding, clearFill,
-  setFillWithVar, addTextWithVar, addRect,
-} from '../../../helpers';
+  addTextWithVar,
+} from '../../../utils/helpers';
 
-const PANEL_WIDTH = 390;
+const PANEL_WIDTH    = 390;
+const CONTENT_WIDTH  = PANEL_WIDTH - SPACING.standard * 2; // 358
 
-/** 레이블-값 단일 행 */
-async function createInfoRow(parent: FrameNode | ComponentNode, label: string, value: string): Promise<void> {
-  const row = figma.createFrame();
-  setAutoLayout(row, 'HORIZONTAL', 0);
-  row.primaryAxisAlignItems = 'SPACE_BETWEEN';
-  row.counterAxisAlignItems = 'MIN'; /* items-start */
-  setPadding(row, SPACING.xs, 0);
-  row.resize(PANEL_WIDTH - SPACING.standard * 2, 1);
-  row.primaryAxisSizingMode = 'FIXED';
-  row.counterAxisSizingMode = 'AUTO';
-  clearFill(row);
+/* ── CardInfoPanel/CardInfoRow ─────────────────────────────────── */
 
-  await addTextWithVar(row, label, FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs);
-  await addTextWithVar(row, value, FONT_SIZE.xs, COLOR_VAR.textHeading, COLOR.textHeading, false, SIZE_VAR.fontSizeXs);
-
-  parent.appendChild(row);
-}
-
-/** 섹션 제목 + 행 목록 블록 */
-async function createSection(
-  parent: FrameNode | ComponentNode,
-  title: string,
-  rows: Array<{ label: string; value: string }>,
-): Promise<void> {
-  await addTextWithVar(parent, title, FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm);
-  for (const { label, value } of rows) {
-    await createInfoRow(parent, label, value);
-  }
-}
-
-export async function createCardInfoPanel(): Promise<ComponentNode> {
-  const comp = createComponent('CardInfoPanel');
-  setAutoLayout(comp, 'VERTICAL', SPACING.xs, 'MIN');
-  setPadding(comp, SPACING.standard, SPACING.standard);
-  comp.resize(PANEL_WIDTH, 1);
-  comp.primaryAxisSizingMode = 'AUTO';   /* VERTICAL: height가 콘텐츠에 맞게 늘어남 */
-  comp.counterAxisSizingMode = 'FIXED';  /* VERTICAL: width 고정 */
+export async function createCardInfoPanelCardInfoRow(): Promise<ComponentNode> {
+  const comp = createComponent('CardInfoPanel/CardInfoRow');
+  setAutoLayout(comp, 'HORIZONTAL', 0);
+  comp.primaryAxisAlignItems  = 'SPACE_BETWEEN';
+  comp.counterAxisAlignItems  = 'MIN'; /* items-start: 다행 텍스트 위쪽 정렬 */
+  setPadding(comp, SPACING.xs, 0);    /* py-xs, 좌우 padding 없음 */
+  comp.resize(CONTENT_WIDTH, 1);
+  comp.primaryAxisSizingMode  = 'FIXED';
+  comp.counterAxisSizingMode  = 'AUTO';
   clearFill(comp);
 
-  await createSection(comp, '결제정보', [
-    { label: '결제 계좌', value: '하나은행 123456****1234' },
-    { label: '결제일',   value: '매월 25일' },
-  ]);
+  /* label — comp 직접 자식: 자동 바인딩 */
+  await addTextWithVar(comp, '레이블', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'label');
 
-  /* 구분선 — RectangleNode에 padding 속성이 없으므로 여백은 Auto Layout gap에 위임 */
-  addRect(comp, PANEL_WIDTH - SPACING.standard * 2, 1, COLOR.borderSubtle);
+  /* value — comp 직접 자식: 자동 바인딩, 우측 텍스트 정렬 */
+  const valueNode = await addTextWithVar(comp, '값', FONT_SIZE.xs, COLOR_VAR.textHeading, COLOR.textHeading, false, SIZE_VAR.fontSizeXs, 'value');
+  valueNode.textAlignHorizontal = 'RIGHT';
 
-  await createSection(comp, '카드 이용기간', [
-    { label: '일시불/할부',    value: '2026.03.13 ~ 2026.04.12' },
-    { label: '단기카드대출', value: '2026.02.26 ~ 2026.03.25' },
-  ]);
+  figma.currentPage.appendChild(comp);
+  return comp;
+}
+
+/* ── CardInfoPanel/CardInfoSection ─────────────────────────────── */
+
+/**
+ * @param row - createCardInfoPanelCardInfoRow()가 반환한 ComponentNode.
+ *              Rows 슬롯의 기본 인스턴스 배치에 사용한다.
+ */
+export async function createCardInfoPanelCardInfoSection(row: ComponentNode): Promise<ComponentNode> {
+  const comp = createComponent('CardInfoPanel/CardInfoSection');
+  setAutoLayout(comp, 'VERTICAL', SPACING.xs, 'MIN');
+  comp.primaryAxisAlignItems = 'MIN';
+  comp.resize(CONTENT_WIDTH, 1);
+  comp.primaryAxisSizingMode  = 'AUTO';
+  comp.counterAxisSizingMode  = 'FIXED';
+  clearFill(comp);
+
+  /* title — comp 직접 자식: 자동 바인딩 */
+  await addTextWithVar(comp, '섹션 제목', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'title');
+
+  /* Rows 슬롯 — CardInfoRow 인스턴스를 추가할 수 있는 영역 */
+  const rowsSlot = comp.createSlot();
+  rowsSlot.name = 'Rows';
+  rowsSlot.layoutMode = 'VERTICAL';
+  rowsSlot.itemSpacing = 0;
+  rowsSlot.resize(CONTENT_WIDTH, 1); /* resize 먼저 호출 후 AUTO 설정 */
+  rowsSlot.primaryAxisSizingMode  = 'AUTO';  /* height 콘텐츠에 맞게 */
+  rowsSlot.counterAxisSizingMode  = 'FIXED'; /* width 고정 */
+  clearFill(rowsSlot);
+
+  /* 기본 CardInfoRow 인스턴스 2개 배치 */
+  rowsSlot.appendChild(row.createInstance());
+  rowsSlot.appendChild(row.createInstance());
+
+  figma.currentPage.appendChild(comp);
+  return comp;
+}
+
+/* ── CardInfoPanel ──────────────────────────────────────────────── */
+
+/**
+ * @param section - createCardInfoPanelCardInfoSection()이 반환한 ComponentNode.
+ *                  Sections 슬롯의 기본 인스턴스 배치에 사용한다.
+ */
+export async function createCardInfoPanel(section: ComponentNode): Promise<ComponentNode> {
+  const comp = createComponent('CardInfoPanel');
+  setAutoLayout(comp, 'VERTICAL', 0, 'MIN');
+  comp.primaryAxisAlignItems = 'MIN';
+  setPadding(comp, SPACING.standard, SPACING.standard);
+  comp.resize(PANEL_WIDTH, 1);
+  comp.primaryAxisSizingMode  = 'AUTO';
+  comp.counterAxisSizingMode  = 'FIXED';
+  clearFill(comp);
+
+  /* Sections 슬롯 — CardInfoSection 인스턴스를 추가할 수 있는 영역 */
+  const sectionsSlot = comp.createSlot();
+  sectionsSlot.name = 'Sections';
+  sectionsSlot.layoutMode = 'VERTICAL';
+  sectionsSlot.itemSpacing = SPACING.md; /* 섹션 간 gap=md */
+  sectionsSlot.resize(CONTENT_WIDTH, 1); /* resize 먼저 호출 후 AUTO 설정 */
+  sectionsSlot.primaryAxisSizingMode  = 'AUTO';  /* height 콘텐츠에 맞게 */
+  sectionsSlot.counterAxisSizingMode  = 'FIXED'; /* width 고정 */
+  clearFill(sectionsSlot);
+
+  /* 기본 CardInfoSection 인스턴스 2개 배치 */
+  sectionsSlot.appendChild(section.createInstance());
+  sectionsSlot.appendChild(section.createInstance());
 
   figma.currentPage.appendChild(comp);
   return comp;

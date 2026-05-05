@@ -46,6 +46,15 @@ export const BRAND = {
   /* shadow: #008485 at 25% opacity — RGB는 primary와 동일, opacity는 사용 시 직접 지정 */
 };
 
+/**
+ * 도메인별 액센트 토큰 — [data-domain='card'] 전용.
+ * fallback은 하나카드 기준값. 브랜드 변경 시 Figma Variable이 자동 교체된다.
+ */
+export const DOMAIN = {
+  cardAccent:     hex('#caee5d'), // 하나카드 라임 액센트 (--domain-card-accent)
+  cardAccentText: hex('#546b00'), // 라임 배경 위 올리브 텍스트 (--domain-card-accent-text)
+};
+
 /** --color-* 토큰 */
 export const COLOR = {
   surface:        hex('#ffffff'),
@@ -315,4 +324,8 @@ export const COLOR_VAR = {
   /* fallback은 opacity 미지원으로 BRAND.primary(불투명) 사용 */
   brandPrimary5:   'color/brand/5',         // brand/primary 5%
   brandPrimary20:  'color/brand/20',        // brand/primary 20%
+
+  /* ── Domain (도메인별 개성) ───────────────────── */
+  domainCardAccent:     'color/domain/card/accent',      // 하나카드 #CAEE5D, fallback brand-alt
+  domainCardAccentText: 'color/domain/card/accent/text', // 하나카드 #546B00, fallback brand-text
 } as const;

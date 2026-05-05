@@ -248,6 +248,10 @@
   --color-brand-20: var(--brand-20);
   --color-brand-shadow: var(--brand-shadow);
 
+  /* ── Domain (도메인별 개성 — domain 토큰 참조) ── */
+  --color-domain-card-accent:      var(--domain-card-accent, var(--brand-alt));
+  --color-domain-card-accent-text: var(--domain-card-accent-text, var(--brand-text));
+
   /* ── Primary (시스템 공통 표준 강조 — 고정 파란색) ── */
   --color-primary: #2563eb;
   --color-primary-surface: #eff6ff;

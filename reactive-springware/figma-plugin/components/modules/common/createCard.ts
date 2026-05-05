@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file createCard.ts
  * @description Figma Card 컴포넌트 세트 생성.
  * React Card + CardHeader + CardRow 서브컴포넌트를 Figma variant로 표현한다.
@@ -7,11 +7,11 @@
  * Variant 형식: "Type=Default" | "Type=Interactive" | "Type=WithHeader" | "Type=WithRow"
  */
 
-import { COLOR, SPACING, RADIUS, FONT_SIZE } from '../../../tokens';
+import { COLOR, SPACING, RADIUS, FONT_SIZE } from '../../../utils/tokens';
 import {
   createComponent, combineVariants, setAutoLayout, setPadding,
   setFill, setStroke, addText, addDivider,
-} from '../../../helpers';
+} from '../../../utils/helpers';
 
 const CARD_WIDTH = 328; // 390px 화면 기준 양쪽 standard(16px) 패딩 제외
 

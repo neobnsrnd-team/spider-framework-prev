@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file createAppBrandHeader.ts
  * @description Figma AppBrandHeader 컴포넌트 생성.
  * 로그인·온보딩 화면 최상단 브랜드 로고 헤더.
@@ -8,11 +8,11 @@
  * 단일 variant.
  * 컴포넌트 이름: "AppBrandHeader"
  */
-import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../tokens';
+import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../utils/tokens';
 import {
   createComponent, setAutoLayout, clearFill,
   setFillWithVar, addTextWithVar, setFloatVar,
-} from '../../helpers';
+} from '../../utils/helpers';
 
 const HEADER_WIDTH  = 390;
 const HEADER_HEIGHT = 56; /* h-14 */

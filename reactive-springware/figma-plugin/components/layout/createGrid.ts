@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file createGrid.ts
  * @description Figma Grid 레이아웃 컴포넌트 세트 생성.
  * CSS 그리드(grid grid-cols-N)의 열 수 변형을 시각적으로 표현한다.
@@ -7,8 +7,8 @@
  * Figma는 CSS grid를 지원하지 않으므로 각 셀의 x/y를 직접 계산해 배치한다.
  * 컴포넌트 이름: "Grid"
  */
-import { COLOR, SPACING, RADIUS } from '../../tokens';
-import { createComponent, combineVariants, setFill, clearFill } from '../../helpers';
+import { COLOR, SPACING, RADIUS } from '../../utils/tokens';
+import { createComponent, combineVariants, setFill, clearFill } from '../../utils/helpers';
 
 const GRID_W    = 390;
 const ITEM_H    = 64;

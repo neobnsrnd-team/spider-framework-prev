@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file createDivider.ts
  * @description Figma Divider 컴포넌트 생성.
  * 텍스트 없이 순수 수평선만 렌더링하는 단일 컴포넌트.
@@ -6,8 +6,8 @@
  * 컴포넌트 이름: "Divider"
  */
 
-import { COLOR, COLOR_VAR } from '../../../tokens';
-import { createComponent, setFillWithVar } from '../../../helpers';
+import { COLOR, COLOR_VAR } from '../../../utils/tokens';
+import { createComponent, setFillWithVar } from '../../../utils/helpers';
 
 export async function createDivider(): Promise<ComponentNode> {
   const comp = createComponent('Divider');

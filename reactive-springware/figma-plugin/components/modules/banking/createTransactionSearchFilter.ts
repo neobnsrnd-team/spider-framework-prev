@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file createTransactionSearchFilter.ts
  * @description Figma TransactionSearchFilter 컴포넌트 세트 생성.
  * 거래내역 조회 조건 필터 아코디언 컴포넌트.
@@ -10,12 +10,12 @@
  * 컴포넌트 이름: "TransactionSearchFilter"
  */
 
-import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../tokens';
+import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
 import {
   createComponent, combineVariants, setAutoLayout, setPadding, clearFill,
   setFillWithVar, setStrokeWithVar, addTextWithVar, setFloatVar, addRect,
-} from '../../../helpers';
-import { createIcon } from '../../../icons';
+} from '../../../utils/helpers';
+import { createIcon } from '../../../utils/icons';
 
 const FILTER_WIDTH = 390;
 const CONTENT_PX = SPACING.standard; /* px-standard */
@@ -63,12 +63,13 @@ async function createQuickPeriodTabs(): Promise<FrameNode> {
   const periods = ['1개월', '3개월', '6개월', '12개월'];
   for (let i = 0; i < periods.length; i++) {
     const tab = figma.createFrame();
-    setAutoLayout(tab, 'HORIZONTAL', 0);
+    /* CENTER 정렬로 텍스트를 탭 영역 중앙에 배치 */
+    setAutoLayout(tab, 'HORIZONTAL', 0, 'CENTER');
+    tab.primaryAxisAlignItems = 'CENTER';
     tab.layoutGrow = 1;
     tab.counterAxisSizingMode = 'FIXED';
-    tab.resize(1, 30); /* flex-1, 높이는 컨테이너 패딩 반영 */
+    tab.resize(1, 30);
 
-    /* 첫 탭만 활성(선택) 표시 */
     const isActive = i === 0;
     if (isActive) {
       await setFillWithVar(tab, COLOR_VAR.brandBg, BRAND.bg);
@@ -78,14 +79,12 @@ async function createQuickPeriodTabs(): Promise<FrameNode> {
       tab.cornerRadius = 0;
     }
 
-    const text = await addTextWithVar(
+    await addTextWithVar(
       tab, periods[i], FONT_SIZE.xs,
       isActive ? COLOR_VAR.brandText : COLOR_VAR.textMuted,
       isActive ? BRAND.text         : COLOR.textMuted,
       false, SIZE_VAR.fontSizeXs,
     );
-    text.layoutAlign = 'STRETCH';
-    text.textAlignHorizontal = 'CENTER';
 
     container.appendChild(tab);
   }
@@ -146,9 +145,9 @@ async function createSearchButton(): Promise<FrameNode> {
   const btn = figma.createFrame();
   setAutoLayout(btn, 'HORIZONTAL', 0);
   setPadding(btn, 10, SPACING.standard);
-  btn.primaryAxisSizingMode = 'AUTO';
+  btn.resize(1, 44);                  /* height 고정; width는 AUTO가 결정 */
+  btn.primaryAxisSizingMode = 'AUTO'; /* resize 이후 설정해야 반영됨 */
   btn.counterAxisSizingMode = 'FIXED';
-  btn.resize(1, 44);
   await setFloatVar(btn, 'cornerRadius', SIZE_VAR.radiusFull, RADIUS.full);
   await setFillWithVar(btn, COLOR_VAR.brandPrimary, BRAND.primary);
 

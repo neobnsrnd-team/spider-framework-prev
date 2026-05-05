@@ -1,228 +1,201 @@
-/**
+﻿/**
  * @file createBottomSheet.ts
  * @description Figma BottomSheet 컴포넌트 세트 생성.
  *
- * Snap × ButtonCount 2가지 속성 조합으로 6종 variant를 생성한다.
- * - Snap        : Auto | Half | Full
- * - ButtonCount : Two | One
+ * HideCloseButton(False|True) × BottomBtnCnt(0|1|2) = 6 variants.
  *
- * React 대응 컴포넌트: packages/component-library/modules/common/BottomSheet/index.tsx
- * - 드래그 핸들: w-10(40px) × h-1(4px), rounded-full, bg-border
- * - 헤더: 타이틀 중앙 정렬 + X 버튼 우측 배치 (showCloseButton Boolean 속성으로 제어)
- * - 상단 radius: rounded-t-2xl → Tailwind 기본값 1rem = 16px = RADIUS.lg
- * - footer: border-t border-border-subtle + 버튼 영역
- * - 모든 색상: Figma Variables 바인딩 (COLOR_VAR), fallback RGB 병행 제공
+ * TEXT properties:
+ *   - title            — 바텀시트 제목 (모든 variant)
+ *   - bottomBtn1Label  — BottomBtnCnt=1: 확인 버튼 / BottomBtnCnt=2: 취소 버튼
+ *   - bottomBtn2Label  — BottomBtnCnt=2: 확인 버튼
  *
- * 색상 → COLOR_VAR + setFillWithVar / addTextWithVar
- * 수치(spacing·radius·fontSize) → SIZE_VAR + setFloatVar
+ * [레이아웃 구조]
+ *   DragHandle
+ *   Header: [Spacer(32) | title(grow, CENTER) | CloseButton or Placeholder(32)]
+ *   Content (Slot, layoutGrow=1)
+ *   Footer (BottomBtnCnt > 0): [SecondaryButton(grow)?] [PrimaryButton(grow)]
  *
- * 핵심 규칙: layoutSizingHorizontal='FILL' / layoutGrow=1 은
- * 반드시 parent.appendChild(child) 이후에 설정해야 한다.
- * 이전에 설정하면 Figma가 조용히 무시한다.
+ * HideCloseButton은 Variant 속성으로 제어 (BOOLEAN property 아님).
+ * → HideCloseButton=True variant에서는 CloseButton 자리에 빈 Placeholder를 배치해 title 중앙 정렬을 유지한다.
  *
- * @returns Figma ComponentSetNode ('BottomSheet')
+ * TEXT property 바인딩 타이밍:
+ *   comp.appendChild(header) 이후에 title, comp.appendChild(footer) 이후에 버튼 레이블 바인딩.
  */
-import { COLOR, BRAND, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../tokens';
+import { COLOR, BRAND, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
 import {
-  createComponent,
-  combineVariants,
-  setAutoLayout,
-  setPadding,
-  setFillWithVar,
-  addTextWithVar,
-  setFloatVar,
-  solid,
-} from '../../../helpers';
-import { createIcon } from '../../../icons';
+  createComponent, combineVariants, setAutoLayout, setPadding,
+  clearFill, setFillWithVar, addTextWithVar, setFloatVar, solid,
+} from '../../../utils/helpers';
+import { createIcon } from '../../../utils/icons';
 
-type SnapMode    = 'Auto' | 'Half' | 'Full';
-type ButtonCount = 'Two'  | 'One';
+const SHEET_W   = 390;
+const SHEET_H   = 480;
+const BTN_H     = 48;
 
-/**
- * snap 프리셋별 고정 높이 (px).
- * index.tsx: auto=max-h-[90dvh], half=max-h-[50dvh], full=max-h-[90dvh]
- * Figma는 dvh 미지원이므로 390×844 (iPhone 14) 기준 근사값을 사용한다.
- */
-const SNAP_HEIGHT: Record<SnapMode, number> = { Auto: 300, Half: 420, Full: 680 };
-
-/**
- * 하단 버튼 색상 설정.
- * index [0] = 취소(secondary), index [1] = 확인(primary).
- * ButtonCount=One 의 경우 index [1] 만 사용한다.
- */
-const BUTTON_CONFIGS = [
-  {
-    label:        '취소',
-    bgVar:        COLOR_VAR.surfaceRaised,
-    bgFallback:   COLOR.surfaceRaised,
-    textVar:      COLOR_VAR.textBase,
-    textFallback: COLOR.textBase,
-  },
-  {
-    label:        '확인',
-    bgVar:        COLOR_VAR.brandPrimary,
-    bgFallback:   BRAND.primary,
-    textVar:      COLOR_VAR.brandFg,
-    textFallback: BRAND.fg,
-  },
-] as const;
-
-/**
- * 단일 BottomSheet variant ComponentNode를 생성한다.
- *
- * @param snap        - 시트 최대 높이 프리셋 ('Auto' | 'Half' | 'Full')
- * @param buttonCount - 하단 버튼 수 ('Two' | 'One')
- * @returns Figma ComponentNode (variant)
- */
 async function createBottomSheetVariant(
-  snap: SnapMode,
-  buttonCount: ButtonCount,
+  hideCloseButton: boolean,
+  bottomBtnCnt: 0 | 1 | 2,
 ): Promise<ComponentNode> {
-  const comp = createComponent(`Snap=${snap}, ButtonCount=${buttonCount}`);
+  const comp = createComponent(
+    `HideCloseButton=${hideCloseButton ? 'True' : 'False'}, BottomBtnCnt=${bottomBtnCnt}`,
+  );
 
-  /* VERTICAL Auto Layout.
-   * counterAxisAlignItems='CENTER': 드래그 핸들(40px)이 390px 폭 내 가로 중앙 정렬 */
-  setAutoLayout(comp, 'VERTICAL', SPACING.md, 'CENTER');
-  await setFloatVar(comp, 'itemSpacing', SIZE_VAR.spacingMd, SPACING.md);
-  setPadding(comp, SPACING.md, SPACING.xl, SPACING.xl, SPACING.xl);
-  await setFloatVar(comp, 'paddingTop',    SIZE_VAR.spacingMd, SPACING.md);
-  await setFloatVar(comp, 'paddingRight',  SIZE_VAR.spacingXl, SPACING.xl);
-  await setFloatVar(comp, 'paddingBottom', SIZE_VAR.spacingXl, SPACING.xl);
-  await setFloatVar(comp, 'paddingLeft',   SIZE_VAR.spacingXl, SPACING.xl);
-  comp.resize(390, SNAP_HEIGHT[snap]);
+  setAutoLayout(comp, 'VERTICAL', SPACING.sm, 'CENTER');
+  comp.paddingTop = SPACING.standard; /* drag handle 상단 여백 */
+  comp.resize(SHEET_W, SHEET_H);
   comp.primaryAxisSizingMode = 'FIXED';
   comp.counterAxisSizingMode = 'FIXED';
-  /* index.tsx: rounded-t-2xl → Tailwind 기본값 1rem = 16px = RADIUS.lg */
+  /* rounded-t-2xl → RADIUS.lg */
   await setFloatVar(comp, 'topLeftRadius',  SIZE_VAR.radiusLg, RADIUS.lg);
   await setFloatVar(comp, 'topRightRadius', SIZE_VAR.radiusLg, RADIUS.lg);
   comp.bottomLeftRadius  = 0;
   comp.bottomRightRadius = 0;
   await setFillWithVar(comp, COLOR_VAR.surface, COLOR.surface);
 
-  /* ── 드래그 핸들 ──────────────────────────────────────────────
-   * index.tsx: <span className="w-10 h-1 rounded-full bg-border" />
-   * comp의 counterAxisAlignItems='CENTER'로 가로 중앙 정렬 보장 */
+  /* ── Drag Handle ─────────────────────────────────────────── */
   const handle = figma.createFrame();
-  handle.name = 'drag-handle';
+  handle.name = 'DragHandle';
   handle.resize(40, 4);
   handle.cornerRadius = RADIUS.full;
   await setFillWithVar(handle, COLOR_VAR.border, COLOR.border);
   comp.appendChild(handle);
 
-  /* ── 헤더: 타이틀 중앙 + X 버튼 우측 ──────────────────────────
-   * 구현: [spacer(32px) | title(layoutGrow=1, CENTER text) | X버튼(32px)]
-   * spacer와 X버튼 너비를 동일하게 맞춰 타이틀이 시각적으로 중앙 정렬되도록 함 */
+  /* ── Header ──────────────────────────────────────────────── */
   const header = figma.createFrame();
-  header.name = 'header';
+  header.name = 'Header';
   setAutoLayout(header, 'HORIZONTAL', 0, 'CENTER');
-  setPadding(header, SPACING.sm, 0, SPACING.md, 0);
-  header.fills = [];
-
-  const spacer = figma.createFrame();
-  spacer.name = 'header-spacer';
-  spacer.resize(32, 32);
-  spacer.fills = [];
-  header.appendChild(spacer);
-
-  /* header를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
+  setPadding(header, SPACING.sm, SPACING.xl, SPACING.md, SPACING.xl);
+  clearFill(header);
   comp.appendChild(header);
   header.layoutSizingHorizontal = 'FILL';
 
-  const titleNode = await addTextWithVar(
-    header, '바텀시트 제목', FONT_SIZE.base, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeBase, 'title', comp,
+  /* 좌측 Spacer — CloseButton과 너비를 맞춰 title 중앙 정렬 유지 */
+  const spacer = figma.createFrame();
+  spacer.name = 'Spacer';
+  spacer.resize(32, 32);
+  clearFill(spacer);
+  header.appendChild(spacer);
+
+  /* title TEXT property (comp → header → titleText, 2단계) */
+  const titleText = await addTextWithVar(
+    header, '바텀시트 제목', FONT_SIZE.base,
+    COLOR_VAR.textHeading, COLOR.textHeading,
+    true, SIZE_VAR.fontSizeBase,
   );
-  titleNode.layoutGrow = 1;
-  titleNode.textAlignHorizontal = 'CENTER';
+  titleText.layoutGrow = 1;
+  titleText.textAlignHorizontal = 'CENTER';
+  const titleKey = comp.addComponentProperty('title', 'TEXT', '바텀시트 제목');
+  titleText.componentPropertyReferences = { characters: titleKey };
 
-  /* X 버튼: 32×32px, rounded-lg */
-  const closeBtn = figma.createFrame();
-  closeBtn.name = 'close-button';
-  setAutoLayout(closeBtn, 'HORIZONTAL', 0, 'CENTER');
-  closeBtn.resize(32, 32);
-  closeBtn.primaryAxisSizingMode = 'FIXED';
-  closeBtn.counterAxisSizingMode = 'FIXED';
-  closeBtn.cornerRadius = RADIUS.sm;
-  closeBtn.fills = [];
-  closeBtn.appendChild(createIcon('X', 16, COLOR.textMuted));
-  header.appendChild(closeBtn);
-
-  /* ── 본문 placeholder ─────────────────────────────────────────
-   * layoutGrow=1: 핸들·헤더·footer를 제외한 세로 공간을 모두 차지 */
-  const body = figma.createFrame();
-  body.name = 'body';
-  body.fills = [];
-  comp.appendChild(body);
-  /* appendChild 이후에 FILL / layoutGrow 설정 */
-  body.layoutSizingHorizontal = 'FILL';
-  body.layoutGrow = 1;
-
-  /* ── 하단 버튼 영역 ─────────────────────────────────────────── */
-  const footer = figma.createFrame();
-  footer.name = 'footer';
-  setAutoLayout(footer, 'HORIZONTAL', SPACING.sm);
-  await setFloatVar(footer, 'itemSpacing', SIZE_VAR.spacingSm, SPACING.sm);
-  setPadding(footer, SPACING.md, 0, SPACING.xl, 0);
-  await setFloatVar(footer, 'paddingTop',    SIZE_VAR.spacingMd, SPACING.md);
-  await setFloatVar(footer, 'paddingBottom', SIZE_VAR.spacingXl, SPACING.xl);
-  footer.fills = [];
-  /* border-t border-border-subtle 시뮬레이션: 상단에만 1px stroke 적용 */
-  footer.strokes           = [solid(COLOR.borderSubtle)];
-  footer.strokeTopWeight   = 1;
-  footer.strokeBottomWeight = 0;
-  footer.strokeLeftWeight  = 0;
-  footer.strokeRightWeight = 0;
-  footer.strokeAlign = 'INSIDE';
-
-  const buttonsToRender = buttonCount === 'Two' ? BUTTON_CONFIGS : [BUTTON_CONFIGS[1]];
-  for (const { label, bgVar, bgFallback, textVar, textFallback } of buttonsToRender) {
-    const btn = figma.createFrame();
-    setAutoLayout(btn, 'HORIZONTAL', 0, 'CENTER');
-    btn.resize(80, 48); // h-12(48px) — BottomSheet 버튼은 Modal보다 높이 여유 있음
-    btn.counterAxisSizingMode = 'FIXED';
-    await setFloatVar(btn, 'cornerRadius', SIZE_VAR.radiusFull, RADIUS.full);
-    setPadding(btn, 0, SPACING.standard, 0, SPACING.standard);
-    await setFloatVar(btn, 'paddingRight', SIZE_VAR.spacingStandard, SPACING.standard);
-    await setFloatVar(btn, 'paddingLeft',  SIZE_VAR.spacingStandard, SPACING.standard);
-
-    await setFillWithVar(btn, bgVar, bgFallback);
-    await addTextWithVar(btn, label, FONT_SIZE.sm, textVar, textFallback, true, SIZE_VAR.fontSizeSm);
-
-    /* appendChild 이후에 layoutGrow 설정 — footer 너비를 균등 분할 */
-    footer.appendChild(btn);
-    btn.layoutGrow = 1;
+  /* 우측: CloseButton or Placeholder (32×32, 동일 너비로 title 중앙 유지) */
+  const rightSlot = figma.createFrame();
+  rightSlot.name = hideCloseButton ? 'Placeholder' : 'CloseButton';
+  setAutoLayout(rightSlot, 'HORIZONTAL', 0, 'CENTER');
+  rightSlot.resize(32, 32);
+  rightSlot.primaryAxisSizingMode = 'FIXED';
+  rightSlot.counterAxisSizingMode = 'FIXED';
+  rightSlot.cornerRadius = RADIUS.sm;
+  clearFill(rightSlot);
+  if (!hideCloseButton) {
+    rightSlot.appendChild(createIcon('X', 16, COLOR.textMuted));
   }
+  header.appendChild(rightSlot);
 
-  /* appendChild 이후에 FILL 설정 */
-  comp.appendChild(footer);
-  footer.layoutSizingHorizontal = 'FILL';
+  /* ── Content Slot (header와 footer 사이 자유 영역) ─────────── */
+  const slot = comp.createSlot();
+  slot.name = 'Content';
+  clearFill(slot);
+  slot.layoutSizingHorizontal = 'FILL';
+  slot.layoutGrow = 1;
 
-  /* ── Figma Boolean 속성: showCloseButton ──────────────────────
-   * showCloseButton=true  ↔ hideCloseButton=false (기본: X 버튼 표시)
-   * showCloseButton=false ↔ hideCloseButton=true  (X 버튼 숨김) */
-  const showClosePropKey = comp.addComponentProperty('showCloseButton', 'BOOLEAN', true);
-  closeBtn.componentPropertyReferences = { visible: showClosePropKey };
+  /* ── Footer (BottomBtnCnt > 0) ───────────────────────────── */
+  if (bottomBtnCnt > 0) {
+    const footer = figma.createFrame();
+    footer.name = 'Footer';
+    setAutoLayout(footer, 'HORIZONTAL', SPACING.sm);
+    setPadding(footer, SPACING.md, SPACING.xl, SPACING.xl, SPACING.xl);
+    clearFill(footer);
+    /* border-t border-border-subtle 시뮬레이션 */
+    footer.strokes          = [solid(COLOR.borderSubtle)];
+    footer.strokeTopWeight  = 1;
+    footer.strokeBottomWeight = 0;
+    footer.strokeLeftWeight = 0;
+    footer.strokeRightWeight = 0;
+    footer.strokeAlign = 'INSIDE';
+    comp.appendChild(footer);
+    footer.layoutSizingHorizontal = 'FILL';
+
+    /* 버튼 생성 헬퍼 — footer.appendChild 후 호출, btn은 level 2, text는 level 3 */
+    const makeBtn = async (
+      style: 'primary' | 'outline',
+      label: string,
+    ): Promise<TextNode> => {
+      const btn = figma.createFrame();
+      btn.name = style === 'primary' ? 'PrimaryButton' : 'SecondaryButton';
+      setAutoLayout(btn, 'HORIZONTAL', 0, 'CENTER');
+      btn.resize(80, BTN_H);
+      btn.counterAxisSizingMode = 'FIXED';
+      await setFloatVar(btn, 'cornerRadius', SIZE_VAR.radiusFull, RADIUS.full);
+
+      if (style === 'primary') {
+        await setFillWithVar(btn, COLOR_VAR.brandPrimary, BRAND.primary);
+      } else {
+        clearFill(btn);
+        btn.strokes     = [solid(BRAND.primary)];
+        btn.strokeWeight = 1;
+        btn.strokeAlign = 'INSIDE';
+      }
+
+      const textColor    = style === 'primary' ? COLOR_VAR.brandFg   : COLOR_VAR.brandText;
+      const textFallback = style === 'primary' ? BRAND.fg            : BRAND.text;
+      const text = await addTextWithVar(
+        btn, label, FONT_SIZE.sm,
+        textColor, textFallback, true, SIZE_VAR.fontSizeSm,
+      );
+      text.textAlignHorizontal = 'CENTER';
+
+      footer.appendChild(btn);
+      btn.layoutGrow = 1;
+      return text;
+    };
+
+    let btn1Text: TextNode;
+    let btn2Text: TextNode | undefined;
+
+    if (bottomBtnCnt === 1) {
+      btn1Text = await makeBtn('primary', '확인');
+    } else {
+      /* 2개일 때: outline 취소(btn2)가 왼쪽, primary 확인(btn1)이 오른쪽 */
+      btn2Text = await makeBtn('outline', '취소');
+      btn1Text = await makeBtn('primary', '확인');
+    }
+    
+    /* TEXT property 바인딩 — comp.appendChild(footer) 완료 후 수행 */
+    /* BottomBtnCnt=1: btn1=단독 확인 / BottomBtnCnt=2: btn1=확인, btn2=취소 */
+    const btn1Key = comp.addComponentProperty('bottomBtn1Label', 'TEXT', '확인');
+    btn1Text.componentPropertyReferences = { characters: btn1Key };
+    
+    if (btn2Text) {
+      const btn2Key = comp.addComponentProperty('bottomBtn2Label', 'TEXT', '취소');
+      btn2Text.componentPropertyReferences = { characters: btn2Key };
+    }
+  }
 
   return comp;
 }
 
 /**
- * BottomSheet ComponentSet을 생성하고 캔버스에 추가한다.
- *
- * 6종 variant (Snap × ButtonCount):
- * - Row 1 (Two): Auto / Half / Full
- * - Row 2 (One): Auto / Half / Full
- *
- * @returns Figma ComponentSetNode ('BottomSheet')
+ * BottomSheet ComponentSet 생성.
+ * HideCloseButton(False|True) × BottomBtnCnt(0|1|2) = 6 variants, cols=3.
+ * Row 1: HideCloseButton=False — BottomBtnCnt 0/1/2
+ * Row 2: HideCloseButton=True  — BottomBtnCnt 0/1/2
  */
 export async function createBottomSheet(): Promise<ComponentSetNode> {
   const variants: ComponentNode[] = [];
-
-  for (const buttonCount of ['Two', 'One'] as ButtonCount[]) {
-    for (const snap of ['Auto', 'Half', 'Full'] as SnapMode[]) {
-      variants.push(await createBottomSheetVariant(snap, buttonCount));
+  for (const hideCloseButton of [false, true]) {
+    for (const bottomBtnCnt of [0, 1, 2] as (0 | 1 | 2)[]) {
+      variants.push(await createBottomSheetVariant(hideCloseButton, bottomBtnCnt));
     }
   }
-
-  /* cols=3: Snap 순으로 3열 배치 → 행은 ButtonCount 조합 */
   return combineVariants(variants, 'BottomSheet', 3);
 }

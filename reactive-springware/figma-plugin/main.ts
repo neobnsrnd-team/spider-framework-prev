@@ -6,27 +6,44 @@
  * - createComponents : 컴포넌트 전체 생성 (createComponents.ts)
  * - createIcons      : Lucide 아이콘 생성 (createIcons.ts)
  * - createVariables  : 디자인 변수 등록 (createVariables.ts)
+ *
+ * 각 커맨드 실행 중에는 figma.notify()로 진행 상태를 표시한다.
+ * createComponents는 단계별 step 이름을 실시간으로 갱신하고,
+ * createIcons / createVariables는 단순 "실행 중..." 토스트를 유지한다.
  */
 
-import { createComponents, getLastStep } from './createComponents';
-import { createIcons }                   from './createIcons';
-import { createVariables }               from './createVariables';
+import { createComponents, getLastStep } from './commands/createComponents';
+import { createIcons }                   from './commands/createIcons';
+import { createVariables }               from './commands/createVariables';
 
 (async () => {
   if (figma.command === 'createComponents') {
-    const message = await createComponents();
+    let toast: NotificationHandler | null = null;
+
+    const message = await createComponents((step) => {
+      /* 이전 토스트 취소 후 새 단계명으로 갱신 — await 사이 yield 시점에 Figma UI에 반영됨 */
+      toast?.cancel();
+      toast = figma.notify(`⏳ 생성 중: ${step}`, { timeout: Infinity });
+    });
+
+    /* TS 5.9 클로저 내 let 재할당 추적으로 await 이후 never로 좁혀짐 — 선언 타입으로 재단언 */
+    (toast as NotificationHandler | null)?.cancel();
     figma.closePlugin(message);
     return;
   }
 
   if (figma.command === 'createIcons') {
+    const toast = figma.notify('⏳ 아이콘 생성 중...', { timeout: Infinity });
     const message = await createIcons();
+    toast.cancel();
     figma.closePlugin(message);
     return;
   }
 
   if (figma.command === 'createVariables') {
+    const toast = figma.notify('⏳ 변수 등록 중...', { timeout: Infinity });
     const message = await createVariables();
+    toast.cancel();
     figma.closePlugin(message);
     return;
   }

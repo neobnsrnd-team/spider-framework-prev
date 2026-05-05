@@ -1,16 +1,21 @@
-/**
+﻿/**
  * @file createCardChipItem.ts
  * @description Figma CardChipItem 컴포넌트 생성.
  * CreditCard 아이콘 원형 배경 + 카드명 + 마스킹 카드번호.
  * 단일 variant.
+ *
+ * TEXT properties:
+ *   - name         — 카드명 (기본값: '하나 머니 체크카드')
+ *   - maskedNumber — 마스킹된 카드번호 (기본값: '1234-****-****-5678')
+ *
  * 컴포넌트 이름: "CardChipItem"
  */
-import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../tokens';
+import { BRAND, COLOR, SPACING, RADIUS, FONT_SIZE, COLOR_VAR, SIZE_VAR } from '../../../utils/tokens';
 import {
   createComponent, setAutoLayout, setPadding, clearFill,
   setFillWithVar, addTextWithVar, setFloatVar,
-} from '../../../helpers';
-import { createIcon } from '../../../icons';
+} from '../../../utils/helpers';
+import { createIcon } from '../../../utils/icons';
 
 export async function createCardChipItem(): Promise<ComponentNode> {
   const comp = createComponent('CardChipItem');
@@ -41,8 +46,8 @@ export async function createCardChipItem(): Promise<ComponentNode> {
 
   /* info를 comp에 먼저 추가해야 TEXT property reference 바인딩 가능 */
   comp.appendChild(info);
-  await addTextWithVar(info, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'cardName', comp);
-  await addTextWithVar(info, '1234-****-****-5678', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'cardNumber', comp);
+  await addTextWithVar(info, '하나 머니 체크카드', FONT_SIZE.sm, COLOR_VAR.textHeading, COLOR.textHeading, true, SIZE_VAR.fontSizeSm, 'name', comp);
+  await addTextWithVar(info, '1234-****-****-5678', FONT_SIZE.xs, COLOR_VAR.textMuted, COLOR.textMuted, false, SIZE_VAR.fontSizeXs, 'maskedNumber', comp);
 
   figma.currentPage.appendChild(comp);
   return comp;

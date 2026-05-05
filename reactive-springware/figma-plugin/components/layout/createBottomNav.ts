@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file createBottomNav.ts
  * @description Figma BottomNav 컴포넌트 생성.
  * 5개 탭에 Lucide 아이콘(Wallet, ShoppingBag, Home, CreditCard, MessageSquare)을 사용한다.
@@ -6,9 +6,9 @@
  * 컴포넌트 이름: "BottomNav"
  */
 
-import { BRAND, COLOR, SPACING, FONT_SIZE } from '../../tokens';
-import { createComponent, setAutoLayout, setPadding, setFill, clearFill, addText } from '../../helpers';
-import { createIcon, type IconName } from '../../icons';
+import { BRAND, COLOR, SPACING, FONT_SIZE } from '../../utils/tokens';
+import { createComponent, setAutoLayout, setPadding, setFill, clearFill, addText } from '../../utils/helpers';
+import { createIcon, type IconName } from '../../utils/icons';
 
 const NAV_WIDTH  = 390;
 const NAV_HEIGHT = 60;
