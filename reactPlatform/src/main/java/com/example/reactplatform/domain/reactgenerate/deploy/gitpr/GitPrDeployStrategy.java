@@ -33,7 +33,7 @@ public class GitPrDeployStrategy implements ReactDeployStrategy {
     private final ContainerScaffoldGenerator scaffoldGenerator;
 
     @Override
-    public DeployResult deploy(String codeId, String reactCode) {
+    public DeployResult deploy(String codeId, String reactCode, String componentName) {
         if (reactCode == null || reactCode.isBlank()) {
             log.warn("[git-pr] React 코드가 비어 있어 PR 생성을 건너뜁니다. codeId={}", codeId);
             return DeployResult.failure("React 코드가 비어 있습니다.");
@@ -41,8 +41,6 @@ public class GitPrDeployStrategy implements ReactDeployStrategy {
 
         ReactDeployProperties.GitPr gitPr = properties.getGitPr();
         String branchName = "reactplatform/" + codeId;
-        // 컴포넌트명을 try 바깥에서 추출 — API 호출 실패와 무관하게 파일명 결정에 사용
-        String componentName = scaffoldGenerator.extractComponentName(reactCode);
 
         try {
             // 1. base 브랜치 최신 SHA 조회
@@ -62,8 +60,8 @@ public class GitPrDeployStrategy implements ReactDeployStrategy {
             // 4. Container scaffold 파일 커밋
             // Container에서 UI 컴포넌트를 import할 상대 경로: container → component 방향
             String importPrefix = resolveImportPrefix(gitPr.getComponentPath(), gitPr.getContainerPath());
-            String scaffoldCode = scaffoldGenerator.generate(reactCode, importPrefix);
-            String scaffoldFileName = scaffoldGenerator.resolveFileName(reactCode);
+            String scaffoldCode = scaffoldGenerator.generate(componentName, reactCode, importPrefix);
+            String scaffoldFileName = scaffoldGenerator.resolveFileName(componentName);
             String containerFilePath = gitPr.getContainerPath() + "/" + scaffoldFileName;
             gitPrApiClient.createOrUpdateFile(
                     branchName,

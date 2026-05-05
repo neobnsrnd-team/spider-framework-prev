@@ -107,10 +107,11 @@ public class ReactApprovalService {
         // 트랜잭션 커밋 성공 후 배포를 실행하고 결과를 FWK_REACT_DEPLOY_HIS에 기록한다.
         // afterCommit에서 실행하여 DB 롤백 시 배포가 수행되지 않도록 보장한다.
         String reactCode = existing.getReactCode();
+        String componentName = existing.getComponentName();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                reactDeployService.deployAndRecord(id, reactCode, approverUserId);
+                reactDeployService.deployAndRecord(id, reactCode, componentName, approverUserId);
             }
         });
 

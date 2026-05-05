@@ -61,12 +61,13 @@ public class ReactDeployService {
      * <p>승인 {@code afterCommit()}에서 호출된다. 배포 실패는 비치명적이므로
      * 예외를 상위로 전파하지 않고 이력에만 기록한다.
      *
-     * @param codeId    승인된 코드 ID
-     * @param reactCode 배포할 React TSX 코드
-     * @param userId    배포 실행자 ID (승인자)
+     * @param codeId        승인된 코드 ID
+     * @param reactCode     배포할 React TSX 코드
+     * @param componentName UI 컴포넌트 함수명 (DB 저장값)
+     * @param userId        배포 실행자 ID (승인자)
      */
-    public void deployAndRecord(String codeId, String reactCode, String userId) {
-        DeployResult result = deployStrategy.deploy(codeId, reactCode);
+    public void deployAndRecord(String codeId, String reactCode, String componentName, String userId) {
+        DeployResult result = deployStrategy.deploy(codeId, reactCode, componentName);
         recordHistory(codeId, result, userId);
         log.info("[deploy] 배포 이력 기록 완료 — codeId={}, status={}", codeId, result.getStatus());
     }
@@ -96,7 +97,7 @@ public class ReactDeployService {
             throw new InvalidInputException("이미 배포가 진행 중입니다. codeId=" + codeId);
         }
         try {
-            DeployResult result = deployStrategy.deploy(codeId, code.getReactCode());
+            DeployResult result = deployStrategy.deploy(codeId, code.getReactCode(), code.getComponentName());
             recordHistory(codeId, result, userId);
 
             String message = result.isSuccess() ? "배포가 완료되었습니다." : "배포 중 오류가 발생했습니다. (" + result.getFailReason() + ")";
