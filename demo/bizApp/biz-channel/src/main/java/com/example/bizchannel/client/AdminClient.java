@@ -49,7 +49,7 @@ public class AdminClient {
                     config.getAdminTcpHost(), config.getAdminTcpPort());
             return tcpClient.sendJson(config.getAdminTcpHost(), config.getAdminTcpPort(), request);
         } catch (IOException e) {
-            log.warn("[AdminClient] Admin TCP 연결 실패 (공지 상태 복원 건너뜀): {}", e.getMessage());
+            log.warn("[AdminClient] Admin TCP 연결 실패 (공지 상태 복원 건너뜀)", e);
             return JsonCommandResponse.builder()
                     .command("NOTICE_STATE_QUERY")
                     .success(false)

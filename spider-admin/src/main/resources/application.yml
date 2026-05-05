@@ -158,11 +158,8 @@ menu:
     - v3_react_generate_his
     - v3_react_approval
 
-# Demo 연동 Configuration (긴급공지 SSE Push, 미리보기)
+# Demo 연동 Configuration (미리보기)
 demo:
-  backend:
-    url: ${DEMO_BACKEND_URL:http://localhost:3001}
-    admin-secret: ${DEMO_BACKEND_ADMIN_SECRET:admin-secret}
   frontend:
     url: ${DEMO_FRONTEND_URL:http://localhost:5173}
 

@@ -54,7 +54,7 @@ public class NoticeStateRestorer implements ApplicationRunner {
             }
         } catch (Exception e) {
             // 공지 복원 실패가 서버 기동을 막지 않도록 모든 예외를 catch
-            log.warn("[NoticeStateRestorer] 공지 상태 복원 중 예외 발생 (비치명적) — 기동 계속 진행: {}", e.getMessage());
+            log.warn("[NoticeStateRestorer] 공지 상태 복원 중 예외 발생 (비치명적) — 기동 계속 진행", e);
         }
     }
 }

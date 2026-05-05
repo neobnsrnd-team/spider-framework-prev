@@ -121,20 +121,64 @@ mysql -u spider -p spider < docs/sql/mysql/03_insert_initial_data.sql
 
 ### 3. 빌드 & 실행
 
-```bash
-# 빌드
-./mvnw clean package
+spider-admin은 `spider-common` → `spider-link` 순서로 의존한다.
+**처음 실행하거나 두 라이브러리가 변경된 경우**, 반드시 선행 설치가 필요하다.
 
-# 실행 (Oracle 프로필)
+#### 3-1. 선행 라이브러리 설치 (첫 실행 또는 라이브러리 변경 시)
+
+프로젝트 루트(`POC_HNC/`)에서 실행한다.
+
+```bash
+# 방법 A — 의존 라이브러리만 선택 설치 (빠름)
+./mvnw clean install -pl spider-common,spider-link -am
+
+# 방법 B — 전체 모듈 일괄 빌드
+./mvnw clean install
+```
+
+설치가 완료되면 `~/.m2/repository/com/example/` 아래에
+`spider-common-0.0.1-SNAPSHOT.jar`, `spider-link-0.0.1-SNAPSHOT.jar`가 생성된다.
+
+> **IntelliJ 사용자**: 루트 `pom.xml`을 프로젝트로 열면 멀티모듈을 소스 레벨에서 인식한다.
+> Maven 패널 → Reload All Maven Projects → `Build > Build Project`(Ctrl+F9)로 빌드하면
+> 별도 `mvn install` 없이도 spider-admin을 실행할 수 있다.
+
+#### 3-2. spider-admin 실행
+
+`spider-admin/` 디렉터리에서 실행한다.
+
+```bash
+# Oracle 프로필로 실행
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=oracle
 
-# 실행 (MySQL 프로필)
+# MySQL 프로필로 실행
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=mysql
 ```
 
 서버 기동 후 http://localhost:8080 접속.
 
-### 4. ELK 스택 (선택)
+> **라이브러리 변경이 없는 경우** `3-1`은 생략하고 `3-2`만 실행하면 된다.
+
+### 4. H2 Console (개발용 인메모리 로그 확인, 선택)
+
+서버 기동 상태에서 http://localhost:8080/h2-console 접속 (로컬에서만 허용).
+
+로그를 H2에 기록하려면 `.env`에서 활성화한다.
+
+```properties
+LOG_DEST_H2=true
+```
+
+| 항목 | 값 |
+|------|-----|
+| JDBC URL | `jdbc:h2:mem:logdb` |
+| User Name | `sa` |
+| Password | (비워 둠) |
+
+> H2 Console은 항상 활성화(`enabled: true`)되어 있으나, 로그 데이터는 `LOG_DEST_H2=true`일 때만 쌓인다.
+> 운영 환경에서는 `LOG_DEST_H2=false`(기본값)를 유지한다.
+
+### 5. ELK 스택 (선택)
 
 ```bash
 docker-compose up -d    # Elasticsearch + Logstash + Kibana + PostgreSQL
