@@ -107,10 +107,11 @@ public class ReactApprovalService {
         // 트랜잭션 커밋 성공 후 배포를 실행하고 결과를 FWK_REACT_DEPLOY_HIS에 기록한다.
         // afterCommit에서 실행하여 DB 롤백 시 배포가 수행되지 않도록 보장한다.
         String reactCode = existing.getReactCode();
+        String componentName = existing.getComponentName();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                reactDeployService.deployAndRecord(id, reactCode, approverUserId);
+                reactDeployService.deployAndRecord(id, reactCode, componentName, approverUserId);
             }
         });
 
@@ -181,7 +182,7 @@ public class ReactApprovalService {
         int endRow = offset + size;
         // 빈 문자열은 null로 통일하여 mapper의 전체 조회 분기를 타도록 한다
         // status: APPROVED/REJECTED 외의 값이 들어오면 거부 (이력 API 범위 제한)
-        String s  = validateAndNormalizeStatus(nullIfBlank(status));
+        String s = validateAndNormalizeStatus(nullIfBlank(status));
         // LIKE 검색 파라미터: %, _, \ 를 이스케이프하여 의도치 않은 와일드카드 동작 방지
         String ti = SqlUtils.escapeLike(nullIfBlank(title));
         String cn = SqlUtils.escapeLike(nullIfBlank(componentName));
@@ -251,5 +252,4 @@ public class ReactApprovalService {
             throw new NotFoundException("생성 결과를 찾을 수 없습니다. codeId=" + id);
         }
     }
-
 }

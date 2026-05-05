@@ -23,7 +23,6 @@ import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateResponse;
 import com.example.reactplatform.domain.reactgenerate.mapper.ReactGenerateMapper;
 import com.example.reactplatform.global.exception.InvalidInputException;
 import com.example.reactplatform.global.exception.NotFoundException;
-import java.util.regex.Pattern;
 import com.example.reactplatform.global.util.SqlUtils;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -61,12 +61,13 @@ public class ReactDeployService {
      * <p>승인 {@code afterCommit()}에서 호출된다. 배포 실패는 비치명적이므로
      * 예외를 상위로 전파하지 않고 이력에만 기록한다.
      *
-     * @param codeId    승인된 코드 ID
-     * @param reactCode 배포할 React TSX 코드
-     * @param userId    배포 실행자 ID (승인자)
+     * @param codeId        승인된 코드 ID
+     * @param reactCode     배포할 React TSX 코드
+     * @param componentName UI 컴포넌트 함수명 (DB 저장값)
+     * @param userId        배포 실행자 ID (승인자)
      */
-    public void deployAndRecord(String codeId, String reactCode, String userId) {
-        DeployResult result = deployStrategy.deploy(codeId, reactCode);
+    public void deployAndRecord(String codeId, String reactCode, String componentName, String userId) {
+        DeployResult result = deployStrategy.deploy(codeId, reactCode, componentName);
         recordHistory(codeId, result, userId);
         log.info("[deploy] 배포 이력 기록 완료 — codeId={}, status={}", codeId, result.getStatus());
     }
@@ -96,7 +97,7 @@ public class ReactDeployService {
             throw new InvalidInputException("이미 배포가 진행 중입니다. codeId=" + codeId);
         }
         try {
-            DeployResult result = deployStrategy.deploy(codeId, code.getReactCode());
+            DeployResult result = deployStrategy.deploy(codeId, code.getReactCode(), code.getComponentName());
             recordHistory(codeId, result, userId);
 
             String message = result.isSuccess() ? "배포가 완료되었습니다." : "배포 중 오류가 발생했습니다. (" + result.getFailReason() + ")";
@@ -141,7 +142,7 @@ public class ReactDeployService {
     public Map<String, Object> findAllHistoryList(
             int page, int size, String search, String userId, String fromDate, String toDate) {
         validateDateFormat(fromDate, "배포 일시 시작");
-        validateDateFormat(toDate,   "배포 일시 종료");
+        validateDateFormat(toDate, "배포 일시 종료");
 
         String fd = nullIfBlank(fromDate);
         String td = nullIfBlank(toDate);
@@ -149,8 +150,8 @@ public class ReactDeployService {
             throw new InvalidInputException("시작 날짜는 종료 날짜보다 이전이어야 합니다.");
         }
 
-        int offset  = (page - 1) * size;
-        int endRow  = offset + size;
+        int offset = (page - 1) * size;
+        int endRow = offset + size;
         String escaped = SqlUtils.escapeLike(nullIfBlank(search));
         List<ReactDeployHistoryResponse> list =
                 reactDeployMapper.selectAllHistoryList(offset, endRow, escaped, userId, fd, td);
@@ -203,8 +204,7 @@ public class ReactDeployService {
                 truncate(result.getFailReason(), FAIL_REASON_MAX_LENGTH),
                 result.getPrUrl(),
                 LocalDateTime.now().format(FORMATTER),
-                userId
-        );
+                userId);
     }
 
     /** 문자열을 maxLength 이하로 자른다. null이면 null을 반환한다. */

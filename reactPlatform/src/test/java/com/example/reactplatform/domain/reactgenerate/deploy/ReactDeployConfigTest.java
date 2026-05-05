@@ -23,8 +23,7 @@ class ReactDeployConfigTest {
     @Test
     @DisplayName("localFileDeployStrategy 팩토리 메서드는 LocalFileDeployStrategy 인스턴스를 반환한다")
     void localFileDeployStrategy_returnsLocalFileDeployStrategyInstance() {
-        ReactDeployStrategy strategy =
-                config.localFileDeployStrategy(new ReactDeployProperties(), scaffoldGenerator);
+        ReactDeployStrategy strategy = config.localFileDeployStrategy(new ReactDeployProperties(), scaffoldGenerator);
 
         assertThat(strategy).isInstanceOf(LocalFileDeployStrategy.class);
     }
@@ -39,8 +38,7 @@ class ReactDeployConfigTest {
         gitPr.setRepo("test-repo");
         props.setGitPr(gitPr);
 
-        ReactDeployStrategy strategy =
-                config.gitPrDeployStrategy(props, scaffoldGenerator, new RestTemplateBuilder());
+        ReactDeployStrategy strategy = config.gitPrDeployStrategy(props, scaffoldGenerator, new RestTemplateBuilder());
 
         assertThat(strategy).isInstanceOf(GitPrDeployStrategy.class);
     }
@@ -49,8 +47,7 @@ class ReactDeployConfigTest {
     @DisplayName("두 팩토리 메서드는 서로 다른 타입의 전략을 반환한다")
     void twoFactoryMethods_returnDifferentStrategyTypes() {
         ReactDeployProperties localProps = new ReactDeployProperties();
-        ReactDeployStrategy localStrategy =
-                config.localFileDeployStrategy(localProps, scaffoldGenerator);
+        ReactDeployStrategy localStrategy = config.localFileDeployStrategy(localProps, scaffoldGenerator);
 
         ReactDeployProperties gitPrProps = new ReactDeployProperties();
         ReactDeployProperties.GitPr gitPr = new ReactDeployProperties.GitPr();

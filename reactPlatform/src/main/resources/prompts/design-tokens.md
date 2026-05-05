@@ -220,6 +220,13 @@ Tailwind `@theme` 블록에 선언된 공통 고정 토큰. 도메인·브랜드
 | `--z-modal` | `50` |
 | `--z-toast` | `100` |
 
+### 기타
+
+| CSS 변수 | 값 |
+|---------|-----|
+| `--color-domain-card-accent` | `var(--domain-card-accent, var(--brand-alt))` |
+| `--color-domain-card-accent-text` | `var(--domain-card-accent-text, var(--brand-text))` |
+
 ## Brand Tokens
 
 `data-brand` 속성으로 주입되는 브랜드별 가변 토큰.

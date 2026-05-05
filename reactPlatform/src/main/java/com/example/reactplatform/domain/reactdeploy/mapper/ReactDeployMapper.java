@@ -24,15 +24,14 @@ public interface ReactDeployMapper {
      * @param lastUpdateUserId  배포 실행자 ID
      */
     void insert(
-            @Param("deployId")         String deployId,
-            @Param("codeId")           String codeId,
-            @Param("deployMode")       String deployMode,
-            @Param("deployStatus")     String deployStatus,
-            @Param("failReason")       String failReason,
-            @Param("prUrl")            String prUrl,
-            @Param("lastUpdateDtime")  String lastUpdateDtime,
-            @Param("lastUpdateUserId") String lastUpdateUserId
-    );
+            @Param("deployId") String deployId,
+            @Param("codeId") String codeId,
+            @Param("deployMode") String deployMode,
+            @Param("deployStatus") String deployStatus,
+            @Param("failReason") String failReason,
+            @Param("prUrl") String prUrl,
+            @Param("lastUpdateDtime") String lastUpdateDtime,
+            @Param("lastUpdateUserId") String lastUpdateUserId);
 
     /**
      * APPROVED 상태 코드 목록에 각 코드의 최근 배포 이력 1건을 LEFT JOIN하여 반환한다.
@@ -42,10 +41,7 @@ public interface ReactDeployMapper {
      * @param search  화면 제목·컴포넌트명·요청자 ID 키워드 (null·빈 문자열이면 전체)
      */
     List<ReactDeployListResponse> selectDeployList(
-            @Param("offset") int offset,
-            @Param("endRow") int endRow,
-            @Param("search") String search
-    );
+            @Param("offset") int offset, @Param("endRow") int endRow, @Param("search") String search);
 
     /** 배포 가능 목록 전체 건수 */
     int selectDeployListCount(@Param("search") String search);
@@ -61,21 +57,19 @@ public interface ReactDeployMapper {
      * @param toDate    배포 일시 종료 (yyyyMMdd, null이면 미적용)
      */
     List<ReactDeployHistoryResponse> selectAllHistoryList(
-            @Param("offset")   int offset,
-            @Param("endRow")   int endRow,
-            @Param("search")   String search,
-            @Param("userId")   String userId,
+            @Param("offset") int offset,
+            @Param("endRow") int endRow,
+            @Param("search") String search,
+            @Param("userId") String userId,
             @Param("fromDate") String fromDate,
-            @Param("toDate")   String toDate
-    );
+            @Param("toDate") String toDate);
 
     /** 전체 배포 이력 건수 */
     int selectAllHistoryCount(
-            @Param("search")   String search,
-            @Param("userId")   String userId,
+            @Param("search") String search,
+            @Param("userId") String userId,
             @Param("fromDate") String fromDate,
-            @Param("toDate")   String toDate
-    );
+            @Param("toDate") String toDate);
 
     /**
      * 특정 코드의 배포 이력 목록을 최근 순으로 반환한다 (모달용).
@@ -85,10 +79,7 @@ public interface ReactDeployMapper {
      * @param endRow  종료 행 번호
      */
     List<ReactDeployHistoryResponse> selectHistoryByCodeId(
-            @Param("codeId")  String codeId,
-            @Param("offset")  int offset,
-            @Param("endRow")  int endRow
-    );
+            @Param("codeId") String codeId, @Param("offset") int offset, @Param("endRow") int endRow);
 
     /** 특정 코드의 배포 이력 건수 */
     int selectHistoryCountByCodeId(@Param("codeId") String codeId);

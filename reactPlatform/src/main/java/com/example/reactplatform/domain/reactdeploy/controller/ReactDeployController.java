@@ -45,7 +45,7 @@ public class ReactDeployController {
     @GetMapping
     @PreAuthorize("hasAuthority('REACT_DEPLOY:R')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDeployList(
-            @RequestParam(defaultValue = "1")  @Min(1) int page,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "") String search) {
         return ResponseEntity.ok(ApiResponse.success(reactDeployService.findDeployList(page, size, search)));
@@ -78,7 +78,7 @@ public class ReactDeployController {
     @GetMapping("/history")
     @PreAuthorize("hasAuthority('REACT_DEPLOY:R')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAllHistory(
-            @RequestParam(defaultValue = "1")  @Min(1) int page,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "") String search,
             @RequestParam(defaultValue = "false") boolean onlyMine,
@@ -87,8 +87,8 @@ public class ReactDeployController {
         String userId = onlyMine ? SecurityUtil.getCurrentUserId() : null;
         // onlyMine 요청인데 사용자 ID를 확인할 수 없으면 전체 이력 노출을 방지하고 빈 결과를 반환한다
         if (onlyMine && userId == null) {
-            return ResponseEntity.ok(ApiResponse.success(
-                    Map.of("list", List.of(), "totalCount", 0, "page", page, "size", size)));
+            return ResponseEntity.ok(
+                    ApiResponse.success(Map.of("list", List.of(), "totalCount", 0, "page", page, "size", size)));
         }
         return ResponseEntity.ok(ApiResponse.success(
                 reactDeployService.findAllHistoryList(page, size, search, userId, fromDate, toDate)));
@@ -105,7 +105,7 @@ public class ReactDeployController {
     @PreAuthorize("hasAuthority('REACT_DEPLOY:R')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getHistoryByCodeId(
             @PathVariable String codeId,
-            @RequestParam(defaultValue = "1")  @Min(1) int page,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         return ResponseEntity.ok(ApiResponse.success(reactDeployService.findHistoryByCodeId(codeId, page, size)));
     }

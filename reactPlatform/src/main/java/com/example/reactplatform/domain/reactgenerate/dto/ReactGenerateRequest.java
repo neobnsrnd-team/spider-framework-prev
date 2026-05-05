@@ -57,9 +57,7 @@ public class ReactGenerateRequest {
      * 생성할 React 컴포넌트 함수명 (PascalCase). 미입력 시 Figma 컴포넌트명을 기반으로 결정한다.
      * Container scaffold 파일명도 이 값을 기준으로 생성되므로, 여러 코드 생성 시 충돌 방지를 위해 입력을 권장한다.
      */
-    @Pattern(
-            regexp = "^[A-Z][A-Za-z0-9]*$",
-            message = "컴포넌트명은 PascalCase로 입력해주세요. (예: LoginPage, TransferForm)")
+    @Pattern(regexp = "^[A-Z][A-Za-z0-9]*$", message = "컴포넌트명은 PascalCase로 입력해주세요. (예: LoginPage, TransferForm)")
     private String componentName;
 
     /**

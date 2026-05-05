@@ -246,7 +246,85 @@ function {ComponentName}Renderer({ open, onClose, children, container, props }: 
 
 ---
 
-## 4. generated 파일 갱신
+## 4. figma-plugin 파일 생성
+
+`figma-plugin/components/` 하위 카테고리에 `create{ComponentName}.ts` 파일을 생성하고,
+`commands/createComponents.ts`에 import 및 배열 등록을 추가한다.
+
+자세한 작성 규칙은 `docs/figma-plugin-guide.md` 를 참고한다.
+
+```
+figma-plugin/components/
+  {카테고리}/create{ComponentName}.ts    ← Figma 컴포넌트 생성 함수
+```
+
+**카테고리 → figma-plugin 경로 매핑**
+
+| component-library 카테고리 | figma-plugin 경로 |
+|---|---|
+| `core/` | `components/core/` |
+| `layout/` | `components/layout/` |
+| `modules/common/` | `components/modules/common/` |
+| `modules/banking/` | `components/modules/banking/` |
+| `biz/common/` | `components/biz/common/` |
+| `biz/banking/` | `components/biz/banking/` |
+| `biz/card/` | `components/biz/card/` |
+| `biz/insurance/` | `components/biz/insurance/` |
+
+**`commands/createComponents.ts` 등록**
+
+```ts
+// ① import 추가
+import { create{ComponentName} } from '../components/{카테고리}/create{ComponentName}';
+
+// ② 해당 카테고리 배열에 추가
+await s('create{ComponentName}', create{ComponentName}),
+```
+
+**빌드 및 Figma 반영**
+
+```bash
+npm run build:plugin     # figma-plugin 번들 재빌드
+# 이후 Figma에서 "컴포넌트 생성" 커맨드 재실행
+```
+
+### variant-mapping.json 확인
+
+`create{ComponentName}.ts`에서 새 속성 키를 사용한 경우,
+`reactPlatform/src/main/resources/variant-mapping.json`의 `global.keys`에 해당 키가 등록되어 있는지 확인한다.
+
+등록되지 않은 키는 `VariantNormalizer`가 PascalCase 그대로 Claude에 전달하여 React prop 이름과 불일치가 생긴다.
+
+**확인 절차:**
+
+1. `create{ComponentName}.ts`에서 사용한 variant 속성 이름 목록을 정리한다
+   - 예: `createComponent('Disabled=False, Shape=Rounded')` → 키: `Disabled`, `Shape`
+2. `variant-mapping.json`의 `global.keys`에 해당 키가 있는지 확인한다
+3. 없으면 추가한다
+
+```json
+// 추가 예시
+"global": {
+  "keys": {
+    "NewPropKey": "newPropKey"
+  }
+}
+```
+
+값 변환이 필요한 경우(소문자 변환 외):
+
+```json
+"values": {
+  "newPropKey": {
+    "OptionA": "a",
+    "OptionB": "b"
+  }
+}
+```
+
+---
+
+## 5. generated 파일 갱신
 
 컴포넌트 추가·수정 후 반드시 아래 명령을 실행해 Claude 컨텍스트 파일을 갱신한다.
 이 파일들은 reactPlatform에서 Claude가 코드를 생성할 때 System Prompt로 주입되므로,
@@ -273,4 +351,7 @@ npm run generate:prompts
 | ☐ Storybook 스토리 | `component-library/{카테고리}/{ComponentName}/{ComponentName}.stories.tsx` |
 | ☐ 라이브러리 export | `component-library/index.ts` |
 | ☐ CMS 등록 | `react-cms/src/cms-meta/blocks.tsx` 또는 `layouts.tsx` 또는 `overlays.tsx` |
+| ☐ figma-plugin 파일 생성 | `figma-plugin/components/{카테고리}/create{ComponentName}.ts` |
+| ☐ figma-plugin 등록 | `figma-plugin/commands/createComponents.ts` (import + 배열) |
+| ☐ variant-mapping.json 확인 | `reactPlatform/src/main/resources/variant-mapping.json` (새 속성 키 등록 여부) |
 | ☐ generated 파일 갱신 | `npm run generate:prompts` |

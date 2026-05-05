@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.example.reactplatform.domain.reactgenerate.figma.client.FigmaNode;
 import com.example.reactplatform.domain.reactgenerate.figma.client.FigmaNodeResponse;
 import com.example.reactplatform.global.exception.NotFoundException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -32,7 +33,9 @@ class FigmaDesignExtractorTest {
 
     @BeforeEach
     void setUp() {
-        extractor = new FigmaDesignExtractor();
+        VariantNormalizer normalizer = new VariantNormalizer(new ObjectMapper());
+        normalizer.load();
+        extractor = new FigmaDesignExtractor(normalizer);
     }
 
     // ================================================================
@@ -141,9 +144,9 @@ class FigmaDesignExtractorTest {
         FigmaNode.Fill gradient = new FigmaNode.Fill();
         gradient.setType("GRADIENT_LINEAR");
         gradient.setGradientStops(List.of(
-                gradientStop(0.051, 0.580, 0.533, 1.0, 0.0),  // #0D9488
-                gradientStop(0.067, 0.369, 0.349, 1.0, 1.0)   // #115E59
-        ));
+                gradientStop(0.051, 0.580, 0.533, 1.0, 0.0), // #0D9488
+                gradientStop(0.067, 0.369, 0.349, 1.0, 1.0) // #115E59
+                ));
         child.setFills(List.of(gradient));
         root.setChildren(List.of(child));
 
@@ -358,9 +361,7 @@ class FigmaDesignExtractorTest {
     @DisplayName("INSTANCE 노드의 VARIANT 속성이 componentProps에 담긴다")
     void componentProps_variant_extracted() {
         FigmaNode root = frameNode("Page", 100, 100, null);
-        FigmaNode instance = instanceNode("SummaryCard", Map.of(
-                "prop1", componentProperty("VARIANT", "spending")
-        ));
+        FigmaNode instance = instanceNode("SummaryCard", Map.of("prop1", componentProperty("VARIANT", "spending")));
         root.setChildren(List.of(instance));
 
         FigmaNodeSummary summary = extractFirstChild(root);
@@ -372,9 +373,7 @@ class FigmaDesignExtractorTest {
     @DisplayName("INSTANCE 노드의 BOOLEAN 속성이 'true'/'false' 문자열로 담긴다")
     void componentProps_boolean_convertedToString() {
         FigmaNode root = frameNode("Page", 100, 100, null);
-        FigmaNode instance = instanceNode("Toggle", Map.of(
-                "isExpanded", componentProperty("BOOLEAN", true)
-        ));
+        FigmaNode instance = instanceNode("Toggle", Map.of("isExpanded", componentProperty("BOOLEAN", true)));
         root.setChildren(List.of(instance));
 
         FigmaNodeSummary summary = extractFirstChild(root);
@@ -386,10 +385,11 @@ class FigmaDesignExtractorTest {
     @DisplayName("INSTANCE_SWAP 속성은 componentProps에서 제외된다")
     void componentProps_instanceSwap_excluded() {
         FigmaNode root = frameNode("Page", 100, 100, null);
-        FigmaNode instance = instanceNode("Card", Map.of(
-                "variant", componentProperty("VARIANT", "primary"),
-                "icon",    componentProperty("INSTANCE_SWAP", "123:456")
-        ));
+        FigmaNode instance = instanceNode(
+                "Card",
+                Map.of(
+                        "variant", componentProperty("VARIANT", "primary"),
+                        "icon", componentProperty("INSTANCE_SWAP", "123:456")));
         root.setChildren(List.of(instance));
 
         FigmaNodeSummary summary = extractFirstChild(root);
@@ -399,23 +399,23 @@ class FigmaDesignExtractorTest {
     }
 
     @Test
-    @DisplayName("FRAME 노드는 componentProps가 null이다")
-    void componentProps_nonInstance_isNull() {
+    @DisplayName("FRAME 노드는 componentProps가 빈 맵이다")
+    void componentProps_nonInstance_isEmpty() {
         FigmaNode root = frameNode("Page", 100, 100, null);
         FigmaNode frame = frameNode("Container", 100, 50, null);
         root.setChildren(List.of(frame));
 
-        assertThat(extractFirstChild(root).getComponentProps()).isNull();
+        assertThat(extractFirstChild(root).getComponentProps()).isEmpty();
     }
 
     @Test
-    @DisplayName("INSTANCE에 componentProperties가 없으면 componentProps는 null이다")
-    void componentProps_emptyProperties_isNull() {
+    @DisplayName("INSTANCE에 componentProperties가 없으면 componentProps는 빈 맵이다")
+    void componentProps_emptyProperties_isEmpty() {
         FigmaNode root = frameNode("Page", 100, 100, null);
         FigmaNode instance = instanceNode("EmptyInstance", Map.of());
         root.setChildren(List.of(instance));
 
-        assertThat(extractFirstChild(root).getComponentProps()).isNull();
+        assertThat(extractFirstChild(root).getComponentProps()).isEmpty();
     }
 
     // ================================================================
@@ -423,39 +423,30 @@ class FigmaDesignExtractorTest {
     // ================================================================
 
     @Test
-    @DisplayName("depth=6까지의 노드는 포함되고 depth=7은 잘린다")
-    void depthLimit_depth7NodeIsTrimmed() {
-        // 루트 → 7단계 깊이 체인 생성
+    @DisplayName("depth=15까지의 노드는 포함되고 depth=16은 잘린다 (MAX_DEPTH=15)")
+    void depthLimit_depth16NodeIsTrimmed() {
+        // 루트 → 16단계 깊이 체인을 아래에서부터 쌓아 올린다
+        FigmaNode leaf = frameNode("L16_CUT", 100, 100, null);
+        FigmaNode current = leaf;
+        for (int i = 15; i >= 1; i--) {
+            FigmaNode level = frameNode("L" + i, 100, 100, null);
+            level.setChildren(List.of(current));
+            current = level;
+        }
         FigmaNode root = frameNode("Root", 100, 100, null);
-        FigmaNode level1 = frameNode("L1", 100, 100, null);
-        FigmaNode level2 = frameNode("L2", 100, 100, null);
-        FigmaNode level3 = frameNode("L3", 100, 100, null);
-        FigmaNode level4 = frameNode("L4", 100, 100, null);
-        FigmaNode level5 = frameNode("L5", 100, 100, null);
-        FigmaNode level6 = frameNode("L6", 100, 100, null);
-        FigmaNode level7 = frameNode("L7_CUT", 100, 100, null);
-
-        level6.setChildren(List.of(level7));
-        level5.setChildren(List.of(level6));
-        level4.setChildren(List.of(level5));
-        level3.setChildren(List.of(level4));
-        level2.setChildren(List.of(level3));
-        level1.setChildren(List.of(level2));
-        root.setChildren(List.of(level1));
+        root.setChildren(List.of(current)); // current = L1
 
         FigmaDesignContext ctx = extractor.extract(response(NODE_ID, root), NODE_ID, FIGMA_URL);
 
-        // depth=6(L6)까지 있어야 함
-        FigmaNodeSummary l6 = ctx.getChildren().get(0)   // L1
-                .getChildren().get(0)                      // L2
-                .getChildren().get(0)                      // L3
-                .getChildren().get(0)                      // L4
-                .getChildren().get(0)                      // L5
-                .getChildren().get(0);                     // L6
-        assertThat(l6.getName()).isEqualTo("L6");
+        // depth=15(L15)까지 포함되어야 함
+        FigmaNodeSummary node = ctx.getChildren().get(0); // L1
+        for (int i = 2; i <= 15; i++) {
+            node = node.getChildren().get(0);
+        }
+        assertThat(node.getName()).isEqualTo("L15");
 
-        // depth=7(L7)은 빈 리스트
-        assertThat(l6.getChildren()).isEmpty();
+        // depth=16(L16_CUT)은 빈 리스트
+        assertThat(node.getChildren()).isEmpty();
     }
 
     // ================================================================
@@ -508,8 +499,7 @@ class FigmaDesignExtractorTest {
         FigmaNode root = frameNode("Root", 100, 100, null);
         FigmaNodeResponse resp = response("999:999", root);
 
-        assertThatThrownBy(() -> extractor.extract(resp, "1:2", FIGMA_URL))
-                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> extractor.extract(resp, "1:2", FIGMA_URL)).isInstanceOf(NotFoundException.class);
     }
 
     // ================================================================

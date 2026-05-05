@@ -1,0 +1,62 @@
+{
+  "global": {
+    "keys": {
+      "Size":         "size",
+      "Variant":      "variant",
+      "Dot":          "dot",
+      "Loading":      "loading",
+      "Disabled":     "disabled",
+      "State":        "state",
+      "Type":         "type",
+      "Shape":        "shape",
+      "Intent":       "intent",
+      "Mode":         "mode",
+      "Compact":      "compact",
+      "Snap":         "snap",
+      "TitleAlign":   "titleAlign",
+      "Justify":      "justify",
+      "Format":       "format",
+      "Weight":       "weight",
+      "Color":        "color",
+      "Icon":         "icon",
+      "Label":        "label",
+      "LeftIcon":     "leftIcon",
+      "RightIcon":    "rightIcon",
+      "FullWidth":    "fullWidth",
+
+      "Selected":     "selected",
+      "IsSelected":   "isSelected",
+      "Hidden":       "hidden",
+      "Submitting":   "submitting",
+      "ShowBorder":   "showBorder",
+      "HeaderAlign":  "headerAlign",
+      "MoreButton":   "moreButton",
+      "WithBottomNav":"withBottomNav",
+      "FilledCount":  "filledCount",
+      "PinLength":    "pinLength",
+      "Cols":         "cols",
+      "Columns":      "columns",
+      "Gap":          "gap",
+      "Direction":    "direction",
+      "Length":       "length"
+    }
+  },
+  "components": {
+    "input": {
+      "keys": {
+        "ValidationState": "validationState"
+      }
+    }
+  },
+  "values": {
+    "size": {
+      "Small":  "sm",
+      "Medium": "md",
+      "Large":  "lg"
+    },
+    "type": {
+      "foreignDeposit": "foreignDeposit"
+    },
+    "default": "lowercase"
+  }
+}

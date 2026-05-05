@@ -89,15 +89,13 @@ class FigmaUrlParserTest {
     @Test
     @DisplayName("null URL이면 InvalidInputException을 던진다")
     void parse_nullUrl_throwsInvalidInputException() {
-        assertThatThrownBy(() -> FigmaUrlParser.parse(null))
-                .isInstanceOf(InvalidInputException.class);
+        assertThatThrownBy(() -> FigmaUrlParser.parse(null)).isInstanceOf(InvalidInputException.class);
     }
 
     @Test
     @DisplayName("빈 URL이면 InvalidInputException을 던진다")
     void parse_blankUrl_throwsInvalidInputException() {
-        assertThatThrownBy(() -> FigmaUrlParser.parse("   "))
-                .isInstanceOf(InvalidInputException.class);
+        assertThatThrownBy(() -> FigmaUrlParser.parse("   ")).isInstanceOf(InvalidInputException.class);
     }
 
     @Test

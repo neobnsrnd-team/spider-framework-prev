@@ -78,8 +78,8 @@ public class ReactApprovalController {
             @RequestParam(defaultValue = "") String createUserId,
             @RequestParam(defaultValue = "") String fromDate,
             @RequestParam(defaultValue = "") String toDate) {
-        return ResponseEntity.ok(ApiResponse.success(
-                reactApprovalService.getHistory(page, size, status, title, componentName, approvalUserId, createUserId, fromDate, toDate)));
+        return ResponseEntity.ok(ApiResponse.success(reactApprovalService.getHistory(
+                page, size, status, title, componentName, approvalUserId, createUserId, fromDate, toDate)));
     }
 
     /**

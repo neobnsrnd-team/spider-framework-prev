@@ -43,12 +43,18 @@ reactive-springware/
 │   └── index.ts              # 모든 컴포넌트 중앙 export (CSS import 없음)
 ├── design-tokens/
 │   └── globals.css           # 전체 CSS 변수 정의 (브랜드·도메인 토큰 + Tailwind @theme)
+├── figma-plugin/             # Figma 플러그인 (Figma 캔버스 ↔ 컴포넌트 동기화)
+│   ├── commands/             # 커맨드 핸들러 (createComponents, createIcons, createVariables)
+│   ├── utils/                # 유틸 (tokens, helpers, icons)
+│   ├── components/           # 카테고리별 Figma 컴포넌트 생성 함수
+│   └── dist/                 # 빌드 결과물 (main.js)
 ├── generated/                # 스크립트로 자동 추출된 Claude 컨텍스트 파일
-├── scripts/                  # 추출 스크립트 (component-types, design-tokens, page-rules)
+├── scripts/                  # 추출 스크립트 (component-types, design-tokens, page-rules, generate-figma-icons)
 ├── lib/
 │   └── cn.ts                 # tailwind-merge + clsx 유틸리티
 ├── docs/
 │   ├── component-checklist.md     # 신규 컴포넌트 추가 체크리스트
+│   ├── figma-plugin-guide.md      # Figma 플러그인 구조 및 사용 가이드
 │   └── page-generation-rules.md   # 페이지 코드 생성 규칙
 └── .storybook/               # Storybook 설정
 ```
@@ -156,6 +162,9 @@ npm run build:css
 |--------|------|
 | `npm run build:css` | `globals.css` + Tailwind → `component-library/dist/styles.css` 빌드. **globals.css 수정 후 반드시 실행** |
 | `npm run build:css:watch` | `build:css`의 파일 감시(watch) 모드. 변경 시 자동으로 재빌드 |
+| `npm run build:plugin` | figma-plugin 번들링 → `figma-plugin/dist/main.js` 생성. **figma-plugin 수정 후 실행** |
+| `npm run watch:plugin` | `build:plugin`의 파일 감시 모드. 수정 시 자동으로 재빌드 |
+| `npm run generate:icons` | lucide-react 전체 아이콘 SVG 추출 → `figma-plugin/utils/icons.ts` 자동 생성 |
 | `npm run generate:prompts` | 컴포넌트·디자인 토큰·페이지 규칙을 `generated/` 폴더에 마크다운으로 추출. **컴포넌트 추가·수정 후 반드시 실행** |
 | `npm run typecheck` | TypeScript 타입 오류 검사 (파일 출력 없음) |
 | `npm run lint` | ESLint 정적 분석 |
@@ -175,6 +184,19 @@ npm run build:css           # dist/styles.css 재빌드
 ```bash
 npm run generate:prompts    # generated/ 갱신 (Claude API System Prompt 소스)
 npm run build:css           # 새 컴포넌트의 Tailwind 클래스가 dist/styles.css에 포함되도록 재빌드
+```
+
+**figma-plugin 수정 후**
+
+```bash
+npm run build:plugin        # figma-plugin/dist/main.js 재빌드 후 Figma에서 재실행
+```
+
+**lucide-react 버전 업 후**
+
+```bash
+npm run generate:icons      # figma-plugin/utils/icons.ts 재생성
+npm run build:plugin        # figma-plugin 번들 재빌드
 ```
 
 ---

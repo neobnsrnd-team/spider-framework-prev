@@ -305,18 +305,15 @@ const { data } = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts });
 | 검색창 | `SearchInput` | |
 | 은행 선택 그리드 | `BankSelectGrid` | prop명: `columns` (`cols` 아님) |
 
-### Figma Variant 값 → React prop 값 변환
+### Figma component props 처리 방침
 
-| Figma Variant 값 | `variant` prop |
-|-----------------|---------------|
-| `Primary` / `Filled` | `'primary'` |
-| `Secondary` / `Outlined` / `Stroke` | `'outline'` |
-| `Tertiary` / `Ghost` / `Typography` | `'ghost'` |
-| `Destructive` / `Error` | `'danger'` |
-| `Info` | `'info'` |
-| `Neutral` | `'neutral'` |
-| `Success` | `'success'` |
-| `Warning` | `'warning'` |
+Element Tree의 `| props: {...}` 값은 **서버에서 이미 React prop 형식으로 정규화**된 상태다.
+
+- **키**: camelCase (`variant`, `size`, `validationState`, `dot`, `loading` 등)
+- **값**: React prop 허용값 그대로 (`primary`, `outline`, `sm`, `md`, `true`, `false`, `default` 등)
+- **TEXT 타입 props** (label, placeholder 등 사람이 읽는 텍스트): 변환 없이 원본 그대로
+
+추가 변환 없이 props 값을 코드에 **직접 사용**할 것.
 
 ---
 
@@ -378,6 +375,7 @@ const { data } = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts });
 | `@cl` 이외 UI 라이브러리 추가 | `@cl`이 유일한 UI 소스 |
 | 존재하지 않는 컴포넌트 임의 생성 | 디자인 시스템 이탈 |
 | 파일 분리 (여러 파일 생성) | 단일 tsx 파일이 생성 단위 |
+| `export default function ComponentName()` (named export와 동일 이름으로 default export 선언) | 자기 자신을 재귀 호출하는 무한 루프 발생 → 런타임 크래시. default export는 반드시 `Preview`로 명명 |
 | `HomePageLayout` 사용 시 `<BottomNav>`를 별도로 추가 | `withBottomNav` prop이 내부에서 렌더링하므로 이중 렌더링 발생 |
 | HomePageLayout 내부에 패딩 추가 | 내장 패딩과 중복 |
 | 애니메이션 외부 라이브러리 추가 | 번들 크기·디자인 시스템 일관성 훼손 |

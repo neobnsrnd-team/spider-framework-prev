@@ -10,6 +10,11 @@ storybook-static/
 component-library/dist/*
 !component-library/dist/styles.css
 
+# figma-plugin/dist/main.js는 Figma 플러그인 번들 — 버전 관리
+!figma-plugin/dist/
+figma-plugin/dist/*
+!figma-plugin/dist/main.js
+
 # 환경 변수
 .env
 .env.local
