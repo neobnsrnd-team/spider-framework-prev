@@ -28,7 +28,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * 채널AP 공통 설정 클래스.
  *
- * <p>CORS 정책, JWT 필터, Admin 수신용 내장 TCP 서버 등록을 담당한다.</p>
+ * <p>CORS 정책, JWT 필터, TCP 연결 정보(AP 서버 간, Admin), Admin 수신용 내장 TCP 서버 등록을 담당한다.</p>
  *
  * <pre>{@code
  *   // application.yml 설정 예시
@@ -37,6 +37,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  *   biz.transfer.host: localhost
  *   biz.transfer.port: 19200
  *   admin.secret: admin-secret
+ *   admin.tcp.host: localhost        # biz-channel → Admin 방향 (기동 시 공지 상태 복원)
+ *   admin.tcp.port: 9999
  *   tcp.server.port: 19400          # Admin이 공지 커맨드를 전송하는 내장 TCP 포트
  * }</pre>
  */
@@ -63,6 +65,14 @@ public class BizChannelConfig implements WebMvcConfigurer {
     /** 공지 관리 API 보호용 어드민 시크릿 키 */
     @Value("${admin.secret:admin-secret}")
     private String adminSecret;
+
+    /** biz-channel → Admin TCP 서버 접속 호스트 (기동 시 공지 상태 복원용) */
+    @Value("${admin.tcp.host:localhost}")
+    private String adminTcpHost;
+
+    /** biz-channel → Admin TCP 서버 포트 (기동 시 공지 상태 복원용, 기본값: 9999) */
+    @Value("${admin.tcp.port:9999}")
+    private int adminTcpPort;
 
     /** Admin → biz-channel 인바운드 TCP 포트 (기본값: 19400) */
     @Value("${tcp.server.port:19400}")

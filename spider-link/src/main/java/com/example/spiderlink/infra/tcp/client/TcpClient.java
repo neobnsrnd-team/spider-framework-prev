@@ -210,8 +210,10 @@ public class TcpClient {
      */
     public ManagementContext sendObject(String host, int port, ManagementContext ctx) throws IOException {
         log.debug("[TcpClient] ObjectStream 전송: host={}, port={}, command={}", host, port, ctx.getCommand());
-        try (Socket socket = createObjectStreamSocket(host, port)) {
-            ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+        // OOS를 try-with-resources에 포함해 예외 시에도 버퍼가 명시적으로 닫히도록 보장.
+        // OIS는 OOS가 헤더를 write한 뒤에 생성해야 데드락을 피할 수 있으므로 헤더 안에 포함하지 않는다.
+        try (Socket socket = createObjectStreamSocket(host, port);
+             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream())) {
             oos.writeObject(ctx);
             oos.flush();
             // ObjectInputFilter 화이트리스트: 허용된 클래스 외 역직렬화 차단 (RCE 방어)

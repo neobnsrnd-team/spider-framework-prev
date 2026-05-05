@@ -2,7 +2,6 @@ package com.example.bizchannel.domain.notice;
 
 import com.example.bizchannel.client.AdminClient;
 import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
-import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,10 +45,9 @@ public class NoticeStateRestorer implements ApplicationRunner {
 
             String deployStatus = (String) payload.get("deployStatus");
             if ("DEPLOYED".equals(deployStatus)) {
-                // deployStatus는 biz-channel 내부 판단용 — SSE 브로드캐스트 페이로드에서 제거
-                Map<String, Object> broadcastPayload = new HashMap<>(payload);
-                broadcastPayload.remove("deployStatus");
-                noticeManager.broadcast(broadcastPayload);
+                // deployStatus는 SSE payload에 그대로 포함해도 무방하다 — 프론트엔드 NoticePayload 인터페이스에
+                // 정의되지 않은 추가 필드이므로 TypeScript가 무시하고, NoticeManager는 받은 Map을 그대로 전달한다.
+                noticeManager.broadcast(payload);
                 log.info("[NoticeStateRestorer] 긴급공지 상태 복원 완료 (DEPLOYED)");
             } else {
                 log.info("[NoticeStateRestorer] 현재 배포 중인 공지 없음 (deployStatus={}), 복원 건너뜀", deployStatus);
