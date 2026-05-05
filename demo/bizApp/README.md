@@ -1,6 +1,6 @@
 # demo/bizApp
 
-하나카드 POC 시연용 금융 AP 서버군. `spider-link`를 라이브러리로 내장한 멀티모듈 Maven 프로젝트.
+시연용 금융 AP 서버군. `spider-link`를 라이브러리로 내장한 멀티모듈 Maven 프로젝트.
 채널AP(HTTP 게이트웨이), 인증AP, 이체AP, 계정계 Mock으로 구성되며, Admin이 TCP로 공지를 브로드캐스트하는 구조다.
 
 ## 목차

@@ -7,10 +7,10 @@ AP 서버에 내장되는 공통 연계엔진 Maven 라이브러리.
 
 - [통신 흐름 개요](#통신-흐름-개요)
 - [기술 스택](#기술-스택)
+- [프로젝트 구조](#프로젝트-구조)
 - [사용 방법](#사용-방법)
 - [핵심 컴포넌트](#핵심-컴포넌트)
 - [API 엔드포인트](#api-엔드포인트)
-- [Project Structure](#project-structure)
 - [빌드 & 설치](#빌드--설치)
 - [주요 설정](#주요-설정-standalone-모드-applicationyml)
 
@@ -89,6 +89,67 @@ requestBytes = fixedLengthParser.serialize(reqStructure.get(), dataMap);
 | Shared Models | spider-common (`JsonCommandRequest/Response`, `CommandHandler`, `CommandDispatcher`) |
 | Build | Maven 3 (Wrapper)                                                                    |
 | Packaging | 라이브러리 JAR + 실행 JAR(`*-exec.jar`) 동시 생성                                               |
+
+## 프로젝트 구조
+
+```
+src/main/java/com/example/spiderlink/
+├── config/
+│   ├── SpiderLinkAutoConfiguration.java        # AutoConfiguration 진입점
+│   ├── SpiderLinkServletAutoConfiguration.java # Servlet 전용 Bean (분리)
+│   ├── SpiderLinkMessageConfig.java            # MessageStructurePool Bean
+│   └── DemoTcpConfig.java                      # standalone 모드용 TCP 서버 설정 (레거시)
+├── domain/
+│   ├── management/executor/                    # ManagementExecutor 구현체 (메타 리로드)
+│   │   ├── MessageStructureExecutor.java       # gubun=message 처리
+│   │   └── RequestAppMappingExecutor.java      # gubun=request_app_mapping 처리
+│   ├── message/                                # FWK_MESSAGE 메타 (전문 구조 정의)
+│   │   ├── dto/MessageFieldMeta.java
+│   │   └── mapper/MessageMetaMapper.java
+│   ├── messageinstance/                        # FWK_MESSAGE_INSTANCE 이력 기록
+│   │   ├── MessageInstanceRecorder.java        # 비동기 이력 기록기
+│   │   ├── MessageLogQueue.java                # 비동기 큐 컨슈머
+│   │   ├── dto/MessageInstanceInsertRequest.java
+│   │   └── mapper/MessageInstanceMapper.java
+│   ├── meta/                                   # FWK_SERVICE·RELATION·COMPONENT 메타 조회
+│   │   ├── dto/ (ComponentInfo, RelationParam, ServiceStep)
+│   │   └── mapper/MetaRoutingMapper.java
+│   └── sqlquery/                               # 동적 SQL 로딩 및 캐시
+│       ├── SqlQueryLoader.java                 # SQL 캐시 로드
+│       ├── SqlQueryReloadController.java       # POST /api/internal/sql/reload
+│       ├── dto/SqlQueryRecord.java
+│       └── mapper/SqlQueryDynamicMapper.java
+├── infra/
+│   ├── http/
+│   │   └── SocketPoolStatusController.java     # GET /api/internal/socket-pool/status
+│   └── tcp/
+│       ├── server/SpiderTcpServer.java         # 핵심 TCP 서버
+│       ├── handler/
+│       │   ├── MetaDrivenCommandHandler.java   # FWK 메타 기반 동적 커맨드 실행
+│       │   └── DemoTrxLogger.java              # standalone 데모용 거래 로거
+│       ├── biz/
+│       │   ├── Biz.java                        # Biz 클래스 추상 인터페이스
+│       │   └── TcpCallBiz.java                 # TCP 연계 공통 Biz
+│       ├── codec/
+│       │   ├── MessageCodec.java               # 코덱 인터페이스
+│       │   ├── JsonMessageCodec.java           # AP 서버 간 JSON 코덱
+│       │   ├── FixedLengthMessageCodec.java    # 레거시 기관 고정길이 코덱
+│       │   └── ObjectStreamMessageCodec.java   # batch-was Java ObjectStream 코덱
+│       ├── client/
+│       │   ├── TcpClient.java                  # 레거시 기관 TCP 클라이언트
+│       │   └── pool/ (SocketPool, SocketPoolManager, PooledSocket)
+│       └── parser/
+│           ├── MessageStructure.java           # FWK_MESSAGE_FIELD 기반 전문 구조
+│           ├── MessageStructurePool.java       # 전문 구조 캐시
+│           ├── FixedLengthParser.java          # 고정길이 직렬화/역직렬화
+│           ├── JsonMessageParser.java
+│           ├── MessageField.java
+│           └── LoopField.java
+└── SpiderLinkApplication.java                 # standalone 실행 진입점 (레거시)
+```
+
+> `CommandHandler`, `CommandDispatcher`, `JsonCommandRequest/Response`, `ManagementContext`는
+> **spider-common** (`com.example.spidercommon`) 패키지에 위치한다.
 
 ## 사용 방법
 
@@ -242,40 +303,6 @@ structurePool.get(orgId, "COMMAND_REQ")
 | `GET` | `/actuator/health` | 헬스체크 | Spring Boot |
 
 `/api/internal/**`, `/api/management/**`는 spider-common의 `InternalApiInterceptor`가 localhost(127.0.0.1, ::1)만 허용한다.
-
-## Project Structure
-
-```
-src/main/java/com/example/spiderlink/
-├── config/
-│   ├── SpiderLinkAutoConfiguration.java        # AutoConfiguration 진입점
-│   ├── SpiderLinkServletAutoConfiguration.java # Servlet 전용 Bean (분리)
-│   ├── SpiderLinkMessageConfig.java            # MessageStructurePool Bean
-│   └── DemoTcpConfig.java                      # standalone 모드용 TCP 서버 설정 (레거시)
-├── domain/
-│   ├── management/executor/                    # ManagementExecutor 구현체 (메타 리로드)
-│   │   ├── MessageStructureExecutor.java       # gubun=message 처리
-│   │   └── RequestAppMappingExecutor.java      # gubun=request_app_mapping 처리
-│   ├── message/                                # FWK_MESSAGE 메타 (전문 구조 정의)
-│   ├── messageinstance/                        # FWK_MESSAGE_INSTANCE 이력 기록
-│   ├── meta/                                   # FWK_SERVICE·RELATION·COMPONENT 메타 조회
-│   └── sqlquery/                               # 동적 SQL 로딩 및 캐시
-├── infra/
-│   ├── http/
-│   │   └── SocketPoolStatusController.java     # GET /api/internal/socket-pool/status
-│   └── tcp/
-│       ├── server/SpiderTcpServer.java          # 핵심 TCP 서버
-│       ├── handler/
-│       │   └── MetaDrivenCommandHandler.java    # FWK 메타 기반 동적 커맨드 실행
-│       ├── biz/                                 # TCP 연계 Biz 클래스 (TcpCallBiz 등)
-│       ├── codec/                               # Json / FixedLength / ObjectStream
-│       ├── client/                              # TcpClient + SocketPool
-│       └── parser/                              # FixedLengthParser, MessageStructure
-└── SpiderLinkApplication.java                  # standalone 실행 진입점 (레거시)
-```
-
-> `CommandHandler`, `CommandDispatcher`, `JsonCommandRequest/Response`, `ManagementContext`는
-> **spider-common** (`com.example.spidercommon`) 패키지에 위치한다.
 
 ## 빌드 & 설치
 
