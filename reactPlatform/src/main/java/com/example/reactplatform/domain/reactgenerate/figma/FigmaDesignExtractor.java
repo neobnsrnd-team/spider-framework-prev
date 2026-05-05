@@ -147,10 +147,14 @@ public class FigmaDesignExtractor {
                 .name(node.getName())
                 .type(node.getType())
                 // 크기
-                .width(toInt(node.getAbsoluteBoundingBox() != null
-                        ? node.getAbsoluteBoundingBox().getWidth() : 0))
-                .height(toInt(node.getAbsoluteBoundingBox() != null
-                        ? node.getAbsoluteBoundingBox().getHeight() : 0))
+                .width(toInt(
+                        node.getAbsoluteBoundingBox() != null
+                                ? node.getAbsoluteBoundingBox().getWidth()
+                                : 0))
+                .height(toInt(
+                        node.getAbsoluteBoundingBox() != null
+                                ? node.getAbsoluteBoundingBox().getHeight()
+                                : 0))
                 // Auto Layout
                 .layoutMode(node.getLayoutMode())
                 .mainAxisAlign(node.getPrimaryAxisAlignItems())
@@ -284,11 +288,12 @@ public class FigmaDesignExtractor {
      * 예) {Variant=Primary, Size=Medium} → {variant=primary, size=md}
      *
      * @param node 추출할 노드
-     * @return 정규화된 속성명 → 값 문자열 맵. INSTANCE가 아니거나 속성이 없으면 null
+     * @return 정규화된 속성명 → 값 문자열 맵. INSTANCE가 아니거나 속성이 없으면 빈 맵
      */
     private Map<String, String> extractComponentProps(FigmaNode node) {
-        if (!"INSTANCE".equals(node.getType())) return null;
-        if (node.getComponentProperties() == null || node.getComponentProperties().isEmpty()) return null;
+        if (!"INSTANCE".equals(node.getType())) return Collections.emptyMap();
+        if (node.getComponentProperties() == null
+                || node.getComponentProperties().isEmpty()) return Collections.emptyMap();
 
         // INSTANCE_SWAP 제외 후 타입 정보가 보존된 상태로 수집 (VariantNormalizer가 TEXT 타입 판별에 사용)
         Map<String, FigmaNode.ComponentProperty> rawProps = new LinkedHashMap<>();
@@ -298,10 +303,9 @@ public class FigmaDesignExtractor {
             rawProps.put(propName, prop);
         });
 
-        if (rawProps.isEmpty()) return null;
+        if (rawProps.isEmpty()) return Collections.emptyMap();
 
-        Map<String, String> normalized = variantNormalizer.normalize(node.getName(), rawProps);
-        return normalized.isEmpty() ? null : normalized;
+        return variantNormalizer.normalize(node.getName(), rawProps);
     }
 
     /** Double 값을 int로 변환한다. null이면 0을 반환한다. */

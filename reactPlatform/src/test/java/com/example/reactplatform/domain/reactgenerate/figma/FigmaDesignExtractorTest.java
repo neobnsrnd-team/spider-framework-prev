@@ -144,9 +144,9 @@ class FigmaDesignExtractorTest {
         FigmaNode.Fill gradient = new FigmaNode.Fill();
         gradient.setType("GRADIENT_LINEAR");
         gradient.setGradientStops(List.of(
-                gradientStop(0.051, 0.580, 0.533, 1.0, 0.0),  // #0D9488
-                gradientStop(0.067, 0.369, 0.349, 1.0, 1.0)   // #115E59
-        ));
+                gradientStop(0.051, 0.580, 0.533, 1.0, 0.0), // #0D9488
+                gradientStop(0.067, 0.369, 0.349, 1.0, 1.0) // #115E59
+                ));
         child.setFills(List.of(gradient));
         root.setChildren(List.of(child));
 
@@ -361,9 +361,7 @@ class FigmaDesignExtractorTest {
     @DisplayName("INSTANCE 노드의 VARIANT 속성이 componentProps에 담긴다")
     void componentProps_variant_extracted() {
         FigmaNode root = frameNode("Page", 100, 100, null);
-        FigmaNode instance = instanceNode("SummaryCard", Map.of(
-                "prop1", componentProperty("VARIANT", "spending")
-        ));
+        FigmaNode instance = instanceNode("SummaryCard", Map.of("prop1", componentProperty("VARIANT", "spending")));
         root.setChildren(List.of(instance));
 
         FigmaNodeSummary summary = extractFirstChild(root);
@@ -375,9 +373,7 @@ class FigmaDesignExtractorTest {
     @DisplayName("INSTANCE 노드의 BOOLEAN 속성이 'true'/'false' 문자열로 담긴다")
     void componentProps_boolean_convertedToString() {
         FigmaNode root = frameNode("Page", 100, 100, null);
-        FigmaNode instance = instanceNode("Toggle", Map.of(
-                "isExpanded", componentProperty("BOOLEAN", true)
-        ));
+        FigmaNode instance = instanceNode("Toggle", Map.of("isExpanded", componentProperty("BOOLEAN", true)));
         root.setChildren(List.of(instance));
 
         FigmaNodeSummary summary = extractFirstChild(root);
@@ -389,10 +385,11 @@ class FigmaDesignExtractorTest {
     @DisplayName("INSTANCE_SWAP 속성은 componentProps에서 제외된다")
     void componentProps_instanceSwap_excluded() {
         FigmaNode root = frameNode("Page", 100, 100, null);
-        FigmaNode instance = instanceNode("Card", Map.of(
-                "variant", componentProperty("VARIANT", "primary"),
-                "icon",    componentProperty("INSTANCE_SWAP", "123:456")
-        ));
+        FigmaNode instance = instanceNode(
+                "Card",
+                Map.of(
+                        "variant", componentProperty("VARIANT", "primary"),
+                        "icon", componentProperty("INSTANCE_SWAP", "123:456")));
         root.setChildren(List.of(instance));
 
         FigmaNodeSummary summary = extractFirstChild(root);
@@ -402,23 +399,23 @@ class FigmaDesignExtractorTest {
     }
 
     @Test
-    @DisplayName("FRAME 노드는 componentProps가 null이다")
-    void componentProps_nonInstance_isNull() {
+    @DisplayName("FRAME 노드는 componentProps가 빈 맵이다")
+    void componentProps_nonInstance_isEmpty() {
         FigmaNode root = frameNode("Page", 100, 100, null);
         FigmaNode frame = frameNode("Container", 100, 50, null);
         root.setChildren(List.of(frame));
 
-        assertThat(extractFirstChild(root).getComponentProps()).isNull();
+        assertThat(extractFirstChild(root).getComponentProps()).isEmpty();
     }
 
     @Test
-    @DisplayName("INSTANCE에 componentProperties가 없으면 componentProps는 null이다")
-    void componentProps_emptyProperties_isNull() {
+    @DisplayName("INSTANCE에 componentProperties가 없으면 componentProps는 빈 맵이다")
+    void componentProps_emptyProperties_isEmpty() {
         FigmaNode root = frameNode("Page", 100, 100, null);
         FigmaNode instance = instanceNode("EmptyInstance", Map.of());
         root.setChildren(List.of(instance));
 
-        assertThat(extractFirstChild(root).getComponentProps()).isNull();
+        assertThat(extractFirstChild(root).getComponentProps()).isEmpty();
     }
 
     // ================================================================
@@ -502,8 +499,7 @@ class FigmaDesignExtractorTest {
         FigmaNode root = frameNode("Root", 100, 100, null);
         FigmaNodeResponse resp = response("999:999", root);
 
-        assertThatThrownBy(() -> extractor.extract(resp, "1:2", FIGMA_URL))
-                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> extractor.extract(resp, "1:2", FIGMA_URL)).isInstanceOf(NotFoundException.class);
     }
 
     // ================================================================

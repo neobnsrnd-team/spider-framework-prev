@@ -49,7 +49,7 @@ class GitPrDeployStrategyTest {
     private static final String SCAFFOLD_FILE = "LoginPageContainer.tsx";
     private static final String PR_URL = "https://github.com/owner/repo/pull/1";
 
-    // REACT_CODE에서 추출되는 컴포넌트명 (export default function LoginPage)
+    // deploy()에 직접 전달하는 컴포넌트명 (DB 저장값 — 코드 파싱 없이 파일명 결정)
     private static final String COMPONENT_NAME = "LoginPage";
 
     @BeforeEach
@@ -69,20 +69,21 @@ class GitPrDeployStrategyTest {
     // ========== 성공 경로 ==========
 
     @Test
-    @DisplayName("정상 배포 시 getBaseSha → createBranch → createOrUpdateFile × 2 → findOpenPrUrl → createPullRequest 순서로 호출된다")
+    @DisplayName(
+            "정상 배포 시 getBaseSha → createBranch → createOrUpdateFile × 2 → findOpenPrUrl → createPullRequest 순서로 호출된다")
     void deploy_success_callsApiInCorrectOrder() {
         stubSuccessfulDeploy();
 
-        strategy.deploy(CODE_ID, REACT_CODE);
+        strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME);
 
         String branch = "reactplatform/" + CODE_ID;
         InOrder order = inOrder(gitPrApiClient);
         order.verify(gitPrApiClient).getBaseSha("main");
         order.verify(gitPrApiClient).createBranch(eq(branch), eq(BASE_SHA));
-        order.verify(gitPrApiClient).createOrUpdateFile(
-                eq(branch), eq("src/generated/LoginPage.tsx"), anyString(), anyString());
-        order.verify(gitPrApiClient).createOrUpdateFile(
-                eq(branch), eq("src/containers/" + SCAFFOLD_FILE), anyString(), anyString());
+        order.verify(gitPrApiClient)
+                .createOrUpdateFile(eq(branch), eq("src/generated/LoginPage.tsx"), anyString(), anyString());
+        order.verify(gitPrApiClient)
+                .createOrUpdateFile(eq(branch), eq("src/containers/" + SCAFFOLD_FILE), anyString(), anyString());
         order.verify(gitPrApiClient).findOpenPrUrl(eq(branch));
         order.verify(gitPrApiClient).createPullRequest(eq(branch), eq("main"), anyString(), anyString());
     }
@@ -92,7 +93,7 @@ class GitPrDeployStrategyTest {
     void deploy_success_returnsSuccessResultWithPrUrl() {
         stubSuccessfulDeploy();
 
-        DeployResult result = strategy.deploy(CODE_ID, REACT_CODE);
+        DeployResult result = strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME);
 
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.getPrUrl()).isEqualTo(PR_URL);
@@ -105,7 +106,7 @@ class GitPrDeployStrategyTest {
     void deploy_branchName_followsNamingConvention() {
         stubSuccessfulDeploy();
 
-        strategy.deploy(CODE_ID, REACT_CODE);
+        strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME);
 
         verify(gitPrApiClient).createBranch(eq("reactplatform/" + CODE_ID), eq(BASE_SHA));
     }
@@ -115,13 +116,11 @@ class GitPrDeployStrategyTest {
     void deploy_componentFilePath_usesComponentName() {
         stubSuccessfulDeploy();
 
-        strategy.deploy(CODE_ID, REACT_CODE);
+        strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME);
 
-        verify(gitPrApiClient).createOrUpdateFile(
-                eq("reactplatform/" + CODE_ID),
-                eq("src/generated/LoginPage.tsx"),
-                eq(REACT_CODE),
-                anyString());
+        verify(gitPrApiClient)
+                .createOrUpdateFile(
+                        eq("reactplatform/" + CODE_ID), eq("src/generated/LoginPage.tsx"), eq(REACT_CODE), anyString());
     }
 
     @Test
@@ -129,29 +128,28 @@ class GitPrDeployStrategyTest {
     void deploy_scaffoldFilePath_usesContainerPath() {
         stubSuccessfulDeploy();
 
-        strategy.deploy(CODE_ID, REACT_CODE);
+        strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME);
 
-        verify(gitPrApiClient).createOrUpdateFile(
-                eq("reactplatform/" + CODE_ID),
-                eq("src/containers/" + SCAFFOLD_FILE),
-                eq(SCAFFOLD_CODE),
-                anyString());
+        verify(gitPrApiClient)
+                .createOrUpdateFile(
+                        eq("reactplatform/" + CODE_ID),
+                        eq("src/containers/" + SCAFFOLD_FILE),
+                        eq(SCAFFOLD_CODE),
+                        anyString());
     }
 
     @Test
     @DisplayName("PR 본문에 개발자 TODO 안내 항목과 codeId가 포함된다")
     void deploy_prBody_containsTodoGuideAndCodeId() {
-        // stubSuccessfulDeploy() 대신 직접 설정 — createPullRequest는 ArgumentCaptor로 따로 처리
         when(gitPrApiClient.getBaseSha("main")).thenReturn(BASE_SHA);
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
-        when(scaffoldGenerator.generate(anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
+        when(scaffoldGenerator.generate(anyString(), anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
         when(scaffoldGenerator.resolveFileName(anyString())).thenReturn(SCAFFOLD_FILE);
 
         ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
         when(gitPrApiClient.createPullRequest(anyString(), anyString(), anyString(), bodyCaptor.capture()))
                 .thenReturn(PR_URL);
 
-        strategy.deploy(CODE_ID, REACT_CODE);
+        strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME);
 
         String body = bodyCaptor.getValue();
         assertThat(body).contains("TODO");
@@ -163,10 +161,9 @@ class GitPrDeployStrategyTest {
     void deploy_pr_targetsBaseBranch() {
         stubSuccessfulDeploy();
 
-        strategy.deploy(CODE_ID, REACT_CODE);
+        strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME);
 
-        verify(gitPrApiClient).createPullRequest(
-                eq("reactplatform/" + CODE_ID), eq("main"), anyString(), anyString());
+        verify(gitPrApiClient).createPullRequest(eq("reactplatform/" + CODE_ID), eq("main"), anyString(), anyString());
     }
 
     @Test
@@ -174,12 +171,11 @@ class GitPrDeployStrategyTest {
     void deploy_existingOpenPr_reusesExistingPrUrl() {
         String existingPrUrl = "https://github.com/owner/repo/pull/99";
         when(gitPrApiClient.getBaseSha("main")).thenReturn(BASE_SHA);
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
-        when(scaffoldGenerator.generate(anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
+        when(scaffoldGenerator.generate(anyString(), anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
         when(scaffoldGenerator.resolveFileName(anyString())).thenReturn(SCAFFOLD_FILE);
         when(gitPrApiClient.findOpenPrUrl(anyString())).thenReturn(existingPrUrl);
 
-        DeployResult result = strategy.deploy(CODE_ID, REACT_CODE);
+        DeployResult result = strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME);
 
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.getPrUrl()).isEqualTo(existingPrUrl);
@@ -191,7 +187,7 @@ class GitPrDeployStrategyTest {
     @Test
     @DisplayName("React 코드가 빈 문자열이면 GitHub API를 호출하지 않고 FAILED 결과를 반환한다")
     void deploy_emptyCode_returnsFailureAndNoApiCall() {
-        DeployResult result = strategy.deploy(CODE_ID, "");
+        DeployResult result = strategy.deploy(CODE_ID, "", COMPONENT_NAME);
 
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getFailReason()).isNotBlank();
@@ -201,7 +197,7 @@ class GitPrDeployStrategyTest {
     @Test
     @DisplayName("React 코드가 null이면 GitHub API를 호출하지 않고 FAILED 결과를 반환한다")
     void deploy_nullCode_returnsFailureAndNoApiCall() {
-        DeployResult result = strategy.deploy(CODE_ID, null);
+        DeployResult result = strategy.deploy(CODE_ID, null, COMPONENT_NAME);
 
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getFailReason()).isNotBlank();
@@ -214,11 +210,10 @@ class GitPrDeployStrategyTest {
     @DisplayName("getBaseSha 실패 시 예외를 던지지 않고 FAILED 결과를 반환한다")
     void deploy_getBaseShaFails_returnsFailureNonFatal() {
         when(gitPrApiClient.getBaseSha(anyString())).thenThrow(new InternalException("API 오류"));
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
 
-        DeployResult result = strategy.deploy(CODE_ID, REACT_CODE);
+        DeployResult result = strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME);
 
-        assertThatNoException().isThrownBy(() -> strategy.deploy(CODE_ID, REACT_CODE));
+        assertThatNoException().isThrownBy(() -> strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME));
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getFailReason()).isNotBlank();
     }
@@ -227,12 +222,9 @@ class GitPrDeployStrategyTest {
     @DisplayName("createBranch 실패 시 예외를 던지지 않고 FAILED 결과를 반환한다")
     void deploy_createBranchFails_returnsFailureNonFatal() {
         when(gitPrApiClient.getBaseSha(anyString())).thenReturn(BASE_SHA);
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
-        doThrow(new InternalException("브랜치 생성 실패"))
-                .when(gitPrApiClient)
-                .createBranch(anyString(), anyString());
+        doThrow(new InternalException("브랜치 생성 실패")).when(gitPrApiClient).createBranch(anyString(), anyString());
 
-        DeployResult result = strategy.deploy(CODE_ID, REACT_CODE);
+        DeployResult result = strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME);
 
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getFailReason()).isNotBlank();
@@ -242,13 +234,12 @@ class GitPrDeployStrategyTest {
     @DisplayName("PR 생성 실패 시 예외를 던지지 않고 FAILED 결과를 반환한다")
     void deploy_createPrFails_returnsFailureNonFatal() {
         when(gitPrApiClient.getBaseSha(anyString())).thenReturn(BASE_SHA);
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
-        when(scaffoldGenerator.generate(anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
+        when(scaffoldGenerator.generate(anyString(), anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
         when(scaffoldGenerator.resolveFileName(anyString())).thenReturn(SCAFFOLD_FILE);
         when(gitPrApiClient.createPullRequest(anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new InternalException("PR 생성 실패"));
 
-        DeployResult result = strategy.deploy(CODE_ID, REACT_CODE);
+        DeployResult result = strategy.deploy(CODE_ID, REACT_CODE, COMPONENT_NAME);
 
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getFailReason()).isNotBlank();
@@ -259,8 +250,7 @@ class GitPrDeployStrategyTest {
     /** 성공 경로에 필요한 모든 Mock 스텁을 설정한다. findOpenPrUrl은 null(기존 PR 없음)을 반환하도록 설정한다. */
     private void stubSuccessfulDeploy() {
         when(gitPrApiClient.getBaseSha("main")).thenReturn(BASE_SHA);
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
-        when(scaffoldGenerator.generate(anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
+        when(scaffoldGenerator.generate(anyString(), anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
         when(scaffoldGenerator.resolveFileName(anyString())).thenReturn(SCAFFOLD_FILE);
         when(gitPrApiClient.findOpenPrUrl(anyString())).thenReturn(null);
         when(gitPrApiClient.createPullRequest(anyString(), anyString(), anyString(), anyString()))

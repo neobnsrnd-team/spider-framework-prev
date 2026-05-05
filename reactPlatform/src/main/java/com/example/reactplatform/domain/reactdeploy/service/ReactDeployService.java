@@ -23,7 +23,6 @@ import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateResponse;
 import com.example.reactplatform.domain.reactgenerate.mapper.ReactGenerateMapper;
 import com.example.reactplatform.global.exception.InvalidInputException;
 import com.example.reactplatform.global.exception.NotFoundException;
-import java.util.regex.Pattern;
 import com.example.reactplatform.global.util.SqlUtils;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -142,7 +142,7 @@ public class ReactDeployService {
     public Map<String, Object> findAllHistoryList(
             int page, int size, String search, String userId, String fromDate, String toDate) {
         validateDateFormat(fromDate, "배포 일시 시작");
-        validateDateFormat(toDate,   "배포 일시 종료");
+        validateDateFormat(toDate, "배포 일시 종료");
 
         String fd = nullIfBlank(fromDate);
         String td = nullIfBlank(toDate);
@@ -150,8 +150,8 @@ public class ReactDeployService {
             throw new InvalidInputException("시작 날짜는 종료 날짜보다 이전이어야 합니다.");
         }
 
-        int offset  = (page - 1) * size;
-        int endRow  = offset + size;
+        int offset = (page - 1) * size;
+        int endRow = offset + size;
         String escaped = SqlUtils.escapeLike(nullIfBlank(search));
         List<ReactDeployHistoryResponse> list =
                 reactDeployMapper.selectAllHistoryList(offset, endRow, escaped, userId, fd, td);
@@ -204,8 +204,7 @@ public class ReactDeployService {
                 truncate(result.getFailReason(), FAIL_REASON_MAX_LENGTH),
                 result.getPrUrl(),
                 LocalDateTime.now().format(FORMATTER),
-                userId
-        );
+                userId);
     }
 
     /** 문자열을 maxLength 이하로 자른다. null이면 null을 반환한다. */

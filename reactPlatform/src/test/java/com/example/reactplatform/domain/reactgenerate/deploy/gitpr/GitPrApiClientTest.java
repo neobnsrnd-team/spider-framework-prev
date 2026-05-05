@@ -69,21 +69,17 @@ class GitPrApiClientTest {
     @Test
     @DisplayName("getBaseSha: 브랜치를 찾을 수 없으면 InternalException이 발생한다")
     void getBaseSha_notFound_throwsInternalException() {
-        server.expect(requestTo(BASE_URL + "/git/ref/heads/missing"))
-                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        server.expect(requestTo(BASE_URL + "/git/ref/heads/missing")).andRespond(withStatus(HttpStatus.NOT_FOUND));
 
-        assertThatThrownBy(() -> client.getBaseSha("missing"))
-                .isInstanceOf(InternalException.class);
+        assertThatThrownBy(() -> client.getBaseSha("missing")).isInstanceOf(InternalException.class);
     }
 
     @Test
     @DisplayName("getBaseSha: 인증 실패(401) 시 InternalException이 발생한다")
     void getBaseSha_unauthorized_throwsInternalException() {
-        server.expect(requestTo(BASE_URL + "/git/ref/heads/main"))
-                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+        server.expect(requestTo(BASE_URL + "/git/ref/heads/main")).andRespond(withStatus(HttpStatus.UNAUTHORIZED));
 
-        assertThatThrownBy(() -> client.getBaseSha("main"))
-                .isInstanceOf(InternalException.class);
+        assertThatThrownBy(() -> client.getBaseSha("main")).isInstanceOf(InternalException.class);
     }
 
     // ========== createBranch ==========
@@ -151,8 +147,7 @@ class GitPrApiClientTest {
     @DisplayName("createOrUpdateFile: 파일 내용이 Base64로 인코딩되어 전송된다")
     void createOrUpdateFile_success_encodesContentAsBase64() {
         String content = "export default function Foo() {}";
-        String expectedEncoded = Base64.getEncoder()
-                .encodeToString(content.getBytes(StandardCharsets.UTF_8));
+        String expectedEncoded = Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8));
 
         // RestTemplate URI 템플릿 치환 시 경로의 '/'가 '%2F'로 인코딩된다
         server.expect(requestTo(BASE_URL + "/contents/src%2Fgenerated%2Ffoo.tsx"))
@@ -172,8 +167,8 @@ class GitPrApiClientTest {
         server.expect(requestTo(BASE_URL + "/contents/src%2Fgenerated%2Ffoo.tsx"))
                 .andRespond(withStatus(HttpStatus.FORBIDDEN));
 
-        assertThatThrownBy(() -> client.createOrUpdateFile(
-                "reactplatform/01", "src/generated/foo.tsx", "content", "commit msg"))
+        assertThatThrownBy(() ->
+                        client.createOrUpdateFile("reactplatform/01", "src/generated/foo.tsx", "content", "commit msg"))
                 .isInstanceOf(InternalException.class);
     }
 
@@ -200,11 +195,9 @@ class GitPrApiClientTest {
     @Test
     @DisplayName("createPullRequest: PR 생성 실패(422) 시 InternalException이 발생한다")
     void createPullRequest_unprocessableEntity_throwsInternalException() {
-        server.expect(requestTo(BASE_URL + "/pulls"))
-                .andRespond(withStatus(HttpStatus.UNPROCESSABLE_ENTITY));
+        server.expect(requestTo(BASE_URL + "/pulls")).andRespond(withStatus(HttpStatus.UNPROCESSABLE_ENTITY));
 
-        assertThatThrownBy(() -> client.createPullRequest(
-                "reactplatform/01", "main", "title", "body"))
+        assertThatThrownBy(() -> client.createPullRequest("reactplatform/01", "main", "title", "body"))
                 .isInstanceOf(InternalException.class);
     }
 
@@ -246,9 +239,7 @@ class GitPrApiClientTest {
     void allRequests_containGitHubApiVersionHeader() {
         server.expect(requestTo(BASE_URL + "/git/ref/heads/main"))
                 .andExpect(header("X-GitHub-Api-Version", "2022-11-28"))
-                .andRespond(withSuccess(
-                        "{\"object\":{\"sha\":\"sha123\"}}",
-                        MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess("{\"object\":{\"sha\":\"sha123\"}}", MediaType.APPLICATION_JSON));
 
         client.getBaseSha("main");
         server.verify();

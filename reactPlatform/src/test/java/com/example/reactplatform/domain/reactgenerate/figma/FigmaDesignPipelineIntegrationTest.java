@@ -127,9 +127,9 @@ class FigmaDesignPipelineIntegrationTest {
         }
         System.out.println();
         System.out.printf("전체 노드 수         : %d개%n", total);
-        System.out.printf("MAX_DEPTH=6 이하     : %d개 (현재 추출 범위, %.0f%%)%n",
-                withinLimit, withinLimit * 100.0 / total);
-        System.out.printf("MAX_DEPTH=6 초과     : %d개 (현재 잘림, %.0f%%)%n",
+        System.out.printf("MAX_DEPTH=6 이하     : %d개 (현재 추출 범위, %.0f%%)%n", withinLimit, withinLimit * 100.0 / total);
+        System.out.printf(
+                "MAX_DEPTH=6 초과     : %d개 (현재 잘림, %.0f%%)%n",
                 total - withinLimit, (total - withinLimit) * 100.0 / total);
         System.out.println("==============================\n");
 
@@ -158,8 +158,9 @@ class FigmaDesignPipelineIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Figma-Token", TOKEN);
 
-        String rawJson = rawRestTemplate.exchange(
-                url, HttpMethod.GET, new HttpEntity<>(headers), String.class).getBody();
+        String rawJson = rawRestTemplate
+                .exchange(url, HttpMethod.GET, new HttpEntity<>(headers), String.class)
+                .getBody();
 
         assertThat(rawJson).isNotBlank();
 
@@ -181,7 +182,8 @@ class FigmaDesignPipelineIntegrationTest {
             System.out.printf("발견된 INSTANCE 노드 수 (최대 3개): %d%n%n", instanceNodes.size());
             for (JsonNode instance : instanceNodes) {
                 System.out.println("── INSTANCE: " + instance.path("name").asText());
-                System.out.println("   componentId: " + instance.path("componentId").asText("(없음)"));
+                System.out.println(
+                        "   componentId: " + instance.path("componentId").asText("(없음)"));
 
                 JsonNode compProps = instance.path("componentProperties");
                 if (compProps.isMissingNode() || compProps.isNull()) {
@@ -190,8 +192,8 @@ class FigmaDesignPipelineIntegrationTest {
                     System.out.println("   componentProperties: {} (빈 객체)");
                 } else {
                     System.out.println("   componentProperties:");
-                    System.out.println(objectMapper.writerWithDefaultPrettyPrinter()
-                            .writeValueAsString(compProps));
+                    System.out.println(
+                            objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(compProps));
                 }
                 System.out.println();
             }
@@ -234,9 +236,17 @@ class FigmaDesignPipelineIntegrationTest {
             String childIndent = indent + (last ? "   " : "│  ");
 
             StringBuilder line = new StringBuilder();
-            line.append(indent).append(connector)
-                    .append("[").append(n.getType()).append("] ").append(n.getName())
-                    .append(" (").append(n.getWidth()).append("×").append(n.getHeight()).append("px");
+            line.append(indent)
+                    .append(connector)
+                    .append("[")
+                    .append(n.getType())
+                    .append("] ")
+                    .append(n.getName())
+                    .append(" (")
+                    .append(n.getWidth())
+                    .append("×")
+                    .append(n.getHeight())
+                    .append("px");
             if (n.getLayoutMode() != null && !"NONE".equals(n.getLayoutMode())) {
                 line.append(", ").append(n.getLayoutMode());
             }

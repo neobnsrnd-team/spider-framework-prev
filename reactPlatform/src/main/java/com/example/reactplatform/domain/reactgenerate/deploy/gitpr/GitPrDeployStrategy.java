@@ -38,6 +38,11 @@ public class GitPrDeployStrategy implements ReactDeployStrategy {
             log.warn("[git-pr] React 코드가 비어 있어 PR 생성을 건너뜁니다. codeId={}", codeId);
             return DeployResult.failure("React 코드가 비어 있습니다.");
         }
+        // DB 저장값이 null/공백인 경우 방어 — 파일명 "null.tsx" 생성 방지
+        if (componentName == null || componentName.isBlank()) {
+            log.warn("[git-pr] componentName이 비어 있어 기본값 사용. codeId={}", codeId);
+            componentName = "GeneratedComponent";
+        }
 
         ReactDeployProperties.GitPr gitPr = properties.getGitPr();
         String branchName = "reactplatform/" + codeId;
@@ -52,10 +57,7 @@ public class GitPrDeployStrategy implements ReactDeployStrategy {
             // 3. UI 컴포넌트 파일 커밋 ({ComponentName}.tsx)
             String componentFilePath = gitPr.getComponentPath() + "/" + componentName + ".tsx";
             gitPrApiClient.createOrUpdateFile(
-                    branchName,
-                    componentFilePath,
-                    reactCode,
-                    "feat: React UI 컴포넌트 추가 — " + componentName);
+                    branchName, componentFilePath, reactCode, "feat: React UI 컴포넌트 추가 — " + componentName);
 
             // 4. Container scaffold 파일 커밋
             // Container에서 UI 컴포넌트를 import할 상대 경로: container → component 방향
@@ -64,10 +66,7 @@ public class GitPrDeployStrategy implements ReactDeployStrategy {
             String scaffoldFileName = scaffoldGenerator.resolveFileName(componentName);
             String containerFilePath = gitPr.getContainerPath() + "/" + scaffoldFileName;
             gitPrApiClient.createOrUpdateFile(
-                    branchName,
-                    containerFilePath,
-                    scaffoldCode,
-                    "feat: Container scaffold 추가 — " + scaffoldFileName);
+                    branchName, containerFilePath, scaffoldCode, "feat: Container scaffold 추가 — " + scaffoldFileName);
 
             // 5. 기존 열린 PR이 있으면 재사용, 없으면 신규 생성
             String prTitle = "feat: [React 코드 배포] " + componentName + " — " + codeId;
@@ -97,8 +96,10 @@ public class GitPrDeployStrategy implements ReactDeployStrategy {
     private String resolveImportPrefix(String componentPath, String containerPath) {
         try {
             // OS 경로 구분자와 무관하게 동작하도록 Path.of() 전에 \ → / 로 정규화
-            java.nio.file.Path comp = java.nio.file.Path.of(componentPath.replace("\\", "/")).normalize();
-            java.nio.file.Path cont = java.nio.file.Path.of(containerPath.replace("\\", "/")).normalize();
+            java.nio.file.Path comp =
+                    java.nio.file.Path.of(componentPath.replace("\\", "/")).normalize();
+            java.nio.file.Path cont =
+                    java.nio.file.Path.of(containerPath.replace("\\", "/")).normalize();
             String relative = cont.relativize(comp).toString().replace("\\", "/");
             // 경로가 동일할 때 relative는 "" → "./" 반환 시 import 경로에 이중 슬래시가 생기므로 "." 반환
             return relative.isEmpty() ? "." : (relative.startsWith(".") ? relative : "./" + relative);
@@ -130,10 +131,6 @@ public class GitPrDeployStrategy implements ReactDeployStrategy {
                         > **codeId**: `%s`
                         > UI 컴포넌트는 AI 생성 코드이므로 직접 수정하지 말고 Container를 통해 사용하세요.
                         """,
-                componentPath,
-                containerPath,
-                containerPath,
-                componentName,
-                codeId);
+                componentPath, containerPath, containerPath, componentName, codeId);
     }
 }

@@ -10,7 +10,6 @@ package com.example.reactplatform.domain.reactgenerate.deploy.local;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.reactplatform.domain.reactgenerate.deploy.ContainerScaffoldGenerator;
@@ -34,8 +33,7 @@ class LocalFileDeployStrategyTest {
     @Mock
     private ContainerScaffoldGenerator scaffoldGenerator;
 
-    private static final String REACT_CODE =
-            "export default function LoginPage() { return <div/>; }";
+    private static final String REACT_CODE = "export default function LoginPage() { return <div/>; }";
     private static final String SCAFFOLD_CODE = "// scaffold content";
     private static final String SCAFFOLD_FILE = "LoginPageContainer.tsx";
     private static final String COMPONENT_NAME = "LoginPage";
@@ -47,11 +45,11 @@ class LocalFileDeployStrategyTest {
     void deploy_success_writesBothFiles() throws Exception {
         Path compDir = tempDir.resolve("generated");
         Path contDir = tempDir.resolve("containers");
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
-        when(scaffoldGenerator.generate(anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
+        when(scaffoldGenerator.generate(anyString(), anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
         when(scaffoldGenerator.resolveFileName(anyString())).thenReturn(SCAFFOLD_FILE);
 
-        DeployResult result = strategy(compDir.toString(), contDir.toString()).deploy("code-01", REACT_CODE);
+        DeployResult result =
+                strategy(compDir.toString(), contDir.toString()).deploy("code-01", REACT_CODE, COMPONENT_NAME);
 
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.getPrUrl()).isNull(); // local 모드는 PR URL 없음
@@ -64,11 +62,11 @@ class LocalFileDeployStrategyTest {
     void deploy_deepDirectoryAutoCreated() throws Exception {
         Path compDir = tempDir.resolve("deep/nested/generated");
         Path contDir = tempDir.resolve("deep/nested/containers");
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
-        when(scaffoldGenerator.generate(anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
+        when(scaffoldGenerator.generate(anyString(), anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
         when(scaffoldGenerator.resolveFileName(anyString())).thenReturn(SCAFFOLD_FILE);
 
-        DeployResult result = strategy(compDir.toString(), contDir.toString()).deploy("code-01", REACT_CODE);
+        DeployResult result =
+                strategy(compDir.toString(), contDir.toString()).deploy("code-01", REACT_CODE, COMPONENT_NAME);
 
         assertThat(result.isSuccess()).isTrue();
         assertThat(compDir.resolve("LoginPage.tsx")).exists();
@@ -76,15 +74,15 @@ class LocalFileDeployStrategyTest {
     }
 
     @Test
-    @DisplayName("UI 컴포넌트 파일명은 {ComponentName}.tsx 형식이다")
+    @DisplayName("UI 컴포넌트 파일명은 componentName 파라미터 기반의 {ComponentName}.tsx 형식이다")
     void deploy_componentFileName_isComponentNameDotTsx() throws Exception {
         Path compDir = tempDir.resolve("generated");
         Path contDir = tempDir.resolve("containers");
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn("TransferForm");
-        when(scaffoldGenerator.generate(anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
+        when(scaffoldGenerator.generate(anyString(), anyString(), anyString())).thenReturn(SCAFFOLD_CODE);
         when(scaffoldGenerator.resolveFileName(anyString())).thenReturn("TransferFormContainer.tsx");
 
-        strategy(compDir.toString(), contDir.toString()).deploy("code-99", REACT_CODE);
+        // componentName을 deploy()에 직접 전달 — 코드 파싱 없이 파일명 결정
+        strategy(compDir.toString(), contDir.toString()).deploy("code-99", REACT_CODE, "TransferForm");
 
         assertThat(compDir.resolve("TransferForm.tsx")).exists();
     }
@@ -97,14 +95,14 @@ class LocalFileDeployStrategyTest {
         // containers → generated : ../generated
         Path compDir = tempDir.resolve("generated");
         Path contDir = tempDir.resolve("containers");
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
         when(scaffoldGenerator.resolveFileName(anyString())).thenReturn(SCAFFOLD_FILE);
 
+        // generate(componentName, reactCode, importPrefix) — 3번째 인자(importPrefix) 캡처
         ArgumentCaptor<String> prefixCaptor = ArgumentCaptor.forClass(String.class);
-        when(scaffoldGenerator.generate(anyString(), prefixCaptor.capture()))
+        when(scaffoldGenerator.generate(anyString(), anyString(), prefixCaptor.capture()))
                 .thenReturn(SCAFFOLD_CODE);
 
-        strategy(compDir.toString(), contDir.toString()).deploy("code-01", REACT_CODE);
+        strategy(compDir.toString(), contDir.toString()).deploy("code-01", REACT_CODE, COMPONENT_NAME);
 
         // 상대 경로에 "generated" 디렉토리명이 포함되어야 한다
         assertThat(prefixCaptor.getValue()).contains("generated");
@@ -115,7 +113,7 @@ class LocalFileDeployStrategyTest {
     @Test
     @DisplayName("React 코드가 빈 문자열이면 파일을 생성하지 않고 FAILED 결과를 반환한다")
     void deploy_emptyCode_returnsFailure() {
-        DeployResult result = strategy(tempDir.toString(), tempDir.toString()).deploy("code-01", "");
+        DeployResult result = strategy(tempDir.toString(), tempDir.toString()).deploy("code-01", "", COMPONENT_NAME);
 
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getFailReason()).isNotBlank();
@@ -125,7 +123,7 @@ class LocalFileDeployStrategyTest {
     @Test
     @DisplayName("React 코드가 null이면 파일을 생성하지 않고 FAILED 결과를 반환한다")
     void deploy_nullCode_returnsFailure() {
-        DeployResult result = strategy(tempDir.toString(), tempDir.toString()).deploy("code-01", null);
+        DeployResult result = strategy(tempDir.toString(), tempDir.toString()).deploy("code-01", null, COMPONENT_NAME);
 
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getFailReason()).isNotBlank();
@@ -136,11 +134,10 @@ class LocalFileDeployStrategyTest {
     @Test
     @DisplayName("component-dir이 null이면 FAILED 결과를 반환하고 예외를 던지지 않는다")
     void deploy_nullComponentDir_returnsFailure() {
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
+        DeployResult result = strategy(null, tempDir.toString()).deploy("code-01", REACT_CODE, COMPONENT_NAME);
 
-        DeployResult result = strategy(null, tempDir.toString()).deploy("code-01", REACT_CODE);
-
-        assertThatNoException().isThrownBy(() -> strategy(null, tempDir.toString()).deploy("code-01", REACT_CODE));
+        assertThatNoException()
+                .isThrownBy(() -> strategy(null, tempDir.toString()).deploy("code-01", REACT_CODE, COMPONENT_NAME));
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getFailReason()).isNotBlank();
     }
@@ -149,10 +146,9 @@ class LocalFileDeployStrategyTest {
     @DisplayName("container-dir이 null이어도 UI 컴포넌트는 정상 생성되고 SUCCESS를 반환한다")
     void deploy_nullContainerDir_writesComponentAndReturnsSuccess() throws Exception {
         Path compDir = tempDir.resolve("generated");
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
         // containerDir=null → generate/resolveFileName 미호출
 
-        DeployResult result = strategy(compDir.toString(), null).deploy("code-01", REACT_CODE);
+        DeployResult result = strategy(compDir.toString(), null).deploy("code-01", REACT_CODE, COMPONENT_NAME);
 
         assertThat(result.isSuccess()).isTrue();
         assertThat(compDir.resolve("LoginPage.tsx")).exists();
@@ -162,11 +158,10 @@ class LocalFileDeployStrategyTest {
     @Test
     @DisplayName("component-dir이 빈 문자열이면 FAILED 결과를 반환하고 예외를 던지지 않는다")
     void deploy_blankComponentDir_returnsFailure() {
-        when(scaffoldGenerator.extractComponentName(anyString())).thenReturn(COMPONENT_NAME);
+        DeployResult result = strategy("", tempDir.toString()).deploy("code-01", REACT_CODE, COMPONENT_NAME);
 
-        DeployResult result = strategy("", tempDir.toString()).deploy("code-01", REACT_CODE);
-
-        assertThatNoException().isThrownBy(() -> strategy("", tempDir.toString()).deploy("code-01", REACT_CODE));
+        assertThatNoException()
+                .isThrownBy(() -> strategy("", tempDir.toString()).deploy("code-01", REACT_CODE, COMPONENT_NAME));
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getFailReason()).isNotBlank();
     }

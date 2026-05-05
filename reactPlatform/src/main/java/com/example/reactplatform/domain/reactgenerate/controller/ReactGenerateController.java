@@ -50,8 +50,7 @@ public class ReactGenerateController {
     @PostMapping("/{id}/regenerate")
     @PreAuthorize("hasAuthority('REACT_GENERATE:W')")
     public ResponseEntity<ApiResponse<ReactGenerateResponse>> regenerate(
-            @PathVariable String id,
-            @Valid @RequestBody ReactRegenerateRequest request) {
+            @PathVariable String id, @Valid @RequestBody ReactRegenerateRequest request) {
         String currentUserId = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(ApiResponse.success(reactGenerateService.regenerate(id, request, currentUserId)));
     }

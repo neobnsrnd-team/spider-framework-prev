@@ -27,8 +27,7 @@ public class ReactDeployConfig {
     @Bean
     @ConditionalOnProperty(name = "react.deploy.mode", havingValue = "local", matchIfMissing = true)
     public ReactDeployStrategy localFileDeployStrategy(
-            ReactDeployProperties properties,
-            ContainerScaffoldGenerator scaffoldGenerator) {
+            ReactDeployProperties properties, ContainerScaffoldGenerator scaffoldGenerator) {
         return new LocalFileDeployStrategy(properties, scaffoldGenerator);
     }
 
@@ -46,11 +45,8 @@ public class ReactDeployConfig {
             ContainerScaffoldGenerator scaffoldGenerator,
             RestTemplateBuilder restTemplateBuilder) {
         ReactDeployProperties.GitPr gitPr = properties.getGitPr();
-        GitPrApiClient apiClient = new GitPrApiClient(
-                restTemplateBuilder.build(),
-                gitPr.getToken(),
-                gitPr.getOwner(),
-                gitPr.getRepo());
+        GitPrApiClient apiClient =
+                new GitPrApiClient(restTemplateBuilder.build(), gitPr.getToken(), gitPr.getOwner(), gitPr.getRepo());
         return new GitPrDeployStrategy(apiClient, properties, scaffoldGenerator);
     }
 }

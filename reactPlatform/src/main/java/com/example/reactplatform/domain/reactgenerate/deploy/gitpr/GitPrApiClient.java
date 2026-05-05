@@ -57,8 +57,7 @@ public class GitPrApiClient {
         String url = GITHUB_API_BASE + "/repos/{owner}/{repo}/git/ref/heads/{branch}";
         try {
             ResponseEntity<Map> response = restTemplate.exchange(
-                    url, HttpMethod.GET, new HttpEntity<>(authHeaders()), Map.class,
-                    owner, repo, baseBranch);
+                    url, HttpMethod.GET, new HttpEntity<>(authHeaders()), Map.class, owner, repo, baseBranch);
             Map<String, Object> body = response.getBody();
             // 응답 구조: { "object": { "sha": "..." } }
             Map<String, Object> object = (Map<String, Object>) body.get("object");
@@ -81,12 +80,10 @@ public class GitPrApiClient {
      */
     public void createBranch(String branchName, String sha) {
         String url = GITHUB_API_BASE + "/repos/{owner}/{repo}/git/refs";
-        Map<String, String> body = Map.of(
-                "ref", "refs/heads/" + branchName,
-                "sha", sha);
+        Map<String, String> body = Map.of("ref", "refs/heads/" + branchName, "sha", sha);
         try {
-            restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, jsonAuthHeaders()), Map.class,
-                    owner, repo);
+            restTemplate.exchange(
+                    url, HttpMethod.POST, new HttpEntity<>(body, jsonAuthHeaders()), Map.class, owner, repo);
             log.info("[git-pr] 브랜치 생성 완료 — branch={}", branchName);
         } catch (HttpClientErrorException.UnprocessableEntity e) {
             // 브랜치가 이미 존재하는 경우 — base SHA로 강제 리셋하여 덮어쓴다
@@ -94,8 +91,7 @@ public class GitPrApiClient {
             resetBranch(branchName, sha);
         } catch (HttpClientErrorException e) {
             log.debug("[git-pr] createBranch 오류 응답 바디 — {}", e.getResponseBodyAsString());
-            throw new InternalException(
-                    "GitHub 브랜치 생성 실패 — branch=" + branchName + ", status=" + e.getStatusCode());
+            throw new InternalException("GitHub 브랜치 생성 실패 — branch=" + branchName + ", status=" + e.getStatusCode());
         }
     }
 
@@ -107,16 +103,15 @@ public class GitPrApiClient {
      * @throws InternalException 리셋 실패 시
      */
     public void resetBranch(String branchName, String sha) {
-        String url = GITHUB_API_BASE + "/repos/{owner}/{repo}/git/refs/heads/{branch}";
+        // 브랜치명의 '/'가 URI 템플릿 치환 시 '%2F'로 인코딩되어 GitHub API가 404를 반환하는 것을 방지
+        String url = GITHUB_API_BASE + "/repos/" + owner + "/" + repo + "/git/refs/heads/" + branchName;
         Map<String, Object> body = Map.of("sha", sha, "force", true);
         try {
-            restTemplate.exchange(url, HttpMethod.PATCH, new HttpEntity<>(body, jsonAuthHeaders()), Map.class,
-                    owner, repo, branchName);
+            restTemplate.exchange(url, HttpMethod.PATCH, new HttpEntity<>(body, jsonAuthHeaders()), Map.class);
             log.info("[git-pr] 브랜치 리셋 완료 — branch={}", branchName);
         } catch (HttpClientErrorException e) {
             log.debug("[git-pr] resetBranch 오류 응답 바디 — {}", e.getResponseBodyAsString());
-            throw new InternalException(
-                    "GitHub 브랜치 리셋 실패 — branch=" + branchName + ", status=" + e.getStatusCode());
+            throw new InternalException("GitHub 브랜치 리셋 실패 — branch=" + branchName + ", status=" + e.getStatusCode());
         }
     }
 
@@ -132,9 +127,14 @@ public class GitPrApiClient {
         try {
             // ParameterizedTypeReference로 제네릭 타입 정보를 유지하여 타입 안전성 확보
             ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
-                    url, HttpMethod.GET, new HttpEntity<>(authHeaders()),
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(authHeaders()),
                     new ParameterizedTypeReference<List<Map<String, Object>>>() {},
-                    owner, repo, owner, head);
+                    owner,
+                    repo,
+                    owner,
+                    head);
             List<Map<String, Object>> list = response.getBody();
             if (list != null && !list.isEmpty()) {
                 String prUrl = (String) list.get(0).get("html_url");
@@ -167,13 +167,12 @@ public class GitPrApiClient {
                 "content", encoded,
                 "branch", branch);
         try {
-            restTemplate.exchange(url, HttpMethod.PUT, new HttpEntity<>(body, jsonAuthHeaders()), Map.class,
-                    owner, repo, path);
+            restTemplate.exchange(
+                    url, HttpMethod.PUT, new HttpEntity<>(body, jsonAuthHeaders()), Map.class, owner, repo, path);
             log.info("[git-pr] 파일 커밋 완료 — branch={}, path={}", branch, path);
         } catch (HttpClientErrorException e) {
             log.debug("[git-pr] createOrUpdateFile 오류 응답 바디 — {}", e.getResponseBodyAsString());
-            throw new InternalException(
-                    "GitHub 파일 커밋 실패 — path=" + path + ", status=" + e.getStatusCode());
+            throw new InternalException("GitHub 파일 커밋 실패 — path=" + path + ", status=" + e.getStatusCode());
         }
     }
 
@@ -197,15 +196,13 @@ public class GitPrApiClient {
                 "body", body);
         try {
             ResponseEntity<Map> response = restTemplate.exchange(
-                    url, HttpMethod.POST, new HttpEntity<>(requestBody, jsonAuthHeaders()), Map.class,
-                    owner, repo);
+                    url, HttpMethod.POST, new HttpEntity<>(requestBody, jsonAuthHeaders()), Map.class, owner, repo);
             String htmlUrl = (String) response.getBody().get("html_url");
             log.info("[git-pr] PR 생성 완료 — url={}", htmlUrl);
             return htmlUrl;
         } catch (HttpClientErrorException e) {
             log.debug("[git-pr] createPullRequest 오류 응답 바디 — {}", e.getResponseBodyAsString());
-            throw new InternalException(
-                    "GitHub PR 생성 실패 — head=" + head + ", status=" + e.getStatusCode());
+            throw new InternalException("GitHub PR 생성 실패 — head=" + head + ", status=" + e.getStatusCode());
         }
     }
 

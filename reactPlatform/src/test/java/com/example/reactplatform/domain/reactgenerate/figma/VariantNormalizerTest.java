@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.reactplatform.domain.reactgenerate.figma.client.FigmaNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,16 +17,59 @@ import org.junit.jupiter.api.Test;
  * @file VariantNormalizerTest.java
  * @description VariantNormalizer 단위 테스트.
  *     키 정규화, 값 정규화, 컴포넌트별 오버라이드, TEXT 타입 보호를 검증한다.
+ *     실제 variant-mapping.json 대신 인라인 JSON을 주입하여 설정 파일 변경에 독립적이다.
  * @see VariantNormalizer
  */
 class VariantNormalizerTest {
 
+    // 테스트 전용 인라인 매핑 — 실제 variant-mapping.json과 독립적으로 동작한다
+    private static final String TEST_MAPPING_JSON =
+            """
+            {
+              "global": {
+                "keys": {
+                  "Size":         "size",
+                  "Variant":      "variant",
+                  "Dot":          "dot",
+                  "Loading":      "loading",
+                  "Disabled":     "disabled",
+                  "State":        "state",
+                  "Type":         "type",
+                  "Label":        "label",
+                  "IsSelected":   "isSelected",
+                  "Hidden":       "hidden",
+                  "Cols":         "cols",
+                  "WithBottomNav":"withBottomNav",
+                  "Direction":    "direction"
+                }
+              },
+              "components": {
+                "input": {
+                  "keys": {
+                    "ValidationState": "validationState"
+                  }
+                }
+              },
+              "values": {
+                "size": {
+                  "Small":  "sm",
+                  "Medium": "md",
+                  "Large":  "lg"
+                },
+                "type": {
+                  "foreignDeposit": "foreignDeposit"
+                },
+                "default": "lowercase"
+              }
+            }
+            """;
+
     private VariantNormalizer normalizer;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         normalizer = new VariantNormalizer(new ObjectMapper());
-        normalizer.load();
+        normalizer.load(new ByteArrayInputStream(TEST_MAPPING_JSON.getBytes(StandardCharsets.UTF_8)));
     }
 
     // ================================================================
@@ -38,8 +83,7 @@ class VariantNormalizerTest {
         @Test
         @DisplayName("Size → size로 정규화된다")
         void globalKey_size() {
-            Map<String, String> result = normalize("Button",
-                    "Size", "VARIANT", "Medium");
+            Map<String, String> result = normalize("Button", "Size", "VARIANT", "Medium");
 
             assertThat(result).containsKey("size");
             assertThat(result).doesNotContainKey("Size");
@@ -48,8 +92,7 @@ class VariantNormalizerTest {
         @Test
         @DisplayName("Variant → variant로 정규화된다")
         void globalKey_variant() {
-            Map<String, String> result = normalize("Button",
-                    "Variant", "VARIANT", "Primary");
+            Map<String, String> result = normalize("Button", "Variant", "VARIANT", "Primary");
 
             assertThat(result).containsKey("variant");
         }
@@ -57,8 +100,7 @@ class VariantNormalizerTest {
         @Test
         @DisplayName("Dot → dot으로 정규화된다")
         void globalKey_dot() {
-            Map<String, String> result = normalize("Badge",
-                    "Dot", "BOOLEAN", true);
+            Map<String, String> result = normalize("Badge", "Dot", "BOOLEAN", true);
 
             assertThat(result).containsKey("dot");
         }
@@ -66,8 +108,7 @@ class VariantNormalizerTest {
         @Test
         @DisplayName("매핑에 없는 키는 원본 그대로 유지된다")
         void globalKey_unknown_keepAsIs() {
-            Map<String, String> result = normalize("Button",
-                    "customProp", "VARIANT", "value");
+            Map<String, String> result = normalize("Button", "customProp", "VARIANT", "value");
 
             assertThat(result).containsKey("customProp");
         }
@@ -75,8 +116,7 @@ class VariantNormalizerTest {
         @Test
         @DisplayName("이미 camelCase인 키는 변환되지 않는다")
         void globalKey_alreadyCamelCase_unchanged() {
-            Map<String, String> result = normalize("Button",
-                    "isExpanded", "BOOLEAN", false);
+            Map<String, String> result = normalize("Button", "isExpanded", "BOOLEAN", false);
 
             assertThat(result).containsKey("isExpanded");
         }
@@ -91,20 +131,18 @@ class VariantNormalizerTest {
     class ComponentKeyOverrideTests {
 
         @Test
-        @DisplayName("Input의 State → validationState로 오버라이드된다")
-        void componentKey_inputState_validationState() {
-            Map<String, String> result = normalize("Input",
-                    "State", "VARIANT", "Error");
+        @DisplayName("Input의 ValidationState → validationState로 오버라이드된다")
+        void componentKey_inputValidationState_validationState() {
+            Map<String, String> result = normalize("Input", "ValidationState", "VARIANT", "Error");
 
             assertThat(result).containsKey("validationState");
-            assertThat(result).doesNotContainKey("state");
+            assertThat(result).doesNotContainKey("validationstate");
         }
 
         @Test
         @DisplayName("Input 이름에 슬래시 포함돼도 오버라이드가 적용된다")
         void componentKey_inputWithSlash_resolves() {
-            Map<String, String> result = normalize("Input / Default",
-                    "State", "VARIANT", "Error");
+            Map<String, String> result = normalize("Input / Default", "ValidationState", "VARIANT", "Error");
 
             assertThat(result).containsKey("validationState");
         }
@@ -112,8 +150,7 @@ class VariantNormalizerTest {
         @Test
         @DisplayName("Input이 아닌 컴포넌트의 State는 전역 매핑(state)으로 처리된다")
         void componentKey_nonInput_state_usesGlobal() {
-            Map<String, String> result = normalize("Button",
-                    "State", "VARIANT", "Loading");
+            Map<String, String> result = normalize("Button", "State", "VARIANT", "Loading");
 
             assertThat(result).containsKey("state");
             assertThat(result).doesNotContainKey("validationState");
@@ -122,8 +159,8 @@ class VariantNormalizerTest {
         @Test
         @DisplayName("컴포넌트별 오버라이드는 전역 매핑보다 우선 적용된다")
         void componentKey_overridePriority() {
-            // Input: State → validationState (전역은 State → state)
-            Map<String, String> inputResult = normalize("Input", "State", "VARIANT", "Default");
+            // Input: ValidationState → validationState (전역에 없는 키라 컴포넌트 오버라이드로만 처리)
+            Map<String, String> inputResult = normalize("Input", "ValidationState", "VARIANT", "Default");
             Map<String, String> buttonResult = normalize("Button", "State", "VARIANT", "Default");
 
             assertThat(inputResult).containsKey("validationState");
@@ -196,17 +233,17 @@ class VariantNormalizerTest {
         }
 
         @Test
-        @DisplayName("Input State=Error → validationState=error")
-        void value_inputStateError_validationStateError() {
-            Map<String, String> result = normalize("Input", "State", "VARIANT", "Error");
+        @DisplayName("Input ValidationState=Error → validationState=error")
+        void value_inputValidationStateError_validationStateError() {
+            Map<String, String> result = normalize("Input", "ValidationState", "VARIANT", "Error");
 
             assertThat(result).containsEntry("validationState", "error");
         }
 
         @Test
-        @DisplayName("Input State=Default → validationState=default")
-        void value_inputStateDefault_validationStateDefault() {
-            Map<String, String> result = normalize("Input", "State", "VARIANT", "Default");
+        @DisplayName("Input ValidationState=Default → validationState=default")
+        void value_inputValidationStateDefault_validationStateDefault() {
+            Map<String, String> result = normalize("Input", "ValidationState", "VARIANT", "Default");
 
             assertThat(result).containsEntry("validationState", "default");
         }
@@ -234,6 +271,75 @@ class VariantNormalizerTest {
             Map<String, String> result = normalize("Input", "Label", "TEXT", "Enter Password");
 
             assertThat(result).containsEntry("label", "Enter Password");
+        }
+    }
+
+    // ================================================================
+    // 신규 추가 키 — variant-mapping.json 보완분
+    // ================================================================
+
+    @Nested
+    @DisplayName("신규 추가 키 정규화")
+    class RecentlyAddedKeyTests {
+
+        @Test
+        @DisplayName("IsSelected → isSelected로 정규화된다")
+        void globalKey_isSelected() {
+            Map<String, String> result = normalize("TabNav", "IsSelected", "BOOLEAN", true);
+
+            assertThat(result).containsKey("isSelected");
+            assertThat(result).doesNotContainKey("IsSelected");
+        }
+
+        @Test
+        @DisplayName("Hidden → hidden으로 정규화된다")
+        void globalKey_hidden() {
+            Map<String, String> result = normalize("SectionHeader", "Hidden", "BOOLEAN", false);
+
+            assertThat(result).containsKey("hidden");
+        }
+
+        @Test
+        @DisplayName("Cols → cols로 정규화된다")
+        void globalKey_cols() {
+            Map<String, String> result = normalize("Grid", "Cols", "VARIANT", "2");
+
+            assertThat(result).containsKey("cols");
+        }
+
+        @Test
+        @DisplayName("WithBottomNav → withBottomNav로 정규화된다")
+        void globalKey_withBottomNav() {
+            Map<String, String> result = normalize("PageLayout", "WithBottomNav", "BOOLEAN", true);
+
+            assertThat(result).containsKey("withBottomNav");
+        }
+
+        @Test
+        @DisplayName("Direction → direction으로 정규화된다")
+        void globalKey_direction() {
+            Map<String, String> result = normalize("Stack", "Direction", "VARIANT", "Horizontal");
+
+            assertThat(result).containsKey("direction");
+        }
+
+        @Test
+        @DisplayName("type=foreignDeposit 값은 lowercase 변환 없이 유지된다")
+        void value_foreignDeposit_notLowercased() {
+            // "foreignDeposit"은 lowercase 전략 적용 시 동일 결과이지만,
+            // values.type 테이블의 명시적 매핑으로 camelCase가 보호된다
+            Map<String, String> result = normalize("AccountSummaryCard", "Type", "VARIANT", "foreignDeposit");
+
+            assertThat(result).containsEntry("type", "foreignDeposit");
+        }
+
+        @Test
+        @DisplayName("type=foreignDeposit 값은 대소문자가 변하지 않는다")
+        void value_foreignDeposit_casePreserved() {
+            // lowercase 전략만 있다면 "foreigndeposit"이 되지만 명시적 매핑으로 보호됨
+            Map<String, String> result = normalize("AccountSummaryCard", "Type", "VARIANT", "foreignDeposit");
+
+            assertThat(result).doesNotContainEntry("type", "foreigndeposit");
         }
     }
 

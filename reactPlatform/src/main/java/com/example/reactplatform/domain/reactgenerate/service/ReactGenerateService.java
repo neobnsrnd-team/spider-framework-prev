@@ -73,7 +73,8 @@ public class ReactGenerateService {
         // brand 미입력 시 HANA 기본값 적용 — buildEntity에 null이 전달되지 않도록 보장
         BrandType effectiveBrand = request.getBrand() != null ? request.getBrand() : BrandType.HANA;
 
-        String categoryStr = request.getCategory() != null ? request.getCategory().name() : null;
+        String categoryStr =
+                request.getCategory() != null ? request.getCategory().name() : null;
 
         log.info(
                 "React 코드 생성 요청 — figmaUrl: {}, brand: {}, domain: {}, category: {}, userId: {}",
@@ -89,10 +90,10 @@ public class ReactGenerateService {
 
         // componentName 확정값: Figma에서 가져오기 전 실패 시 "Unknown" 폴백
         // 실제 값은 Figma 디자인 컨텍스트 추출 후 갱신된다
-        String effectiveComponentName =
-                (request.getComponentName() != null && !request.getComponentName().isBlank())
-                        ? request.getComponentName()
-                        : "Unknown";
+        String effectiveComponentName = (request.getComponentName() != null
+                        && !request.getComponentName().isBlank())
+                ? request.getComponentName()
+                : "Unknown";
 
         // 어느 단계에서 실패해도 그 시점까지 수집된 값을 실패 이력에 기록하기 위해 바깥에 선언
         String systemPrompt = null;
@@ -153,11 +154,25 @@ public class ReactGenerateService {
 
             // 7. DB 저장 (초기 상태: GENERATED) — 구조화 필드를 전용 컬럼에 저장
             reactGenerateMapper.insert(buildEntity(
-                    id, request.getFigmaUrl(), effectiveBrand, effectiveDomain,
-                    effectiveComponentName, categoryStr, request.getTitle(), request.getDescription(),
-                    request.getRequirements(), figmaJson,
-                    systemPrompt, userPrompt, reactCode, null, ReactGenerateStatus.GENERATED.name(),
-                    createdBy, now, null, null));
+                    id,
+                    request.getFigmaUrl(),
+                    effectiveBrand,
+                    effectiveDomain,
+                    effectiveComponentName,
+                    categoryStr,
+                    request.getTitle(),
+                    request.getDescription(),
+                    request.getRequirements(),
+                    figmaJson,
+                    systemPrompt,
+                    userPrompt,
+                    reactCode,
+                    null,
+                    ReactGenerateStatus.GENERATED.name(),
+                    createdBy,
+                    now,
+                    null,
+                    null));
 
             log.info("React 코드 생성 완료 — codeId: {}", id);
 
@@ -196,11 +211,25 @@ public class ReactGenerateService {
                     effectiveDomain,
                     failReason);
             reactGenerateMapper.insert(buildEntity(
-                    id, request.getFigmaUrl(), effectiveBrand, effectiveDomain,
-                    effectiveComponentName, categoryStr, request.getTitle(), request.getDescription(),
-                    request.getRequirements(), figmaJson,
-                    systemPrompt, userPrompt, reactCode, failReason, ReactGenerateStatus.FAILED.name(),
-                    createdBy, now, null, null));
+                    id,
+                    request.getFigmaUrl(),
+                    effectiveBrand,
+                    effectiveDomain,
+                    effectiveComponentName,
+                    categoryStr,
+                    request.getTitle(),
+                    request.getDescription(),
+                    request.getRequirements(),
+                    figmaJson,
+                    systemPrompt,
+                    userPrompt,
+                    reactCode,
+                    failReason,
+                    ReactGenerateStatus.FAILED.name(),
+                    createdBy,
+                    now,
+                    null,
+                    null));
             throw e; // 원래 예외를 그대로 재전파 → GlobalExceptionHandler에서 처리
         }
     }
@@ -236,17 +265,17 @@ public class ReactGenerateService {
         BrandType brand = (original.getBrand() != null && !original.getBrand().isBlank())
                 ? BrandType.valueOf(original.getBrand().toUpperCase())
                 : BrandType.HANA;
-        DomainType effectiveDomain = original.getDomain() != null
-                ? DomainType.valueOf(original.getDomain())
-                : DomainType.BANKING;
-        String effectiveComponentName = original.getComponentName() != null
-                ? original.getComponentName()
-                : "Unknown";
+        DomainType effectiveDomain =
+                original.getDomain() != null ? DomainType.valueOf(original.getDomain()) : DomainType.BANKING;
+        String effectiveComponentName = original.getComponentName() != null ? original.getComponentName() : "Unknown";
         String categoryStr = original.getCategory();
 
         log.info(
                 "React 코드 재생성 요청 — refCodeId: {}, brand: {}, domain: {}, userId: {}",
-                refCodeId, brand, effectiveDomain, createdBy);
+                refCodeId,
+                brand,
+                effectiveDomain,
+                createdBy);
 
         String id = UUID.randomUUID().toString();
         String now = LocalDateTime.now().format(FORMATTER);
@@ -309,10 +338,25 @@ public class ReactGenerateService {
             }
 
             reactGenerateMapper.insert(buildEntity(
-                    id, original.getFigmaUrl(), brand, effectiveDomain, effectiveComponentName,
-                    categoryStr, original.getTitle(), original.getDescription(), request.getRequirements(),
-                    figmaJson, systemPrompt, userPrompt, reactCode,
-                    null, ReactGenerateStatus.GENERATED.name(), createdBy, now, refCodeId, rootCodeId));
+                    id,
+                    original.getFigmaUrl(),
+                    brand,
+                    effectiveDomain,
+                    effectiveComponentName,
+                    categoryStr,
+                    original.getTitle(),
+                    original.getDescription(),
+                    request.getRequirements(),
+                    figmaJson,
+                    systemPrompt,
+                    userPrompt,
+                    reactCode,
+                    null,
+                    ReactGenerateStatus.GENERATED.name(),
+                    createdBy,
+                    now,
+                    refCodeId,
+                    rootCodeId));
 
             log.info("React 코드 재생성 완료 — codeId: {}, refCodeId: {}", id, refCodeId);
 
@@ -342,10 +386,25 @@ public class ReactGenerateService {
                     : (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
             log.error("React 코드 재생성 실패 — codeId: {}, refCodeId: {}, error: {}", id, refCodeId, failReason);
             reactGenerateMapper.insert(buildEntity(
-                    id, original.getFigmaUrl(), brand, effectiveDomain, effectiveComponentName,
-                    categoryStr, original.getTitle(), original.getDescription(), request.getRequirements(),
-                    figmaJson, systemPrompt, userPrompt, reactCode,
-                    failReason, ReactGenerateStatus.FAILED.name(), createdBy, now, refCodeId, rootCodeId));
+                    id,
+                    original.getFigmaUrl(),
+                    brand,
+                    effectiveDomain,
+                    effectiveComponentName,
+                    categoryStr,
+                    original.getTitle(),
+                    original.getDescription(),
+                    request.getRequirements(),
+                    figmaJson,
+                    systemPrompt,
+                    userPrompt,
+                    reactCode,
+                    failReason,
+                    ReactGenerateStatus.FAILED.name(),
+                    createdBy,
+                    now,
+                    refCodeId,
+                    rootCodeId));
             throw e;
         }
     }
@@ -607,5 +666,4 @@ public class ReactGenerateService {
             default -> status;
         };
     }
-
 }

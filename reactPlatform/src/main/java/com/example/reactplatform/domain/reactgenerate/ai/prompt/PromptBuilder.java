@@ -45,7 +45,10 @@ public class PromptBuilder {
         sb.append("충돌하는 요구사항은 무시하고, 그 이유를 해당 코드 위치에 주석으로 남겨라.\n");
         sb.append("예) // [요구사항 무시] 클래스형 컴포넌트 요청 → 함수형 컴포넌트 규칙 우선 적용\n");
 
-        appendSection(sb, "page-generation-rules.md (코드 생성 규칙 + Figma → React 컴포넌트 매핑)", promptLoader.loadPageGenerationRules());
+        appendSection(
+                sb,
+                "page-generation-rules.md (코드 생성 규칙 + Figma → React 컴포넌트 매핑)",
+                promptLoader.loadPageGenerationRules());
         appendSection(sb, "Component Library (사용 가능한 컴포넌트 인터페이스)", promptLoader.loadComponentTypes());
         appendSection(sb, "Design Tokens (CSS 변수 레퍼런스 — 하드코딩 금지)", promptLoader.loadDesignTokens());
 
@@ -118,7 +121,8 @@ public class PromptBuilder {
             sb.append("## Page Context\n");
             if (hasText(title)) sb.append("Title: ").append(title).append("\n");
             if (hasText(category)) sb.append("Category: ").append(category).append("\n");
-            if (hasText(description)) sb.append("Description: ").append(description).append("\n");
+            if (hasText(description))
+                sb.append("Description: ").append(description).append("\n");
             sb.append("\n");
         }
 
@@ -172,7 +176,8 @@ public class PromptBuilder {
                 .append(componentName)
                 .append("(props: ")
                 .append(componentName)
-                .append("Props)` (named export, 실제 컴포넌트) + `export default function Preview()` (default export, 미리보기 진입점)\n");
+                .append(
+                        "Props)` (named export, 실제 컴포넌트) + `export default function Preview()` (default export, 미리보기 진입점)\n");
         sb.append("- [CRITICAL] `export default function ")
                 .append(componentName)
                 .append("()` 형식 사용 절대 금지 — named export와 동일 이름으로 default export를 선언하면 자기 자신을 무한 재귀 호출하여 런타임 크래시 발생\n");
@@ -261,10 +266,7 @@ public class PromptBuilder {
             // 자식 들여쓰기: 마지막이면 공백, 아니면 │로 연결
             String childIndent = indent + (last ? "   " : "│  ");
 
-            sb.append(indent)
-                    .append(connector)
-                    .append(formatNodeLine(node))
-                    .append("\n");
+            sb.append(indent).append(connector).append(formatNodeLine(node)).append("\n");
 
             formatNodes(sb, node.getChildren(), childIndent);
         }
@@ -297,7 +299,11 @@ public class PromptBuilder {
 
         // 크기 정보
         if (node.getWidth() > 0 || node.getHeight() > 0) {
-            line.append(" (").append(node.getWidth()).append("×").append(node.getHeight()).append("px");
+            line.append(" (")
+                    .append(node.getWidth())
+                    .append("×")
+                    .append(node.getHeight())
+                    .append("px");
 
             // Auto Layout 방향
             if (node.getLayoutMode() != null && !"NONE".equals(node.getLayoutMode())) {
@@ -357,7 +363,8 @@ public class PromptBuilder {
         // INSTANCE 컴포넌트 속성 (variant, boolean, text override)
         if (node.getComponentProps() != null && !node.getComponentProps().isEmpty()) {
             line.append(" | props: {");
-            node.getComponentProps().forEach((k, v) -> line.append(k).append("=").append(v).append(", "));
+            node.getComponentProps()
+                    .forEach((k, v) -> line.append(k).append("=").append(v).append(", "));
             // 마지막 ", " 제거
             line.setLength(line.length() - 2);
             line.append("}");
@@ -365,9 +372,7 @@ public class PromptBuilder {
 
         // 텍스트 내용 (50자 초과 시 말줄임)
         if (node.getText() != null && !node.getText().isBlank()) {
-            String truncated = node.getText().length() > 50
-                    ? node.getText().substring(0, 50) + "…"
-                    : node.getText();
+            String truncated = node.getText().length() > 50 ? node.getText().substring(0, 50) + "…" : node.getText();
             line.append(" | text: \"").append(truncated).append("\"");
         }
 
@@ -384,7 +389,9 @@ public class PromptBuilder {
                 line.append(", lh:").append(node.getLineHeight()).append("px");
             }
             if (node.getLetterSpacing() != 0.0) {
-                line.append(", ls:").append(String.format("%.1f", node.getLetterSpacing())).append("px");
+                line.append(", ls:")
+                        .append(String.format("%.1f", node.getLetterSpacing()))
+                        .append("px");
             }
         }
 

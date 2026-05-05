@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -66,18 +67,31 @@ public class VariantNormalizer {
             return;
         }
         try {
-            JsonNode root = objectMapper.readTree(resource.getInputStream());
-            globalKeyMap = parseStringMap(root.path("global").path("keys"));
-            componentKeyMap = parseComponentMap(root.path("components"));
-            valueMap = parseValueMap(root.path("values"));
-            valueDefaultStrategy = root.path("values").path("default").asText("lowercase");
-            log.info(
-                    "VariantNormalizer 초기화 완료 — global keys={}개, components={}개",
-                    globalKeyMap.size(),
-                    componentKeyMap.size());
+            load(resource.getInputStream());
         } catch (IOException e) {
             log.error("variant-mapping.json 읽기 실패 — 정규화 비활성화", e);
         }
+    }
+
+    /**
+     * 주어진 InputStream으로 매핑 테이블을 초기화한다.
+     *
+     * <p>테스트에서 인라인 JSON을 주입할 때 사용한다.
+     * 프로덕션에서는 {@link #load()} 가 classpath 파일을 읽어 이 메서드로 위임한다.
+     *
+     * @param inputStream variant-mapping JSON 스트림
+     * @throws IOException JSON 파싱 실패 시
+     */
+    public void load(InputStream inputStream) throws IOException {
+        JsonNode root = objectMapper.readTree(inputStream);
+        globalKeyMap = parseStringMap(root.path("global").path("keys"));
+        componentKeyMap = parseComponentMap(root.path("components"));
+        valueMap = parseValueMap(root.path("values"));
+        valueDefaultStrategy = root.path("values").path("default").asText("lowercase");
+        log.info(
+                "VariantNormalizer 초기화 완료 — global keys={}개, components={}개",
+                globalKeyMap.size(),
+                componentKeyMap.size());
     }
 
     /**
@@ -89,8 +103,7 @@ public class VariantNormalizer {
      * @param rawProps INSTANCE_SWAP 제외 후 남은 componentProperties
      * @return 정규화된 prop 맵. 입력이 비어있으면 빈 맵 반환
      */
-    public Map<String, String> normalize(
-            String nodeName, Map<String, FigmaNode.ComponentProperty> rawProps) {
+    public Map<String, String> normalize(String nodeName, Map<String, FigmaNode.ComponentProperty> rawProps) {
         if (rawProps == null || rawProps.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -102,8 +115,7 @@ public class VariantNormalizer {
             if (prop == null || prop.getType() == null || prop.getValue() == null) return;
 
             String normalizedKey = normalizeKey(componentKey, rawKeyName);
-            String normalizedValue = normalizeValue(
-                    prop.getType(), normalizedKey, String.valueOf(prop.getValue()));
+            String normalizedValue = normalizeValue(prop.getType(), normalizedKey, String.valueOf(prop.getValue()));
             result.put(normalizedKey, normalizedValue);
         });
 
@@ -171,8 +183,9 @@ public class VariantNormalizer {
     private Map<String, Map<String, String>> parseComponentMap(JsonNode node) {
         Map<String, Map<String, String>> map = new LinkedHashMap<>();
         if (node == null || node.isMissingNode()) return map;
-        node.fields().forEachRemaining(compEntry ->
-                map.put(compEntry.getKey(), parseStringMap(compEntry.getValue().path("keys"))));
+        node.fields()
+                .forEachRemaining(compEntry -> map.put(
+                        compEntry.getKey(), parseStringMap(compEntry.getValue().path("keys"))));
         return map;
     }
 

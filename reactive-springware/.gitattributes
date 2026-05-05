@@ -1,0 +1,10 @@
+# 텍스트 파일 줄 끝을 LF로 통일 — Windows CRLF 경고 방지
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.js    text eol=lf
+*.json  text eol=lf
+*.css   text eol=lf
+*.md    text eol=lf
+*.html  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf

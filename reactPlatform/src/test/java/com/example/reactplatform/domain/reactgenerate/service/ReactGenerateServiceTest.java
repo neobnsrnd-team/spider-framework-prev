@@ -31,7 +31,6 @@ import com.example.reactplatform.global.exception.InvalidInputException;
 import com.example.reactplatform.global.exception.NotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,18 +52,25 @@ class ReactGenerateServiceTest {
 
     @Mock
     private ReactGenerateMapper reactGenerateMapper;
+
     @Mock
     private PromptBuilder promptBuilder;
+
     @Mock
     private ClaudeApiClient claudeApiClient;
+
     @Mock
     private FigmaApiClient figmaApiClient;
+
     @Mock
     private FigmaDesignExtractor figmaDesignExtractor;
+
     @Mock
     private CodeValidator codeValidator;
+
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
     @Mock
     private ObjectMapper objectMapper;
 
@@ -72,8 +78,8 @@ class ReactGenerateServiceTest {
     private ReactGenerateService service;
 
     /** FigmaUrlParser.parse()가 정상 동작하는 유효한 Figma URL */
-    private static final String VALID_FIGMA_URL =
-            "https://www.figma.com/design/ABC123/test-design?node-id=1-2";
+    private static final String VALID_FIGMA_URL = "https://www.figma.com/design/ABC123/test-design?node-id=1-2";
+
     private static final String USER_ID = "user001";
     private static final String SYSTEM_PROMPT = "system prompt";
     private static final String USER_PROMPT = "user prompt";
@@ -145,10 +151,16 @@ class ReactGenerateServiceTest {
         service.generate(generateRequest(null), USER_ID);
 
         // promptBuilder.buildUserPrompt에 effectiveDomain=BANKING이 전달되는지 확인
-        verify(promptBuilder).buildUserPrompt(
-                any(), eq(BrandType.HANA), eq(DomainType.BANKING),
-                eq("TestComponent"), eq("테스트 제목"),
-                isNull(), isNull(), isNull());
+        verify(promptBuilder)
+                .buildUserPrompt(
+                        any(),
+                        eq(BrandType.HANA),
+                        eq(DomainType.BANKING),
+                        eq("TestComponent"),
+                        eq("테스트 제목"),
+                        isNull(),
+                        isNull(),
+                        isNull());
     }
 
     // ========== generate — Figma 단계 실패 ==========
@@ -156,8 +168,7 @@ class ReactGenerateServiceTest {
     @Test
     @DisplayName("Figma API 호출 실패 시 systemPrompt·userPrompt·reactCode 모두 null로 FAILED 저장 후 예외 전파")
     void generate_figmaApiThrows_savesFailedRecordWithNullPrompts() throws Exception {
-        when(figmaApiClient.getNode(anyString(), anyString()))
-                .thenThrow(new InternalException("Figma 연결 실패"));
+        when(figmaApiClient.getNode(anyString(), anyString())).thenThrow(new InternalException("Figma 연결 실패"));
 
         assertThatThrownBy(() -> service.generate(generateRequest(DomainType.BANKING), USER_ID))
                 .isInstanceOf(InternalException.class);
@@ -166,14 +177,14 @@ class ReactGenerateServiceTest {
         verify(reactGenerateMapper).insert(entityCaptor.capture());
         ReactGenerateEntity saved = entityCaptor.getValue();
         assertThat(saved.getFigmaUrl()).isEqualTo(VALID_FIGMA_URL);
-        assertThat(saved.getFigmaJson()).isNull();            // Figma 호출 실패로 미설정
+        assertThat(saved.getFigmaJson()).isNull(); // Figma 호출 실패로 미설정
         assertThat(saved.getBrand()).isEqualTo("HANA");
         assertThat(saved.getDomain()).isEqualTo("BANKING");
         assertThat(saved.getComponentName()).isEqualTo("Unknown"); // Figma 도달 전 폴백값
         assertThat(saved.getTitle()).isEqualTo("테스트 제목");
-        assertThat(saved.getSystemPrompt()).isNull();         // 미설정
-        assertThat(saved.getUserPrompt()).isNull();           // 미설정
-        assertThat(saved.getReactCode()).isNull();            // 미설정
+        assertThat(saved.getSystemPrompt()).isNull(); // 미설정
+        assertThat(saved.getUserPrompt()).isNull(); // 미설정
+        assertThat(saved.getReactCode()).isNull(); // 미설정
         assertThat(saved.getFailReason()).isNotNull();
         assertThat(saved.getStatus()).isEqualTo(ReactGenerateStatus.FAILED.name());
         assertThat(saved.getCreateUserId()).isEqualTo(USER_ID);
@@ -185,13 +196,12 @@ class ReactGenerateServiceTest {
     @DisplayName("Claude API 실패 시 systemPrompt·userPrompt는 기록되고 reactCode는 null로 FAILED 저장")
     void generate_claudeApiThrows_savesFailedRecordWithPromptsButNullCode() throws Exception {
         when(figmaApiClient.getNode(anyString(), anyString())).thenReturn(new FigmaNodeResponse());
-        when(figmaDesignExtractor.extract(any(), anyString(), anyString()))
-                .thenReturn(minimalDesignContext());
+        when(objectMapper.writeValueAsString(any())).thenReturn("{\"nodes\":{}}");
+        when(figmaDesignExtractor.extract(any(), anyString(), anyString())).thenReturn(minimalDesignContext());
         when(promptBuilder.buildSystemPrompt()).thenReturn(SYSTEM_PROMPT);
         when(promptBuilder.buildUserPrompt(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(USER_PROMPT);
-        when(claudeApiClient.generate(anyString(), anyString()))
-                .thenThrow(new InternalException("Claude 타임아웃"));
+        when(claudeApiClient.generate(anyString(), anyString())).thenThrow(new InternalException("Claude 타임아웃"));
 
         assertThatThrownBy(() -> service.generate(generateRequest(DomainType.BANKING), USER_ID))
                 .isInstanceOf(InternalException.class);
@@ -200,14 +210,14 @@ class ReactGenerateServiceTest {
         verify(reactGenerateMapper).insert(entityCaptor.capture());
         ReactGenerateEntity saved = entityCaptor.getValue();
         assertThat(saved.getFigmaUrl()).isEqualTo(VALID_FIGMA_URL);
-        assertThat(saved.getFigmaJson()).isNotNull();          // Figma 성공 후 직렬화됨
+        assertThat(saved.getFigmaJson()).isNotNull(); // Figma 성공 후 직렬화됨
         assertThat(saved.getBrand()).isEqualTo("HANA");
         assertThat(saved.getDomain()).isEqualTo("BANKING");
         assertThat(saved.getComponentName()).isEqualTo("TestComponent");
         assertThat(saved.getTitle()).isEqualTo("테스트 제목");
         assertThat(saved.getSystemPrompt()).isEqualTo(SYSTEM_PROMPT); // 이미 설정됨
-        assertThat(saved.getUserPrompt()).isEqualTo(USER_PROMPT);     // 이미 설정됨
-        assertThat(saved.getReactCode()).isNull();                    // Claude 실패로 미설정
+        assertThat(saved.getUserPrompt()).isEqualTo(USER_PROMPT); // 이미 설정됨
+        assertThat(saved.getReactCode()).isNull(); // Claude 실패로 미설정
         assertThat(saved.getFailReason()).isNotNull();
         assertThat(saved.getStatus()).isEqualTo(ReactGenerateStatus.FAILED.name());
         assertThat(saved.getCreateUserId()).isEqualTo(USER_ID);
@@ -249,10 +259,9 @@ class ReactGenerateServiceTest {
 
         ReactGenerateApprovalResponse response = service.requestApproval("code-id-1", USER_ID);
 
-        verify(reactGenerateMapper).updateStatus(
-                eq("code-id-1"),
-                eq(ReactGenerateStatus.PENDING_APPROVAL.name()),
-                eq(null), eq(null), eq(null));
+        verify(reactGenerateMapper)
+                .updateStatus(
+                        eq("code-id-1"), eq(ReactGenerateStatus.PENDING_APPROVAL.name()), eq(null), eq(null), eq(null));
         assertThat(response.getStatus()).isEqualTo(ReactGenerateStatus.PENDING_APPROVAL.name());
         assertThat(response.getCodeId()).isEqualTo("code-id-1");
     }
@@ -277,8 +286,7 @@ class ReactGenerateServiceTest {
     void requestApproval_nonExistentCode_throwsNotFoundException() {
         when(reactGenerateMapper.selectById("unknown-id")).thenReturn(null);
 
-        assertThatThrownBy(() -> service.requestApproval("unknown-id", USER_ID))
-                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> service.requestApproval("unknown-id", USER_ID)).isInstanceOf(NotFoundException.class);
     }
 
     // ========== getById ==========
@@ -303,8 +311,7 @@ class ReactGenerateServiceTest {
     void getById_nonExistentCode_throwsNotFoundException() {
         when(reactGenerateMapper.selectById("unknown-id")).thenReturn(null);
 
-        assertThatThrownBy(() -> service.getById("unknown-id"))
-                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> service.getById("unknown-id")).isInstanceOf(NotFoundException.class);
     }
 
     // ========== helpers ==========
@@ -314,8 +321,7 @@ class ReactGenerateServiceTest {
         when(figmaApiClient.getNode(anyString(), anyString())).thenReturn(new FigmaNodeResponse());
         // ObjectMapper 직렬화: Figma 응답 → JSON 문자열 (임의 문자열 반환)
         when(objectMapper.writeValueAsString(any())).thenReturn("{\"nodes\":{}}");
-        when(figmaDesignExtractor.extract(any(), anyString(), anyString()))
-                .thenReturn(minimalDesignContext());
+        when(figmaDesignExtractor.extract(any(), anyString(), anyString())).thenReturn(minimalDesignContext());
         when(promptBuilder.buildSystemPrompt()).thenReturn(SYSTEM_PROMPT);
         when(promptBuilder.buildUserPrompt(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(USER_PROMPT);

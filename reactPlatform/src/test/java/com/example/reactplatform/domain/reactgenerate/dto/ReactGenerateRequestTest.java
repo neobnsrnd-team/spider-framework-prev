@@ -23,8 +23,7 @@ class ReactGenerateRequestTest {
     private static Validator validator;
 
     /** 각 테스트에서 필수 필드(title, figmaUrl, brand)를 채운 기본 빌더 */
-    private static final String VALID_FIGMA_URL =
-            "https://www.figma.com/design/AbcDef123/MyDesign?node-id=1-2";
+    private static final String VALID_FIGMA_URL = "https://www.figma.com/design/AbcDef123/MyDesign?node-id=1-2";
 
     @BeforeAll
     static void setUp() {

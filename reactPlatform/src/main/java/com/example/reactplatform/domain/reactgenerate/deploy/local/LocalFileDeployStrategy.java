@@ -39,6 +39,11 @@ public class LocalFileDeployStrategy implements ReactDeployStrategy {
             log.warn("[local] React 코드가 비어 있어 파일 생성을 건너뜁니다. codeId={}", codeId);
             return DeployResult.failure("React 코드가 비어 있습니다.");
         }
+        // DB 저장값이 null/공백인 경우 방어 — 파일명 "null.tsx" 생성 방지
+        if (componentName == null || componentName.isBlank()) {
+            log.warn("[local] componentName이 비어 있어 기본값 사용. codeId={}", codeId);
+            componentName = "GeneratedComponent";
+        }
 
         ReactDeployProperties.Local local = properties.getLocal();
 
@@ -114,8 +119,10 @@ public class LocalFileDeployStrategy implements ReactDeployStrategy {
             return prefix.startsWith(".") ? prefix : "./" + prefix;
         } catch (Exception e) {
             // 경로 계산 실패 시 fallback — 런타임에 개발자가 직접 수정 가능
-            log.warn("[local] import 경로 계산 실패 — fallback '../generated' 사용. componentDir={}, containerDir={}",
-                    componentDir, containerDir);
+            log.warn(
+                    "[local] import 경로 계산 실패 — fallback '../generated' 사용. componentDir={}, containerDir={}",
+                    componentDir,
+                    containerDir);
             return "../generated";
         }
     }

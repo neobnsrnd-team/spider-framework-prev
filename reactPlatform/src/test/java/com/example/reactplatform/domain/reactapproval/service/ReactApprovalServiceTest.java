@@ -26,9 +26,9 @@ import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateHistoryRe
 import com.example.reactplatform.domain.reactgenerate.dto.ReactGenerateResponse;
 import com.example.reactplatform.domain.reactgenerate.enums.ReactGenerateStatus;
 import com.example.reactplatform.domain.reactgenerate.mapper.ReactGenerateMapper;
-import com.example.reactplatform.global.exception.base.BaseException;
 import com.example.reactplatform.global.exception.InvalidInputException;
 import com.example.reactplatform.global.exception.NotFoundException;
+import com.example.reactplatform.global.exception.base.BaseException;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -88,8 +88,7 @@ class ReactApprovalServiceTest {
                     mockStatic(TransactionSynchronizationManager.class)) {
                 ArgumentCaptor<TransactionSynchronization> syncCaptor =
                         ArgumentCaptor.forClass(TransactionSynchronization.class);
-                mocked.when(() ->
-                                TransactionSynchronizationManager.registerSynchronization(syncCaptor.capture()))
+                mocked.when(() -> TransactionSynchronizationManager.registerSynchronization(syncCaptor.capture()))
                         .thenAnswer(invocation -> null);
 
                 ReactGenerateResponse pending = pendingRecord("creator");
@@ -102,16 +101,15 @@ class ReactApprovalServiceTest {
                 service.approve("code-01", "approver");
 
                 // approve() 반환 직후 — deployAndRecord 미호출 확인
-                verify(reactDeployService, never()).deployAndRecord(any(), any(), any());
+                verify(reactDeployService, never()).deployAndRecord(any(), any(), any(), any());
 
                 // 트랜잭션 커밋 시뮬레이션
                 syncCaptor.getValue().afterCommit();
 
                 // afterCommit() 이후 — deployAndRecord 호출 확인
-                verify(reactDeployService).deployAndRecord(
-                        eq("code-01"),
-                        eq("export default function Foo() {}"),
-                        eq("approver"));
+                verify(reactDeployService)
+                        .deployAndRecord(
+                                eq("code-01"), eq("export default function Foo() {}"), eq("TestComp"), eq("approver"));
             }
         }
 
@@ -120,9 +118,8 @@ class ReactApprovalServiceTest {
         void approve_notFound_throwsNotFoundException() {
             when(reactGenerateMapper.selectById("unknown")).thenReturn(null);
 
-            assertThatThrownBy(() -> service.approve("unknown", "approver"))
-                    .isInstanceOf(NotFoundException.class);
-            verify(reactDeployService, never()).deployAndRecord(any(), any(), any());
+            assertThatThrownBy(() -> service.approve("unknown", "approver")).isInstanceOf(NotFoundException.class);
+            verify(reactDeployService, never()).deployAndRecord(any(), any(), any(), any());
         }
 
         @Test
@@ -137,7 +134,8 @@ class ReactApprovalServiceTest {
 
             assertThatThrownBy(() -> service.approve("code-01", "approver"))
                     .isInstanceOf(InvalidInputException.class)
-                    .satisfies(ex -> assertThat(((BaseException) ex).getDetailMessage()).contains("승인 대기"));
+                    .satisfies(ex ->
+                            assertThat(((BaseException) ex).getDetailMessage()).contains("승인 대기"));
         }
 
         @Test
@@ -147,7 +145,8 @@ class ReactApprovalServiceTest {
 
             assertThatThrownBy(() -> service.approve("code-01", "sameUser"))
                     .isInstanceOf(InvalidInputException.class)
-                    .satisfies(ex -> assertThat(((BaseException) ex).getDetailMessage()).contains("요청자"));
+                    .satisfies(ex ->
+                            assertThat(((BaseException) ex).getDetailMessage()).contains("요청자"));
         }
 
         @Test
@@ -164,7 +163,8 @@ class ReactApprovalServiceTest {
 
                 assertThatThrownBy(() -> service.approve("code-01", "approver"))
                         .isInstanceOf(InvalidInputException.class)
-                        .satisfies(ex -> assertThat(((BaseException) ex).getDetailMessage()).contains("이미 처리된"));
+                        .satisfies(ex -> assertThat(((BaseException) ex).getDetailMessage())
+                                .contains("이미 처리된"));
             }
         }
 
@@ -246,28 +246,26 @@ class ReactApprovalServiceTest {
         @Test
         @DisplayName("날짜 형식이 yyyyMMdd가 아니면 InvalidInputException이 발생한다")
         void getHistory_invalidDateFormat_throwsInvalidInputException() {
-            assertThatThrownBy(
-                            () -> service.getHistory(1, 10, null, null, null, null, null, "2024-01-01", null))
+            assertThatThrownBy(() -> service.getHistory(1, 10, null, null, null, null, null, "2024-01-01", null))
                     .isInstanceOf(InvalidInputException.class)
-                    .satisfies(ex -> assertThat(((BaseException) ex).getDetailMessage()).contains("yyyyMMdd"));
+                    .satisfies(ex ->
+                            assertThat(((BaseException) ex).getDetailMessage()).contains("yyyyMMdd"));
         }
 
         @Test
         @DisplayName("8자리 숫자 형식이 아닌 날짜도 거부된다")
         void getHistory_nonNumericDate_throwsInvalidInputException() {
-            assertThatThrownBy(
-                            () -> service.getHistory(1, 10, null, null, null, null, null, null, "abcdefgh"))
+            assertThatThrownBy(() -> service.getHistory(1, 10, null, null, null, null, null, null, "abcdefgh"))
                     .isInstanceOf(InvalidInputException.class);
         }
 
         @Test
         @DisplayName("fromDate가 toDate보다 이후이면 InvalidInputException이 발생한다")
         void getHistory_dateRangeReversed_throwsInvalidInputException() {
-            assertThatThrownBy(
-                            () -> service.getHistory(
-                                    1, 10, null, null, null, null, null, "20240201", "20240101"))
+            assertThatThrownBy(() -> service.getHistory(1, 10, null, null, null, null, null, "20240201", "20240101"))
                     .isInstanceOf(InvalidInputException.class)
-                    .satisfies(ex -> assertThat(((BaseException) ex).getDetailMessage()).contains("이전"));
+                    .satisfies(ex ->
+                            assertThat(((BaseException) ex).getDetailMessage()).contains("이전"));
         }
 
         @Test
@@ -286,10 +284,10 @@ class ReactApprovalServiceTest {
         @Test
         @DisplayName("APPROVED / REJECTED 이외의 status 값이면 InvalidInputException이 발생한다")
         void getHistory_invalidStatus_throwsInvalidInputException() {
-            assertThatThrownBy(
-                            () -> service.getHistory(1, 10, "PENDING_APPROVAL", null, null, null, null, null, null))
+            assertThatThrownBy(() -> service.getHistory(1, 10, "PENDING_APPROVAL", null, null, null, null, null, null))
                     .isInstanceOf(InvalidInputException.class)
-                    .satisfies(ex -> assertThat(((BaseException) ex).getDetailMessage()).contains("APPROVED"));
+                    .satisfies(ex ->
+                            assertThat(((BaseException) ex).getDetailMessage()).contains("APPROVED"));
         }
 
         @Test
@@ -319,7 +317,15 @@ class ReactApprovalServiceTest {
 
             verify(reactGenerateMapper)
                     .selectApprovalHistory(
-                            anyInt(), anyInt(), isNull(), isNull(), isNull(), eq("user\\%01"), eq("dept\\_A"), isNull(), isNull());
+                            anyInt(),
+                            anyInt(),
+                            isNull(),
+                            isNull(),
+                            isNull(),
+                            eq("user\\%01"),
+                            eq("dept\\_A"),
+                            isNull(),
+                            isNull());
         }
 
         @Test
@@ -328,15 +334,22 @@ class ReactApprovalServiceTest {
             when(reactGenerateMapper.selectApprovalHistory(
                             anyInt(), anyInt(), any(), any(), any(), anyString(), any(), any(), any()))
                     .thenReturn(List.of());
-            when(reactGenerateMapper.selectApprovalHistoryCount(
-                            any(), any(), any(), anyString(), any(), any(), any()))
+            when(reactGenerateMapper.selectApprovalHistoryCount(any(), any(), any(), anyString(), any(), any(), any()))
                     .thenReturn(0);
 
             service.getHistory(1, 10, null, null, null, "user\\01", null, null, null);
 
             verify(reactGenerateMapper)
                     .selectApprovalHistory(
-                            anyInt(), anyInt(), isNull(), isNull(), isNull(), eq("user\\\\01"), isNull(), isNull(), isNull());
+                            anyInt(),
+                            anyInt(),
+                            isNull(),
+                            isNull(),
+                            isNull(),
+                            eq("user\\\\01"),
+                            isNull(),
+                            isNull(),
+                            isNull());
         }
 
         @Test
@@ -382,6 +395,7 @@ class ReactApprovalServiceTest {
                 .status(ReactGenerateStatus.PENDING_APPROVAL.name())
                 .createUserId(createUserId)
                 .reactCode("export default function TestComp() {}")
+                .componentName("TestComp")
                 .build();
     }
 }
