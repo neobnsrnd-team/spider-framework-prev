@@ -6,6 +6,8 @@
 ## 목차
 
 - [아키텍처](#아키텍처)
+- [기술 스택](#기술-스택)
+- [프로젝트 구조](#프로젝트-구조)
 - [모듈 구성](#모듈-구성)
 - [빌드 순서 및 사전 조건](#빌드-순서-및-사전-조건)
 - [모듈 상세](#모듈-상세)
@@ -23,21 +25,112 @@
 ## 아키텍처
 
 ```
-[프론트엔드]
-  React (demo/front)
-       │ HTTP (18080)
-       ▼
-[채널AP] biz-channel ────── TCP 19400 ◄── Admin (긴급공지 명령)
-       │
-       ├── TCP 19100 ──► [인증AP] biz-auth
-       │                          │ TCP 19300
-       │                          ▼
-       │                   [계정계] mock-core
-       │
-       └── TCP 19200 ──► [이체AP] biz-transfer
-                                  │ TCP 19300
-                                  ▼
-                           [계정계] mock-core
+┌──────────────────────────────────────────────────────────────────────────┐
+│  고객 채널                                                                │
+│  뱅킹 앱 (demo/front · React)                                             │
+└──────────────────────────┬───────────────────────────────────────────────┘
+                           │ HTTP REST (:18080)
+                           ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│  demo/bizApp                                                              │
+│                                                                           │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │  biz-channel  (Spring Boot)                   TCP :19400 ◄── Admin  │ │
+│  │  ├── Spring MVC / Tomcat   ← HTTP 요청 수신          (긴급공지 명령) │ │
+│  │  └── spider-link 내장                                                │ │
+│  │       ├── SpiderTcpServer  ← Admin 긴급공지 수신                     │ │
+│  │       └── TcpClient  → 내부 AP 전문 송신 · 연계 로그 자동 기록      │ │
+│  └───────────────┬──────────────────────────────┬───────────────────────┘ │
+│                  │ TCP · spider-link (:19100)    │ TCP · spider-link (:19200)
+│                  ▼                               ▼                        │
+│  ┌───────────────────────────┐  ┌───────────────────────────┐            │
+│  │  biz-auth (Spring Boot)   │  │  biz-transfer (Spring Boot)│            │
+│  │  인증AP                   │  │  이체AP                    │            │
+│  │  └── spider-link 내장     │  │  └── spider-link 내장      │            │
+│  │       ├── SpiderTcpServer │  │       ├── SpiderTcpServer  │            │
+│  │       └── CmdDispatcher   │  │       └── CmdDispatcher    │            │
+│  │  └── 개발자 핸들러        │  │  └── 개발자 핸들러         │            │
+│  │       └── 인증 처리       │  │       └── 이체 · PIN 검증  │            │
+│  └───────────────┬───────────┘  └───────────────┬────────────┘            │
+└──────────────────┼───────────────────────────────┼────────────────────────┘
+                   └────────────────┬──────────────┘
+                    TCP · 고정길이 바이너리 (:19300)
+                                    ▼
+               ┌────────────────────────────────────────┐
+               │  mock-core — 계정계 레거시 Mock          │
+               │  ├── LegacyTcpServer                    │
+               │  └── Oracle DB                          │
+               │       (D_ACCOUNT · D_CARD ·             │
+               │        D_CARD_USAGE)                    │
+               └────────────────────────────────────────┘
+
+  spider-link 전문 이력 자동 기록
+  (biz-channel · biz-auth · biz-transfer → FWK_MESSAGE_INSTANCE)
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│  연계DB  (Oracle · spider-link 기록)                                      │
+│  └── FWK_MESSAGE_INSTANCE — 전문거래 이력 / 에러 이력 / 연계 로그         │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│  F/w Admin 서버  (별도 독립 서버)                                         │
+│  └── 전문거래 모니터링 · 에러 이력 조회 · 배치 모니터링  ← 연계DB 조회   │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+## 기술 스택
+
+| 구분 | 기술 |
+|------|------|
+| Language | Java 17 |
+| Framework | Spring Boot 3.4 |
+| ORM | MyBatis 3 |
+| Database | Oracle |
+| Security | JWT (jjwt 0.12.6), BCrypt (spring-security-crypto) |
+| TCP 연계 | spider-link (`SpiderTcpServer`, `MetaDrivenCommandHandler`) |
+| 공통 모델 | spider-common (`CommandHandler`, `CommandDispatcher`, `JsonCommandRequest/Response`) |
+| Build | Maven 3 (Wrapper) |
+| Utility | Lombok |
+
+## 프로젝트 구조
+
+```
+demo/bizApp/
+├── pom.xml                        ← parent POM (공통 의존성·버전 관리)
+├── biz-common/                    ← AP 서버 간 TCP 커맨드 상수 라이브러리
+│   └── src/main/java/com/example/bizcommon/
+│       └── BizCommands.java
+├── mock-core/                     ← 계정계 레거시 Mock (고정길이 바이너리 TCP)
+│   └── src/main/java/com/example/mockcore/
+│       ├── config/                ← LegacyTcpServer Bean 설정
+│       ├── handler/               ← CORE_* 커맨드 핸들러 7종
+│       │   ├── CoreUserAuthHandler.java
+│       │   ├── CoreUserQueryHandler.java
+│       │   ├── CoreCardListHandler.java
+│       │   ├── CoreTransactionsHandler.java
+│       │   ├── CorePaymentStmtHandler.java
+│       │   ├── CorePayableAmtHandler.java
+│       │   └── CoreImmediatePayHandler.java
+│       ├── infra/                 ← LegacyTcpServer, FixedMessageReader/Writer, LegacyCoreHandler
+│       └── repository/            ← AccountRepository
+├── biz-auth/                      ← 인증AP (TCP 19100 · HTTP 19180)
+│   └── src/main/java/com/example/bizauth/
+│       └── config/                ← SpiderTcpServer Bean 설정 (MetaDrivenCommandHandler)
+├── biz-transfer/                  ← 이체AP (TCP 19200 · HTTP 19280)
+│   └── src/main/java/com/example/biztransfer/
+│       ├── config/                ← SpiderTcpServer Bean 설정
+│       ├── controller/            ← MessageTestController
+│       ├── handler/               ← TransferImmediatePayHandler (PIN 검증)
+│       └── service/               ← TransferService
+└── biz-channel/                   ← 채널AP (HTTP 18080 · TCP 19400)
+    └── src/main/java/com/example/bizchannel/
+        ├── client/                ← BizClient (인증·이체AP 호출), AdminClient
+        ├── config/                ← SpiderTcpServer Bean 설정, JWT 설정
+        ├── domain/notice/         ← NoticeManager (SSE), NoticeStateRestorer, NoticeSyncCommandHandler
+        └── web/
+            ├── controller/        ← AuthController, CardController, NoticeController
+            ├── filter/            ← JwtAuthFilter
+            └── interceptor/       ← HttpLoggingInterceptor
 ```
 
 ## 모듈 구성
@@ -210,3 +303,4 @@ biz-common (라이브러리)
 | `D_CARD_USAGE` | mock-core | 카드 이용내역 |
 | `FWK_LISTENER_TRX_MESSAGE` | biz-auth, biz-transfer | spider-link 메타 (커맨드 등록) |
 | `FWK_SERVICE`, `FWK_COMPONENT` | biz-auth, biz-transfer | spider-link 메타 (라우팅) |
+| `FWK_MESSAGE_INSTANCE` | biz-auth, biz-transfer, biz-channel | spider-link 전문 이력 기록 |
