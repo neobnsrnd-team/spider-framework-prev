@@ -91,13 +91,14 @@ test.describe('Gateway 맵핑 목록', () => {
         await page.locator('#mappingIoType').selectOption('I');
         await doSearch(page);
 
-        const rows = page.locator('#gatewayMappingTableBody tr');
-        const count = await rows.count();
+        // tr 대신 ioType 셀렉트를 직접 카운트 — 로딩 플레이스홀더 행(colspan) 제외
+        const ioTypeSelects = page.locator('#gatewayMappingTableBody select[data-field="ioType"]');
+        await expect(ioTypeSelects.first()).toBeVisible();
+        const count = await ioTypeSelects.count();
         expect(count).toBeGreaterThan(0);
 
         for (let i = 0; i < count; i++) {
-            const select = rows.nth(i).locator('select[data-field="ioType"]');
-            await expect(select).toHaveValue('I');
+            await expect(ioTypeSelects.nth(i)).toHaveValue('I');
         }
     });
 

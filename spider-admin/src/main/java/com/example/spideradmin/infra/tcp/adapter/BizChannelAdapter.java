@@ -1,8 +1,8 @@
 package com.example.spideradmin.infra.tcp.adapter;
 
-import com.example.spideradmin.infra.tcp.client.TcpClient;
-import com.example.spideradmin.infra.tcp.model.JsonCommandRequest;
-import com.example.spideradmin.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
+import com.example.spiderlink.infra.tcp.client.TcpClient;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -38,6 +38,10 @@ jwt:
 
 admin:
   secret: ${ADMIN_SECRET}
+  # biz-channel → Admin 방향 TCP 클라이언트 설정 (기동 시 공지 상태 복원용)
+  tcp:
+    host: ${ADMIN_TCP_HOST:localhost}
+    port: ${ADMIN_TCP_PORT:9999}
 
 logging:
   level:

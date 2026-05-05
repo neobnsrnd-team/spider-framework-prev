@@ -9,8 +9,8 @@ import com.example.spideradmin.global.exception.InvalidInputException;
 import com.example.spideradmin.global.exception.NotFoundException;
 import com.example.spideradmin.global.util.AuditUtil;
 import com.example.spideradmin.infra.tcp.adapter.BizChannelAdapter;
-import com.example.spideradmin.infra.tcp.model.JsonCommandRequest;
-import com.example.spideradmin.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -232,13 +232,36 @@ public class EmergencyNoticeDeployService {
     }
 
     /**
-     * 현재 공지 내용·노출 설정을 DB에서 조회하여 biz-channel 요청 페이로드를 구성한다.
+     * 현재 긴급공지 상태 전체를 조회하여 반환한다.
+     *
+     * <p>NOTICE_STATE_QUERY 커맨드 응답과 biz-channel 기동 시 상태 복원에 사용된다.
+     * NOTICE_SYNC 페이로드 구조에 {@code deployStatus} 필드가 추가된다.</p>
+     *
+     * <p>초기 데이터 미삽입 등으로 배포 상태 행이 없으면 {@link com.example.spideradmin.global.exception.NotFoundException}을 던진다.</p>
+     */
+    public Map<String, Object> buildNoticeStatePayload() {
+        EmergencyNoticeDeployStatusResponse status = selectDeployStatusOrThrow();
+        Map<String, Object> payload = buildBaseNoticePayload(status);
+        payload.put("deployStatus", status.getDeployStatus());
+        return payload;
+    }
+
+    /**
+     * 현재 공지 내용·노출 설정을 DB에서 조회하여 biz-channel NOTICE_SYNC 요청 페이로드를 구성한다.
      * 트랜잭션 내에서 호출하므로 해당 트랜잭션의 최신 변경 사항(설정 업데이트 등)이 반영된다.
      */
     private Map<String, Object> buildSyncPayload() {
+        EmergencyNoticeDeployStatusResponse status = selectDeployStatusOrThrow();
+        return buildBaseNoticePayload(status);
+    }
+
+    /**
+     * notices·displayType·closeableYn·hideTodayYn으로 구성된 공통 SSE 브로드캐스트 페이로드를 생성한다.
+     * {@code deployStatus}를 포함하지 않으므로 NOTICE_SYNC와 NOTICE_STATE_QUERY 양쪽에서 재사용할 수 있다.
+     */
+    private Map<String, Object> buildBaseNoticePayload(EmergencyNoticeDeployStatusResponse status) {
         List<EmergencyNoticeResponse> notices = emergencyNoticeMapper.selectAll();
         String displayType = emergencyNoticeMapper.selectDisplayType();
-        EmergencyNoticeDeployStatusResponse deployStatus = emergencyNoticeDeployMapper.selectDeployStatus();
 
         List<Map<String, String>> noticePayload = notices.stream()
                 .map(n -> {
@@ -253,12 +276,8 @@ public class EmergencyNoticeDeployService {
         Map<String, Object> body = new HashMap<>();
         body.put("notices", noticePayload);
         body.put("displayType", displayType != null ? displayType : "N");
-        body.put(
-                "closeableYn",
-                deployStatus != null && deployStatus.getCloseableYn() != null ? deployStatus.getCloseableYn() : "Y");
-        body.put(
-                "hideTodayYn",
-                deployStatus != null && deployStatus.getHideTodayYn() != null ? deployStatus.getHideTodayYn() : "Y");
+        body.put("closeableYn", status.getCloseableYn() != null ? status.getCloseableYn() : "Y");
+        body.put("hideTodayYn", status.getHideTodayYn() != null ? status.getHideTodayYn() : "Y");
         return body;
     }
 

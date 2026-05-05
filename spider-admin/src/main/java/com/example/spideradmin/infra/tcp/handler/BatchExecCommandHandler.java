@@ -1,8 +1,9 @@
 package com.example.spideradmin.infra.tcp.handler;
 
 import com.example.spideradmin.infra.tcp.adapter.BatchManagementAdapter;
-import com.example.spideradmin.infra.tcp.model.JsonCommandRequest;
-import com.example.spideradmin.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.handler.CommandHandler;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.example.spidercommon.infra.tcp.model.ManagementContext;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class BatchExecCommandHandler implements CommandHandler {
+public class BatchExecCommandHandler implements CommandHandler<JsonCommandRequest, JsonCommandResponse> {
 
     private final BatchManagementAdapter batchManagementAdapter;
 
@@ -28,7 +29,7 @@ public class BatchExecCommandHandler implements CommandHandler {
     }
 
     @Override
-    public Object handle(String command, JsonCommandRequest request) {
+    public JsonCommandResponse handle(String command, JsonCommandRequest request) {
         Map<String, Object> payload = request.getPayload();
         if (payload == null) {
             return JsonCommandResponse.builder()

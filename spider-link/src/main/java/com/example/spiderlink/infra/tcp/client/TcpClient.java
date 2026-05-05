@@ -6,6 +6,7 @@ import com.example.spiderlink.infra.tcp.client.pool.SocketPool;
 import com.example.spiderlink.infra.tcp.client.pool.SocketPoolManager;
 import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
 import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.model.ManagementContext;
 import com.example.spiderlink.infra.tcp.parser.FixedLengthParser;
 import com.example.spiderlink.infra.tcp.parser.MessageStructure;
 import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
@@ -13,6 +14,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputFilter;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -186,6 +192,53 @@ public class TcpClient {
             recorder.recordClientResponse(trxId, req, response, host, port);
         }
         return response;
+    }
+
+    /**
+     * batch-was TCP 서버에 ManagementContext를 ObjectStream으로 전송하고 응답을 수신한다.
+     *
+     * <p>ObjectOutputStream flush 후 ObjectInputStream을 여는 순서를 지켜야
+     * 스트림 헤더 교환 데드락을 피할 수 있다.</p>
+     *
+     * <p>역직렬화 허용 화이트리스트: ManagementContext와 java.lang.*, java.util.* 만 허용한다.</p>
+     *
+     * @param host 대상 호스트
+     * @param port 대상 포트 (기본 9998)
+     * @param ctx  전송할 ManagementContext
+     * @return 응답 ManagementContext
+     * @throws IOException 소켓 연결/전송/수신 실패 시
+     */
+    public ManagementContext sendObject(String host, int port, ManagementContext ctx) throws IOException {
+        log.debug("[TcpClient] ObjectStream 전송: host={}, port={}, command={}", host, port, ctx.getCommand());
+        // OOS를 try-with-resources에 포함해 예외 시에도 버퍼가 명시적으로 닫히도록 보장.
+        // OIS는 OOS가 헤더를 write한 뒤에 생성해야 데드락을 피할 수 있으므로 헤더 안에 포함하지 않는다.
+        try (Socket socket = createObjectStreamSocket(host, port);
+             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream())) {
+            oos.writeObject(ctx);
+            oos.flush();
+            // ObjectInputFilter 화이트리스트: 허용된 클래스 외 역직렬화 차단 (RCE 방어)
+            ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+            ois.setObjectInputFilter(ObjectInputFilter.Config.createFilter(
+                    "com.example.spidercommon.infra.tcp.model.ManagementContext;java.lang.*;java.util.*;!*"));
+            ManagementContext response = (ManagementContext) ois.readObject();
+            log.debug("[TcpClient] ObjectStream 응답 수신: resultCode={}", response.getResultCode());
+            return response;
+        } catch (ClassNotFoundException e) {
+            throw new IOException("ManagementContext 역직렬화 실패: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * ObjectStream 통신 전용 소켓 생성.
+     * SocketPool과 동일한 소켓 옵션을 적용한다.
+     */
+    private Socket createObjectStreamSocket(String host, int port) throws IOException {
+        Socket socket = new Socket();
+        socket.setTcpNoDelay(true);
+        socket.setKeepAlive(true);
+        socket.connect(new InetSocketAddress(host, port), SocketPool.CONNECT_TIMEOUT_MS);
+        socket.setSoTimeout(SocketPool.READ_TIMEOUT_MS);
+        return socket;
     }
 
     /**

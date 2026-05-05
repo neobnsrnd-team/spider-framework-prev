@@ -1421,6 +1421,63 @@ CREATE INDEX IDX_SPW_PAGE_VIEW_LOG_DTIME ON SPW_CMS_PAGE_VIEW_LOG(VIEW_DTIME);
 
 
 -- =============================================================
+-- CMS 배포 서버 인스턴스 (FWK_CMS_SERVER_INSTANCE, FWK_CMS_FILE_SEND_HIS)
+-- 추가일: 2026-05-05
+-- admin E2E Docker 컨테이너는 독립 실행되므로, 테스트가 참조하는 테이블을 포함해둔다
+-- =============================================================
+
+CREATE TABLE FWK_CMS_SERVER_INSTANCE (
+    INSTANCE_ID             VARCHAR2(100)   NOT NULL,
+    INSTANCE_NAME           VARCHAR2(200),
+    INSTANCE_DESC           VARCHAR2(500),
+    INSTANCE_IP             VARCHAR2(100)   NOT NULL,
+    INSTANCE_PORT           NUMBER          NOT NULL,
+    SERVER_TYPE             VARCHAR2(20),
+    ALIVE_YN                VARCHAR2(1)     DEFAULT 'Y' NOT NULL,
+    LAST_MODIFIER_ID        VARCHAR2(20),
+    CREATE_DTIME            VARCHAR2(14),
+    CONSTRAINT PK_FWK_CMS_SERVER_INSTANCE PRIMARY KEY (INSTANCE_ID)
+);
+
+CREATE TABLE FWK_CMS_FILE_SEND_HIS (
+    INSTANCE_ID             VARCHAR2(100)   NOT NULL,
+    FILE_ID                 VARCHAR2(500)   NOT NULL,
+    FILE_SIZE               NUMBER(10),
+    FILE_CRC_VALUE          VARCHAR2(64),
+    LAST_MODIFIED_DTIME     VARCHAR2(14),
+    LAST_MODIFIER_ID        VARCHAR2(20),
+    CONSTRAINT PK_FWK_CMS_FILE_SEND_HIS PRIMARY KEY (INSTANCE_ID, FILE_ID)
+);
+
+
+-- =============================================================
+-- 내 작업함 (FWK_WORK_LIST)
+-- 추가일: 2026-05-05
+-- admin E2E Docker 컨테이너는 독립 실행되므로, 테스트가 참조하는 테이블을 포함해둔다
+-- =============================================================
+
+CREATE TABLE FWK_WORK_LIST (
+    WORK_SEQ                NUMBER          NOT NULL,
+    WORK_ID                 VARCHAR2(50)    NOT NULL,
+    WORK_DATA_PK            VARCHAR2(200)   NOT NULL,
+    WORK_NAME               VARCHAR2(200),
+    CRUD_TYPE               VARCHAR2(1),
+    LAST_UPDATE_DTIME       VARCHAR2(14),
+    APPROVAL_SEQ            VARCHAR2(50),
+    LAST_UPDATE_USER_ID     VARCHAR2(50),
+    DIST_YN                 VARCHAR2(1),
+    DIST_DTIME              VARCHAR2(14),
+    GROUP_ID                VARCHAR2(30),
+    FIRST_INSERT_USER_ID    VARCHAR2(50),
+    FILE_NAME               VARCHAR2(200),
+    CONSTRAINT PK_FWK_WORK_LIST PRIMARY KEY (WORK_SEQ)
+);
+
+CREATE INDEX IDX_FWK_WORK_LIST_GROUP ON FWK_WORK_LIST (GROUP_ID);
+CREATE INDEX IDX_FWK_WORK_LIST_USER  ON FWK_WORK_LIST (FIRST_INSERT_USER_ID);
+
+
+-- =============================================================
 -- bizApp — spider-link 전문 거래 이력 (FWK_MESSAGE_INSTANCE)
 -- 추가일: 2026-04-23
 -- 대상: D_SPIDERLINK 스키마

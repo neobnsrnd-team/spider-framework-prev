@@ -1,14 +1,15 @@
 package com.example.spideradmin.infra.tcp.handler;
 
-import com.example.spideradmin.infra.tcp.model.JsonCommandRequest;
-import com.example.spideradmin.infra.tcp.model.JsonCommandResponse;
+import com.example.spidercommon.infra.tcp.handler.CommandHandler;
+import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
+import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import org.springframework.stereotype.Component;
 
 /**
  * PING 커맨드 핸들러. 연결 상태 확인용.
  */
 @Component
-public class PingCommandHandler implements CommandHandler {
+public class PingCommandHandler implements CommandHandler<JsonCommandRequest, JsonCommandResponse> {
 
     @Override
     public boolean supports(String command) {
@@ -16,7 +17,7 @@ public class PingCommandHandler implements CommandHandler {
     }
 
     @Override
-    public Object handle(String command, JsonCommandRequest request) {
+    public JsonCommandResponse handle(String command, JsonCommandRequest request) {
         return JsonCommandResponse.builder()
                 .command(command)
                 .success(true)

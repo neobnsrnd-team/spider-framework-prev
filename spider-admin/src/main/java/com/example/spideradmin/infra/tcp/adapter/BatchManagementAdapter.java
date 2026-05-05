@@ -2,8 +2,8 @@ package com.example.spideradmin.infra.tcp.adapter;
 
 import com.example.spideradmin.domain.wasinstance.dto.WasInstanceResponse;
 import com.example.spideradmin.domain.wasinstance.mapper.WasInstanceMapper;
-import com.example.spideradmin.infra.tcp.client.TcpClient;
 import com.example.spidercommon.infra.tcp.model.ManagementContext;
+import com.example.spiderlink.infra.tcp.client.TcpClient;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ public class BatchManagementAdapter implements ManagementAdapter<ManagementConte
 
     /**
      * Admin과 batch-was는 항상 별도 프로세스.
-     * 로컬 직접 실행 경로는 미사용 ( TODO 추후 통합 배포 시 활용 가능).
+     * 로컬 직접 실행 경로는 미사용 (TODO 추후 통합 배포 시 활용 가능).
      */
     @Override
     public boolean isLocal() {
@@ -43,7 +43,7 @@ public class BatchManagementAdapter implements ManagementAdapter<ManagementConte
      * batch-was TCP 서버에 ManagementContext를 전송한다.
      *
      * @param command 실행 커맨드 (BATCH_EXEC, PING 등)
-     * @param payload ManagementContext 인스턴스
+     * @param ctx     ManagementContext 인스턴스
      * @return 응답 ManagementContext, 실패 시 예외 정보가 담긴 ManagementContext
      */
     @Override

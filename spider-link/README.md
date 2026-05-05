@@ -5,7 +5,8 @@ AP 서버에 내장되는 공통 연계엔진 Maven 라이브러리.
 
 ## 목차
 
-- [Tech Stack](#tech-stack)
+- [통신 흐름 개요](#통신-흐름-개요)
+- [기술 스택](#기술-스택)
 - [사용 방법](#사용-방법)
 - [핵심 컴포넌트](#핵심-컴포넌트)
 - [API 엔드포인트](#api-엔드포인트)
@@ -15,16 +16,79 @@ AP 서버에 내장되는 공통 연계엔진 Maven 라이브러리.
 
 ---
 
-## Tech Stack
+## 통신 흐름 개요
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | Java 17, Spring Boot 3.4 |
-| ORM | MyBatis 3 |
-| Database | Oracle (optional) |
+spider-link는 **두 가지 통신 구간**을 담당한다.
+
+### AP 서버 간 통신 (JSON 고정)
+
+AP 서버들끼리는 항상 JSON 포맷을 사용한다. 포맷은 Bean 선언 시 `JsonMessageCodec`으로 고정되며 런타임에 변경되지 않는다.
+
+```
+biz-channel ──[JSON]──► biz-auth
+biz-channel ──[JSON]──► biz-transfer
+```
+
+- 수신: `SpiderTcpServer` + `JsonMessageCodec.decode()` → `JsonCommandRequest`
+- 전달: `CommandDispatcher` → `CommandHandler.handle()`
+
+### AP 서버 → 레거시 기관 통신 (포맷 동적 결정)
+
+AP 서버가 레거시 기관(mock-core 등)에 요청을 보낼 때는 `TcpClient.send(orgId, req)`를 사용한다.
+`TcpClient`가 **런타임에 `FWK_MESSAGE.MESSAGE_TYPE`을 확인**하여 포맷을 자동 전환한다.
+
+```
+biz-transfer
+    │  JsonCommandRequest { command, payload: Map }
+    ▼
+TcpClient.send(orgId, req)
+    │  FWK_MESSAGE에서 orgId + "CORE_USER_AUTH_REQ" 조회
+    │  MESSAGE_TYPE = 'F' → FixedLengthParser.serialize(structure, dataMap)
+    │  MESSAGE_TYPE = 그 외 → JSON 그대로
+    ▼
+mock-core (LegacyTcpServer)
+    고정길이 바이트 수신 → 앞 20바이트로 command 파악 → 핸들러 위임
+```
+
+**포맷 결정 기준**
+
+| MESSAGE_TYPE | 직렬화 방식 | 비고 |
+|---|---|---|
+| `F` | `FixedLengthParser.serialize()` | FWK_MESSAGE_FIELD 메타 기반 |
+| 그 외 / 미등록 | `ObjectMapper.writeValueAsBytes()` | JSON fallback |
+
+**데이터 구조는 항상 `Map<String, Object>`**
+
+`JsonCommandRequest.payload`가 이미 `Map<String, Object>`이므로 별도 DTO 변환 없이 그대로 직렬화된다.
+`FixedLengthParser`는 FWK_MESSAGE_FIELD에 등록된 필드명으로 Map에서 값을 꺼내 C/N/K/B 타입별로 패딩·인코딩한다.
+
+```java
+// AP 서버 코드
+JsonCommandRequest coreRequest = JsonCommandRequest.builder()
+        .command("CORE_USER_AUTH")
+        .payload(Map.of("userId", "user01", "pin", "1234"))
+        .build();
+tcpClient.send(host, port, orgId, coreRequest);  // 내부에서 포맷 자동 결정
+
+// TcpClient 내부 (MESSAGE_TYPE='F' 인 경우)
+Map<String, Object> dataMap = new LinkedHashMap<>();
+dataMap.put("COMMAND", command);        // C, 20
+dataMap.put("REQUEST_ID", trxId);       // C, 36
+dataMap.putAll(req.getPayload());        // 나머지 필드
+requestBytes = fixedLengthParser.serialize(reqStructure.get(), dataMap);
+```
+
+---
+
+## 기술 스택
+
+| Layer | Technology                                                                           |
+|-------|--------------------------------------------------------------------------------------|
+| Backend | Java 17, Spring Boot 3.4, MyBatis 3                                            |
+| Database | Oracle (optional)                                                                    |
 | Shared Models | spider-common (`JsonCommandRequest/Response`, `CommandHandler`, `CommandDispatcher`) |
-| Build | Maven 3 (Wrapper) |
-| Packaging | 라이브러리 JAR + 실행 JAR(`*-exec.jar`) 동시 생성 |
+| Build | Maven 3 (Wrapper)                                                                    |
+| Packaging | 라이브러리 JAR + 실행 JAR(`*-exec.jar`) 동시 생성                                               |
 
 ## 사용 방법
 
@@ -119,6 +183,33 @@ FWK_LISTENER_TRX_MESSAGE
 | `JsonMessageCodec` | 4바이트 길이 프리픽스 + UTF-8 JSON | Admin ↔ AP 서버 |
 | `FixedLengthMessageCodec` | 고정 길이 바이너리 | biz-auth/transfer ↔ mock-core |
 | `ObjectStreamMessageCodec` | Java 직렬화 | Admin ↔ batch-was |
+
+### TcpClient
+
+레거시 기관 시스템에 TCP 요청을 보내는 클라이언트. AP 서버의 `@Configuration`에서 Bean으로 등록하여 사용한다.
+
+#### 주요 메서드
+
+| 메서드 | 포맷 | 용도 |
+|--------|------|------|
+| `send(host, port, orgId, req)` | FWK_MESSAGE 기반 자동 결정 | 레거시 기관 송신 (고정길이 or JSON) |
+| `sendJson(host, port, req)` | JSON 고정 | AP 서버 간 단순 JSON 송신 |
+| `sendObject(host, port, ctx)` | Java ObjectStream | batch-was 전용 |
+
+#### `send()` 포맷 결정 흐름
+
+```
+structurePool.get(orgId, "COMMAND_REQ")
+    → FWK_MESSAGE.MESSAGE_TYPE = 'F' → FixedLengthParser.serialize()
+    → 미등록 또는 'F' 아님   → JSON fallback
+```
+
+`structurePool`이 null이거나 해당 전문 구조가 FWK_MESSAGE에 등록되지 않은 경우 JSON으로 자동 fallback한다.
+
+#### 소켓 풀
+
+`SocketPoolManager`가 주입된 경우 `(host:port)` 단위로 소켓을 재사용한다. 없으면 요청마다 신규 소켓을 생성한다.
+`IOException` 발생 시 최대 3회 재시도(2ms 간격)하며, `UnknownHostException`은 재시도 없이 즉시 실패한다.
 
 ### AutoConfiguration 자동 등록 Bean
 
