@@ -180,7 +180,8 @@ mvn install -f demo/bizApp/pom.xml
 ```
 [Admin: 8080]
     ├── TCP 9998  ──────────────────────► [batch-was: 8081]
-    └── TCP 19400 ──────────────────────► [biz-channel]  ← 긴급공지
+    └── TCP 19400 ──────────────────────► [biz-channel]  ← 긴급공지 배포/종료 (NOTICE_SYNC/END)
+              TCP 9999 ◄─────────────────┘  기동 시 공지 상태 복원 (NOTICE_STATE_QUERY)
 
 [demo/front (React)]
     └── HTTP 18080 ──────────────────────► [biz-channel: 18080]

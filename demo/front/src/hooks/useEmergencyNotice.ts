@@ -8,7 +8,7 @@
  * 동작:
  *   - 컴포넌트 마운트 시 SSE 연결을 시작한다.
  *   - Admin이 배포하면 'notice' 이벤트로 공지 데이터를 수신한다.
- *   - Admin이 배포 종료하면 'notice' 이벤트로 null을 수신한다.
+ *   - Admin이 배포 종료하면 'notice-end' 이벤트(빈 data)를 수신한다.
  *   - 컴포넌트 언마운트 시 SSE 연결을 종료한다.
  *
  * @returns {{ notice: NoticePayload | null }} 현재 공지 데이터 (null이면 공지 없음)
@@ -60,6 +60,11 @@ export function useEmergencyNotice(): { notice: NoticePayload | null } {
       } catch {
         // JSON 파싱 실패 시 무시 (연결 초기 ping 등)
       }
+    });
+
+    // 배포 종료 시 서버가 "notice-end" 이벤트를 전송한다 (빈 data)
+    es.addEventListener("notice-end", () => {
+      setNotice(null);
     });
 
     es.onerror = () => {
