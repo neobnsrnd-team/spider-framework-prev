@@ -52,28 +52,18 @@
                     <!-- 데이터 없음 / 오류 메시지 (기본 숨김) -->
                     <p id="detailNoData" class="text-center text-body-secondary d-none mb-0 py-4"></p>
 
+                    <!-- 전체 누적 클릭 수 — 차트 렌더링 시 표시 -->
+                    <p id="detailTotalClicks" class="d-none text-body-secondary small mb-2"></p>
+
                     <!-- 차트 영역 — 가운데 정렬, 좌우 여백으로 레이블 잘림 방지 -->
                     <div id="detailChartWrapper" class="d-none px-2 mb-4" style="max-width: 600px;">
                         <canvas id="detailBarChart"></canvas>
                     </div>
-
-                    <!-- 요약 테이블 — 차트 하단 구분선 후 표시 -->
-                    <div id="detailSummaryTable" class="d-none">
-                        <hr class="my-3">
-                        <table class="table table-sm table-hover sp-data-grid mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>컴포넌트 ID</th>
-                                    <th class="text-end" style="width: 100px;">클릭 수</th>
-                                    <th class="text-end" style="width: 80px;">비율</th>
-                                </tr>
-                            </thead>
-                            <tbody id="detailSummaryBody"></tbody>
-                            <tfoot id="detailSummaryFoot" class="table-light fw-semibold"></tfoot>
-                        </table>
-                    </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" id="detailPreviewBtn" class="btn btn-info btn-sm d-none me-auto js-stat-preview">
+                        <i class="bi bi-box-arrow-up-right"></i> 페이지 미리보기
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
                 </div>
             </div>
