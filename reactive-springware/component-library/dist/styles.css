@@ -154,6 +154,8 @@
   --color-brand-10: var(--brand-10);
   --color-brand-20: var(--brand-20);
   --color-brand-shadow: var(--brand-shadow);
+  --color-domain-card-accent: var(--domain-card-accent, var(--brand-alt));
+  --color-domain-card-accent-text: var(--domain-card-accent-text, var(--brand-text));
   --color-primary: #2563eb;
   --color-primary-surface: #eff6ff;
   --color-primary-border: #bfdbfe;

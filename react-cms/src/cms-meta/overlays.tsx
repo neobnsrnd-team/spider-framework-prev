@@ -114,20 +114,23 @@ function ModalRenderer({ open, onClose, children, container, props }: OverlayRen
 
 /**
  * CMS 미리보기용 UsageHistoryFilterSheet 렌더러.
- * 카드 선택 목록은 CMS 빌더에서 편집할 수 없으므로 대표 샘플을 고정 주입한다.
+ * props.cardOptions 배열을 읽어 카드 선택 목록을 주입한다.
  */
-const DEFAULT_CARD_OPTIONS = [
-  { value: 'card1', label: '하나 머니 체크카드 (1234)' },
-  { value: 'card2', label: '하나 1Q 신용카드 (5678)' },
-];
-
-function UsageHistoryFilterSheetRenderer({ open, onClose, container }: OverlayRendererProps) {
+function UsageHistoryFilterSheetRenderer({ open, onClose, container, props }: OverlayRendererProps) {
   if (!open) return null;
+
+  type RawCardOption = { value: string; label: string };
+  const cardOptions = Array.isArray(props?.cardOptions)
+    ? (props.cardOptions as RawCardOption[]).filter(
+        (o) => typeof o.value === 'string' && typeof o.label === 'string',
+      )
+    : [];
+
   return (
     <UsageHistoryFilterSheet
       open={open}
       onClose={onClose}
-      cardOptions={DEFAULT_CARD_OPTIONS}
+      cardOptions={cardOptions}
       onApply={() => { onClose(); }}
       container={container ?? undefined}
     />
@@ -308,8 +311,23 @@ export const overlays: OverlayTemplate[] = [
     defaultId:   "usageHistoryFilterSheet",
     componentName: "UsageHistoryFilterSheet",
     blocks:        [],
-    props:         {},
-    propSchema:    {},
+    props: {
+      cardOptions: [
+        { value: 'card1', label: '하나 머니 체크카드 (1234)' },
+        { value: 'card2', label: '하나 1Q 신용카드 (5678)' },
+      ],
+    },
+    propSchema: {
+      cardOptions: {
+        type: "array",
+        label: "카드 목록",
+        default: [],
+        itemFields: {
+          value: { type: "string", label: "카드 ID",  default: "card1" },
+          label: { type: "string", label: "카드 이름", default: "카드명 (번호)" },
+        },
+      },
+    },
     renderer:      UsageHistoryFilterSheetRenderer,
   },
 

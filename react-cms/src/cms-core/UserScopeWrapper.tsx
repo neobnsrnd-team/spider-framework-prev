@@ -42,10 +42,19 @@ function extractTopLevelImports(css: string): { imports: string; rest: string } 
  * @returns @scope 블록으로 래핑된 CSS 문자열
  */
 function scopeCss(css: string): string {
-  // 주석(/* */), 문자열 리터럴("", '')은 원본 유지하고, :root만 :scope로 변환
+  // 주석·문자열 리터럴은 원본 유지.
+  // :root → :scope 변환 (CSS 변수를 스코프 루트에 설정).
+  // 줄 시작의 [data-*] 선택자 → :scope[data-*] 변환:
+  //   stylesheetScope가 data-cms-user-scope div 자체에 data-brand/domain을 설정하므로
+  //   @scope 내 [data-*] 선택자는 스코프 루트의 자식이 아닌 루트 자신을 타겟해야 한다.
+  //   :scope 를 붙이면 스코프 루트 자체를 선택할 수 있어 CSS 변수가 올바르게 적용된다.
   const scoped = css.replace(
-    /(\/\*[\s\S]*?\*\/|"[^"]*"|'[^']*')|:root\b/g,
-    (match, skip) => (skip ? skip : ":scope"),
+    /(\/\*[\s\S]*?\*\/|"[^"]*"|'[^']*')|(:root\b)|(^[ \t]*)\[data-/gm,
+    (match, skip, root, linePrefix) => {
+      if (skip !== undefined) return skip;
+      if (root !== undefined) return ':scope';
+      return `${linePrefix}:scope[data-`;
+    },
   );
   return `@scope ([data-cms-user-scope]) {\n${scoped}\n}`;
 }

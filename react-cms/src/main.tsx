@@ -207,6 +207,7 @@ createRoot(document.getElementById("root")!).render(
       layouts={layouts}
       codegenConfig={{ blockImportFrom: "@cl", layoutImportFrom: "@cl" }}
       stylesheetContent={userScopeCSS}
+      stylesheetScope={{ "data-brand": import.meta.env.VITE_CMS_BRAND ?? "hana", "data-domain": "card" }}
     >
       <RouterProvider router={router} />
     </CMSApp>

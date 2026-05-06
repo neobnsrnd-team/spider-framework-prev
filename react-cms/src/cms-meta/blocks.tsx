@@ -12,7 +12,7 @@
 // 연결하는 브릿지 파일이므로 `as any` 캐스팅이 불가피하다.
 import type { BlockDefinition } from "@cms-core";
 import * as LucideIcons from "lucide-react";
-import { CreditCard, Wallet, RefreshCw, Landmark, MoreVertical } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 
 /**
  * kebab-case 이름 → Lucide 컴포넌트 역방향 조회 맵.
@@ -657,18 +657,47 @@ const CardSummaryCardDefinition: BlockDefinition = {
     name: "CardSummaryCard",
     category: "biz",
     domain: "card",
-    defaultProps: { type: "credit", cardName: "하나카드", cardNumber: "1234", amount: 350000, limitAmount: 3000000, badgeText: "" },
+    defaultProps: {
+      type: "credit", cardName: "하나카드", cardNumber: "**** **** **** 1234",
+      amount: 350000, limitAmount: 3000000, badgeText: "",
+      actionButtons: [{ label: "결제내역", variant: "outline" }],
+    },
     propSchema: {
       type:        { type: "select",  label: "카드 유형",     default: "credit", options: ["credit", "check", "prepaid"] },
       cardName:    { type: "string",  label: "카드명",        default: "하나카드" },
-      cardNumber:  { type: "string",  label: "마스킹 카드번호", default: "1234" },
+      cardNumber:  { type: "string",  label: "마스킹 카드번호", default: "**** **** **** 1234" },
       amount:      { type: "number",  label: "이용 금액 (원)", default: 0 },
       limitAmount: { type: "number",  label: "한도 금액 (원)", default: 0 },
       badgeText:   { type: "string",  label: "배지 텍스트",   default: "" },
+      actionButtons: {
+        type: "array", label: "하단 버튼",
+        default: [{ label: "결제내역", variant: "outline" }],
+        itemFields: {
+          label:   { type: "string", label: "버튼 텍스트", default: "" },
+          variant: { type: "select", label: "변형",       default: "outline", options: ["primary", "outline"] },
+        },
+      },
       onClick:     { type: "event",   label: "카드 클릭" },
     },
   },
-  component: (p) => <CardSummaryCard {...(p as any)} />,
+  // actionButtons 배열을 Button 컴포넌트 목록으로 변환해 actions 슬롯에 주입한다.
+  component: (p) => {
+    type ActionBtn = { label: string; variant: string };
+    const rawBtns = ((p as any).actionButtons ?? []) as ActionBtn[];
+    const actions = rawBtns.length > 0
+      ? <>{rawBtns.map((btn, i) => <Button key={i} size="sm" variant={btn.variant as any}>{btn.label}</Button>)}</>
+      : undefined;
+    return <CardSummaryCard {...(p as any)} actions={actions} />;
+  },
+};
+
+/** 브랜드별 플레이스홀더 그라데이션 — 실제 카드 이미지가 없을 때 CMS 미리보기용 */
+const CARD_BRAND_GRADIENTS: Record<string, [string, string]> = {
+  VISA:       ['#1A1F71', '#F7A823'], // 네이비 → 골드
+  Mastercard: ['#EB001B', '#F79E1B'], // 레드 → 오렌지
+  AMEX:       ['#007B5E', '#00B4D8'], // 그린 → 스카이블루
+  JCB:        ['#003087', '#009F6B'], // 블루 → 그린
+  UnionPay:   ['#C0392B', '#922B21'], // 레드 → 다크레드
 };
 
 const CardVisualDefinition: BlockDefinition = {
@@ -676,52 +705,87 @@ const CardVisualDefinition: BlockDefinition = {
     name: "CardVisual",
     category: "biz",
     domain: "card",
-    defaultProps: { brand: "VISA", cardName: "하나카드", compact: false },
+    defaultProps: { brand: "VISA", cardName: "하나 머니 체크카드", compact: false },
     propSchema: {
       brand:    { type: "select",  label: "카드 브랜드", default: "VISA", options: ["VISA", "Mastercard", "AMEX", "JCB", "UnionPay"] },
-      cardName: { type: "string",  label: "카드명",      default: "하나카드" },
+      cardName: { type: "string",  label: "카드명",      default: "하나 머니 체크카드" },
       compact:  { type: "boolean", label: "소형 표시",   default: false },
     },
   },
-  component: (p) => <CardVisual {...(p as any)} />,
+  // cardImage는 ReactNode라 CMS에서 직접 편집 불가 — 브랜드별 그라데이션 플레이스홀더를 주입한다.
+  component: (p) => {
+    const brand = (p as any).brand as string;
+    const [from, to] = CARD_BRAND_GRADIENTS[brand] ?? ['#555', '#888'];
+    const cardImage = (
+      <div
+        style={{ background: `linear-gradient(135deg, ${from}, ${to})`, width: '100%', height: '100%' }}
+        className="flex items-end p-md"
+      >
+        <span className="text-white font-bold text-lg">{(p as any).cardName}</span>
+      </div>
+    );
+    return <CardVisual {...(p as any)} cardImage={cardImage} />;
+  },
 };
-
-// LoanMenuBar의 items[].icon은 ReactNode 타입이라 CMS propSchema로 직접 편집 불가.
-// 빌더 미리보기를 위해 대표 아이콘 3개(단기·장기·리볼빙)를 고정값으로 주입한다.
-const DEFAULT_LOAN_ITEMS = [
-  { id: "short", icon: <CreditCard className="size-5" />, label: "단기카드대출", onClick: () => {} },
-  { id: "long",  icon: <Wallet className="size-5" />,     label: "장기카드대출", onClick: () => {} },
-  { id: "rev",   icon: <RefreshCw className="size-5" />,  label: "리볼빙",      onClick: () => {} },
-];
 
 const LoanMenuBarDefinition: BlockDefinition = {
   meta: {
     name: "LoanMenuBar",
     category: "biz",
     domain: "card",
-    defaultProps: {},
-    propSchema: {},
+    defaultProps: {
+      items: [
+        { label: "단기카드대출", icon: "credit-card" },
+        { label: "장기카드대출", icon: "banknote" },
+        { label: "리볼빙",       icon: "refresh-cw" },
+      ],
+    },
+    propSchema: {
+      items: {
+        type: "array", label: "메뉴 항목",
+        default: [
+          { label: "단기카드대출", icon: "credit-card" },
+          { label: "장기카드대출", icon: "banknote" },
+          { label: "리볼빙",       icon: "refresh-cw" },
+        ],
+        itemFields: {
+          label: { type: "string",      label: "레이블", default: "" },
+          icon:  { type: "icon-picker", label: "아이콘", default: "credit-card" },
+        },
+      },
+    },
   },
-  component: (_p) => <LoanMenuBar items={DEFAULT_LOAN_ITEMS} />,
+  // items[].icon은 kebab-case 아이콘 이름 → ReactNode로 변환 후 주입한다.
+  // 스토리북 기준 아이콘 크기 14px → Tailwind size-3.5
+  component: (p) => {
+    type RawItem = { label: string; icon: string };
+    const rawItems = ((p as any).items ?? []) as RawItem[];
+    const items = rawItems.map((item, i) => ({
+      id: String(i),
+      label: item.label,
+      icon: resolveIcon(item.icon, "size-3.5"),
+      onClick: () => {},
+    }));
+    return <LoanMenuBar items={items} />;
+  },
 };
 
-// PaymentAccountCard의 icon은 ReactNode 타입이라 CMS propSchema로 편집 불가.
-// 빌더 미리보기용으로 Landmark(은행/금융 아이콘) 고정 주입한다.
 const PaymentAccountCardDefinition: BlockDefinition = {
   meta: {
     name: "PaymentAccountCard",
     category: "biz",
     domain: "card",
-    defaultProps: { title: "결제 계좌", hours: "09:00~18:00" },
+    defaultProps: { title: "결제 계좌", hours: "09:00~18:00", icon: "landmark" },
     propSchema: {
-      title: { type: "string", label: "제목",     default: "결제 계좌" },
-      hours: { type: "string", label: "운영 시간", default: "09:00~18:00" },
+      title: { type: "string",      label: "제목",     default: "결제 계좌" },
+      hours: { type: "string",      label: "운영 시간", default: "09:00~18:00" },
+      icon:  { type: "icon-picker", label: "아이콘",   default: "landmark" },
     },
   },
   component: (p) => (
     <PaymentAccountCard
-      icon={<Landmark className="size-5" />}
       {...(p as any)}
+      icon={resolveIcon((p as any).icon ?? "landmark")}
     />
   ),
 };
@@ -731,14 +795,17 @@ const QuickShortcutCardDefinition: BlockDefinition = {
     name: "QuickShortcutCard",
     category: "biz",
     domain: "card",
-    defaultProps: { title: "빠른 결제", subtitle: "간편하게" },
+    defaultProps: { title: "내 쿠폰", subtitle: "3장 사용가능", icon: "ticket" },
     propSchema: {
-      title:    { type: "string", label: "제목",    default: "빠른 결제" },
-      subtitle: { type: "string", label: "부제목",  default: "간편하게" },
-      onClick:  { type: "event",  label: "클릭" },
+      title:    { type: "string",      label: "제목",   default: "내 쿠폰" },
+      subtitle: { type: "string",      label: "부제목", default: "3장 사용가능" },
+      icon:     { type: "icon-picker", label: "아이콘", default: "ticket" },
+      onClick:  { type: "event",       label: "클릭" },
     },
   },
-  component: (p) => <QuickShortcutCard {...(p as any)} />,
+  component: (p) => (
+    <QuickShortcutCard {...(p as any)} icon={resolveIcon((p as any).icon ?? "ticket")} />
+  ),
 };
 
 const StatementHeroCardDefinition: BlockDefinition = {
@@ -746,12 +813,13 @@ const StatementHeroCardDefinition: BlockDefinition = {
     name: "StatementHeroCard",
     category: "biz",
     domain: "card",
-    defaultProps: { amount: 350000, dueDate: "2026.04.15", label: "이번 달 결제 예정" },
+    defaultProps: { amount: 350000, dueDate: "2026.04.15", label: "이번 달 결제 예정", hidden: false },
     propSchema: {
-      amount:   { type: "number", label: "결제 금액 (원)", default: 0 },
-      dueDate:  { type: "string", label: "결제 예정일",   default: "" },
-      label:    { type: "string", label: "레이블",        default: "이번 달 결제 예정" },
-      onDetail: { type: "event",  label: "상세 클릭" },
+      amount:   { type: "number",  label: "결제 금액 (원)", default: 0 },
+      dueDate:  { type: "string",  label: "결제 예정일",   default: "" },
+      label:    { type: "string",  label: "레이블",        default: "이번 달 결제 예정" },
+      hidden:   { type: "boolean", label: "금액 마스킹",   default: false },
+      onDetail: { type: "event",   label: "상세 클릭" },
     },
   },
   component: (p) => <StatementHeroCard {...(p as any)} />,
@@ -762,17 +830,19 @@ const StatementTotalCardDefinition: BlockDefinition = {
     name: "StatementTotalCard",
     category: "biz",
     domain: "card",
-    defaultProps: { amount: 350000, badge: "" },
+    defaultProps: { amount: 350000, badge: "없음" },
     propSchema: {
       amount:            { type: "number", label: "총 결제금액 (원)", default: 0 },
-      badge:             { type: "select", label: "배지",            default: "", options: ["예정", ""] },
+      badge:             { type: "select", label: "배지",            default: "없음", options: ["없음", "예정"] },
       onDetailClick:     { type: "event",  label: "상세 클릭" },
       onInstallment:     { type: "event",  label: "할부 클릭" },
       onImmediatePayment: { type: "event", label: "즉시결제 클릭" },
       onRevolving:       { type: "event",  label: "리볼빙 클릭" },
     },
   },
-  component: (p) => <StatementTotalCard {...(p as any)} />,
+  // badge 빈 문자열("")은 "배지 없음" 의도이나 컴포넌트 타입이 '예정' | undefined라
+  // 빈 문자열을 그대로 전달하면 타입 불일치 — undefined로 정규화한다.
+  component: (p) => <StatementTotalCard {...(p as any)} badge={(p as any).badge === "없음" ? undefined : (p as any).badge} />,
 };
 
 const SummaryCardDefinition: BlockDefinition = {
@@ -780,16 +850,50 @@ const SummaryCardDefinition: BlockDefinition = {
     name: "SummaryCard",
     category: "biz",
     domain: "card",
-    defaultProps: { variant: "asset", title: "총 자산", amount: 5000000, hidden: false },
+    defaultProps: {
+      variant: "asset", title: "총 자산", amount: 42850000, hidden: false,
+      icon: "building2",
+      actionButtons: [
+        { label: "내 계좌", active: false },
+        { label: "금융진단", active: false },
+        { label: "보험진단", active: false },
+      ],
+    },
     propSchema: {
-      variant: { type: "select",  label: "변형",     default: "asset", options: ["asset", "spending"] },
-      title:   { type: "string",  label: "제목",     default: "총 자산" },
-      amount:  { type: "number",  label: "금액 (원)", default: 0 },
-      hidden:  { type: "boolean", label: "금액 숨김", default: false },
-      onClick: { type: "event",   label: "클릭" },
+      variant: { type: "select",      label: "변형",     default: "asset", options: ["asset", "spending"] },
+      title:   { type: "string",      label: "제목",     default: "총 자산" },
+      amount:  { type: "number",      label: "금액 (원)", default: 0 },
+      hidden:  { type: "boolean",     label: "금액 숨김", default: false },
+      icon:    { type: "icon-picker", label: "아이콘",   default: "building2" },
+      actionButtons: {
+        type: "array", label: "하단 버튼",
+        default: [
+          { label: "내 계좌", active: false },
+          { label: "금융진단", active: false },
+          { label: "보험진단", active: false },
+        ],
+        itemFields: {
+          label:  { type: "string",  label: "버튼 텍스트", default: "" },
+          active: { type: "boolean", label: "활성 상태",   default: false },
+        },
+      },
+      onClick: { type: "event", label: "클릭" },
     },
   },
-  component: (p) => <SummaryCard {...(p as any)} />,
+  // icon: 스토리북 기준 36px → size-9
+  // actionButtons[].onClick은 배열 내 이벤트라 CMS에서 편집 불가 — noop 주입
+  component: (p) => {
+    type RawAction = { label: string; active?: boolean };
+    const rawActions = ((p as any).actionButtons ?? []) as RawAction[];
+    const actions = rawActions.map(a => ({ label: a.label, active: a.active ?? false, onClick: () => {} }));
+    return (
+      <SummaryCard
+        {...(p as any)}
+        icon={resolveIcon((p as any).icon ?? "building-2", "size-9")}
+        actions={actions.length > 0 ? actions : undefined}
+      />
+    );
+  },
 };
 
 const UsageTransactionItemDefinition: BlockDefinition = {
@@ -827,19 +931,21 @@ const InsuranceSummaryCardDefinition: BlockDefinition = {
     name: "InsuranceSummaryCard",
     category: "biz",
     domain: "insurance",
-    defaultProps: { type: "life", insuranceName: "하나생명 통합종신보험", contractNumber: "2024-001-123456", premium: 150000, nextPaymentDate: "2026.05.01", status: "active", badgeText: "" },
+    defaultProps: { type: "life", insuranceName: "하나 생명보험", contractNumber: "2024-001-123456", premium: 150000, nextPaymentDate: "2026.05.01", status: "active" },
     propSchema: {
-      type:            { type: "select",  label: "보험 유형",                  default: "life",   options: ["life", "health", "car"] },
-      insuranceName:   { type: "string",  label: "보험 상품명",                default: "하나생명 통합종신보험" },
-      contractNumber:  { type: "string",  label: "계약번호 / 증권번호",         default: "2024-001-123456" },
-      premium:         { type: "number",  label: "월 납입 보험료 (원화 숫자)", default: 0 },
+      type:            { type: "select",  label: "보험 유형",                    default: "life",   options: ["life", "health", "car"] },
+      insuranceName:   { type: "string",  label: "보험 상품명",                  default: "하나 생명보험" },
+      contractNumber:  { type: "string",  label: "계약번호 / 증권번호",           default: "2024-001-123456" },
+      premium:         { type: "number",  label: "월 납입 보험료 (원화 숫자)",   default: 0 },
       nextPaymentDate: { type: "string",  label: "다음 납입일 (예: 2026.05.01)", default: "" },
-      status:          { type: "select",  label: "계약 상태",                  default: "active", options: ["active", "pending", "expired"] },
-      badgeText:       { type: "string",  label: "배지 텍스트 override",       default: "" },
+      status:          { type: "select",  label: "계약 상태",                    default: "active", options: ["active", "pending", "expired"] },
+      badgeText:       { type: "string",  label: "배지 텍스트 override (비워두면 status 기본값 사용)", default: "" },
       onClick:         { type: "event",   label: "카드 클릭" },
     },
   },
-  component: (p) => <InsuranceSummaryCard {...(p as any)} />,
+  // badgeText 빈 문자열("")은 "override 없음" 의도 — 컴포넌트 타입이 string | undefined라
+  // 빈 문자열을 그대로 전달하면 status 기본 배지 텍스트가 무시되므로 undefined로 정규화한다.
+  component: (p) => <InsuranceSummaryCard {...(p as any)} badgeText={(p as any).badgeText || undefined} />,
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
