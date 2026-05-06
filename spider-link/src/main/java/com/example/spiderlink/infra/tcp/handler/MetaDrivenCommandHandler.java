@@ -101,6 +101,9 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
                 jsonMessageParser.maskForLog(command + "_REQ", payload));
 
         try {
+            // FWK_MESSAGE_FIELD REQUIRED_YN='Y' 기준 필수 필드 검증 — 미등록 전문은 통과
+            jsonMessageParser.validate(command + "_REQ", payload);
+
             String serviceId = metaRoutingMapper.selectServiceId(trxId, ORG_ID, IO_TYPE);
             if (serviceId == null) {
                 throw new IllegalStateException("서비스 미등록: trxId=" + trxId);
