@@ -13,6 +13,7 @@ import com.example.spiderlink.infra.tcp.parser.JsonMessageParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
+import org.springframework.beans.factory.annotation.Value;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,7 +50,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandRequest, JsonCommandResponse> {
 
-    private static final String GW_ID   = "DEMO_GW";
+    /**
+     * 이 bizApp이 담당하는 게이트웨이 ID.
+     * GatewayLoader 활성 시 spider.gateway.id 값이 주입되며,
+     * 정적 설정 유지 시 기본값 DEMO_GW를 사용한다.
+     */
+    @Value("${spider.gateway.id:DEMO_GW}")
+    private String GW_ID;
+
     private static final String IO_TYPE = "I";
 
     private final MetaRoutingMapper metaRoutingMapper;

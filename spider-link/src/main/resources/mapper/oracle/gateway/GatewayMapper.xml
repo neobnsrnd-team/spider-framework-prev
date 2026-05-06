@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.spiderlink.domain.gateway.mapper.GatewayMapper">
+
+    <!-- GW_ID로 게이트웨이 설정 조회 — GatewayLoader 기동 시 SpiderTcpServer 동적 생성에 사용 -->
+    <select id="selectGateway" resultType="com.example.spiderlink.domain.gateway.dto.GatewayConfig">
+        SELECT GW_ID        AS gwId,
+               GW_NAME      AS gwName,
+               GW_PROPERTIES AS gwProperties,
+               IO_TYPE      AS ioType
+          FROM FWK_GATEWAY
+         WHERE GW_ID = #{gwId}
+    </select>
+
+</mapper>
