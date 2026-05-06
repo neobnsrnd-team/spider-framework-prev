@@ -28,8 +28,12 @@ function generateTestId(prefix: string): string {
 }
 
 test.beforeEach(async ({ page }) => {
-    await page.goto('/transactions');
-    await page.waitForResponse(r => r.url().includes('/api/trx-messages/page'));
+    // waitForResponse를 goto와 동시에 시작해야 응답을 놓치지 않음
+    // goto 완료 후 waitForResponse를 걸면 이미 응답이 도착해 race condition 발생 가능
+    await Promise.all([
+        page.waitForResponse(r => r.url().includes('/api/trx-messages/page')),
+        page.goto('/transactions'),
+    ]);
 });
 
 // ─── 목록 ────────────────────────────────────────────────
