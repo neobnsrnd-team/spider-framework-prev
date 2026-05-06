@@ -84,9 +84,9 @@
 
             const html = rows.map(row => {
                 const pid = HtmlUtils.escape(row.pageId || '');
-                const escapedName = HtmlUtils.escape(row.pageName || '').replace(/'/g, '&#39;');
-                const escapedDeployedUrl = HtmlUtils.escape(row.deployedUrl || '').replace(/'/g, '&#39;');
-                const escapedViewMode = HtmlUtils.escape(row.viewMode || '').replace(/'/g, '&#39;');
+                const escapedName = HtmlUtils.escape(row.pageName || '').replace(/'/g, "\\'");
+                const escapedDeployedUrl = HtmlUtils.escape(row.deployedUrl || '').replace(/'/g, "\\'");
+                const escapedViewMode = HtmlUtils.escape(row.viewMode || '').replace(/'/g, "\\'");
                 const detailBtn = row.clickCount > 0
                     ? `<button class="btn btn-outline-primary btn-xs"
                            onclick="CmsStatisticsPage.openDetailModal('${pid}', '${escapedName}', '${HtmlUtils.escape(startDate)}', '${HtmlUtils.escape(endDate)}', '${escapedDeployedUrl}', '${escapedViewMode}')">상세</button>`
@@ -194,14 +194,14 @@
                 this._detailChart = null;
             }
 
-            // 미리보기 버튼 — deployedUrl이 있을 때만 표시
+            // 미리보기 버튼 — deployedUrl이 있을 때만 표시, js-stat-preview 전역 리스너가 처리
             const $previewBtn = $('#detailPreviewBtn');
             if (deployedUrl) {
-                $previewBtn.removeClass('d-none').off('click').on('click', function() {
-                    CmsStatisticsPage.openPreview(deployedUrl, viewMode || '');
-                });
+                $previewBtn.removeClass('d-none')
+                    .data('deployed-url', deployedUrl)
+                    .data('view-mode', viewMode || '');
             } else {
-                $previewBtn.addClass('d-none').off('click');
+                $previewBtn.addClass('d-none');
             }
 
             // 로딩 상태로 초기화
