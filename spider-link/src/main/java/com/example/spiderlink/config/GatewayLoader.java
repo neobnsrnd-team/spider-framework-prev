@@ -3,8 +3,10 @@ package com.example.spiderlink.config;
 import com.example.spiderlink.domain.gateway.dto.GatewayConfig;
 import com.example.spiderlink.domain.gateway.mapper.GatewayMapper;
 import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
+import com.example.spiderlink.infra.tcp.codec.HeaderBasedMessageCodec;
 import com.example.spiderlink.infra.tcp.codec.JsonMessageCodec;
 import com.example.spiderlink.infra.tcp.codec.MessageCodec;
+import com.example.spiderlink.infra.tcp.parser.HeaderOffsetParser;
 import com.example.spidercommon.infra.tcp.handler.CommandDispatcher;
 import com.example.spidercommon.infra.tcp.handler.CommandHandler;
 import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
@@ -56,6 +58,7 @@ public class GatewayLoader implements ApplicationRunner {
 
     private final GatewayMapper gatewayMapper;
     private final ObjectMapper objectMapper;
+    private final HeaderOffsetParser headerOffsetParser;
     private final List<CommandHandler<JsonCommandRequest, JsonCommandResponse>> handlers;
     private final Optional<MessageInstanceRecorder> recorder;
 
@@ -70,12 +73,10 @@ public class GatewayLoader implements ApplicationRunner {
         int port        = config.getPort(9995);
         int poolSize    = config.getPoolSize(5);
         int queue       = config.getQueueCapacity(20);
-        String codec    = config.getCodec();
-
         log.info("[GatewayLoader] gwId={} 설정 로드: port={}, codec={}, pool-size={}, queue={}",
-                gwId, port, codec, poolSize, queue);
+                gwId, port, config.getCodec(), poolSize, queue);
 
-        MessageCodec<JsonCommandRequest, JsonCommandResponse> messageCodec = resolveCodec(codec);
+        MessageCodec<JsonCommandRequest, JsonCommandResponse> messageCodec = resolveCodec(config);
         CommandDispatcher<JsonCommandRequest, JsonCommandResponse> dispatcher =
                 new CommandDispatcher<>(handlers);
 
@@ -91,12 +92,22 @@ public class GatewayLoader implements ApplicationRunner {
         }
     }
 
-    /** GW_PROPERTIES.codec 값으로 MessageCodec 인스턴스를 반환한다. 현재는 JSON만 지원. */
-    private MessageCodec<JsonCommandRequest, JsonCommandResponse> resolveCodec(String codec) {
-        // 향후 FIXED, XML 등 코덱 추가 시 여기서 분기
-        if (!"JSON".equalsIgnoreCase(codec)) {
-            log.warn("[GatewayLoader] 미지원 codec={}, JSON으로 fallback", codec);
+    /**
+     * GW_PROPERTIES에서 코덱 인스턴스를 결정하여 반환한다.
+     *
+     * <p>{@code header-msg-id}가 설정되어 있으면 {@link HeaderBasedMessageCodec}을 사용하여
+     * 고정길이 헤더에서 REQ_ID_CODE를 추출한다.
+     * 미설정이면 기존 {@link JsonMessageCodec}(JSON command 필드 방식)을 사용한다.</p>
+     */
+    private MessageCodec<JsonCommandRequest, JsonCommandResponse> resolveCodec(GatewayConfig config) {
+        String headerMessageId = config.getHeaderMessageId();
+        if (headerMessageId != null && !headerMessageId.isBlank()) {
+            String orgId = config.getOrgId();
+            log.info("[GatewayLoader] gwId={} 헤더 오프셋 파싱 코덱 사용: orgId={}, headerMsgId={}",
+                    config.getGwId(), orgId, headerMessageId);
+            return new HeaderBasedMessageCodec(objectMapper, headerOffsetParser, orgId, headerMessageId);
         }
+        log.info("[GatewayLoader] gwId={} JSON 코덱 사용 (header-msg-id 미설정)", config.getGwId());
         return new JsonMessageCodec(objectMapper);
     }
 }
