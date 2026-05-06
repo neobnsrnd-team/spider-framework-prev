@@ -90,7 +90,7 @@
                            onclick="CmsStatisticsPage.openDetailModal('${pid}', '${escapedName}', '${HtmlUtils.escape(startDate)}', '${HtmlUtils.escape(endDate)}')">상세</button>`
                     : '-';
                 const previewBtn = row.deployedUrl
-                    ? `<button type="button" class="btn btn-outline-info btn-xs js-stat-preview"
+                    ? `<button type="button" class="btn btn-info btn-xs js-stat-preview"
                            data-deployed-url="${HtmlUtils.escape(row.deployedUrl)}"
                            data-view-mode="${HtmlUtils.escape(row.viewMode || '')}">
                            <i class="bi bi-box-arrow-up-right"></i> 보기
