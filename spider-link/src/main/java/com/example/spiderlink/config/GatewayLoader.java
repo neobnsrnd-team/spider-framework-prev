@@ -3,6 +3,7 @@ package com.example.spiderlink.config;
 import com.example.spiderlink.domain.gateway.dto.GatewayConfig;
 import com.example.spiderlink.domain.gateway.mapper.GatewayMapper;
 import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
+import com.example.spiderlink.infra.tcp.codec.BankingHeaderMessageCodec;
 import com.example.spiderlink.infra.tcp.codec.HeaderBasedMessageCodec;
 import com.example.spiderlink.infra.tcp.codec.JsonMessageCodec;
 import com.example.spiderlink.infra.tcp.codec.MessageCodec;
@@ -99,19 +100,38 @@ public class GatewayLoader implements ApplicationRunner {
     /**
      * GW_PROPERTIES에서 코덱 인스턴스를 결정하여 반환한다.
      *
-     * <p>{@code header-msg-id}가 설정되어 있으면 {@link HeaderBasedMessageCodec}을 사용하여
-     * 고정길이 헤더에서 REQ_ID_CODE를 추출한다.
-     * 미설정이면 기존 {@link JsonMessageCodec}(JSON command 필드 방식)을 사용한다.</p>
+     * <p>우선순위:</p>
+     * <ol>
+     *   <li>{@code header-length} 설정 → {@link BankingHeaderMessageCodec}
+     *       (실제 뱅킹 프로토콜 — 헤더 내 ASCII 길이 필드)</li>
+     *   <li>{@code header-msg-id}만 설정 → {@link HeaderBasedMessageCodec}
+     *       (POC 내부 프로토콜 — 4byte binary prefix)</li>
+     *   <li>미설정 → {@link JsonMessageCodec} (JSON command 필드 방식)</li>
+     * </ol>
      */
     private MessageCodec<JsonCommandRequest, JsonCommandResponse> resolveCodec(GatewayConfig config) {
+        String orgId = config.getOrgId();
         String headerMessageId = config.getHeaderMessageId();
+        Integer headerLength = config.getHeaderLength();
+
+        if (headerLength != null) {
+            // 실제 뱅킹 프로토콜: 헤더 내 ASCII 문자열 길이 필드 방식 (참고소스 OrgMessageReader 방식)
+            log.info("[GatewayLoader] gwId={} 뱅킹 헤더 코덱 사용: orgId={}, headerMsgId={}, headerLength={}",
+                    config.getGwId(), orgId, headerMessageId, headerLength);
+            return new BankingHeaderMessageCodec(objectMapper, headerOffsetParser, orgId, headerMessageId,
+                    messageStructurePool, fixedLengthParser,
+                    headerLength, config.getLengthFieldOffset(),
+                    config.getLengthFieldLength(), config.isTotalLength());
+        }
+
         if (headerMessageId != null && !headerMessageId.isBlank()) {
-            String orgId = config.getOrgId();
+            // POC 내부 프로토콜: 4byte binary prefix + 고정헤더 + 바디
             log.info("[GatewayLoader] gwId={} 헤더 오프셋 파싱 코덱 사용: orgId={}, headerMsgId={}",
                     config.getGwId(), orgId, headerMessageId);
             return new HeaderBasedMessageCodec(objectMapper, headerOffsetParser, orgId, headerMessageId,
                     messageStructurePool, fixedLengthParser);
         }
+
         log.info("[GatewayLoader] gwId={} JSON 코덱 사용 (header-msg-id 미설정)", config.getGwId());
         return new JsonMessageCodec(objectMapper);
     }

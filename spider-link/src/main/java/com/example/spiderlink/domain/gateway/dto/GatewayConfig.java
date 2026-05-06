@@ -99,4 +99,47 @@ public class GatewayConfig {
     public String getOrgId() {
         return parseProperties().getOrDefault("org-id", "DEMO");
     }
+
+    /**
+     * GW_PROPERTIES에서 헤더 고정 길이(byte)를 반환한다.
+     *
+     * <p>값이 존재하면 {@link com.example.spiderlink.infra.tcp.codec.BankingHeaderMessageCodec}을
+     * 사용하여 실제 뱅킹 프로토콜(헤더 내 ASCII 길이 필드)로 처리한다.
+     * null이면 기존 4byte binary prefix 방식으로 동작한다.</p>
+     */
+    public Integer getHeaderLength() {
+        String val = parseProperties().get("header-length");
+        if (val == null) return null;
+        try { return Integer.parseInt(val.trim()); } catch (NumberFormatException e) { return null; }
+    }
+
+    /**
+     * GW_PROPERTIES에서 길이 필드의 헤더 내 시작 위치(byte offset)를 반환한다.
+     * 기본값: 0
+     */
+    public int getLengthFieldOffset() {
+        String val = parseProperties().get("length-field-offset");
+        if (val == null) return 0;
+        try { return Integer.parseInt(val.trim()); } catch (NumberFormatException e) { return 0; }
+    }
+
+    /**
+     * GW_PROPERTIES에서 길이 필드의 크기(ASCII 문자 수)를 반환한다.
+     * 기본값: 8 (예: "00001024")
+     */
+    public int getLengthFieldLength() {
+        String val = parseProperties().get("length-field-length");
+        if (val == null) return 8;
+        try { return Integer.parseInt(val.trim()); } catch (NumberFormatException e) { return 8; }
+    }
+
+    /**
+     * GW_PROPERTIES에서 is-total-length 값을 반환한다.
+     *
+     * <p>true면 길이 필드 값이 전체(헤더+바디) 길이 — 헤더 길이를 차감하여 바디 길이 계산.
+     * false(기본)면 바디만의 길이.</p>
+     */
+    public boolean isTotalLength() {
+        return "true".equalsIgnoreCase(parseProperties().get("is-total-length"));
+    }
 }

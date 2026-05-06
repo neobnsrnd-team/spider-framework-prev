@@ -44,6 +44,28 @@ VALUES (
 COMMIT;
 
 -- -----------------------------------------------------------------------------
+-- [1-B] FWK_GATEWAY — BankingHeaderMessageCodec 사용 예시 (실제 뱅킹 클라이언트 연동 시)
+--
+-- header-length      : 헤더 고정 길이 (byte). 이 값이 존재하면 BankingHeaderMessageCodec 선택
+-- length-field-offset: 헤더 내 길이 필드 시작 위치 (0-based byte offset)
+-- length-field-length: 길이 필드 크기 (ASCII 문자 수, 예: 8 → "00000256")
+-- is-total-length    : true면 길이 필드가 전체(헤더+바디) 길이, false면 바디만의 길이
+--
+-- 아래는 예시 쿼리이며 실제 적용 시 기관 전문 규격에 맞게 값을 조정해야 합니다.
+-- [주의] 기존 POC 데모 환경(4byte prefix)은 header-length 파라미터가 없으므로 영향 없음
+-- -----------------------------------------------------------------------------
+
+-- 실제 뱅킹용 BIZ_AUTH_GW 예시 (header-length 추가 시 BankingHeaderMessageCodec 자동 선택)
+-- UPDATE FWK_GATEWAY
+--    SET GW_PROPERTIES = 'port=19100;pool-size=5;queue=20;header-length=56;length-field-offset=0;length-field-length=8;is-total-length=false;header-msg-id=DEMO_GW_HEADER;org-id=DEMO'
+--  WHERE GW_ID = 'BIZ_AUTH_GW';
+
+-- 실제 뱅킹용 BIZ_TRANSFER_GW 예시
+-- UPDATE FWK_GATEWAY
+--    SET GW_PROPERTIES = 'port=19200;pool-size=10;queue=50;header-length=56;length-field-offset=0;length-field-length=8;is-total-length=false;header-msg-id=DEMO_GW_HEADER;org-id=DEMO'
+--  WHERE GW_ID = 'BIZ_TRANSFER_GW';
+
+-- -----------------------------------------------------------------------------
 -- [2] FWK_MESSAGE — 헤더 전문 정의 (HEADER_YN='Y')
 --
 -- DEMO_GW_HEADER: 모든 Demo 게이트웨이가 공통으로 사용하는 고정길이 헤더 구조.
