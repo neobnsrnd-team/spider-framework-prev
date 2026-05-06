@@ -39,24 +39,17 @@ test.describe('로그레벨 목록', () => {
     });
 
     test('Log Name 필터 입력 후 조회 시 일치하는 행만 표시되어야 한다', async ({ page }) => {
-        // 하드코딩된 'ROOT' 대신 실제 테이블 첫 번째 행의 Log Name을 동적으로 사용
-        // CI 환경마다 로거 목록이 달라 특정 이름을 가정하면 flaky 해짐
-        const firstLogName = (await page.locator('#logLevelTableBody tr').first()
-            .locator('td').nth(0).textContent()) ?? '';
-        const keyword = firstLogName.trim().split('.')[0]; // 첫 번째 패키지 세그먼트만 사용
-        expect(keyword.length).toBeGreaterThan(0);
-
-        await page.locator('#logNameFilter').fill(keyword);
+        await page.locator('#logNameFilter').fill('ROOT');
         await page.locator('#btnSearch').click();
 
         const rows = page.locator('#logLevelTableBody tr');
         const count = await rows.count();
         expect(count).toBeGreaterThan(0);
 
-        // 표시된 모든 행의 Log Name(1번째 td)에 keyword가 포함되어야 한다
+        // 표시된 모든 행의 Log Name(1번째 td)에 'ROOT'가 포함되어야 한다
         for (let i = 0; i < count; i++) {
             const cellText = await rows.nth(i).locator('td').nth(0).textContent();
-            expect(cellText?.toLowerCase()).toContain(keyword.toLowerCase());
+            expect(cellText?.toLowerCase()).toContain('root');
         }
     });
 
