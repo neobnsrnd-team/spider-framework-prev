@@ -6,7 +6,9 @@ import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
 import com.example.spiderlink.infra.tcp.codec.HeaderBasedMessageCodec;
 import com.example.spiderlink.infra.tcp.codec.JsonMessageCodec;
 import com.example.spiderlink.infra.tcp.codec.MessageCodec;
+import com.example.spiderlink.infra.tcp.parser.FixedLengthParser;
 import com.example.spiderlink.infra.tcp.parser.HeaderOffsetParser;
+import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
 import com.example.spidercommon.infra.tcp.handler.CommandDispatcher;
 import com.example.spidercommon.infra.tcp.handler.CommandHandler;
 import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
@@ -59,6 +61,8 @@ public class GatewayLoader implements ApplicationRunner {
     private final GatewayMapper gatewayMapper;
     private final ObjectMapper objectMapper;
     private final HeaderOffsetParser headerOffsetParser;
+    private final MessageStructurePool messageStructurePool;
+    private final FixedLengthParser fixedLengthParser;
     private final List<CommandHandler<JsonCommandRequest, JsonCommandResponse>> handlers;
     private final Optional<MessageInstanceRecorder> recorder;
 
@@ -105,7 +109,8 @@ public class GatewayLoader implements ApplicationRunner {
             String orgId = config.getOrgId();
             log.info("[GatewayLoader] gwId={} 헤더 오프셋 파싱 코덱 사용: orgId={}, headerMsgId={}",
                     config.getGwId(), orgId, headerMessageId);
-            return new HeaderBasedMessageCodec(objectMapper, headerOffsetParser, orgId, headerMessageId);
+            return new HeaderBasedMessageCodec(objectMapper, headerOffsetParser, orgId, headerMessageId,
+                    messageStructurePool, fixedLengthParser);
         }
         log.info("[GatewayLoader] gwId={} JSON 코덱 사용 (header-msg-id 미설정)", config.getGwId());
         return new JsonMessageCodec(objectMapper);
