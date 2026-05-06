@@ -30,12 +30,24 @@ export type GroupPropField = {
   fields: Record<string, LeafPropField>;
 };
 
+/**
+ * 배열 아이템 내 중첩 배열 필드 (2단계 중첩까지만 허용).
+ * ArrayPropField.itemFields 에서만 사용되며, 최상위 propSchema에는 사용하지 않는다.
+ */
+export type NestedArrayPropField = {
+  type: "array";
+  label?: string;
+  default: Record<string, string | boolean | number>[];
+  itemFields: Record<string, LeafPropField>;
+};
+
 /** 동적 배열 필드 (항목 추가/삭제 가능) */
 export type ArrayPropField = {
   type: "array";
   label?: string;
   default: Record<string, string | boolean | number>[] | string[] | boolean[] | number[];
-  itemFields: Record<string, LeafPropField>;
+  /** LeafPropField 외에 NestedArrayPropField도 허용 (2단계 중첩) */
+  itemFields: Record<string, LeafPropField | NestedArrayPropField>;
 };
 
 /** 이벤트 핸들러 prop (인터랙션 탭에서 액션 바인딩에 사용) */

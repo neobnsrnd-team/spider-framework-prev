@@ -16,7 +16,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import type { Action, BlockInteraction, BlockPadding, CMSBlock, CMSOverlay } from "../types";
-import type { BlockMeta, LeafPropField, PropField } from "../types";
+import type { BlockMeta, LeafPropField, NestedArrayPropField, PropField } from "../types";
 import IconPicker, { renderLucideIcon } from "./IconPicker";
 
 interface PropsEditorProps {
@@ -399,16 +399,79 @@ export default function PropsEditor({
                             삭제
                           </button>
                         </div>
-                        {Object.entries(field.itemFields).map(([subKey, subField]) => (
-                          <FieldControl
-                            key={subKey}
-                            fieldKey={subKey}
-                            field={subField}
-                            value={(item[subKey] ?? subField.default) as unknown}
-                            // setArrayItem은 stable — propsRef로 최신 배열 읽어 stale 방지
-                            onChange={(val) => setArrayItem(key, idx, subKey, val)}
-                          />
-                        ))}
+                        {Object.entries(field.itemFields).map(([subKey, subField]) => {
+                          // 중첩 배열 필드
+                          if (subField.type === "array") {
+                            const nested = subField as NestedArrayPropField;
+                            const nestedArr = (item[subKey] as Record<string, unknown>[]) ?? nested.default;
+                            const newSubItem = Object.fromEntries(
+                              Object.entries(nested.itemFields).map(([k, f]) => [k, f.default]),
+                            );
+                            return (
+                              <div key={subKey} className="rounded-lg border border-divider overflow-hidden">
+                                <div className="px-2.5 py-1 bg-surface-hover border-b border-divider flex items-center gap-1.5">
+                                  <span className="text-xs font-semibold text-text-muted flex-1">{nested.label ?? subKey}</span>
+                                  <span className="text-xs text-text-muted mr-1">{nestedArr.length}개</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setArrayItem(key, idx, subKey, [...nestedArr, newSubItem])}
+                                    className="flex items-center gap-0.5 text-xs text-primary font-semibold hover:opacity-70 bg-transparent border-none"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    추가
+                                  </button>
+                                </div>
+                                <div className="flex flex-col">
+                                  {nestedArr.length === 0 && (
+                                    <p className="px-2.5 py-2 text-xs text-text-muted">항목이 없습니다.</p>
+                                  )}
+                                  {nestedArr.map((subItem, subIdx) => (
+                                    <div
+                                      key={subIdx}
+                                      className={`px-2.5 py-2 flex flex-col gap-1.5 ${subIdx > 0 ? "border-t border-divider" : ""}`}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs text-text-muted">#{subIdx + 1}</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => setArrayItem(key, idx, subKey, nestedArr.filter((_, si) => si !== subIdx))}
+                                          className="flex items-center gap-0.5 text-xs text-error hover:opacity-70 bg-transparent border-none"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                          삭제
+                                        </button>
+                                      </div>
+                                      {Object.entries(nested.itemFields).map(([leafKey, leafField]) => (
+                                        <FieldControl
+                                          key={leafKey}
+                                          fieldKey={leafKey}
+                                          field={leafField}
+                                          value={(subItem[leafKey] ?? leafField.default) as unknown}
+                                          onChange={(val) =>
+                                            setArrayItem(key, idx, subKey,
+                                              nestedArr.map((si, i) => i === subIdx ? { ...si, [leafKey]: val } : si),
+                                            )
+                                          }
+                                        />
+                                      ))}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+                          // leaf 필드
+                          return (
+                            <FieldControl
+                              key={subKey}
+                              fieldKey={subKey}
+                              field={subField as LeafPropField}
+                              value={(item[subKey] ?? subField.default) as unknown}
+                              // setArrayItem은 stable — propsRef로 최신 배열 읽어 stale 방지
+                              onChange={(val) => setArrayItem(key, idx, subKey, val)}
+                            />
+                          );
+                        })}
                       </div>
                     ))}
                   </div>

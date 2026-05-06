@@ -11,7 +11,40 @@
 // CMS 일반 prop 시스템(Record<string, unknown>)과 각 컴포넌트의 구체적인 Props 타입을
 // 연결하는 브릿지 파일이므로 `as any` 캐스팅이 불가피하다.
 import type { BlockDefinition } from "@cms-core";
-import { CreditCard, Wallet, RefreshCw, Landmark } from "lucide-react";
+import * as LucideIcons from "lucide-react";
+import { CreditCard, Wallet, RefreshCw, Landmark, MoreVertical } from "lucide-react";
+
+/**
+ * kebab-case 이름 → Lucide 컴포넌트 역방향 조회 맵.
+ * PascalCase → kebab 변환 시 연속 대문자("AArrowDown" → "aarrow-down")가 손실되어
+ * 역변환으로는 원본을 복원할 수 없으므로, 모듈 초기화 시 맵을 직접 빌드한다.
+ * IconPicker와 동일한 변환식을 사용해 저장 키와 조회 키를 일치시킨다.
+ */
+// lucide-react 아이콘은 React.forwardRef() 반환값이므로 typeof가 "object"다.
+// IconPicker와 동일한 조건(대문자 시작 + object + $$typeof 보유)으로 필터링한다.
+const lucideIconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = Object.fromEntries(
+  (Object.entries(LucideIcons) as [string, unknown][])
+    .filter(([name, val]) =>
+      /^[A-Z]/.test(name) &&
+      typeof val === "object" &&
+      val !== null &&
+      "$$typeof" in (val as object)
+    )
+    .map(([name, val]) => [
+      name.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase(),
+      val,
+    ])
+);
+
+/**
+ * icon-picker가 반환하는 kebab-case 이름을 lucide-react 엘리먼트로 변환한다.
+ * 이름이 비어있거나 존재하지 않으면 null을 반환한다.
+ */
+function resolveIcon(name: string, className = "size-5"): React.ReactNode {
+  if (!name) return null;
+  const Icon = lucideIconMap[name];
+  return Icon ? <Icon className={className} /> : null;
+}
 import {
   // ── Core ──────────────────────────────────────────────────────────────────
   Badge,
@@ -102,10 +135,10 @@ const BadgeDefinition: BlockDefinition = {
   meta: {
     name: "Badge",
     category: "core",
-    defaultProps: { variant: "neutral", children: "배지", dot: false },
+    defaultProps: { variant: "brand", children: "배지", dot: false },
     propSchema: {
       children: { type: "string",  label: "텍스트",    default: "배지" },
-      variant:  { type: "select",  label: "색상 변형", default: "neutral", options: ["primary", "brand", "success", "danger", "warning", "neutral"] },
+      variant:  { type: "select",  label: "색상 변형", default: "brand", options: ["primary", "brand", "success", "danger", "warning", "neutral"] },
       dot:      { type: "boolean", label: "점(dot) 표시", default: false },
     },
   },
@@ -116,16 +149,14 @@ const ButtonDefinition: BlockDefinition = {
   meta: {
     name: "Button",
     category: "core",
-    defaultProps: { variant: "primary", size: "md", children: "버튼", fullWidth: false, loading: false, disabled: false, iconOnly: false, justify: "center" },
+    defaultProps: { variant: "primary", size: "md", children: "버튼", fullWidth: false, loading: false, disabled: false },
     propSchema: {
       children:  { type: "string",  label: "버튼 텍스트", default: "버튼" },
-      variant:   { type: "select",  label: "변형",       default: "primary",  options: ["primary", "outline", "ghost", "danger"] },
-      size:      { type: "select",  label: "크기",       default: "md",       options: ["sm", "md", "lg"] },
-      justify:   { type: "select",  label: "내부 정렬",  default: "center",   options: ["center", "between"] },
-      fullWidth: { type: "boolean", label: "전체 너비 (w-full)",  default: false },
-      loading:   { type: "boolean", label: "로딩 중",             default: false },
-      disabled:  { type: "boolean", label: "비활성화",            default: false },
-      iconOnly:  { type: "boolean", label: "아이콘 전용 (정방형)", default: false },
+      variant:   { type: "select",  label: "변형",       default: "primary", options: ["primary", "outline", "ghost", "danger"] },
+      size:      { type: "select",  label: "크기",       default: "md",      options: ["sm", "md", "lg"] },
+      fullWidth: { type: "boolean", label: "전체 너비 (w-full)", default: false },
+      loading:   { type: "boolean", label: "로딩 중",            default: false },
+      disabled:  { type: "boolean", label: "비활성화",           default: false },
       onClick:   { type: "event",   label: "클릭" },
     },
   },
@@ -136,17 +167,15 @@ const InputDefinition: BlockDefinition = {
   meta: {
     name: "Input",
     category: "core",
-    defaultProps: { label: "레이블", placeholder: "입력하세요", helperText: "", validationState: "default", size: "md", fullWidth: false, disabled: false, phoneFormat: false, formatPattern: "" },
+    defaultProps: { label: "레이블", placeholder: "입력하세요", helperText: "", validationState: "default", size: "md", fullWidth: false, disabled: false },
     propSchema: {
-      label:           { type: "string",  label: "레이블",       default: "레이블" },
-      placeholder:     { type: "string",  label: "플레이스홀더", default: "입력하세요" },
+      label:           { type: "string",  label: "레이블",        default: "레이블" },
+      placeholder:     { type: "string",  label: "플레이스홀더",  default: "입력하세요" },
       helperText:      { type: "string",  label: "도움말 텍스트", default: "" },
-      validationState: { type: "select",  label: "검증 상태",    default: "default", options: ["default", "error", "success"] },
-      size:            { type: "select",  label: "크기",         default: "md",      options: ["md", "lg"] },
-      fullWidth:       { type: "boolean", label: "전체 너비",    default: false },
-      disabled:        { type: "boolean", label: "비활성화",     default: false },
-      phoneFormat:     { type: "boolean", label: "전화번호 포맷 (000-0000-0000)", default: false },
-      formatPattern:   { type: "string",  label: "커스텀 포맷 패턴", default: "" },
+      validationState: { type: "select",  label: "검증 상태",     default: "default", options: ["default", "error", "success"] },
+      size:            { type: "select",  label: "크기",          default: "md",      options: ["md", "lg"] },
+      fullWidth:       { type: "boolean", label: "전체 너비",     default: false },
+      disabled:        { type: "boolean", label: "비활성화",      default: false },
       onChange:        { type: "event",   label: "값 변경" },
     },
   },
@@ -157,11 +186,10 @@ const SelectDefinition: BlockDefinition = {
   meta: {
     name: "Select",
     category: "core",
-    defaultProps: { "aria-label": "선택", value: "", options: [] },
+    defaultProps: { value: "all", options: [{ value: "all", label: "전체" }, { value: "deposit", label: "입금" }, { value: "withdraw", label: "출금" }] },
     propSchema: {
-      "aria-label": { type: "string", label: "접근성 레이블", default: "선택" },
-      value:        { type: "string", label: "선택된 값",     default: "" },
-      options:      { type: "array",  label: "옵션 목록", default: [], itemFields: { value: { type: "string", label: "값", default: "" }, label: { type: "string", label: "표시 텍스트", default: "" } } },
+      value:        { type: "string", label: "선택된 값", default: "all" },
+      options:      { type: "array",  label: "옵션 목록", default: [{ value: "all", label: "전체" }, { value: "deposit", label: "입금" }, { value: "withdraw", label: "출금" }], itemFields: { value: { type: "string", label: "값", default: "" }, label: { type: "string", label: "표시 텍스트", default: "" } } },
       onChange:     { type: "event",  label: "값 변경" },
     },
   },
@@ -172,14 +200,12 @@ const TypographyDefinition: BlockDefinition = {
   meta: {
     name: "Typography",
     category: "core",
-    defaultProps: { children: "텍스트", variant: "body", weight: "normal", color: "primary", as: "p", numeric: false },
+    defaultProps: { children: "텍스트", variant: "body", weight: "normal", color: "base" },
     propSchema: {
-      children: { type: "string",  label: "텍스트",   default: "텍스트" },
-      variant:  { type: "select",  label: "변형",     default: "body",    options: ["heading", "subheading", "body-lg", "body", "body-sm", "caption"] },
-      weight:   { type: "select",  label: "굵기",     default: "normal",  options: ["normal", "medium", "bold"] },
-      color:    { type: "select",  label: "색상",     default: "primary", options: ["primary", "secondary", "muted", "accent", "inverse", "danger", "success", "warning"] },
-      as:       { type: "select",  label: "HTML 태그", default: "p",      options: ["p", "span", "h1", "h2", "h3", "h4", "div"] },
-      numeric:  { type: "boolean", label: "숫자 폰트 (tabular-nums)", default: false },
+      children: { type: "string", label: "텍스트", default: "텍스트" },
+      variant:  { type: "select", label: "변형",   default: "body",   options: ["heading", "subheading", "body-lg", "body", "body-sm", "caption"] },
+      weight:   { type: "select", label: "굵기",   default: "normal", options: ["normal", "medium", "bold"] },
+      color:    { type: "select", label: "색상",   default: "base",   options: ["heading", "base", "label", "secondary", "muted", "brand", "danger", "success"] },
     },
   },
   component: (p) => <Typography {...(p as any)} />,
@@ -194,15 +220,14 @@ const BannerCarouselDefinition: BlockDefinition = {
     name: "BannerCarousel",
     category: "biz",
     domain: "common",
-    defaultProps: { autoPlayInterval: 3000, items: [{ id: "1", variant: "primary", title: "배너 제목", description: "배너 설명" }] },
+    defaultProps: { items: [{ id: "1", variant: "promo", title: "배너 제목 1", description: "배너 설명 1" }, { id: "2", variant: "info", title: "배너 제목 2", description: "배너 설명 2" }] },
     propSchema: {
-      autoPlayInterval: { type: "number", label: "자동 재생 간격 (ms)", default: 3000 },
       items: {
         type: "array", label: "배너 항목",
-        default: [{ id: "1", variant: "primary", title: "배너 제목", description: "배너 설명" }],
+        default: [{ id: "1", variant: "promo", title: "배너 제목 1", description: "배너 설명 1" }, { id: "2", variant: "info", title: "배너 제목 2", description: "배너 설명 2" }],
         itemFields: {
           id:          { type: "string", label: "ID",   default: "" },
-          variant:     { type: "string", label: "변형", default: "primary" },
+          variant:     { type: "select", label: "변형", default: "promo", options: ["promo", "info", "warning"] },
           title:       { type: "string", label: "제목", default: "" },
           description: { type: "string", label: "설명", default: "" },
         },
@@ -217,14 +242,16 @@ const BrandBannerDefinition: BlockDefinition = {
     name: "BrandBanner",
     category: "biz",
     domain: "common",
-    defaultProps: { title: "브랜드 타이틀", subtitle: "서브 타이틀" },
+    defaultProps: { title: "브랜드 타이틀", subtitle: "서브 타이틀", icon: "" },
     propSchema: {
-      title:    { type: "string", label: "타이틀",     default: "브랜드 타이틀" },
-      subtitle: { type: "string", label: "서브 타이틀", default: "서브 타이틀" },
-      onClick:  { type: "event",  label: "클릭" },
+      icon:     { type: "icon-picker", label: "아이콘",     default: "" },
+      title:    { type: "string",      label: "타이틀",     default: "브랜드 타이틀" },
+      subtitle: { type: "string",      label: "서브 타이틀", default: "서브 타이틀" },
+      onClick:  { type: "event",       label: "클릭" },
     },
   },
-  component: (p) => <BrandBanner {...(p as any)} />,
+  // BrandBanner 아이콘은 브랜드 컬러 배경 위에 올라가므로 text-white가 필요하다.
+  component: (p) => <BrandBanner {...(p as any)} icon={resolveIcon((p as any).icon, "size-5 text-white")} />,
 };
 
 const QuickMenuGridDefinition: BlockDefinition = {
@@ -232,21 +259,42 @@ const QuickMenuGridDefinition: BlockDefinition = {
     name: "QuickMenuGrid",
     category: "biz",
     domain: "common",
-    defaultProps: { cols: "4", items: [{ id: "total", label: "총 이용금액 결제", badge: "" }] },
+    defaultProps: {
+      cols: "4",
+      items: [
+        { id: "1", icon: "credit-card", label: "카드 결제", badge: 0, iconShape: "circle" },
+        { id: "2", icon: "landmark",    label: "계좌 이체", badge: 0, iconShape: "circle" },
+        { id: "3", icon: "wallet",      label: "내 지갑",   badge: 0, iconShape: "circle" },
+        { id: "4", icon: "refresh-cw",  label: "환전",      badge: 0, iconShape: "circle" },
+      ],
+    },
     propSchema: {
       cols:  { type: "select", label: "열 수", default: "4", options: ["2", "3", "4"] },
       items: {
         type: "array", label: "메뉴 항목",
-        default: [{ id: "total", label: "총 이용금액 결제", badge: "" }],
+        default: [{ id: "1", icon: "credit-card", label: "카드 결제", badge: 0, iconShape: "circle" }],
         itemFields: {
-          id:    { type: "string", label: "ID",     default: "" },
-          label: { type: "string", label: "레이블", default: "" },
-          badge: { type: "string", label: "배지",   default: "" },
+          id:        { type: "string",      label: "ID",         default: "" },
+          icon:      { type: "icon-picker", label: "아이콘",     default: "circle-dot" },
+          label:     { type: "string",      label: "레이블",     default: "" },
+          badge:     { type: "number",      label: "배지 숫자",  default: 0 },
+          iconShape: { type: "select",      label: "아이콘 형태", default: "circle", options: ["circle", "rounded"] },
         },
       },
     },
   },
-  component: (p) => <QuickMenuGrid {...(p as any)} />,
+  // cols select는 문자열을 반환하므로 숫자로 변환해 전달한다.
+  // items[].icon은 kebab-case 문자열이므로 ReactNode로 변환하고, onClick은 CMS 미리보기용 noop을 주입한다.
+  component: (p) => {
+    type RawItem = { id: string; icon?: string; label: string; badge?: number; iconShape?: 'circle' | 'rounded' };
+    const rawItems = ((p as any).items ?? []) as RawItem[];
+    const items = rawItems.map((item) => ({
+      ...item,
+      icon: resolveIcon(item.icon ?? "", "size-5"),
+      onClick: () => {},
+    }));
+    return <QuickMenuGrid {...(p as any)} cols={Number((p as any).cols) as 2 | 3 | 4} items={items} />;
+  },
 };
 
 const UserProfileDefinition: BlockDefinition = {
@@ -256,12 +304,21 @@ const UserProfileDefinition: BlockDefinition = {
     domain: "common",
     defaultProps: { name: "홍길동", lastLogin: "2026.04.17 09:30" },
     propSchema: {
-      name:            { type: "string", label: "이름",         default: "홍길동" },
-      lastLogin:       { type: "string", label: "마지막 로그인", default: "" },
-      onSettingsClick: { type: "event",  label: "설정 클릭" },
+      name:                  { type: "string", label: "이름",         default: "홍길동" },
+      lastLogin:             { type: "string", label: "마지막 로그인", default: "" },
+      onProfileManageClick:  { type: "event",  label: "내 정보 관리 클릭" },
+      onLogoutClick:         { type: "event",  label: "로그아웃 클릭" },
     },
   },
-  component: (p) => <UserProfile {...(p as any)} />,
+  // 캔버스에서는 이벤트 핸들러가 전달되지 않아 설정 버튼이 숨겨지므로
+  // noop을 기본값으로 주입해 미리보기에서도 버튼이 노출되도록 한다.
+  component: (p) => (
+    <UserProfile
+      {...(p as any)}
+      onProfileManageClick={(p as any).onProfileManageClick ?? (() => {})}
+      onLogoutClick={(p as any).onLogoutClick ?? (() => {})}
+    />
+  ),
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -273,17 +330,24 @@ const AccountSelectorCardDefinition: BlockDefinition = {
     name: "AccountSelectorCard",
     category: "biz",
     domain: "banking",
-    defaultProps: { accountName: "하나 자유적금", accountNumber: "123-456789-01011", availableBalance: "1,234,567원", iconAriaLabel: "계좌 변경" },
+    defaultProps: { accountName: "하나 자유적금", accountNumber: "123-456789-01011", availableBalance: "1,234,567원", icon: "" },
     propSchema: {
-      accountName:       { type: "string", label: "계좌명",           default: "하나 자유적금" },
-      accountNumber:     { type: "string", label: "계좌번호",          default: "123-456789-01011" },
-      availableBalance:  { type: "string", label: "출금 가능 금액",    default: "1,234,567원" },
-      iconAriaLabel:     { type: "string", label: "아이콘 접근성 레이블", default: "계좌 변경" },
-      onAccountChange:   { type: "event",  label: "계좌 변경 클릭" },
-      onIconClick:       { type: "event",  label: "아이콘 클릭" },
+      icon:             { type: "icon-picker", label: "아이콘 (미선택 시 WalletMinimal)", default: "" },
+      accountName:      { type: "string",      label: "계좌명",          default: "하나 자유적금" },
+      accountNumber:    { type: "string",      label: "계좌번호",         default: "123-456789-01011" },
+      availableBalance: { type: "string",      label: "출금 가능 금액",   default: "1,234,567원" },
+      onAccountChange:  { type: "event",       label: "계좌 변경 클릭" },
+      onIconClick:      { type: "event",       label: "아이콘 클릭" },
     },
   },
-  component: (p) => <AccountSelectorCard {...(p as any)} />,
+  // 캔버스에서는 onAccountChange가 전달되지 않아 계좌명 옆 ChevronDown이 숨겨지므로 noop을 주입한다.
+  component: (p) => (
+    <AccountSelectorCard
+      {...(p as any)}
+      icon={resolveIcon((p as any).icon, "size-5") ?? undefined}
+      onAccountChange={(p as any).onAccountChange ?? (() => {})}
+    />
+  ),
 };
 
 const AccountSummaryCardDefinition: BlockDefinition = {
@@ -291,21 +355,42 @@ const AccountSummaryCardDefinition: BlockDefinition = {
     name: "AccountSummaryCard",
     category: "biz",
     domain: "banking",
-    defaultProps: { type: "deposit", accountName: "하나 자유입출금", accountNumber: "123-456789-01011", balance: 1234567, balanceDisplay: "1,234,567원", balanceLabel: "잔액", badgeText: "", moreButton: "chevron" },
+    defaultProps: {
+      type: "deposit", accountName: "하나 자유입출금", accountNumber: "123-456789-01011",
+      balance: 1234567, balanceLabel: "잔액", badgeText: "", moreButton: "chevron",
+      actionButtons: [{ label: "이체", variant: "outline" }, { label: "내역", variant: "primary" }],
+    },
     propSchema: {
-      type:           { type: "select",  label: "계좌 유형",        default: "deposit", options: ["deposit", "savings", "loan", "foreignDeposit", "retirement", "securities"] },
-      accountName:    { type: "string",  label: "계좌명",           default: "하나 자유입출금" },
-      accountNumber:  { type: "string",  label: "계좌번호",          default: "123-456789-01011" },
-      balance:        { type: "number",  label: "잔액 (숫자)",       default: 0 },
-      balanceDisplay: { type: "string",  label: "잔액 표시 텍스트", default: "0원" },
-      balanceLabel:   { type: "string",  label: "잔액 레이블",       default: "잔액" },
-      badgeText:      { type: "string",  label: "배지 텍스트",       default: "" },
-      moreButton:     { type: "select",  label: "더보기 버튼 형태", default: "chevron", options: ["chevron", "ellipsis"] },
-      onMoreClick:    { type: "event",   label: "더보기 클릭" },
-      onClick:        { type: "event",   label: "카드 클릭" },
+      type:         { type: "select", label: "계좌 유형",      default: "deposit", options: ["deposit", "savings", "loan", "foreignDeposit", "retirement", "securities"] },
+      accountName:  { type: "string", label: "계좌명",          default: "하나 자유입출금" },
+      accountNumber: { type: "string", label: "계좌번호",       default: "123-456789-01011" },
+      balance:      { type: "number", label: "잔액 (숫자)",     default: 0 },
+      balanceLabel: { type: "string", label: "잔액 레이블",     default: "잔액" },
+      badgeText:    { type: "string", label: "배지 텍스트",     default: "" },
+      moreButton:   { type: "select", label: "더보기 버튼", default: "chevron", options: ["chevron", "ellipsis", "undefined"] },
+      actionButtons: {
+        type: "array", label: "하단 버튼",
+        default: [{ label: "이체", variant: "outline" }, { label: "내역", variant: "primary" }],
+        itemFields: {
+          label:   { type: "string", label: "버튼 텍스트", default: "" },
+          variant: { type: "select", label: "변형",       default: "outline", options: ["primary", "outline"] },
+        },
+      },
+      onMoreClick: { type: "event", label: "더보기 클릭" },
+      onClick:     { type: "event", label: "카드 클릭" },
     },
   },
-  component: (p) => <AccountSummaryCard {...(p as any)} />,
+  // actionButtons 배열을 Button 컴포넌트 목록으로 변환해 actions 슬롯에 주입한다.
+  // moreButton "undefined" 문자열은 실제 undefined로 변환해 버튼을 숨긴다.
+  component: (p) => {
+    type ActionBtn = { label: string; variant: string };
+    const rawBtns = ((p as any).actionButtons ?? []) as ActionBtn[];
+    const actions = rawBtns.length > 0
+      ? <>{rawBtns.map((btn, i) => <Button key={i} size="sm" variant={btn.variant as any}>{btn.label}</Button>)}</>
+      : undefined;
+    const moreButton = (p as any).moreButton === "undefined" ? undefined : (p as any).moreButton;
+    return <AccountSummaryCard {...(p as any)} moreButton={moreButton} actions={actions} />;
+  },
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -347,10 +432,25 @@ const CardBenefitSummaryDefinition: BlockDefinition = {
     name: "CardBenefitSummary",
     category: "biz",
     domain: "card",
-    defaultProps: { points: 12500, benefits: [] },
+    defaultProps: {
+      points: 12500,
+      benefits: [
+        { label: "이번달 할인", amount: 5000, unit: "원" },
+        { label: "캐시백",     amount: 7500, unit: "원" },
+      ],
+    },
     propSchema: {
-      points:         { type: "number", label: "포인트",   default: 0 },
-      onPointDetail:  { type: "event",  label: "포인트 상세 클릭" },
+      points: { type: "number", label: "포인트", default: 0 },
+      benefits: {
+        type: "array", label: "혜택 항목",
+        default: [{ label: "이번달 할인", amount: 5000, unit: "원" }],
+        itemFields: {
+          label:  { type: "string", label: "혜택 레이블", default: "" },
+          amount: { type: "number", label: "금액",        default: 0 },
+          unit:   { type: "string", label: "단위 (원/P)", default: "원" },
+        },
+      },
+      onPointDetail:   { type: "event", label: "포인트 상세 클릭" },
       onBenefitDetail: { type: "event", label: "혜택 상세 클릭" },
     },
   },
@@ -378,15 +478,36 @@ const CardInfoPanelDefinition: BlockDefinition = {
     domain: "card",
     defaultProps: {
       sections: [
-        { title: "결제정보", rows: [{ label: "결제 계좌", value: "하나은행 123-****-1234" }, { label: "결제일", value: "매월 15일" }] },
+        {
+          title: "결제정보",
+          rows: [
+            { label: "결제 계좌", value: "하나은행 123-****-1234" },
+            { label: "결제일",   value: "매월 15일" },
+          ],
+        },
+        {
+          title: "이용한도",
+          rows: [
+            { label: "총 한도",   value: "500만원" },
+            { label: "잔여 한도", value: "320만원" },
+          ],
+        },
       ],
     },
     propSchema: {
       sections: {
         type: "array", label: "섹션 목록",
-        default: [{ title: "결제정보", rows: [{ label: "결제 계좌", value: "하나은행 123-****-1234" }, { label: "결제일", value: "매월 15일" }] }],
+        default: [{ title: "결제정보", rows: [] }, { title: "이용한도", rows: [] }],
         itemFields: {
           title: { type: "string", label: "섹션 제목", default: "" },
+          rows: {
+            type: "array", label: "행 목록",
+            default: [],
+            itemFields: {
+              label: { type: "string", label: "레이블", default: "" },
+              value: { type: "string", label: "값",    default: "" },
+            },
+          },
         },
       },
     },
@@ -456,16 +577,23 @@ const CardPaymentItemDefinition: BlockDefinition = {
     name: "CardPaymentItem",
     category: "biz",
     domain: "card",
-    defaultProps: { cardEnName: "HANA CARD", cardName: "하나카드", amount: 150000 },
+    defaultProps: { icon: "credit-card", cardEnName: "HANA CARD", cardName: "하나카드", amount: 150000 },
     propSchema: {
-      cardEnName:    { type: "string", label: "카드 영문명",   default: "HANA CARD" },
-      cardName:      { type: "string", label: "카드명",        default: "하나카드" },
-      amount:        { type: "number", label: "결제 금액 (원)", default: 0 },
-      onDetailClick: { type: "event",  label: "상세 클릭" },
-      onClick:       { type: "event",  label: "카드 클릭" },
+      icon:          { type: "icon-picker", label: "아이콘",        default: "credit-card" },
+      cardEnName:    { type: "string",      label: "카드 영문명",    default: "HANA CARD" },
+      cardName:      { type: "string",      label: "카드명",         default: "하나카드" },
+      amount:        { type: "number",      label: "결제 금액 (원)", default: 0 },
+      onDetailClick: { type: "event",       label: "상세 클릭" },
+      onClick:       { type: "event",       label: "카드 클릭" },
     },
   },
-  component: (p) => <CardPaymentItem {...(p as any)} />,
+  component: (p) => (
+    <CardPaymentItem
+      {...(p as any)}
+      icon={resolveIcon((p as any).icon)}
+      onDetailClick={() => {}}
+    />
+  ),
 };
 
 const CardPaymentSummaryDefinition: BlockDefinition = {
@@ -473,19 +601,20 @@ const CardPaymentSummaryDefinition: BlockDefinition = {
     name: "CardPaymentSummary",
     category: "biz",
     domain: "card",
-    defaultProps: { dateFull: "2026년 4월", dateYM: "2026.04", dateMD: "04.15", totalAmount: 350000, revolving: 0, cardLoan: 0, cashAdvance: 0 },
+    defaultProps: { dateFull: "2026.04.15", dateYM: "26년 4월", dateMD: "04.15", totalAmount: 350000, revolving: 0, cardLoan: 0, cashAdvance: 0, hideDateButton: false },
     propSchema: {
-      dateFull:      { type: "string", label: "날짜 전체 (예: 2026년 4월)", default: "2026년 4월" },
-      dateYM:        { type: "string", label: "년월 (예: 2026.04)",         default: "2026.04" },
-      dateMD:        { type: "string", label: "월일 (예: 04.15)",           default: "04.15" },
-      totalAmount:   { type: "number", label: "총 결제금액 (원)",            default: 0 },
-      revolving:     { type: "number", label: "리볼빙 금액 (원)",            default: 0 },
-      cardLoan:      { type: "number", label: "카드론 금액 (원)",            default: 0 },
-      cashAdvance:   { type: "number", label: "현금서비스 금액 (원)",        default: 0 },
-      onRevolving:   { type: "event",  label: "리볼빙 클릭" },
-      onCardLoan:    { type: "event",  label: "카드론 클릭" },
-      onCashAdvance: { type: "event",  label: "현금서비스 클릭" },
-      onDateClick:   { type: "event",  label: "날짜 클릭" },
+      dateFull:       { type: "string",  label: "출금예정일 (예: 2026.04.15)", default: "2026.04.15" },
+      dateYM:         { type: "string",  label: "청구 년월 (예: 26년 4월)",    default: "26년 4월" },
+      dateMD:         { type: "string",  label: "월일 (예: 04.15)",            default: "04.15" },
+      totalAmount:    { type: "number",  label: "총 결제금액 (원)",             default: 0 },
+      revolving:      { type: "number",  label: "리볼빙 금액 (원)",             default: 0 },
+      cardLoan:       { type: "number",  label: "카드론 금액 (원)",             default: 0 },
+      cashAdvance:    { type: "number",  label: "현금서비스 금액 (원)",         default: 0 },
+      hideDateButton: { type: "boolean", label: "날짜 선택 버튼 숨김",          default: false },
+      onRevolving:    { type: "event",   label: "리볼빙 클릭" },
+      onCardLoan:     { type: "event",   label: "카드론 클릭" },
+      onCashAdvance:  { type: "event",   label: "현금서비스 클릭" },
+      onDateClick:    { type: "event",   label: "날짜 클릭" },
     },
   },
   component: (p) => <CardPaymentSummary {...(p as any)} />,
@@ -513,9 +642,9 @@ const CardPillTabDefinition: BlockDefinition = {
     name: "CardPillTab",
     category: "biz",
     domain: "card",
-    defaultProps: { label: "전체", isSelected: false },
+    defaultProps: { label: "하나 머니 체크카드", isSelected: false },
     propSchema: {
-      label:      { type: "string",  label: "탭 레이블", default: "전체" },
+      label:      { type: "string",  label: "탭 레이블", default: "하나 머니 체크카드" },
       isSelected: { type: "boolean", label: "선택 여부", default: false },
       onClick:    { type: "event",   label: "클릭" },
     },
@@ -651,12 +780,13 @@ const SummaryCardDefinition: BlockDefinition = {
     name: "SummaryCard",
     category: "biz",
     domain: "card",
-    defaultProps: { variant: "asset", title: "총 자산", amount: 5000000 },
+    defaultProps: { variant: "asset", title: "총 자산", amount: 5000000, hidden: false },
     propSchema: {
-      variant: { type: "select", label: "변형",     default: "asset", options: ["asset", "spending"] },
-      title:   { type: "string", label: "제목",     default: "총 자산" },
-      amount:  { type: "number", label: "금액 (원)", default: 0 },
-      onClick: { type: "event",  label: "클릭" },
+      variant: { type: "select",  label: "변형",     default: "asset", options: ["asset", "spending"] },
+      title:   { type: "string",  label: "제목",     default: "총 자산" },
+      amount:  { type: "number",  label: "금액 (원)", default: 0 },
+      hidden:  { type: "boolean", label: "금액 숨김", default: false },
+      onClick: { type: "event",   label: "클릭" },
     },
   },
   component: (p) => <SummaryCard {...(p as any)} />,
@@ -797,12 +927,13 @@ const CheckboxDefinition: BlockDefinition = {
     name: "Checkbox",
     category: "modules",
     domain: "common",
-    defaultProps: { checked: false, label: "체크박스", ariaLabel: "", disabled: false },
+    defaultProps: { checked: false, label: "체크박스", ariaLabel: "", disabled: false, shape: "square" },
     propSchema: {
-      checked:   { type: "boolean", label: "체크 여부",       default: false },
-      label:     { type: "string",  label: "레이블",          default: "체크박스" },
-      ariaLabel: { type: "string",  label: "접근성 레이블",   default: "" },
-      disabled:  { type: "boolean", label: "비활성화",        default: false },
+      checked:   { type: "boolean", label: "체크 여부",      default: false },
+      label:     { type: "string",  label: "레이블",         default: "체크박스" },
+      ariaLabel: { type: "string",  label: "접근성 레이블",  default: "" },
+      shape:     { type: "select",  label: "체크박스 모양",  default: "square", options: ["square", "circle"] },
+      disabled:  { type: "boolean", label: "비활성화",       default: false },
       onChange:  { type: "event",   label: "체크 상태 변경" },
     },
   },
@@ -870,19 +1001,28 @@ const DropdownMenuDefinition: BlockDefinition = {
     name: "DropdownMenu",
     category: "modules",
     domain: "common",
-    defaultProps: { items: [] },
+    defaultProps: { align: "right", items: [{ label: "메뉴 항목 1" }, { label: "삭제", variant: "danger" }] },
     propSchema: {
+      align: { type: "select", label: "패널 정렬", default: "right", options: ["left", "right"] },
       items: {
         type: "array", label: "메뉴 항목",
-        default: [],
+        default: [{ label: "메뉴 항목 1" }, { label: "삭제", variant: "danger" }],
         itemFields: {
-          label: { type: "string", label: "레이블", default: "" },
-          icon:  { type: "string", label: "아이콘", default: "" },
+          label:   { type: "string",      label: "레이블",    default: "" },
+          icon:    { type: "icon-picker", label: "아이콘",    default: "" },
+          variant: { type: "select",      label: "스타일 변형", default: "default", options: ["default", "danger"] },
         },
       },
     },
   },
-  component: (p) => <DropdownMenu {...(p as any)} />,
+  // DropdownMenu는 children(트리거 요소)이 필수이므로 CMS 미리보기용 기본 버튼을 주입한다.
+  component: (p) => (
+    <DropdownMenu {...(p as any)}>
+      <button type="button" className="p-2 rounded hover:bg-surface-subtle">
+        <MoreVertical className="size-5" />
+      </button>
+    </DropdownMenu>
+  ),
 };
 
 const EmptyStateDefinition: BlockDefinition = {
@@ -920,12 +1060,12 @@ const InfoRowDefinition: BlockDefinition = {
     name: "InfoRow",
     category: "modules",
     domain: "common",
-    defaultProps: { label: "레이블", value: "값", showBorder: false },
+    defaultProps: { label: "레이블", value: "값", showBorder: true },
     propSchema: {
-      label:          { type: "string",  label: "레이블",            default: "레이블" },
-      value:          { type: "string",  label: "값",                default: "값" },
-      valueClassName: { type: "string",  label: "값 추가 클래스",     default: "" },
-      showBorder:     { type: "boolean", label: "하단 구분선 표시",   default: false },
+      label:          { type: "string",  label: "레이블",          default: "레이블" },
+      value:          { type: "string",  label: "값",              default: "값" },
+      valueClassName: { type: "string",  label: "값 추가 클래스",   default: "" },
+      showBorder:     { type: "boolean", label: "하단 구분선 표시", default: true },
     },
   },
   component: (p) => <InfoRow {...(p as any)} />,
@@ -1189,7 +1329,7 @@ const OtpInputDefinition: BlockDefinition = {
     name: "OtpInput",
     category: "modules",
     domain: "banking",
-    defaultProps: { length: "6", error: false, disabled: false, masked: true },
+    defaultProps: { length: 6, error: false, disabled: false, masked: true },
     propSchema: {
       length:     { type: "select",  label: "자리 수",   default: "6", options: ["4", "6"] },
       error:      { type: "boolean", label: "오류 상태", default: false },
@@ -1199,7 +1339,8 @@ const OtpInputDefinition: BlockDefinition = {
       onChange:   { type: "event",   label: "값 변경" },
     },
   },
-  component: (p) => <OtpInput {...(p as any)} />,
+  // length select는 문자열을 반환하므로 OtpLength(4 | 6) 숫자로 변환해 전달한다.
+  component: (p) => <OtpInput {...(p as any)} length={Number((p as any).length) as 4 | 6} />,
 };
 
 const PinDotIndicatorDefinition: BlockDefinition = {

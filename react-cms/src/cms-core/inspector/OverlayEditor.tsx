@@ -5,7 +5,7 @@
  */
 import { useState } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
-import type { CMSOverlay, LeafPropField, PropField, OverlayTemplate } from "../types";
+import type { CMSOverlay, LeafPropField, NestedArrayPropField, PropField, OverlayTemplate } from "../types";
 import IconPicker, { renderLucideIcon } from "./IconPicker";
 
 interface OverlayEditorProps {
@@ -102,21 +102,88 @@ export default function OverlayEditor({ overlay, template, onChange }: OverlayEd
                         삭제
                       </button>
                     </div>
-                    {Object.entries(field.itemFields).map(([subKey, subField]) => (
-                      <div key={subKey} className="flex flex-col gap-1">
-                        <label className="text-xs font-semibold text-gray-600">{subField.label ?? subKey}</label>
-                        <OverlayFieldControl
-                          field={subField}
-                          value={(item[subKey] ?? subField.default) as unknown}
-                          onChange={(val) =>
-                            onChange({
-                              ...current,
-                              [key]: arrVal.map((it, i) => i === idx ? { ...it, [subKey]: val } : it),
-                            })
-                          }
-                        />
-                      </div>
-                    ))}
+                    {Object.entries(field.itemFields).map(([subKey, subField]) => {
+                      // 중첩 배열 필드
+                      if (subField.type === "array") {
+                        const nested = subField as NestedArrayPropField;
+                        const nestedArr = (item[subKey] as Record<string, unknown>[]) ?? nested.default;
+                        const newSubItem = Object.fromEntries(
+                          Object.entries(nested.itemFields).map(([k, f]) => [k, f.default]),
+                        );
+                        const updateNested = (newNested: Record<string, unknown>[]) =>
+                          onChange({
+                            ...current,
+                            [key]: arrVal.map((it, i) => i === idx ? { ...it, [subKey]: newNested } : it),
+                          });
+                        return (
+                          <div key={subKey} className="rounded-lg border border-gray-200 overflow-hidden">
+                            <div className="px-2.5 py-1 bg-gray-50 border-b border-gray-200 flex items-center gap-1.5">
+                              <span className="text-xs font-semibold text-gray-500 flex-1">{nested.label ?? subKey}</span>
+                              <span className="text-xs text-gray-400 mr-1">{nestedArr.length}개</span>
+                              <button
+                                type="button"
+                                onClick={() => updateNested([...nestedArr, newSubItem])}
+                                className="flex items-center gap-0.5 text-xs text-primary font-semibold hover:opacity-70 bg-transparent border-none"
+                              >
+                                <Plus className="w-3 h-3" />
+                                추가
+                              </button>
+                            </div>
+                            <div className="flex flex-col">
+                              {nestedArr.length === 0 && (
+                                <p className="px-2.5 py-2 text-xs text-gray-400">항목이 없습니다.</p>
+                              )}
+                              {nestedArr.map((subItem, subIdx) => (
+                                <div
+                                  key={subIdx}
+                                  className={`px-2.5 py-2 flex flex-col gap-1.5 ${subIdx > 0 ? "border-t border-gray-100" : ""}`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs text-gray-400">#{subIdx + 1}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => updateNested(nestedArr.filter((_, si) => si !== subIdx))}
+                                      className="flex items-center gap-0.5 text-xs text-red-400 hover:opacity-70 bg-transparent border-none"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                      삭제
+                                    </button>
+                                  </div>
+                                  {Object.entries(nested.itemFields).map(([leafKey, leafField]) => (
+                                    <div key={leafKey} className="flex flex-col gap-1">
+                                      <label className="text-xs font-semibold text-gray-600">{leafField.label ?? leafKey}</label>
+                                      <OverlayFieldControl
+                                        field={leafField}
+                                        value={(subItem[leafKey] ?? leafField.default) as unknown}
+                                        onChange={(val) => updateNested(
+                                          nestedArr.map((si, i) => i === subIdx ? { ...si, [leafKey]: val } : si),
+                                        )}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+                      // leaf 필드
+                      return (
+                        <div key={subKey} className="flex flex-col gap-1">
+                          <label className="text-xs font-semibold text-gray-600">{subField.label ?? subKey}</label>
+                          <OverlayFieldControl
+                            field={subField as LeafPropField}
+                            value={(item[subKey] ?? subField.default) as unknown}
+                            onChange={(val) =>
+                              onChange({
+                                ...current,
+                                [key]: arrVal.map((it, i) => i === idx ? { ...it, [subKey]: val } : it),
+                              })
+                            }
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
