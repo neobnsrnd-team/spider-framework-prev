@@ -142,11 +142,6 @@
                 const deployedUrlCell = row.deployedUrl
                     ? `<td class="small">
                            <div class="text-break">
-                               <div class="mb-1">
-                                   <a href="${HtmlUtils.escape(row.deployedUrl)}" target="_blank" rel="noopener">
-                                       ${HtmlUtils.escape(row.deployedUrl)}
-                                   </a>
-                               </div>
                                <button type="button"
                                        class="btn btn-outline-secondary btn-xs"
                                         onclick="CmsDeployPage.copyUrl('${jsDeployedUrl}')">
