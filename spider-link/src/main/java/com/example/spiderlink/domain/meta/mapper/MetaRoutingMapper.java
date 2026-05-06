@@ -3,6 +3,7 @@ package com.example.spiderlink.domain.meta.mapper;
 import com.example.spiderlink.domain.meta.dto.ComponentInfo;
 import com.example.spiderlink.domain.meta.dto.RelationParam;
 import com.example.spiderlink.domain.meta.dto.ServiceStep;
+import com.example.spiderlink.domain.meta.dto.TrxMappingEntry;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -20,9 +21,19 @@ import org.apache.ibatis.annotations.Param;
 public interface MetaRoutingMapper {
 
     /**
+     * FWK_LISTENER_TRX_MESSAGE 전체 행을 반환한다.
+     *
+     * <p>기동 시 {@code MessageEngineContext}가 일괄 로딩하여 메모리 맵을 구성한다.
+     * 이후 거래 수신 시 DB 재조회 없이 메모리에서 TRX_ID·ORG_ID를 반환한다.</p>
+     */
+    List<TrxMappingEntry> selectAllTrxMappings();
+
+    /**
      * 게이트웨이에 등록된 커맨드(REQ_ID_CODE) 목록을 반환한다.
      * 시작 시 지원 커맨드 캐시를 초기화하는 데 사용한다.
+     * @deprecated {@link #selectAllTrxMappings()} 일괄 로딩으로 대체 — MessageEngineContext 사용 권장
      */
+    @Deprecated
     List<String> selectRegisteredCommands(@Param("gwId") String gwId);
 
     /** FWK_LISTENER_TRX_MESSAGE에서 커맨드에 해당하는 TRX_ID를 반환한다. */

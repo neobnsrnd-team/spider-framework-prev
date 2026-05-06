@@ -1,5 +1,6 @@
 package com.example.spiderlink.infra.tcp.handler;
 
+import com.example.spiderlink.domain.meta.context.MessageEngineContext;
 import com.example.spiderlink.domain.meta.dto.ComponentInfo;
 import com.example.spiderlink.domain.meta.dto.RelationParam;
 import com.example.spiderlink.domain.meta.dto.ServiceStep;
@@ -49,7 +50,6 @@ import org.springframework.stereotype.Component;
 public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandRequest, JsonCommandResponse> {
 
     private static final String GW_ID   = "DEMO_GW";
-    private static final String ORG_ID  = "DEMO";
     private static final String IO_TYPE = "I";
 
     private final MetaRoutingMapper metaRoutingMapper;
@@ -60,27 +60,34 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
     private final JsonMessageParser jsonMessageParser;
     /** Biz 타입 컴포넌트 리플렉션 호출 시 스프링 빈 조회용 */
     private final ApplicationContext applicationContext;
+    /**
+     * 기동 시 FWK_LISTENER_TRX_MESSAGE를 일괄 메모리 캐싱 — 거래 수신마다 DB 재조회 제거.
+     * 참고소스의 MessageEngineContext.initialize()에 해당한다.
+     */
+    private final MessageEngineContext messageEngineContext;
 
     /**
-     * 시작 시 FWK_LISTENER_TRX_MESSAGE에서 등록된 커맨드 목록 캐싱 — DB 조회 최소화.
-     * volatile: refreshCommands()가 TCP 워커 스레드와 다른 스레드에서 참조를 교체하므로 가시성 보장 필요
+     * 지원 커맨드 셋 — MessageEngineContext에서 파생.
+     * volatile: refreshCommands()가 TCP 워커 스레드와 다른 스레드에서 참조를 교체하므로 가시성 보장 필요.
      */
     private volatile Set<String> supportedCommands = new HashSet<>();
 
     @PostConstruct
     void init() {
-        supportedCommands = new HashSet<>(metaRoutingMapper.selectRegisteredCommands(GW_ID));
+        // MessageEngineContext가 먼저 @PostConstruct로 초기화되므로 즉시 사용 가능
+        supportedCommands = messageEngineContext.getRegisteredCommands(GW_ID);
         log.info("[MetaDrivenCommandHandler] 등록된 커맨드 {}개 로드: {}", supportedCommands.size(), supportedCommands);
     }
 
     /**
-     * 지원 커맨드 캐시를 DB에서 다시 로드한다.
+     * 지원 커맨드 캐시와 MessageEngineContext 라우팅 맵을 DB에서 다시 로드한다.
      *
      * <p>Admin에서 FWK_LISTENER_TRX_MESSAGE 변경 후 재기동 없이 반영할 때
      * {@code POST /api/management/reload} (gubun=request_app_mapping) 호출 시 실행된다.</p>
      */
     public void refreshCommands() {
-        supportedCommands = new HashSet<>(metaRoutingMapper.selectRegisteredCommands(GW_ID));
+        messageEngineContext.reload();
+        supportedCommands = messageEngineContext.getRegisteredCommands(GW_ID);
         log.info("[MetaDrivenCommandHandler] 커맨드 캐시 갱신 완료: {}개 — {}", supportedCommands.size(), supportedCommands);
     }
 
@@ -94,17 +101,20 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
     public JsonCommandResponse handle(String command, JsonCommandRequest request) {
         Map<String, Object> payload = request.getPayload() != null ? request.getPayload() : Map.of();
         String userId = String.valueOf(payload.getOrDefault("userId", ""));
-        String trxId  = metaRoutingMapper.selectTrxId(GW_ID, command);
+        // supports()를 통과한 커맨드이므로 getTrxId/getOrgId는 반드시 non-null
+        String trxId = messageEngineContext.getTrxId(GW_ID, command);
+        String orgId = messageEngineContext.getOrgId(GW_ID, command);
 
         // FWK_MESSAGE_FIELD 기준 마스킹 후 거래 로그 저장 — password 등 민감 필드 보호
+        // maskForLog 키: trxId + "_REQ" (FWK_MESSAGE_FIELD는 TRX_ID 기준으로 필드 정의)
         trxLogger.logRequest(trxId, request.getRequestId(), userId,
-                jsonMessageParser.maskForLog(command + "_REQ", payload));
+                jsonMessageParser.maskForLog(trxId + "_REQ", payload));
 
         try {
             // FWK_MESSAGE_FIELD REQUIRED_YN='Y' 기준 필수 필드 검증 — 미등록 전문은 통과
-            jsonMessageParser.validate(command + "_REQ", payload);
+            jsonMessageParser.validate(trxId + "_REQ", payload);
 
-            String serviceId = metaRoutingMapper.selectServiceId(trxId, ORG_ID, IO_TYPE);
+            String serviceId = metaRoutingMapper.selectServiceId(trxId, orgId, IO_TYPE);
             if (serviceId == null) {
                 throw new IllegalStateException("서비스 미등록: trxId=" + trxId);
             }
@@ -166,7 +176,7 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
                     .command(command).success(true).payload(toCamelCaseKeys(lastSelectResult)).build();
             // FWK_MESSAGE_FIELD 기준 마스킹 후 응답 거래 로그 저장
             trxLogger.logResponse(trxId, request.getRequestId(), userId,
-                    jsonMessageParser.maskForLog(command + "_RES", lastSelectResult), "Y");
+                    jsonMessageParser.maskForLog(trxId + "_RES", lastSelectResult), "Y");
             return response;
 
         } catch (Exception e) {

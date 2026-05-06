@@ -4,6 +4,16 @@
 
 <mapper namespace="com.example.spiderlink.domain.meta.mapper.MetaRoutingMapper">
 
+    <!-- FWK_LISTENER_TRX_MESSAGE 전체 로드 — MessageEngineContext 기동 시 1회 실행 -->
+    <select id="selectAllTrxMappings"
+            resultType="com.example.spiderlink.domain.meta.dto.TrxMappingEntry">
+        SELECT GW_ID       AS gwId,
+               REQ_ID_CODE AS reqIdCode,
+               ORG_ID      AS orgId,
+               TRX_ID      AS trxId
+          FROM FWK_LISTENER_TRX_MESSAGE
+    </select>
+
     <!-- 게이트웨이에 등록된 커맨드 목록 (시작 시 지원 커맨드 캐시 초기화용) -->
     <select id="selectRegisteredCommands" resultType="string">
         SELECT REQ_ID_CODE
