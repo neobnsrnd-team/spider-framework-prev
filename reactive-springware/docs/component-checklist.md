@@ -191,6 +191,50 @@ const {ComponentName}Definition: BlockDefinition = {
 };
 ```
 
+#### codegenProps — 코드 생성 시 props 변환
+
+`component` 함수가 캔버스 미리보기를 위해 props 변환(타입 변환·기본값 주입·자식 JSX 구성 등)을 한다면, 동일한 변환을 코드 생성에도 적용해야 한다. **아래 케이스에 해당하면 `codegenProps`를 반드시 정의한다.**
+
+| 케이스 | 이유 |
+|---|---|
+| 컴포넌트가 `children` 기반 합성 API (예: `<Card><CardHeader /><CardRow /></Card>`) | propSchema의 평탄한 props를 자식 JSX로 변환해야 함 |
+| `value` 등 controlled 필수 prop이 JSON에 저장되지 않는 경우 | 코드 생성 시 누락되어 타입 에러 발생 |
+| select가 문자열을 반환하지만 컴포넌트가 숫자를 요구하는 경우 (`"6"` → `6`) | 타입 불일치 |
+| 빈 문자열 기본값을 `undefined`로 변환해야 하는 경우 | 옵셔널 prop 타입 불일치 |
+| 배열 itemFields 구조와 컴포넌트 prop 구조가 다른 경우 (`[{amount:1000}]` → `[1000]`) | 컴포넌트가 받는 형태로 평탄화 필요 |
+| 외부에서만 주입 가능한 필수 prop (예: `digits` 셔플 배열) | 기본 배열을 직접 주입 |
+
+```tsx
+// 예시 1: select 문자열 → 숫자 변환
+codegenProps: (p) => ({ ...p, length: Number(p.length) }),
+
+// 예시 2: children JSX 구성 + 추가 컴포넌트 import
+const {ComponentName}Definition: BlockDefinition = {
+  // ...
+  codegenProps: (p) => ({
+    interactive: p.interactive,
+    children: { __jsx: `<CardHeader title="${p.title}" /><CardRow ... />` },
+  }),
+  codegenImports: ["CardHeader", "CardRow"],  // 추가로 필요한 컴포넌트
+};
+
+// 예시 3: 필수 prop 강제 주입
+codegenProps: () => ({ digits: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] }),
+
+// 예시 4: 빈 문자열 → undefined
+codegenProps: (p) => ({ ...p, maxAmount: p.maxAmount === "" ? undefined : Number(p.maxAmount) }),
+
+// 예시 5: controlled 필수 prop의 null 리터럴 출력
+codegenProps: (p) => ({ ...p, value: { __jsx: "null" } }),
+```
+
+**JSXExpr 마커**: `{ __jsx: "..." }`를 반환하면 해당 값이 raw JSX expression으로 인라인된다. 사용된 PascalCase 컴포넌트는 자동으로 lucide-react import에 수집되므로, 컴포넌트 라이브러리에 속하는 이름은 `codegenImports`에 명시해 lucide 잘못 import를 방지한다.
+
+**자동 처리되는 부분 (codegenProps 불필요)**:
+- `propSchema`의 `icon-picker` 필드 → `<IconName className="size-5" />` JSX로 자동 변환
+- 배열 itemFields의 `icon-picker` 필드 → 배열 항목에 적용
+- `propSchema`의 `event` 필드 중 interaction에 바인딩되지 않은 것 → `() => {}` noop 자동 주입
+
 ### layouts.tsx — LayoutTemplate 추가
 
 페이지 전체를 감싸는 레이아웃 컴포넌트일 때만 추가한다.
@@ -209,6 +253,22 @@ const {ComponentName}Definition: BlockDefinition = {
   }),
 }
 ```
+
+LayoutTemplate에도 `codegenProps` / `codegenImports`를 정의할 수 있다 (BlockDefinition과 동일 패턴).
+캔버스 미리보기와 코드 생성 결과가 다르게 처리되어야 할 때 사용한다.
+
+```ts
+codegenProps: (p) => {
+  const logoName = (p.logo as string | undefined) ?? "";
+  const { logo: _logo, ...rest } = p;
+  return logoName
+    ? { ...rest, logo: { __jsx: `<${kebabToPascal(logoName)} className="size-4 text-brand" />` } }
+    : rest;
+},
+```
+
+> `?? `는 빈 문자열에서 fallback이 작동하지 않으므로, propSchema icon-picker default가 있고
+> 사용자가 비워도 기본 아이콘을 표시하고 싶다면 `||` 또는 명시적 빈 문자열 검사를 사용한다.
 
 ### overlays.tsx — OverlayTemplate 추가
 
@@ -351,6 +411,7 @@ npm run generate:prompts
 | ☐ Storybook 스토리 | `component-library/{카테고리}/{ComponentName}/{ComponentName}.stories.tsx` |
 | ☐ 라이브러리 export | `component-library/index.ts` |
 | ☐ CMS 등록 | `react-cms/src/cms-meta/blocks.tsx` 또는 `layouts.tsx` 또는 `overlays.tsx` |
+| ☐ codegenProps 검토 | `component` 함수에 props 변환 로직이 있다면 동일 변환을 `codegenProps`로 정의 (children API·controlled prop·타입 변환 등) |
 | ☐ figma-plugin 파일 생성 | `figma-plugin/components/{카테고리}/create{ComponentName}.ts` |
 | ☐ figma-plugin 등록 | `figma-plugin/commands/createComponents.ts` (import + 배열) |
 | ☐ variant-mapping.json 확인 | `reactPlatform/src/main/resources/variant-mapping.json` (새 속성 키 등록 여부) |

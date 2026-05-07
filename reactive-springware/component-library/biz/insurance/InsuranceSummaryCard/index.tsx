@@ -25,8 +25,9 @@
  * />
  */
 import React from 'react';
+import { Heart, Car, Shield } from 'lucide-react';
 import { cn } from '@lib/cn';
-import type { InsuranceSummaryCardProps, InsuranceStatus } from './types';
+import type { InsuranceSummaryCardProps, InsuranceStatus, InsuranceType } from './types';
 
 /** 원화 금액 포맷터 */
 const krwFormatter = new Intl.NumberFormat('ko-KR');
@@ -46,8 +47,15 @@ const statusBadgeClass: Record<InsuranceStatus, string> = {
   expired: 'bg-danger-surface text-danger-text',
 };
 
+/** type별 아이콘 — Figma 플러그인 TYPE_CONFIG 기준: Health→Heart, Car→Car, Life→Shield */
+const typeIcon: Record<InsuranceType, React.ReactNode> = {
+  health: <Heart  size={20} className="text-text-muted shrink-0" />,
+  car:    <Car    size={20} className="text-text-muted shrink-0" />,
+  life:   <Shield size={20} className="text-text-muted shrink-0" />,
+};
+
 export function InsuranceSummaryCard({
-  type: _type, // 현재 레이아웃에서 직접 분기하지 않음 — 추후 아이콘 확장 예약
+  type,
   insuranceName,
   contractNumber,
   premium,
@@ -78,8 +86,10 @@ export function InsuranceSummaryCard({
         className,
       )}
     >
-      {/* ── 상단: 보험명 + 상태 배지 ───────────────────────── */}
+      {/* ── 상단: 타입 아이콘 + 보험명 + 상태 배지 ──────────── */}
       <div className="flex items-center gap-sm mb-xs">
+        {/* 보험 유형 아이콘 — Figma 플러그인 기준: health→Heart, car→Car, life→Shield */}
+        {typeIcon[type]}
         <span className="text-sm font-bold text-text-heading truncate">{insuranceName}</span>
         {/* 상태 배지: status별 색상 자동 결정 */}
         <span

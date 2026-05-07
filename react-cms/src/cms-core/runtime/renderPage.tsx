@@ -143,7 +143,7 @@ function PageContent({ page }: { page: CMSPage }) {
     <>
       <div className="flex flex-col min-h-screen">
         {slots.header}
-        <div className="flex-1">{blockList}</div>
+        <div className="flex-1 px-standard py-md">{blockList}</div>
         {slots.footer}
       </div>
       {/* portal 타깃: UserScopeWrapper 안에 위치해 스코프 CSS가 적용되도록 함 */}

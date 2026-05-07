@@ -30,12 +30,24 @@ export type GroupPropField = {
   fields: Record<string, LeafPropField>;
 };
 
+/**
+ * 배열 아이템 내 중첩 배열 필드 (2단계 중첩까지만 허용).
+ * ArrayPropField.itemFields 에서만 사용되며, 최상위 propSchema에는 사용하지 않는다.
+ */
+export type NestedArrayPropField = {
+  type: "array";
+  label?: string;
+  default: Record<string, string | boolean | number>[];
+  itemFields: Record<string, LeafPropField>;
+};
+
 /** 동적 배열 필드 (항목 추가/삭제 가능) */
 export type ArrayPropField = {
   type: "array";
   label?: string;
   default: Record<string, string | boolean | number>[] | string[] | boolean[] | number[];
-  itemFields: Record<string, LeafPropField>;
+  /** LeafPropField 외에 NestedArrayPropField도 허용 (2단계 중첩) */
+  itemFields: Record<string, LeafPropField | NestedArrayPropField>;
 };
 
 /** 이벤트 핸들러 prop (인터랙션 탭에서 액션 바인딩에 사용) */
@@ -70,6 +82,15 @@ export interface BlockMeta {
 export interface BlockDefinition {
   meta: BlockMeta;
   component: React.ComponentType<Record<string, unknown>>;
+  /**
+   * codegen에서 실제 컴포넌트 API 형태로 변환.
+   * component 함수에 props 변환 로직이 있으면 반드시 함께 정의해야 합니다.
+   * { __jsx: "..." } 마커를 반환하면 해당 값이 {} 안에 raw JSX expression으로 출력됩니다.
+   * 미정의 시 propSchema의 icon-picker 필드는 자동으로 JSX로 변환됩니다.
+   */
+  codegenProps?: (props: Record<string, unknown>) => Record<string, unknown>;
+  /** codegenProps가 생성하는 JSX 안에서 참조하는 추가 컴포넌트명. generateJSX가 import에 포함. */
+  codegenImports?: string[];
 }
 
 export type BlockPadding = {
@@ -213,6 +234,14 @@ export interface LayoutTemplate {
    * 미정의 시 레이아웃 래퍼 없이 블록만 생성합니다.
    */
   componentName?: string;
+  /**
+   * 코드 생성 시 layoutProps를 실제 컴포넌트 API 형태로 변환.
+   * BlockDefinition.codegenProps와 동일한 패턴 — { __jsx: "..." } 마커로 raw JSX 출력 가능.
+   * 미정의 시 propSchema의 icon-picker 필드는 자동으로 JSX로 변환됩니다.
+   */
+  codegenProps?: (props: Record<string, unknown>) => Record<string, unknown>;
+  /** codegenProps가 생성하는 JSX 안에서 참조하는 추가 컴포넌트명. generateJSX가 import에 포함. */
+  codegenImports?: string[];
 }
 
 // ─── 페이지 ────────────────────────────────────────────────────

@@ -66,3 +66,6 @@ export type { CMSAppProps } from "./CMSApp";
 // ── 스타일 격리 ────────────────────────────────────────────────────────────────
 export { UserScopeWrapper } from "./UserScopeWrapper";
 export type { StylesheetConfig } from "./context";
+
+// ── 아이콘 유틸리티 ────────────────────────────────────────────────────────────
+export { resolveIcon, toKebabIcon, kebabToPascal, ALL_ICON_NAMES } from "./utils/icon";

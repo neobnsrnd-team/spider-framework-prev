@@ -198,7 +198,7 @@ import 순서: `@cl` → `lucide-react` → `react`
 
 ### 레이아웃 패딩 주의사항
 
-`PageLayout`과 `HomePageLayout`의 main 영역에 `px-standard py-md` 패딩이 내장되어 있다.  
+`PageLayout` / `HomePageLayout` / `BlankPageLayout` 세 레이아웃의 콘텐츠 영역에 `px-standard py-md` 패딩이 내장되어 있다.  
 내부 Stack에 별도 패딩 추가 금지.
 
 ```tsx
@@ -211,6 +211,16 @@ import 순서: `@cl` → `lucide-react` → `react`
 <HomePageLayout>
   <Stack gap="lg" className="px-standard">...</Stack>
 </HomePageLayout>
+
+// ✅
+<BlankPageLayout>
+  <Stack gap="xl">...</Stack>
+</BlankPageLayout>
+
+// ❌ 패딩 중복
+<BlankPageLayout>
+  <Stack gap="xl" className="px-standard">...</Stack>
+</BlankPageLayout>
 ```
 
 ### 컴포넌트 계층

@@ -52,6 +52,7 @@ export function UserProfile({
             label: '로그아웃',
             icon: <LogOut className="size-4" />,
             onClick: onLogoutClick,
+            variant: 'danger' as const,
           },
         ]
       : []),
@@ -81,19 +82,13 @@ export function UserProfile({
 
       {/* 우측: 설정 버튼 — 드롭다운 항목이 하나라도 있을 때만 렌더링 */}
       {menuItems.length > 0 && (
-        <DropdownMenu items={menuItems} align="right">
-          <button
-            type="button"
-            aria-label="설정 메뉴"
-            className={cn(
-              'flex items-center justify-center size-10 rounded-full shrink-0',
-              'bg-surface-raised border border-border',
-              'transition-colors duration-150 hover:bg-surface',
-            )}
-          >
-            <Settings className="size-4 text-text-muted" aria-hidden="true" />
-          </button>
-        </DropdownMenu>
+        <DropdownMenu
+          items={menuItems}
+          align="right"
+          triggerIcon={<Settings className="size-4 text-text-muted" aria-hidden="true" />}
+          triggerVariant="rounded"
+          triggerAriaLabel="설정 메뉴"
+        />
       )}
     </div>
   );

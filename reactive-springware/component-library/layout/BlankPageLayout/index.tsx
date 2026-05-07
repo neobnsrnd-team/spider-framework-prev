@@ -41,7 +41,7 @@ export function BlankPageLayout({
   return (
     <div
       className={cn(
-        'flex flex-col min-h-dvh',
+        'flex flex-col min-h-dvh px-standard py-md',
         /* 수직 중앙 정렬 — 로그인 폼처럼 단일 블록을 화면 중앙에 놓을 때 사용 */
         align === 'center' && 'items-center justify-center',
         className,

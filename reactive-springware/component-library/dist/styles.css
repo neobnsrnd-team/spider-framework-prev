@@ -154,6 +154,8 @@
   --color-brand-10: var(--brand-10);
   --color-brand-20: var(--brand-20);
   --color-brand-shadow: var(--brand-shadow);
+  --color-domain-card-accent: var(--domain-card-accent, var(--brand-alt));
+  --color-domain-card-accent-text: var(--domain-card-accent-text, var(--brand-text));
   --color-primary: #2563eb;
   --color-primary-surface: #eff6ff;
   --color-primary-border: #bfdbfe;
@@ -1486,6 +1488,9 @@
   .p-1 {
     padding: calc(var(--spacing) * 1);
   }
+  .p-2 {
+    padding: calc(var(--spacing) * 2);
+  }
   .p-2xl {
     padding: var(--spacing-2xl);
   }
@@ -2103,6 +2108,13 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-danger-dark);
+      }
+    }
+  }
+  .hover\:bg-danger-surface {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-danger-surface);
       }
     }
   }

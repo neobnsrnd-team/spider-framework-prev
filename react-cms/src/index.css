@@ -15,6 +15,17 @@
 @import "tailwindcss";
 
 @theme {
+  /* ── Spacing Scale ──
+     reactive-springware globals.css와 동일한 토큰. CMS 캔버스·미리보기에서
+     px-standard / py-md 등 디자인 토큰 클래스가 동작하도록 @theme에 선언한다. */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-standard: 16px;
+  --spacing-lg: 20px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+
   /* ── Gray Palette ── */
   --color-gray-50: #f8fafc;
   --color-gray-100: #f1f5f9;

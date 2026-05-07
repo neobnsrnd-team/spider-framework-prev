@@ -33,4 +33,11 @@ export interface DatePickerProps {
    * 미제공 시 내장 triggerRef를 사용한다.
    */
   anchorRef?:     React.RefObject<HTMLElement | null>;
+  /**
+   * 달력 패널 portal 대상 요소.
+   * 기본값: document.body
+   * CSS @scope로 격리된 환경(예: CMS 캔버스)에서는 스코프 루트 요소를 전달하면
+   * 스코프 내 스타일이 달력에도 적용된다.
+   */
+  portalContainer?: HTMLElement | null;
 }

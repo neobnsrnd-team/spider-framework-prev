@@ -24,7 +24,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: (args) => (
     <PageLayout {...args}>
-      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ background: '#f1f5f9', borderRadius: 12, padding: 16, fontSize: 14, color: '#475569' }}>
           페이지 콘텐츠 영역
         </div>
@@ -47,7 +47,7 @@ export const WithRightAction: Story = {
   },
   render: (args) => (
     <PageLayout {...args}>
-      <div style={{ padding: 16, fontSize: 14, color: '#475569' }}>폼 콘텐츠 영역</div>
+      <div style={{ fontSize: 14, color: '#475569' }}>폼 콘텐츠 영역</div>
     </PageLayout>
   ),
 };
@@ -56,7 +56,7 @@ export const NoBack: Story = {
   args: { title: '알림', onBack: undefined },
   render: (args) => (
     <PageLayout {...args}>
-      <div style={{ padding: 16, fontSize: 14, color: '#475569' }}>뒤로가기 버튼 없는 페이지</div>
+      <div style={{ fontSize: 14, color: '#475569' }}>뒤로가기 버튼 없는 페이지</div>
     </PageLayout>
   ),
 };

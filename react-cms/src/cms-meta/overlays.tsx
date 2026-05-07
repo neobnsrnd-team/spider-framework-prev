@@ -114,20 +114,23 @@ function ModalRenderer({ open, onClose, children, container, props }: OverlayRen
 
 /**
  * CMS 미리보기용 UsageHistoryFilterSheet 렌더러.
- * 카드 선택 목록은 CMS 빌더에서 편집할 수 없으므로 대표 샘플을 고정 주입한다.
+ * props.cardOptions 배열을 읽어 카드 선택 목록을 주입한다.
  */
-const DEFAULT_CARD_OPTIONS = [
-  { value: 'card1', label: '하나 머니 체크카드 (1234)' },
-  { value: 'card2', label: '하나 1Q 신용카드 (5678)' },
-];
-
-function UsageHistoryFilterSheetRenderer({ open, onClose, container }: OverlayRendererProps) {
+function UsageHistoryFilterSheetRenderer({ open, onClose, container, props }: OverlayRendererProps) {
   if (!open) return null;
+
+  type RawCardOption = { value: string; label: string };
+  const cardOptions = Array.isArray(props?.cardOptions)
+    ? (props.cardOptions as RawCardOption[]).filter(
+        (o) => typeof o.value === 'string' && typeof o.label === 'string',
+      )
+    : [];
+
   return (
     <UsageHistoryFilterSheet
       open={open}
       onClose={onClose}
-      cardOptions={DEFAULT_CARD_OPTIONS}
+      cardOptions={cardOptions}
       onApply={() => { onClose(); }}
       container={container ?? undefined}
     />
@@ -148,14 +151,19 @@ function UsageHistoryFilterSheetRenderer({ open, onClose, container }: OverlayRe
  */
 function PinConfirmSheetRenderer({ open, onClose, container, props }: OverlayRendererProps) {
   if (!open) return null;
-  const title     = typeof props?.title === 'string' ? props.title : '비밀번호 입력';
-  const pinLength = typeof props?.pinLength === 'number' ? props.pinLength : 4;
+  const title        = typeof props?.title        === 'string' ? props.title        : '비밀번호 입력';
+  const subtitle     = typeof props?.subtitle     === 'string' ? props.subtitle     : undefined;
+  const errorMessage = typeof props?.errorMessage === 'string' ? props.errorMessage : undefined;
+  // select 옵션이 문자열로 저장되므로 Number()로 변환한다.
+  const pinLength = Number(props?.pinLength) || 4;
   return (
     <PinConfirmSheet
       open={open}
       onClose={onClose}
       onConfirm={() => { onClose(); }}
       title={title}
+      subtitle={subtitle}
+      errorMessage={errorMessage}
       pinLength={pinLength}
       container={container ?? undefined}
     />
@@ -308,8 +316,23 @@ export const overlays: OverlayTemplate[] = [
     defaultId:   "usageHistoryFilterSheet",
     componentName: "UsageHistoryFilterSheet",
     blocks:        [],
-    props:         {},
-    propSchema:    {},
+    props: {
+      cardOptions: [
+        { value: 'card1', label: '하나 머니 체크카드 (1234)' },
+        { value: 'card2', label: '하나 1Q 신용카드 (5678)' },
+      ],
+    },
+    propSchema: {
+      cardOptions: {
+        type: "array",
+        label: "카드 목록",
+        default: [],
+        itemFields: {
+          value: { type: "string", label: "카드 ID",  default: "card1" },
+          label: { type: "string", label: "카드 이름", default: "카드명 (번호)" },
+        },
+      },
+    },
     renderer:      UsageHistoryFilterSheetRenderer,
   },
 
@@ -324,11 +347,14 @@ export const overlays: OverlayTemplate[] = [
     blocks:        [],
     props: {
       title:     "비밀번호 입력",
-      pinLength: 4,
+      subtitle:  "비밀번호를 입력하세요",
+      pinLength: "4",
     },
     propSchema: {
-      title:     { type: "string", label: "타이틀",    default: "비밀번호 입력" },
-      pinLength: { type: "select", label: "PIN 자릿수", options: ["4", "6"],         default: 4 },
+      title:        { type: "string", label: "타이틀",    default: "비밀번호 입력" },
+      subtitle:     { type: "string", label: "안내 문구", default: "비밀번호를 입력하세요" },
+      errorMessage: { type: "string", label: "에러 메시지", default: "" },
+      pinLength:    { type: "select", label: "PIN 자릿수", options: ["4", "6"], default: "4" },
     },
     renderer: PinConfirmSheetRenderer,
   },
