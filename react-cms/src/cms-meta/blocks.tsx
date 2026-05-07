@@ -1871,12 +1871,14 @@ const TransactionSearchFilterDefinition: BlockDefinition = {
       {...(p as any)}
     />
   ),
-  // value는 JSON에 저장되지 않으므로 codegen 시 오늘 기준 30일 범위 기본값을 주입한다.
+  // value는 JSON에 저장되지 않으므로 codegen 시 정적 placeholder 날짜를 주입한다.
+  // 실제 사용 시 useState로 덮어쓰는 것이 정석이며, 코드 생성 결정성을 위해 고정값을 사용한다
+  // (new Date() 사용 시 저장 시점마다 결과가 달라져 불필요한 VCS diff가 발생).
   codegenProps: (p) => ({
     defaultExpanded: p.defaultExpanded,
     value: {
-      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-      endDate:   new Date().toISOString().slice(0, 10),
+      startDate: "2026-01-01",
+      endDate:   "2026-01-31",
       sortOrder: "recent",
       transactionType: "all",
     },

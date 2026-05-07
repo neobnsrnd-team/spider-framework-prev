@@ -41,7 +41,10 @@ export function OtpInput({
   /* 각 input 참조 배열 — 포커스 이동에 사용 */
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  /* length 변경 시 입력값 초기화 — 자릿수가 바뀌면 기존 values 크기가 달라져 렌더링 불일치 발생 */
+  /* length 변경 시 입력값 초기화 — 자릿수가 바뀌면 기존 values 크기가 달라져 렌더링 불일치 발생.
+     onChange는 의존성에서 제외 — 매 렌더 새 참조로 들어오는 부모 콜백을 deps에 넣으면
+     length가 바뀌지 않은 일반 리렌더에서도 effect가 재실행되어 입력 도중 reset이 발생한다.
+     length 변경 시점에만 실행되므로 그 시점의 onChange closure는 항상 최신이라 stale 위험 없음. */
   useEffect(() => {
     setValues(Array(length).fill(''));
     onChange?.('');

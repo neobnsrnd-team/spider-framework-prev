@@ -103,6 +103,8 @@ function propsToStr(props: Record<string, unknown>): string {
  * propSchema를 기반으로 icon-picker 필드를 JSXExpr로 자동 변환한다.
  * codegenProps가 정의된 블록에서는 사용하지 않는다.
  * 빈 문자열은 undefined로 치환해 prop 자체를 생략한다 (컴포넌트 자체 기본 아이콘이 사용됨).
+ *
+ * group / array 안의 icon-picker도 재귀적으로 처리해 중첩 구조에서도 일관 동작을 보장한다.
  */
 function autoConvertIconPickers(
   props: Record<string, unknown>,
@@ -114,20 +116,18 @@ function autoConvertIconPickers(
       result[key] = result[key]
         ? { __jsx: `<${kebabToPascal(result[key] as string)} className="size-5" />` }
         : undefined;
-    }
-    if (field.type === "array" && Array.isArray(result[key])) {
+    } else if (field.type === "group" && typeof result[key] === "object" && result[key] !== null) {
+      // group은 fields 스키마를 따라 동일 변환을 재귀 적용
+      result[key] = autoConvertIconPickers(
+        result[key] as Record<string, unknown>,
+        field.fields as Record<string, PropField>,
+      );
+    } else if (field.type === "array" && Array.isArray(result[key])) {
+      // array는 itemFields 스키마로 각 항목을 재귀 변환 — 중첩 array/group 안의 icon-picker도 처리
       const arrayField = field as ArrayPropField;
-      result[key] = (result[key] as Record<string, unknown>[]).map((item) => {
-        const newItem = { ...item };
-        for (const [subKey, subField] of Object.entries(arrayField.itemFields)) {
-          if (subField.type === "icon-picker" && typeof newItem[subKey] === "string") {
-            newItem[subKey] = newItem[subKey]
-              ? { __jsx: `<${kebabToPascal(newItem[subKey] as string)} className="size-5" />` }
-              : undefined;
-          }
-        }
-        return newItem;
-      });
+      result[key] = (result[key] as Record<string, unknown>[]).map((item) =>
+        autoConvertIconPickers(item, arrayField.itemFields as Record<string, PropField>),
+      );
     }
   }
   return result;
