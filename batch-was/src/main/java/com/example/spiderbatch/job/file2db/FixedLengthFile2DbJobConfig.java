@@ -1,7 +1,6 @@
 package com.example.spiderbatch.job.file2db;
 
 import com.example.spiderbatch.job.AbstractFixedLengthFile2DbJob;
-import com.example.spiderbatch.job.common.BatchJobParametersValidator;
 import com.example.spiderbatch.job.common.FixedLengthRecord;
 import com.example.spiderbatch.job.listener.BatchNotificationListener;
 import javax.sql.DataSource;
@@ -61,6 +60,12 @@ public class FixedLengthFile2DbJobConfig extends AbstractFixedLengthFile2DbJob<F
         return "fixedFile2db";
     }
 
+    /** inputFilePath Job 파라미터 필수 — 파일 경로 없이 실행하면 즉시 검증 실패 */
+    @Override
+    protected boolean requiresInputFilePath() {
+        return true;
+    }
+
     @Override
     protected Class<FixedLengthRecord> getTargetType() {
         return FixedLengthRecord.class;
@@ -101,8 +106,7 @@ public class FixedLengthFile2DbJobConfig extends AbstractFixedLengthFile2DbJob<F
             Step fileArchiveErrorStep) {
 
         return buildJobBuilder(jobRepository)
-                // inputFilePath 파라미터 필수 검증
-                .validator(new BatchJobParametersValidator(true))
+                // requiresInputFilePath()=true 이므로 buildJobBuilder()에서 이미 필수 검증 적용됨
                 .listener(batchNotificationListener)
                 .start(fixedLengthFile2DbStep)
                     // 데이터 적재 Step 성공 시 → 성공 아카이브

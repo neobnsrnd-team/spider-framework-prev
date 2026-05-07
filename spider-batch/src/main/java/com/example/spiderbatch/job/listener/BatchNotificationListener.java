@@ -10,20 +10,21 @@ import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.stereotype.Component;
-
 /**
  * 배치 Job 완료·실패 시 Slack·Email 알림을 발송하는 {@link JobExecutionListener}.
  *
  * <p>알림 로직을 Job과 분리하여 여러 Job 설정 클래스에서 공통으로 재사용한다.
- * {@link com.example.spiderbatch.config.SpiderBatchAutoConfiguration}에 의해 자동 등록되며,
+ * {@link com.example.spiderbatch.config.SpiderBatchAutoConfiguration}의 {@code @Import}로 등록되며,
  * Job 설정 클래스에서 의존성으로 주입받아 {@code .listener(batchNotificationListener)}로 연결한다.</p>
  *
  * <p>batchAppName은 {@link com.example.spiderbatch.domain.batch.service.BatchExecuteService}가
  * JobParameter에 포함시켜 전달한다. 없으면 batchAppId로 대체한다.</p>
+ *
+ * <p>주의: {@code @Component}를 사용하지 않는다.
+ * 라이브러리 클래스에 {@code @Component}가 있으면 소비 프로젝트의 컴포넌트 스캔과
+ * {@code @Import}에서 이중 등록될 수 있다.</p>
  */
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class BatchNotificationListener implements JobExecutionListener {
 

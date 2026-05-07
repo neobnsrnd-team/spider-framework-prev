@@ -5,7 +5,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.partition.support.Partitioner;
 import org.springframework.batch.item.ExecutionContext;
@@ -32,7 +31,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @see AbstractDb2DbJob#buildPartitionStep
  */
 @Slf4j
-@RequiredArgsConstructor
 public class DateRangePartitioner implements Partitioner {
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -44,6 +42,25 @@ public class DateRangePartitioner implements Partitioner {
 
     /** 날짜 기준 컬럼명 (YYYYMMDD 형식의 문자열 컬럼) */
     private final String columnName;
+
+    public DateRangePartitioner(JdbcTemplate jdbcTemplate, String tableName, String columnName) {
+        assertSafeIdentifier(tableName);
+        assertSafeIdentifier(columnName);
+        this.jdbcTemplate = jdbcTemplate;
+        this.tableName = tableName;
+        this.columnName = columnName;
+    }
+
+    /**
+     * 테이블명·컬럼명이 SQL 식별자로 안전한지 검증한다.
+     * PreparedStatement placeholder로 바인딩할 수 없는 식별자를 직접 연결하므로
+     * 알파벳·숫자·언더스코어·한글만 허용하여 SQL Injection을 방지한다.
+     */
+    private static void assertSafeIdentifier(String name) {
+        if (name == null || !name.matches("[\\w가-힣]+")) {
+            throw new IllegalArgumentException("유효하지 않은 SQL 식별자: " + name);
+        }
+    }
 
     /**
      * gridSize 수만큼 파티션을 생성한다.

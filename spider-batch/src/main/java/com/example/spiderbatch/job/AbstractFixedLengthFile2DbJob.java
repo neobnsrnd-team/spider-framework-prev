@@ -95,12 +95,21 @@ public abstract class AbstractFixedLengthFile2DbJob<T> {
     }
 
     /**
+     * Job 파라미터로 {@code inputFilePath}를 필수로 요구하는지 여부.
+     * 고정 길이 파일 Job은 대부분 true이어야 한다. 기본값 false.
+     */
+    protected boolean requiresInputFilePath() {
+        return false;
+    }
+
+    /**
      * {@link BatchJobParametersValidator}가 적용된 {@link JobBuilder}를 반환한다.
+     * {@link #requiresInputFilePath()}가 true이면 {@code inputFilePath} 파라미터를 필수 검증한다.
      * 서브 클래스에서 {@code .listener()}, {@code .start()} 등을 추가하여 Job을 완성한다.
      */
     protected JobBuilder buildJobBuilder(JobRepository jobRepository) {
         return new JobBuilder(getJobName(), jobRepository)
-                .validator(new BatchJobParametersValidator());
+                .validator(new BatchJobParametersValidator(requiresInputFilePath()));
     }
 
     /**
@@ -184,6 +193,10 @@ public abstract class AbstractFixedLengthFile2DbJob<T> {
      * <p>Spring의 FlatFileItemReader는 BOM을 자동 제거하지 않으므로
      * InputStream의 첫 3바이트를 검사하여 BOM이면 건너뛰고
      * 그렇지 않으면 스트림을 되돌려 정상적으로 읽는다.</p>
+     *
+     * <p>주의: {@code encoding} 파라미터는 의도적으로 무시하고 항상 UTF-8로 읽는다.
+     * BOM(EF BB BF)은 UTF-8 전용 마커이므로, 이 Factory는 UTF-8 파일 전용으로 사용해야 한다.
+     * EUC-KR 등 다른 인코딩 파일에는 사용하지 않는다.</p>
      */
     protected static class BomStrippingBufferedReaderFactory implements BufferedReaderFactory {
 

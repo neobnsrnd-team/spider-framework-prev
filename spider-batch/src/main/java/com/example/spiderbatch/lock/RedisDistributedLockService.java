@@ -68,15 +68,25 @@ public class RedisDistributedLockService implements DistributedLockService {
      * 배치 분산 락 해제.
      * 현재 스레드가 보유한 락만 해제한다. 락이 없거나 다른 스레드 소유이면 무시.
      *
+     * <p>tryLock()이 Redis 연결 실패로 예외를 잡고 true를 반환한 경우에도
+     * 락은 실제로 획득되지 않았으므로 isHeldByCurrentThread()가 false를 반환하여 안전하게 종료된다.
+     * 만일 Redis가 해제 시점에 다시 연결 불가 상태이더라도 예외를 삼키고 경고 로그만 남긴다.</p>
+     *
      * @param batchAppId 배치 APP ID
      */
     @Override
     public void unlock(String batchAppId) {
-        RLock lock = redissonClient.getLock(LOCK_PREFIX + batchAppId);
-        // isHeldByCurrentThread: 현재 스레드가 락을 보유한 경우에만 해제
-        if (lock.isHeldByCurrentThread()) {
-            lock.unlock();
-            log.debug("[분산 락] 해제: batchAppId={}", batchAppId);
+        try {
+            RLock lock = redissonClient.getLock(LOCK_PREFIX + batchAppId);
+            // isHeldByCurrentThread: 현재 스레드가 락을 보유한 경우에만 해제
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+                log.debug("[분산 락] 해제: batchAppId={}", batchAppId);
+            }
+        } catch (Exception e) {
+            // finally 블록에서 호출되므로 예외가 전파되면 원래 예외가 억제될 수 있다
+            log.warn("[분산 락] 해제 중 Redis 연결 실패 (무시): batchAppId={}, error={}",
+                    batchAppId, e.getMessage());
         }
     }
 }
