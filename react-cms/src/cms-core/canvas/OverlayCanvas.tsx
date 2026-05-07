@@ -13,6 +13,8 @@ import { OverlayTemplatesContext } from "../context";
 import { UserScopeWrapper } from "../UserScopeWrapper";
 
 const PHONE_FRAME_W = 390;
+/** 편집 모드에서 오버레이를 닫는 동작은 없으므로 no-op 고정 콜백 사용 — 매 렌더 새 참조 방지 */
+const NOOP = () => {};
 /** CSS 변수로 툴바 높이·패딩 참조 — cms-theme.css의 --cms-toolbar-h, --cms-canvas-pad 값 사용 */
 const CANVAS_MIN_H =
   "calc(100dvh - var(--cms-toolbar-h, 3rem) - var(--cms-canvas-pad, 1.5rem) * 2)";
@@ -38,19 +40,22 @@ export function OverlayCanvas({
     return (
       <div className="p-6 flex justify-center items-start">
         {/*
+         * UserScopeWrapper로 감싸 fallback 상태에서도 children의 CSS 스코핑을 유지한다.
          * overflow-hidden 제거 → 컨트롤 바(-top-6)가 프레임 밖으로 노출.
          * 시각 크롬(border·shadow)은 DOM 마지막의 absolute 오버레이로 표현.
          */}
-        <div
-          className="relative bg-gray-100/80"
-          style={{ width: PHONE_FRAME_W, minHeight: CANVAS_MIN_H }}
-        >
-          <p className="text-xs text-gray-400 mb-2 px-4 pt-4">
-            오버레이: {overlay.type}
-          </p>
-          <div className="bg-white rounded-xl shadow p-4">{children}</div>
-          <div className="absolute inset-0 rounded-xl shadow-lg border border-gray-200 pointer-events-none" />
-        </div>
+        <UserScopeWrapper style={{ display: "contents" }}>
+          <div
+            className="relative bg-gray-100/80"
+            style={{ width: PHONE_FRAME_W, minHeight: CANVAS_MIN_H }}
+          >
+            <p className="text-xs text-gray-400 mb-2 px-4 pt-4">
+              오버레이: {overlay.type}
+            </p>
+            <div className="bg-white rounded-xl shadow p-4">{children}</div>
+            <div className="absolute inset-0 rounded-xl shadow-lg border border-gray-200 pointer-events-none" />
+          </div>
+        </UserScopeWrapper>
       </div>
     );
   }
@@ -79,7 +84,7 @@ export function OverlayCanvas({
           {container && (
             <Renderer
               open
-              onClose={() => {}}
+              onClose={NOOP}
               container={container}
               props={overlay.props}
             >
