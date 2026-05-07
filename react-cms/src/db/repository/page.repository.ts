@@ -45,6 +45,7 @@ const SQL_SELECT_LIST = `
            ) AS RN
     FROM SPW_CMS_PAGE
     WHERE PAGE_TYPE = '${PAGE_TYPE}'
+      AND USE_YN = 'Y'
       AND (:search IS NULL OR UPPER(PAGE_NAME) LIKE '%' || UPPER(:search) || '%')
       AND (:approveState IS NULL OR APPROVE_STATE = :approveState)
   )
@@ -55,6 +56,7 @@ const SQL_COUNT = `
   SELECT COUNT(*) AS TOTAL_COUNT
   FROM   SPW_CMS_PAGE
   WHERE  PAGE_TYPE = '${PAGE_TYPE}'
+    AND  USE_YN = 'Y'
     AND  (:search IS NULL OR UPPER(PAGE_NAME) LIKE '%' || UPPER(:search) || '%')
     AND  (:approveState IS NULL OR APPROVE_STATE = :approveState)
 `;
