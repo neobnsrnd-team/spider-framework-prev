@@ -28,7 +28,7 @@ import {
 
 import type { CMSPage, CMSOverlay } from "./types";
 import { useBuilderState } from "./state/builderStore";
-import { BlockMetaContext, BlockRegistryContext, LayoutTemplatesContext, OverlayTemplatesContext, CodegenConfigContext } from "./context";
+import { BlockMetaContext, BlockRegistryContext, BlockDefinitionsContext, LayoutTemplatesContext, OverlayTemplatesContext, CodegenConfigContext } from "./context";
 import { useContext } from "react";
 import LeftSidebar from "./palette/LeftSidebar";
 import RightSidebar from "./inspector/RightSidebar";
@@ -64,6 +64,7 @@ export interface CMSBuilderProps {
 export function CMSBuilder({ onSave, initialPage, mode = "create", initialPageName, approveState, rejectedReason }: CMSBuilderProps) {
   const blockMeta = useContext(BlockMetaContext);
   const blockRegistry = useContext(BlockRegistryContext);
+  const blockDefinitions = useContext(BlockDefinitionsContext);
   const overlayTemplates = useContext(OverlayTemplatesContext);
   const layouts = useContext(LayoutTemplatesContext);
   const codegenConfig = useContext(CodegenConfigContext);
@@ -246,9 +247,9 @@ export function CMSBuilder({ onSave, initialPage, mode = "create", initialPageNa
     return (savePage: CMSPage, params: SavePageParams) =>
       onSave(savePage, {
         ...params,
-        code: generateJSX(savePage, layouts, codegenConfig, overlayTemplates),
+        code: generateJSX(savePage, layouts, codegenConfig, overlayTemplates, blockDefinitions),
       });
-  }, [onSave, layouts, codegenConfig, overlayTemplates]);
+  }, [onSave, layouts, codegenConfig, overlayTemplates, blockDefinitions]);
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -341,7 +342,7 @@ export function CMSBuilder({ onSave, initialPage, mode = "create", initialPageNa
 
         {/* createPortal로 document.body에 직접 마운트 — overflow/flex 컨테이너의 fixed 포지셔닝 제약을 우회 */}
         {codeOpen && createPortal(
-          <CodeModal code={generateJSX(page, layouts, codegenConfig, overlayTemplates)} onClose={() => setCodeOpen(false)} />,
+          <CodeModal code={generateJSX(page, layouts, codegenConfig, overlayTemplates, blockDefinitions)} onClose={() => setCodeOpen(false)} />,
           document.body,
         )}
 

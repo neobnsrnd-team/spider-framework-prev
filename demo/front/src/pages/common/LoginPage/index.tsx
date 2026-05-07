@@ -66,7 +66,7 @@ export function LoginPage({
     <BlankPageLayout>
       <AppBrandHeader brandInitial="H" brandName="하나카드" />
 
-      <Stack gap="md" className="px-standard pt-xl pb-md">
+      <Stack gap="md" className="pt-xl pb-md">
         <Stack gap="xs" className="pb-md">
           <Typography
             as="h1"
@@ -156,7 +156,7 @@ export function LoginPage({
         </div>
       </Stack>
 
-      <Stack gap="xl" className="px-standard pb-2xl">
+      <Stack gap="xl" className="pb-2xl">
         <DividerWithLabel label="다른 로그인 방식" />
         <QuickMenuGrid cols={3} items={ALT_LOGIN_ITEMS} />
       </Stack>

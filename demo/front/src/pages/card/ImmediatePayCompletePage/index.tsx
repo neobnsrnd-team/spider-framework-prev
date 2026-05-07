@@ -48,7 +48,7 @@ export function ImmediatePayCompletePage({
         </Button>
       }
     >
-      <div className="flex flex-col gap-lg px-standard pt-md pb-xl">
+      <div className="flex flex-col gap-lg pt-md pb-xl">
         {/* ── 상태 아이콘 + 메시지 ─────────────────────────────────
          * 성공: 브랜드 색상 체크 아이콘 / 오류: 빨간 X 아이콘 */}
         <div className="flex flex-col items-center gap-md py-xl">

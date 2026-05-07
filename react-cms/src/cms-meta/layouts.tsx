@@ -15,6 +15,7 @@
  */
 import React from 'react';
 import type { LayoutTemplate } from "@cms-core";
+import { resolveIcon } from "@cms-core";
 import {
   ChevronLeft,
   User,
@@ -30,7 +31,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@lib/cn';
 import { Button, ButtonGroup, BottomNav } from '@cl';
-import { Icon } from '@/shared/icons';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HomePageLayout 헤더
@@ -56,7 +56,7 @@ function HomeHeader({ title, logo }: { title:string; logo?:string; }) {
         <div className="flex-1 flex flex-col justify-center">
           <div className="flex items-center gap-xs">
             {/* 로고 아이콘 — logo 전달 시만 노출 */}
-            {logo && <Icon name={logo as any} className="size-4" aria-hidden="true" />}
+            {logo && resolveIcon(logo, "size-4")}
             {/* 타이틀: 브랜드 컬러(teal) + 볼드 — Figma node 1:226 */}
             <h1 className="text-xl font-bold text-brand leading-none">{title}</h1>
           </div>
@@ -344,8 +344,8 @@ export const layouts: LayoutTemplate[] = [
   // ── Blank ───────────────────────────────────────────────
   {
     id: "blank",
-    label: "Blank Layout",
-    componentName: "BlankLayout",
+    label: "Blank Page Layout",
+    componentName: "BlankPageLayout",
     description: "빈 레이아웃",
     defaultProps: {},
   },

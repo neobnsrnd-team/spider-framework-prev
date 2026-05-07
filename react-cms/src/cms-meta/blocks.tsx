@@ -99,6 +99,14 @@ import {
   TransferForm,
 } from "@cl";
 
+// codegenProps 안에서 JSX expression 마커를 만들기 위한 헬퍼
+function _kebabToPascal(name: string): string {
+  return name.split("-").map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join("");
+}
+function _iconJsx(name: string, cls: string): { __jsx: string } {
+  return { __jsx: `<${_kebabToPascal(name)} className="${cls}" />` };
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // Core
 // ═════════════════════════════════════════════════════════════════════════════
@@ -224,6 +232,10 @@ const BrandBannerDefinition: BlockDefinition = {
   },
   // BrandBanner 아이콘은 브랜드 컬러 배경 위에 올라가므로 text-white가 필요하다.
   component: (p) => <BrandBanner {...(p as any)} icon={resolveIcon((p as any).icon, "size-5 text-white")} />,
+  codegenProps: (p) => ({
+    ...p,
+    icon: p.icon ? _iconJsx(p.icon as string, "size-5 text-white") : undefined,
+  }),
 };
 
 const QuickMenuGridDefinition: BlockDefinition = {
@@ -266,6 +278,15 @@ const QuickMenuGridDefinition: BlockDefinition = {
       onClick: () => {},
     }));
     return <QuickMenuGrid {...(p as any)} cols={Number((p as any).cols) as 2 | 3 | 4} items={items} />;
+  },
+  codegenProps: (p) => {
+    type RawItem = { id: string; icon?: string; label: string; badge?: number; iconShape?: string };
+    const items = ((p.items ?? []) as RawItem[]).map((item) => ({
+      ...item,
+      icon: item.icon ? _iconJsx(item.icon, "size-5") : undefined,
+      onClick: { __jsx: "() => {}" },
+    }));
+    return { ...p, cols: Number(p.cols), items };
   },
 };
 
@@ -363,6 +384,17 @@ const AccountSummaryCardDefinition: BlockDefinition = {
     const moreButton = (p as any).moreButton === "undefined" ? undefined : (p as any).moreButton;
     return <AccountSummaryCard {...(p as any)} moreButton={moreButton} actions={actions} />;
   },
+  codegenProps: (p) => {
+    type ActionBtn = { label: string; variant: string };
+    const rawBtns = (p.actionButtons ?? []) as ActionBtn[];
+    const actionsJsx = rawBtns.length > 0
+      ? `<>${rawBtns.map((btn) => `<Button size="sm" variant="${btn.variant}">${btn.label}</Button>`).join("")}</>`
+      : undefined;
+    const moreButton = p.moreButton === "undefined" ? undefined : p.moreButton;
+    const { actionButtons: _ab, ...rest } = p;
+    return { ...rest, moreButton, ...(actionsJsx ? { actions: { __jsx: actionsJsx } } : {}) };
+  },
+  codegenImports: ["Button"],
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -661,6 +693,16 @@ const CardSummaryCardDefinition: BlockDefinition = {
       : undefined;
     return <CardSummaryCard {...(p as any)} actions={actions} />;
   },
+  codegenProps: (p) => {
+    type ActionBtn = { label: string; variant: string };
+    const rawBtns = (p.actionButtons ?? []) as ActionBtn[];
+    const actionsJsx = rawBtns.length > 0
+      ? `<>${rawBtns.map((btn) => `<Button size="sm" variant="${btn.variant}">${btn.label}</Button>`).join("")}</>`
+      : undefined;
+    const { actionButtons: _ab, ...rest } = p;
+    return { ...rest, ...(actionsJsx ? { actions: { __jsx: actionsJsx } } : {}) };
+  },
+  codegenImports: ["Button"],
 };
 
 /** 브랜드별 플레이스홀더 그라데이션 — 실제 카드 이미지가 없을 때 CMS 미리보기용 */
@@ -697,6 +739,17 @@ const CardVisualDefinition: BlockDefinition = {
       </div>
     );
     return <CardVisual {...(p as any)} cardImage={cardImage} />;
+  },
+  // codegenProps: component와 동일한 그라데이션 cardImage를 인라인 JSX 문자열로 재현한다.
+  codegenProps: (p) => {
+    const brand = (p.brand as string) ?? "VISA";
+    const cardName = (p.cardName as string) ?? "";
+    const [from, to] = CARD_BRAND_GRADIENTS[brand] ?? ['#555', '#888'];
+    const cardImageJsx =
+      `<div style={{ background: "linear-gradient(135deg, ${from}, ${to})", width: "100%", height: "100%" }} className="flex items-end p-md">` +
+      `<span className="text-white font-bold text-lg">${cardName}</span>` +
+      `</div>`;
+    return { ...p, cardImage: { __jsx: cardImageJsx } };
   },
 };
 
@@ -739,6 +792,16 @@ const LoanMenuBarDefinition: BlockDefinition = {
       onClick: () => {},
     }));
     return <LoanMenuBar items={items} />;
+  },
+  codegenProps: (p) => {
+    type RawItem = { label: string; icon: string };
+    const items = ((p.items ?? []) as RawItem[]).map((item, i) => ({
+      id: String(i),
+      label: item.label,
+      icon: item.icon ? _iconJsx(item.icon, "size-3.5") : undefined,
+      onClick: { __jsx: "() => {}" },
+    }));
+    return { items };
   },
 };
 
@@ -815,6 +878,7 @@ const StatementTotalCardDefinition: BlockDefinition = {
   // badge 빈 문자열("")은 "배지 없음" 의도이나 컴포넌트 타입이 '예정' | undefined라
   // 빈 문자열을 그대로 전달하면 타입 불일치 — undefined로 정규화한다.
   component: (p) => <StatementTotalCard {...(p as any)} badge={(p as any).badge === "없음" ? undefined : (p as any).badge} />,
+  codegenProps: (p) => ({ ...p, badge: p.badge === "없음" ? undefined : p.badge }),
 };
 
 const SummaryCardDefinition: BlockDefinition = {
@@ -865,6 +929,16 @@ const SummaryCardDefinition: BlockDefinition = {
         actions={actions.length > 0 ? actions : undefined}
       />
     );
+  },
+  codegenProps: (p) => {
+    type RawAction = { label: string; active?: boolean };
+    const rawActions = (p.actionButtons ?? []) as RawAction[];
+    const actions = rawActions.length > 0
+      ? rawActions.map((a) => ({ label: a.label, active: a.active ?? false, onClick: { __jsx: "() => {}" } }))
+      : undefined;
+    const iconName = (p.icon as string) || "building-2";
+    const { actionButtons: _ab, ...rest } = p;
+    return { ...rest, icon: _iconJsx(iconName, "size-9"), ...(actions ? { actions } : {}) };
   },
 };
 
@@ -918,6 +992,7 @@ const InsuranceSummaryCardDefinition: BlockDefinition = {
   // badgeText 빈 문자열("")은 "override 없음" 의도 — 컴포넌트 타입이 string | undefined라
   // 빈 문자열을 그대로 전달하면 status 기본 배지 텍스트가 무시되므로 undefined로 정규화한다.
   component: (p) => <InsuranceSummaryCard {...(p as any)} badgeText={(p as any).badgeText || undefined} />,
+  codegenProps: (p) => ({ ...p, badgeText: (p.badgeText as string) || undefined }),
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -965,6 +1040,10 @@ const AlertBannerDefinition: BlockDefinition = {
       icon={(p as any).icon ? resolveIcon((p as any).icon, "size-4") : undefined}
     />
   ),
+  codegenProps: (p) => {
+    const { icon, ...rest } = p;
+    return { ...rest, ...(icon ? { icon: _iconJsx(icon as string, "size-4") } : {}) };
+  },
 };
 
 const BalanceToggleDefinition: BlockDefinition = {
@@ -1021,6 +1100,7 @@ const BankSelectGridDefinition: BlockDefinition = {
       columns={Number((p as any).columns) as 3 | 4}
     />
   ),
+  codegenProps: (p) => ({ ...p, columns: Number(p.columns) }),
 };
 
 const CardDefinition: BlockDefinition = {
@@ -1083,6 +1163,26 @@ const CardDefinition: BlockDefinition = {
       </Card>
     );
   },
+  // Card는 children 기반 API이므로 header/rows를 CardHeader·CardRow JSX로 변환한다.
+  codegenProps: (p) => {
+    type HeaderField = { title: string; subtitle: string; icon: string };
+    type RowField    = { label: string; value: string };
+    const header = (p as any).header as HeaderField | undefined;
+    const rows   = ((p as any).rows ?? []) as RowField[];
+    const parts: string[] = [];
+    if (header?.title) {
+      const iconStr = header.icon ? ` icon={<${_kebabToPascal(header.icon)} className="size-5" />}` : "";
+      const subStr  = header.subtitle ? ` subtitle="${header.subtitle}"` : "";
+      parts.push(`<CardHeader title="${header.title}"${subStr}${iconStr} />`);
+    }
+    rows.forEach((row) => parts.push(`<CardRow label="${row.label}" value="${row.value}" />`));
+    return {
+      interactive: (p as any).interactive,
+      noPadding:   (p as any).noPadding,
+      ...(parts.length ? { children: { __jsx: parts.join("") } } : {}),
+    };
+  },
+  codegenImports: ["CardHeader", "CardRow"],
 };
 
 const CheckboxDefinition: BlockDefinition = {
@@ -1125,6 +1225,13 @@ const CollapsibleSectionDefinition: BlockDefinition = {
       <p className="text-sm text-text-secondary px-1">{(p as any).content}</p>
     </CollapsibleSection>
   ),
+  // header는 ReactNode이므로 span으로 감싸고, content는 children(<p>)으로 변환한다.
+  codegenProps: (p) => ({
+    defaultExpanded: (p as any).defaultExpanded,
+    headerAlign:     (p as any).headerAlign,
+    header:   { __jsx: `<span className="font-semibold">${(p as any).header ?? ""}</span>` },
+    children: { __jsx: `<p className="text-sm text-text-secondary px-1">${(p as any).content ?? ""}</p>` },
+  }),
 };
 
 // PortalHostContext에서 portal container를 읽어 DatePicker에 전달.
@@ -1222,6 +1329,15 @@ const DropdownMenuDefinition: BlockDefinition = {
       />
     );
   },
+  codegenProps: (p) => {
+    const items = ((p.items ?? []) as any[]).map((item) => ({
+      ...item,
+      icon: item.icon ? _iconJsx(item.icon as string, "size-4") : undefined,
+      onClick: { __jsx: "() => {}" },
+    }));
+    const triggerIconName = (p.triggerIcon as string) ?? "more-vertical";
+    return { ...p, items, triggerIcon: _iconJsx(triggerIconName, "size-5") };
+  },
 };
 
 const EmptyStateDefinition: BlockDefinition = {
@@ -1250,6 +1366,14 @@ const EmptyStateDefinition: BlockDefinition = {
       onAction={() => {}}
     />
   ),
+  codegenProps: (p) => {
+    const { icon, actionLabel, ...rest } = p;
+    return {
+      ...rest,
+      ...(icon ? { illustration: _iconJsx(icon as string, "size-14 text-text-muted") } : {}),
+      ...(actionLabel ? { actionLabel, onAction: { __jsx: "() => {}" } } : {}),
+    };
+  },
 };
 
 const ErrorStateDefinition: BlockDefinition = {
@@ -1360,6 +1484,11 @@ const SectionHeaderDefinition: BlockDefinition = {
     // 0은 유효한 값이므로 그대로 전달한다.
     const badge = badgeRaw === '' || badgeRaw == null ? undefined : Number(badgeRaw);
     return <SectionHeader {...(p as any)} badge={badge} />;
+  },
+  codegenProps: (p) => {
+    const badgeRaw = p.badge;
+    const badge = badgeRaw === '' || badgeRaw == null ? undefined : Number(badgeRaw);
+    return { ...p, badge };
   },
 };
 
@@ -1582,6 +1711,21 @@ const AmountInputDefinition: BlockDefinition = {
       />
     );
   },
+  codegenProps: (p) => {
+    const raw = ((p as any).quickAmounts ?? [10000, 50000, 100000]) as Array<number | { amount: number }>;
+    const maxAmountRaw = (p as any).maxAmount;
+    return {
+      ...p,
+      // itemFields 구조 → number[] 로 평탄화
+      quickAmounts: raw.map((item) =>
+        typeof item === 'object' && item !== null ? Number(item.amount) : Number(item)
+      ),
+      // 빈 문자열 기본값 → undefined (number | undefined 타입 일치)
+      maxAmount: maxAmountRaw === '' || maxAmountRaw == null ? undefined : Number(maxAmountRaw),
+      // value는 propSchema에 없어 자동 주입되지 않으므로 null 명시 (controlled 필수 prop)
+      value: { __jsx: "null" },
+    };
+  },
 };
 
 // NumberKeypad의 digits는 외부에서 셔플된 숫자 배열을 필수로 받는 구조.
@@ -1608,6 +1752,8 @@ const NumberKeypadDefinition: BlockDefinition = {
       onShuffle={() => {}}
     />
   ),
+  // digits는 JSON에 저장되지 않으므로 codegen 시 기본 배열을 직접 주입한다.
+  codegenProps: () => ({ digits: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] }),
 };
 
 const OtpInputDefinition: BlockDefinition = {
@@ -1627,6 +1773,7 @@ const OtpInputDefinition: BlockDefinition = {
   },
   // length select는 문자열을 반환하므로 OtpLength(4 | 6) 숫자로 변환해 전달한다.
   component: (p) => <OtpInput {...(p as any)} length={Number((p as any).length) as 4 | 6} />,
+  codegenProps: (p) => ({ ...p, length: Number(p.length) }),
 };
 
 const PinDotIndicatorDefinition: BlockDefinition = {
@@ -1712,6 +1859,16 @@ const TransactionSearchFilterDefinition: BlockDefinition = {
       {...(p as any)}
     />
   ),
+  // value는 JSON에 저장되지 않으므로 codegen 시 오늘 기준 30일 범위 기본값을 주입한다.
+  codegenProps: (p) => ({
+    defaultExpanded: p.defaultExpanded,
+    value: {
+      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      endDate:   new Date().toISOString().slice(0, 10),
+      sortOrder: "recent",
+      transactionType: "all",
+    },
+  }),
 };
 
 const TransferFormDefinition: BlockDefinition = {

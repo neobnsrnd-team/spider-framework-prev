@@ -82,6 +82,15 @@ export interface BlockMeta {
 export interface BlockDefinition {
   meta: BlockMeta;
   component: React.ComponentType<Record<string, unknown>>;
+  /**
+   * codegen에서 실제 컴포넌트 API 형태로 변환.
+   * component 함수에 props 변환 로직이 있으면 반드시 함께 정의해야 합니다.
+   * { __jsx: "..." } 마커를 반환하면 해당 값이 {} 안에 raw JSX expression으로 출력됩니다.
+   * 미정의 시 propSchema의 icon-picker 필드는 자동으로 JSX로 변환됩니다.
+   */
+  codegenProps?: (props: Record<string, unknown>) => Record<string, unknown>;
+  /** codegenProps가 생성하는 JSX 안에서 참조하는 추가 컴포넌트명. generateJSX가 import에 포함. */
+  codegenImports?: string[];
 }
 
 export type BlockPadding = {

@@ -8,7 +8,7 @@
  * @param value 현재 선택된 아이콘 이름 (kebab-case)
  * @param onSelect 아이콘 선택 콜백
  */
-import { memo, useDeferredValue, useMemo, useState } from "react";
+import { memo, useDeferredValue, useMemo, useRef, useState } from "react";
 import * as LucideIcons from "lucide-react";
 
 const ALL_ICON_NAMES = (Object.entries(LucideIcons) as [string, unknown][])
@@ -55,6 +55,10 @@ const IconGridItem = memo(function IconGridItem({
   );
 });
 
+// 검색어 없을 때 초기 렌더링 비용을 줄이기 위한 표시 상한.
+// ~1400개를 한 번에 렌더하면 DOM 생성이 느리므로 처음엔 6열×20행만 표시한다.
+const INITIAL_LIMIT = 120;
+
 // ─── IconPicker ───────────────────────────────────────────────
 export interface IconPickerProps {
   value?: string;
@@ -63,7 +67,15 @@ export interface IconPickerProps {
 
 export default memo(function IconPicker({ value, onSelect }: IconPickerProps) {
   const [query, setQuery] = useState("");
+  const [showAll, setShowAll] = useState(false);
   const deferred = useDeferredValue(query);
+
+  // 검색어 변경 시 showAll을 초기화해 재검색 결과를 처음부터 보여준다.
+  const prevDeferred = useRef(deferred);
+  if (prevDeferred.current !== deferred) {
+    prevDeferred.current = deferred;
+    if (showAll) setShowAll(false);
+  }
 
   const filtered = useMemo(
     () =>
@@ -72,6 +84,13 @@ export default memo(function IconPicker({ value, onSelect }: IconPickerProps) {
         : ALL_ICON_NAMES,
     [deferred],
   );
+
+  // 검색어가 있으면 결과 전체 표시, 없으면 INITIAL_LIMIT까지만 표시
+  const display = useMemo(
+    () => (!showAll && !deferred.trim() ? filtered.slice(0, INITIAL_LIMIT) : filtered),
+    [filtered, deferred, showAll],
+  );
+  const remaining = !showAll && !deferred.trim() ? ALL_ICON_NAMES.length - INITIAL_LIMIT : 0;
 
   return (
     <div className="rounded-xl border border-border overflow-hidden bg-surface">
@@ -88,11 +107,11 @@ export default memo(function IconPicker({ value, onSelect }: IconPickerProps) {
 
       {/* 아이콘 그리드 */}
       <div className="max-h-44 overflow-y-auto">
-        {filtered.length === 0 ? (
+        {display.length === 0 ? (
           <p className="py-6 text-center text-xs text-text-muted">일치하는 아이콘이 없습니다.</p>
         ) : (
           <div className="grid grid-cols-6 gap-0.5 p-1.5">
-            {filtered.map((name) => (
+            {display.map((name) => (
               <IconGridItem
                 key={name}
                 name={name}
@@ -101,6 +120,16 @@ export default memo(function IconPicker({ value, onSelect }: IconPickerProps) {
               />
             ))}
           </div>
+        )}
+        {/* 초기 표시 상한 초과분 — 클릭 시 전체 렌더 */}
+        {remaining > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="w-full py-1.5 text-xs text-text-muted hover:text-text-secondary hover:bg-surface-hover transition-colors border-t border-divider"
+          >
+            더 보기 (+{remaining.toLocaleString()}개)
+          </button>
         )}
       </div>
 

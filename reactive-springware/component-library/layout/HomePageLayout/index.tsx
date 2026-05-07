@@ -112,7 +112,7 @@ export function HomePageLayout({
         className={cn(
           'flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden',
           /* 좌우 기본 여백 + 상하 여백 — 콘텐츠가 화면 끝에 붙지 않도록 */
-          'py-md',
+          'px-standard py-md',
         )}
         style={{ scrollbarWidth: 'none' }}
       >

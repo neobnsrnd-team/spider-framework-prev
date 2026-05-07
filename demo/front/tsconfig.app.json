@@ -25,8 +25,9 @@
     "noUncheckedSideEffectImports": true,
     "paths": {
       "@/*": ["./src/*"],
+      "@cl": ["../../reactive-springware/component-library/index.ts"],
       "@cl/*": ["../../reactive-springware/component-library/*"],
-"@lib/*": ["../../reactive-springware/lib/*"]
+      "@lib/*": ["../../reactive-springware/lib/*"]
     }
   },
   "include": ["src"],

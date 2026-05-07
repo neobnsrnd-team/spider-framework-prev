@@ -129,7 +129,7 @@ export function ImmediatePayRequestPage({
         />
       }
     >
-      <div className="flex flex-col gap-lg px-standard pt-md pb-xl">
+      <div className="flex flex-col gap-lg pt-md pb-xl">
         {/* ── STEP 2 레이블 ─────────────────────────────────────── */}
         <div className="flex flex-col gap-xs">
           <Typography variant="caption" color="brand">

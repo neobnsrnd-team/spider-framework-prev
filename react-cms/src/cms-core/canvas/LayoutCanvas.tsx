@@ -102,8 +102,9 @@ export function LayoutCanvas({ layoutType, layoutProps, children }: LayoutCanvas
           </div>
         )}
         {/* 헤더·푸터 유무에 따라 bg-white 모서리 라운딩 조건부 적용 */}
+        {/* px-standard py-md: 실제 레이아웃 컴포넌트의 콘텐츠 영역 패딩과 동일하게 맞춰 WYSIWYG 유지 */}
         <div
-          className={`flex-1 bg-white${!slots.header ? " rounded-t-xl" : ""}${!slots.footer ? " rounded-b-xl" : ""}`}
+          className={`flex-1 bg-white px-4 py-3${!slots.header ? " rounded-t-xl" : ""}${!slots.footer ? " rounded-b-xl" : ""}`}
         >
           {children}
         </div>

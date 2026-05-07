@@ -51,7 +51,7 @@ export function HanaCardMenuPage({
     <div data-brand="hana" data-domain="card">
       <PageLayout title="전체메뉴" onBack={onBack}>
         {/* ── 사용자 프로필 ─────────────────────────────── */}
-        <div className="px-standard pt-standard pb-md">
+        <div className="pt-standard pb-md">
           <UserProfile
             name={userName ?? ""}
             lastLogin={lastLogin}
