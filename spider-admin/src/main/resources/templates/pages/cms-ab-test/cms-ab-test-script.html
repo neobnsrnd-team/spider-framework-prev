@@ -257,7 +257,7 @@
                     <option value="">페이지 선택</option>
                     ${options}
                 </select>
-                <input type="number" min="1" max="999" step="1" class="form-control form-control-sm ab-weight-input" value="${weight}">
+                <input type="number" min="0" max="10" step="1" class="form-control form-control-sm ab-weight-input" value="${weight}">
                 <button type="button" class="btn btn-outline-danger btn-sm" onclick="$(this).closest('.ab-page-edit-row').remove()">삭제</button>
             </div>`);
         },
