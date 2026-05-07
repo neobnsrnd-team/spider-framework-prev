@@ -15,7 +15,7 @@
  */
 import React from 'react';
 import type { LayoutTemplate } from "@cms-core";
-import { resolveIcon } from "@cms-core";
+import { resolveIcon, kebabToPascal } from "@cms-core";
 import {
   ChevronLeft,
   User,
@@ -31,6 +31,22 @@ import {
 } from 'lucide-react';
 import { cn } from '@lib/cn';
 import { Button, ButtonGroup, BottomNav } from '@cl';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HomePageLayout 공용 상수
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * HomePageLayout 하단 탭 정의 — CMS 미리보기(HomeFooter)와 코드 생성 래퍼(HomePageLayout)에서
+ * 동일한 탭 구성을 사용하도록 단일 source로 관리한다.
+ */
+const HOME_BOTTOM_NAV_ITEMS = [
+  { id: 'asset',   icon: <Wallet       className="size-5" />, label: '자산', onClick: () => {} },
+  { id: 'product', icon: <ShoppingBag  className="size-5" />, label: '상품', onClick: () => {} },
+  { id: 'home',    icon: <Home         className="size-6" />, label: '홈',   onClick: () => {} },
+  { id: 'card',    icon: <CreditCard   className="size-5" />, label: '카드', onClick: () => {} },
+  { id: 'chat',    icon: <MessageSquare className="size-5" />, label: '챗봇', onClick: () => {} },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HomePageLayout 헤더
@@ -55,8 +71,8 @@ function HomeHeader({ title, logo }: { title:string; logo?:string; }) {
       <div className="flex items-center h-14 px-standard gap-sm">
         <div className="flex-1 flex flex-col justify-center">
           <div className="flex items-center gap-xs">
-            {/* 로고 아이콘 — logo 전달 시만 노출 */}
-            {logo && resolveIcon(logo, "size-4")}
+            {/* 로고 아이콘 — logo 전달 시만 노출. 타이틀과 동일한 브랜드 컬러 적용 */}
+            {logo && resolveIcon(logo, "size-4 text-brand")}
             {/* 타이틀: 브랜드 컬러(teal) + 볼드 — Figma node 1:226 */}
             <h1 className="text-xl font-bold text-brand leading-none">{title}</h1>
           </div>
@@ -99,16 +115,8 @@ function HomeHeader({ title, logo }: { title:string; logo?:string; }) {
  * @param activeId 활성화 탭 지정 (기본 홈 탭 활성화)
  */
 function HomeFooter({ activeId }: { activeId: string; }) {
-  const tabs = [
-    { id: 'asset',   icon: <Wallet className="size-5" />,        label: '자산',   onClick: () => {}  },
-    { id: 'product', icon: <ShoppingBag className="size-5" />,   label: '상품',   onClick: () => {}  },
-    { id: 'home',    icon: <Home className="size-6" />,          label: '홈',     onClick: () => {}    },
-    { id: 'card',    icon: <CreditCard className="size-5" />,    label: '카드',   onClick: () => {}  },
-    { id: 'chat',    icon: <MessageSquare className="size-5" />, label: '챗봇',   onClick: () => {}  },
-  ];
-
   return (
-    <BottomNav items={tabs} activeId={activeId} />
+    <BottomNav items={HOME_BOTTOM_NAV_ITEMS} activeId={activeId} />
   );
 }
 
@@ -201,18 +209,11 @@ export function HomePageLayout({
   activeId?: string;
   children?: React.ReactNode;
 }) {
-  const tabs = [
-    { id: "asset",   icon: <Wallet className="size-5" />,        label: "자산",  onClick: () => {} },
-    { id: "product", icon: <ShoppingBag className="size-5" />,   label: "상품",  onClick: () => {} },
-    { id: "home",    icon: <Home className="size-6" />,           label: "홈",    onClick: () => {} },
-    { id: "card",    icon: <CreditCard className="size-5" />,     label: "카드",  onClick: () => {} },
-    { id: "chat",    icon: <MessageSquare className="size-5" />,  label: "챗봇",  onClick: () => {} },
-  ];
   return (
     <div className="flex flex-col min-h-screen">
       <HomeHeader title={title} logo={logo} />
       <main className="flex-1">{children}</main>
-      {withBottomNav && <BottomNav items={tabs} activeId={activeId} />}
+      {withBottomNav && <BottomNav items={HOME_BOTTOM_NAV_ITEMS} activeId={activeId} />}
     </div>
   );
 }
@@ -298,6 +299,15 @@ export const layouts: LayoutTemplate[] = [
         ? <HomeFooter activeId={(p.activeId as string | undefined) ?? "home"} />
         : undefined,
     }),
+    // CMS 캔버스(HomeHeader)와 동일하게 로고 아이콘에 brand 컬러를 적용해
+    // 코드 생성 결과에서도 타이틀과 같은 톤이 유지되도록 한다.
+    codegenProps: (p) => {
+      const logoName = (p.logo as string | undefined) ?? "";
+      const { logo: _logo, ...rest } = p;
+      return logoName
+        ? { ...rest, logo: { __jsx: `<${kebabToPascal(logoName)} className="size-4 text-brand" />` } }
+        : rest;
+    },
   },
   // ── Page ─────────────────────────────────────────────────────
   {

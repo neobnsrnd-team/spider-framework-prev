@@ -5,7 +5,7 @@
  * Router는 이 컴포넌트 밖(main.tsx)에서 소유합니다.
  * RouterProvider를 children으로 전달하면 CMS 컨텍스트 안에서 라우팅이 동작합니다.
  */
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { BlockDefinition, LayoutTemplate, OverlayTemplate, CMSCodegenConfig } from "./types";
 import {
@@ -20,6 +20,23 @@ import {
   PortalHostContext,
 } from "./context";
 import { useCMSContextValues } from "./useCMSContextValues";
+
+// ─── Portal Host (모듈 싱글턴) ────────────────────────────────────────────────
+// CMSApp 인스턴스 간/StrictMode 이중 mount 사이에 portal target이 detached되지 않도록
+// 모듈 수명 동안 단일 host를 유지한다. cleanup으로 제거하지 않아 dev 더블 mount 사이의
+// 짧은 detach 윈도우가 발생하지 않는다 (빈 div 1개라 정리 비용은 무시 가능).
+
+let portalHost: HTMLDivElement | null = null;
+
+function ensurePortalHost(): HTMLDivElement {
+  if (!portalHost) {
+    portalHost = document.createElement("div");
+    portalHost.id = "cms-portal-host";
+    portalHost.setAttribute("data-cms-user-scope", "");
+  }
+  if (!portalHost.isConnected) document.body.appendChild(portalHost);
+  return portalHost;
+}
 
 export interface CMSAppProps {
   /** 팔레트에 표시할 블록 목록 — 필수 */
@@ -67,33 +84,22 @@ export function CMSApp({ blocks, overlays = [], layouts = [], stylesheetContent,
     [stylesheetContent, stylesheet, stylesheetScope],
   );
 
-  // portal host: 렌더 중 동기 생성해 첫 렌더부터 context가 non-null이 되도록 함
-  const portalHostRef = useRef<HTMLElement | null>(null);
-  if (!portalHostRef.current) {
-    portalHostRef.current = document.createElement("div");
-    portalHostRef.current.id = "cms-portal-host";
-  }
-
-  // mount 시 body에 추가, unmount 시 제거
-  useEffect(() => {
-    const host = portalHostRef.current!;
-    document.body.appendChild(host);
-    return () => { document.body.removeChild(host); };
-  }, []);
+  // portal host: 첫 렌더부터 context가 non-null이 되도록 모듈 싱글턴을 동기 조회.
+  // 모듈 수명 동안 유지되므로 unmount cleanup이 필요 없다 (detach 윈도우 제거).
+  const portalHostElement = useMemo(() => ensurePortalHost(), []);
 
   // stylesheetScope 변경 시 portal host의 data-* attributes 동기화
   useEffect(() => {
-    const host = portalHostRef.current!;
-    host.setAttribute("data-cms-user-scope", "");
+    portalHostElement.setAttribute("data-cms-user-scope", "");
     // 이전 scope 속성 제거 후 재적용
-    Array.from(host.attributes)
+    Array.from(portalHostElement.attributes)
       .filter((a) => a.name.startsWith("data-") && a.name !== "data-cms-user-scope")
-      .forEach((a) => host.removeAttribute(a.name));
-    Object.entries(stylesheetScope ?? {}).forEach(([k, v]) => host.setAttribute(k, v));
-  }, [stylesheetScope]);
+      .forEach((a) => portalHostElement.removeAttribute(a.name));
+    Object.entries(stylesheetScope ?? {}).forEach(([k, v]) => portalHostElement.setAttribute(k, v));
+  }, [stylesheetScope, portalHostElement]);
 
   return (
-    <PortalHostContext.Provider value={portalHostRef.current}>
+    <PortalHostContext.Provider value={portalHostElement}>
       <StylesheetContext.Provider value={stylesheetConfig}>
         <BlockDefinitionsContext.Provider value={blocks}>
           <BlockMetaContext.Provider value={blockMeta}>

@@ -2,14 +2,13 @@
  * @file LayoutEditor.tsx
  * @description 레이아웃 편집기.
  * LayoutTemplatesContext에서 레이아웃 목록을 읽어 동적으로 타입 선택 + props 폼을 생성합니다.
- * OverlayPropsEditor와 동일한 propSchema 기반 필드 렌더링 패턴을 사용합니다.
+ * PropsEditor와 동일한 propSchema 기반 필드 렌더링 패턴(공용 FieldControl·ArrayField)을 사용합니다.
  */
-import { useContext, useState } from "react";
-import { ChevronDown } from "lucide-react";
-import type { LeafPropField } from "../types";
+import { useContext } from "react";
+import type { LeafPropField, PropField } from "../types";
 import { LayoutTemplatesContext } from "../context";
-import IconPicker from "./IconPicker";
-import { resolveIcon } from "../utils/icon";
+import { FieldControl } from "./FieldControl";
+import { ArrayField } from "./ArrayField";
 
 // ─── 블록 간격 옵션 ──────────────────────────────────────────
 const GAP_OPTIONS = [
@@ -47,14 +46,15 @@ export default function LayoutEditor({
   const currentTemplate = layouts.find((t) => t.id === layoutType);
 
   // propSchema 우선, 없으면 defaultProps에서 타입 자동 추론
-  const entries: [string, LeafPropField][] = currentTemplate?.propSchema
+  // group/event는 레이아웃 컨텍스트에서 사용하지 않으므로 제외, array는 ArrayField로 렌더
+  const entries: [string, PropField][] = currentTemplate?.propSchema
     ? (Object.entries(currentTemplate.propSchema).filter(
-        ([, f]) => f.type !== "group" && f.type !== "array" && f.type !== "event",
-      ) as [string, LeafPropField][])
+        ([, f]) => f.type !== "group" && f.type !== "event",
+      ) as [string, PropField][])
     : Object.entries(currentTemplate?.defaultProps ?? {})
-        // 배열·객체는 추론 불가 — propSchema 없이는 편집 필드 생성 생략
+        // 객체·배열은 추론 불가 — propSchema 없이는 편집 필드 생성 생략
         .filter(([, v]) => typeof v === "string" || typeof v === "boolean" || typeof v === "number")
-        .map(([k, v]): [string, LeafPropField] => [
+        .map(([k, v]): [string, PropField] => [
           k,
           {
             type:
@@ -63,7 +63,7 @@ export default function LayoutEditor({
               : "string",
             label: k,
             default: v as string | boolean | number,
-          },
+          } as LeafPropField,
         ]);
 
   return (
@@ -113,15 +113,41 @@ export default function LayoutEditor({
       {currentTemplate && entries.length > 0 && (
         <section className="flex flex-col gap-3">
           <SectionLabel>{currentTemplate.label} 설정</SectionLabel>
-          {entries.map(([key, field]) => (
-            <Field key={key} label={field.label ?? key}>
-              <LayoutFieldControl
-                field={field}
-                value={layoutProps[key] ?? field.default}
+          {entries.map(([key, field]) => {
+            // array: ArrayField로 렌더 (PropsEditor와 동일 패턴)
+            if (field.type === "array") {
+              const arrVal = (layoutProps[key] as Record<string, unknown>[]) ?? field.default ?? [];
+              return (
+                <ArrayField
+                  key={key}
+                  fieldKey={key}
+                  field={field}
+                  value={arrVal}
+                  onChange={(next) => onLayoutPropsChange({ ...layoutProps, [key]: next })}
+                  renderLeafField={(subKey, subField, val, handleChange) => (
+                    <FieldControl
+                      fieldKey={subKey}
+                      field={subField}
+                      value={val}
+                      onChange={handleChange}
+                    />
+                  )}
+                />
+              );
+            }
+
+            // leaf: FieldControl로 렌더
+            const leafField = field as LeafPropField;
+            return (
+              <FieldControl
+                key={key}
+                fieldKey={key}
+                field={leafField}
+                value={layoutProps[key] ?? leafField.default}
                 onChange={(val) => onLayoutPropsChange({ ...layoutProps, [key]: val })}
               />
-            </Field>
-          ))}
+            );
+          })}
         </section>
       )}
 
@@ -167,100 +193,6 @@ function LayoutOption({
       </div>
     </button>
   );
-}
-
-// ─── 필드 컨트롤 ─────────────────────────────────────────────
-
-/**
- * @description 레이아웃 단일 필드 컨트롤 (string / number / boolean / select / icon-picker).
- */
-function LayoutFieldControl({
-  field,
-  value,
-  onChange,
-}: {
-  field: LeafPropField;
-  value: unknown;
-  onChange: (val: unknown) => void;
-}) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  if (field.type === "icon-picker") {
-    return (
-      <div className="flex flex-col gap-1.5">
-        <button
-          type="button"
-          onClick={() => setPickerOpen((o) => !o)}
-          className="flex items-center gap-2 h-8 px-3 rounded-lg border border-gray-200 bg-white text-xs text-gray-700 hover:border-gray-300 transition-colors w-full"
-        >
-          {value
-            ? resolveIcon(value as string, "w-4 h-4 text-primary shrink-0")
-            : <span className="w-4 h-4 rounded bg-gray-200 shrink-0" />}
-          <span className={`flex-1 text-left ${value ? "text-gray-700" : "text-gray-400"}`}>
-            {value ? (value as string) : "아이콘 선택..."}
-          </span>
-          <ChevronDown
-            className={`w-3 h-3 text-gray-400 shrink-0 transition-transform ${pickerOpen ? "rotate-180" : ""}`}
-          />
-        </button>
-        {pickerOpen && (
-          <IconPicker
-            value={value as string}
-            onSelect={(name) => {
-              onChange(name);
-              setPickerOpen(false);
-            }}
-          />
-        )}
-      </div>
-    );
-  }
-
-  if (field.type === "string") {
-    return (
-      <input
-        className={inputCls}
-        value={(value as string) ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    );
-  }
-  if (field.type === "number") {
-    return (
-      <input
-        type="number"
-        className={inputCls}
-        value={(value as number) ?? 0}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
-    );
-  }
-  if (field.type === "boolean") {
-    return (
-      <label className="flex items-center gap-2 cursor-pointer self-start">
-        <input
-          type="checkbox"
-          checked={!!value}
-          onChange={(e) => onChange(e.target.checked)}
-          className="w-4 h-4 rounded accent-primary"
-        />
-      </label>
-    );
-  }
-  if (field.type === "select") {
-    return (
-      <select
-        value={(value as string) ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-        className={inputCls}
-      >
-        {field.options?.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
-    );
-  }
-  return null;
 }
 
 // ─── 공통 서브 컴포넌트 ──────────────────────────────────────

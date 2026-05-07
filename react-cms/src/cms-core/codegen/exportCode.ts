@@ -6,6 +6,10 @@
  * blockDefinitions가 있으면 codegenProps / 스키마 기반 icon-picker 자동 변환을 적용합니다.
  */
 import type { Action, CMSPage, CMSOverlay, LayoutTemplate, OverlayTemplate, CMSCodegenConfig, BlockDefinition, ArrayPropField, PropField } from "../types";
+import { ALL_ICON_NAMES, kebabToPascal } from "../utils/icon";
+
+// lucide 아이콘 화이트리스트 — codegen 결과의 PascalCase 토큰이 실제 lucide 아이콘인지 검증
+const LUCIDE_ICON_SET = new Set<string>(ALL_ICON_NAMES);
 
 // cms-ui LayoutRenderer 기반 코드 생성에서만 사용하는 로컬 타입 (cms-core에서 제거됨)
 type LayoutProps = Record<string, unknown>;
@@ -64,25 +68,29 @@ function paddingToClassName(pd: { top: number; right: number; bottom: number; le
 
 // ─── props 직렬화 ─────────────────────────────────────────────────────────────
 
-/** props 없이 생성할 수 없는 컴포넌트의 필수 콜백 기본값 */
-const REQUIRED_CALLBACKS: Record<string, string> = {
-  TransactionFilter:            'onSearch={() => {}}',
-  PinInput:                     'onComplete={() => {}}',
-  LoginContainer:               'onSubmit={() => {}}',
-  AlertModal:                   'open={false} onClose={() => {}}',
-  ConfirmModal:                 'open={false} onClose={() => {}} onConfirm={() => {}}',
-  BottomSheet:                  'open={false} onClose={() => {}}',
-  TransactionFilterBottomSheet: 'open={false} onClose={() => {}}',
-  AccountSelectBottomSheet:     'open={false} onClose={() => {}}',
+/**
+ * props 없이 생성할 수 없는 컴포넌트의 필수 콜백 기본값.
+ * key별 expression 문자열로 보관해 interaction/eventNoop과 키 기준으로 dedupe 가능.
+ */
+const REQUIRED_CALLBACKS: Record<string, Record<string, string>> = {
+  TransactionFilter:            { onSearch: "() => {}" },
+  PinInput:                     { onComplete: "() => {}" },
+  LoginContainer:               { onSubmit: "() => {}" },
+  AlertModal:                   { open: "false", onClose: "() => {}" },
+  ConfirmModal:                 { open: "false", onClose: "() => {}", onConfirm: "() => {}" },
+  BottomSheet:                  { open: "false", onClose: "() => {}" },
+  TransactionFilterBottomSheet: { open: "false", onClose: "() => {}" },
+  AccountSelectBottomSheet:     { open: "false", onClose: "() => {}" },
 };
 
-/** JSX 어트리뷰트 문법: key="value" key={expr} */
+/** JSX 어트리뷰트 문법: key={"value"} key={expr} */
 function propsToStr(props: Record<string, unknown>): string {
   return Object.entries(props)
     .filter(([, v]) => v !== undefined && v !== null)
     .map(([k, v]) => {
       if (isJSXExpr(v)) return `${k}={${v.__jsx}}`;
-      if (typeof v === "string") return `${k}="${v}"`;
+      // 문자열은 항상 expression 형태로 출력해 따옴표·백슬래시·이스케이프 시퀀스를 안전하게 처리
+      if (typeof v === "string") return `${k}={${JSON.stringify(v)}}`;
       if (typeof v === "boolean") return v ? k : `${k}={false}`;
       return `${k}={${serializeValue(v)}}`;
     })
@@ -91,14 +99,10 @@ function propsToStr(props: Record<string, unknown>): string {
 
 // ─── icon-picker 자동 변환 ─────────────────────────────────────────────────────
 
-function kebabToPascal(name: string): string {
-  return name.split("-").map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join("");
-}
-
 /**
  * propSchema를 기반으로 icon-picker 필드를 JSXExpr로 자동 변환한다.
  * codegenProps가 정의된 블록에서는 사용하지 않는다.
- * 빈 문자열은 건너뛰어 prop 자체를 생략한다 (컴포넌트 자체 기본 아이콘이 사용됨).
+ * 빈 문자열은 undefined로 치환해 prop 자체를 생략한다 (컴포넌트 자체 기본 아이콘이 사용됨).
  */
 function autoConvertIconPickers(
   props: Record<string, unknown>,
@@ -106,20 +110,20 @@ function autoConvertIconPickers(
 ): Record<string, unknown> {
   const result = { ...props };
   for (const [key, field] of Object.entries(schema)) {
-    if (field.type === "icon-picker" && typeof result[key] === "string" && result[key]) {
-      result[key] = { __jsx: `<${kebabToPascal(result[key] as string)} className="size-5" />` };
+    if (field.type === "icon-picker" && typeof result[key] === "string") {
+      result[key] = result[key]
+        ? { __jsx: `<${kebabToPascal(result[key] as string)} className="size-5" />` }
+        : undefined;
     }
     if (field.type === "array" && Array.isArray(result[key])) {
       const arrayField = field as ArrayPropField;
       result[key] = (result[key] as Record<string, unknown>[]).map((item) => {
         const newItem = { ...item };
         for (const [subKey, subField] of Object.entries(arrayField.itemFields)) {
-          if (
-            subField.type === "icon-picker" &&
-            typeof newItem[subKey] === "string" &&
-            newItem[subKey]
-          ) {
-            newItem[subKey] = { __jsx: `<${kebabToPascal(newItem[subKey] as string)} className="size-5" />` };
+          if (subField.type === "icon-picker" && typeof newItem[subKey] === "string") {
+            newItem[subKey] = newItem[subKey]
+              ? { __jsx: `<${kebabToPascal(newItem[subKey] as string)} className="size-5" />` }
+              : undefined;
           }
         }
         return newItem;
@@ -137,8 +141,12 @@ function autoConvertIconPickers(
  */
 function collectLucideIcons(v: unknown, result: Set<string>): void {
   if (isJSXExpr(v)) {
-    // 문자열 전체에서 PascalCase JSX 요소를 모두 수집 (중첩된 icon={<X />} 포함)
-    for (const m of v.__jsx.matchAll(/<([A-Z][a-zA-Z0-9]*)/g)) result.add(m[1]);
+    // 문자열 전체에서 PascalCase JSX 요소를 모두 수집 (중첩된 icon={<X />} 포함).
+    // lucide-react 화이트리스트에 있는 이름만 수집해 컴포넌트 라이브러리 이름이
+    // lucide import에 잘못 포함되지 않도록 한다.
+    for (const m of v.__jsx.matchAll(/<([A-Z][a-zA-Z0-9]*)/g)) {
+      if (LUCIDE_ICON_SET.has(m[1])) result.add(m[1]);
+    }
     return;
   }
   if (Array.isArray(v)) { v.forEach((i) => collectLucideIcons(i, result)); return; }
@@ -151,9 +159,14 @@ function applyCodegenTransform(
   props: Record<string, unknown>,
   def: BlockDefinition | undefined,
 ): Record<string, unknown> {
-  if (def?.codegenProps) return def.codegenProps(props);
-  if (def?.meta.propSchema) return autoConvertIconPickers(props, def.meta.propSchema);
-  return props;
+  // defaultProps 머지 — JSON에 저장되지 않은 신규 propSchema 필드도 기본값으로 채워
+  // codegenProps 내부의 ?? 가드 누락에 따른 undefined 누수를 방지한다.
+  const merged = def?.meta.defaultProps
+    ? { ...def.meta.defaultProps, ...props }
+    : props;
+  if (def?.codegenProps) return def.codegenProps(merged);
+  if (def?.meta.propSchema) return autoConvertIconPickers(merged, def.meta.propSchema);
+  return merged;
 }
 
 // ─── 블록 JSX 라인 생성 ───────────────────────────────────────────────────────
@@ -185,24 +198,41 @@ function blockToJSXLine(
 
   const { children, ...rest } = transformedProps;
 
-  // interaction → 이벤트 props 자동 매핑
-  const interactionEntries = Object.entries(block.interaction ?? {});
-  const interactionKeys = new Set(interactionEntries.map(([k]) => k));
-  const interactionPropsStr = interactionEntries
-    .map(([key, action]) => `${key}={${actionToHandler(action, overlayId)}}`)
-    .join(" ");
+  // 우선순위(앞이 우선): rest(codegenProps 결과) > interaction > REQUIRED_CALLBACKS > eventNoop.
+  // 키 기반 단일 맵으로 dedupe해 동일 attribute가 두 번 출력되지 않도록 한다.
+  const usedKeys = new Set<string>(Object.keys(rest).filter((k) => rest[k] !== undefined && rest[k] !== null));
+  const restStr = propsToStr(rest);
 
-  // propSchema의 event 필드 중 interaction에 포함되지 않은 것에 noop 자동 주입.
+  const interactionParts: string[] = [];
+  for (const [key, action] of Object.entries(block.interaction ?? {})) {
+    if (usedKeys.has(key)) continue;
+    interactionParts.push(`${key}={${actionToHandler(action, overlayId)}}`);
+    usedKeys.add(key);
+  }
+  const interactionPropsStr = interactionParts.join(" ");
+
+  const requiredParts: string[] = [];
+  for (const [key, expr] of Object.entries(REQUIRED_CALLBACKS[block.component] ?? {})) {
+    if (usedKeys.has(key)) continue;
+    requiredParts.push(`${key}={${expr}}`);
+    usedKeys.add(key);
+  }
+  const requiredStr = requiredParts.join(" ");
+
+  // propSchema의 event 필드 중 interaction/REQUIRED에 포함되지 않은 것에 noop 자동 주입.
   // 이벤트 props는 JSON에 저장되지 않으므로 명시하지 않으면 required 콜백 타입 에러가 발생한다.
   // TypeScript는 () => void를 (value: T) => void에 할당 가능하므로 시그니처 무관하게 안전하다.
-  const eventNoopStr = def?.meta.propSchema
-    ? Object.entries(def.meta.propSchema)
-        .filter(([key, field]) => field.type === "event" && !interactionKeys.has(key))
-        .map(([key]) => `${key}={() => {}}`)
-        .join(" ")
-    : "";
+  const eventNoopParts: string[] = [];
+  if (def?.meta.propSchema) {
+    for (const [key, field] of Object.entries(def.meta.propSchema)) {
+      if (field.type !== "event" || usedKeys.has(key)) continue;
+      eventNoopParts.push(`${key}={() => {}}`);
+      usedKeys.add(key);
+    }
+  }
+  const eventNoopStr = eventNoopParts.join(" ");
 
-  const propsStr = [propsToStr(rest), REQUIRED_CALLBACKS[block.component] ?? "", interactionPropsStr, eventNoopStr]
+  const propsStr = [restStr, interactionPropsStr, requiredStr, eventNoopStr]
     .filter(Boolean).join(" ");
   const openTag = `<${block.component}${propsStr ? " " + propsStr : ""}`;
   const pdCls = block.padding ? paddingToClassName(block.padding) : "";
@@ -252,7 +282,8 @@ function overlayToJSX(
   }
 
   const propLines = propEntries.map(([k, v]) => {
-    if (typeof v === "string") return `        ${k}="${v}"`;
+    // 문자열도 expression 형태로 출력해 이스케이프 안전성 확보 (propsToStr와 동일 정책)
+    if (typeof v === "string") return `        ${k}={${JSON.stringify(v)}}`;
     if (typeof v === "boolean") return v ? `        ${k}` : `        ${k}={false}`;
     return `        ${k}={${JSON.stringify(v)}}`;
   });
@@ -326,30 +357,34 @@ export function generateJSX(
   let layoutClose = "";
   let importLine: string;
 
-  // codegenImports에서 추가 컴포넌트 이름 수집 (사용된 블록만)
+  // codegenImports에서 추가 컴포넌트 이름 수집 (사용된 블록 + 레이아웃)
   const usedDefs = defs.filter((d) => usedTypes.includes(d.meta.name));
   const extraImports = usedDefs.flatMap((d) => d.codegenImports ?? []);
-  const blockNames = [...new Set(["Stack", ...usedTypes, ...overlayComponentTypes, ...extraImports])];
   const currentTemplate = layouts?.find((t) => t.id === layoutType);
   const layoutComponentName = currentTemplate?.componentName;
+  const layoutExtraImports = currentTemplate?.codegenImports ?? [];
+  const blockNames = [...new Set(["Stack", ...usedTypes, ...overlayComponentTypes, ...extraImports, ...layoutExtraImports])];
   const layoutImportFrom = codegenConfig?.layoutImportFrom ?? blockImportFrom;
 
-  // 레이아웃 icon-picker props에서도 lucide 아이콘 수집 (blocks와 동일 방식)
-  if (currentTemplate?.propSchema) {
-    const { blockGap: _bg, ...lpRaw } = lp;
-    Object.values(autoConvertIconPickers(lpRaw, currentTemplate.propSchema))
-      .forEach((v) => collectLucideIcons(v, lucideIconSet));
-  }
+  // 레이아웃 props 변환: codegenProps 우선, 없으면 propSchema 기반 icon-picker 자동 변환.
+  // BlockDefinition.codegenProps와 동일한 정책을 따른다.
+  const { blockGap: _bg, ...lpRaw } = lp;
+  const transformedLayoutProps: Record<string, unknown> = (() => {
+    if (!currentTemplate) return lpRaw;
+    const merged = currentTemplate.defaultProps
+      ? { ...currentTemplate.defaultProps, ...lpRaw }
+      : lpRaw;
+    if (currentTemplate.codegenProps) return currentTemplate.codegenProps(merged);
+    if (currentTemplate.propSchema)   return autoConvertIconPickers(merged, currentTemplate.propSchema);
+    return merged;
+  })();
+
+  // 레이아웃 props에서도 lucide 아이콘 수집 (blocks와 동일 방식)
+  Object.values(transformedLayoutProps).forEach((v) => collectLucideIcons(v, lucideIconSet));
 
   if (layoutComponentName) {
     // ── componentName 방식: LayoutTemplate.componentName 기반 동적 생성 ──
-    // blockGap은 CMS 내부 prop이므로 JSX props에서 제외
-    const { blockGap: _bg, ...jsxProps } = lp;
-    // 레이아웃 propSchema의 icon-picker 필드를 JSXExpr로 변환 (blocks와 동일 방식)
-    const transformedJsxProps = currentTemplate?.propSchema
-      ? autoConvertIconPickers(jsxProps, currentTemplate.propSchema)
-      : jsxProps;
-    const propsStr = propsToStr(transformedJsxProps);
+    const propsStr = propsToStr(transformedLayoutProps);
     layoutOpen = `    <${layoutComponentName}${propsStr ? " " + propsStr : ""}>`;
     layoutClose = `    </${layoutComponentName}>`;
 

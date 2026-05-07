@@ -234,6 +234,14 @@ export interface LayoutTemplate {
    * 미정의 시 레이아웃 래퍼 없이 블록만 생성합니다.
    */
   componentName?: string;
+  /**
+   * 코드 생성 시 layoutProps를 실제 컴포넌트 API 형태로 변환.
+   * BlockDefinition.codegenProps와 동일한 패턴 — { __jsx: "..." } 마커로 raw JSX 출력 가능.
+   * 미정의 시 propSchema의 icon-picker 필드는 자동으로 JSX로 변환됩니다.
+   */
+  codegenProps?: (props: Record<string, unknown>) => Record<string, unknown>;
+  /** codegenProps가 생성하는 JSX 안에서 참조하는 추가 컴포넌트명. generateJSX가 import에 포함. */
+  codegenImports?: string[];
 }
 
 // ─── 페이지 ────────────────────────────────────────────────────

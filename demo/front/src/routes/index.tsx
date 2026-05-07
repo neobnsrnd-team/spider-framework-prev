@@ -33,6 +33,7 @@ export interface RouteConfig {
   element: ReactElement;
 }
 
+import TestPage from "@/pages/cms/TestPage";
 export const pageRoutes: RouteConfig[] = [
   { path: PATHS.LOGIN,                element: <LoginRoute /> },
   { path: PATHS.PREVIEW.NOTICE,       element: <NoticePreviewRoute /> },
@@ -57,6 +58,7 @@ export const pageRoutes: RouteConfig[] = [
   },
   { path: PATHS.CARD.MY_CARD_MANAGEMENT, element: <MyCardManagementRoute /> },
   { path: PATHS.CARD.USER_MANAGEMENT, element: <UserManagementRoute /> },
+  { path: '/test', element: <TestPage /> }
 ];
 
 export const modalRoutes: RouteConfig[] = [

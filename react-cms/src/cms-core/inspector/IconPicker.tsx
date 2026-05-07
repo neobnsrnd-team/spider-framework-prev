@@ -8,21 +8,9 @@
  * @param value 현재 선택된 아이콘 이름 (kebab-case)
  * @param onSelect 아이콘 선택 콜백
  */
-import { memo, useDeferredValue, useMemo, useRef, useState } from "react";
+import { memo, useDeferredValue, useEffect, useMemo, useState } from "react";
 import * as LucideIcons from "lucide-react";
-
-const ALL_ICON_NAMES = (Object.entries(LucideIcons) as [string, unknown][])
-  .filter(([originalName, val]) =>
-    /^[A-Z]/.test(originalName) &&
-    typeof val === 'object' &&
-    val !== null &&
-    '$$typeof' in (val as object) &&
-    typeof (val as Record<string, unknown>).displayName === 'string'
-  )
-  .map(([name]) => name);
-
-const toKebab = (name: string) =>
-  name.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+import { ALL_ICON_NAMES, toKebabIcon as toKebab } from "../utils/icon";
 
 // ─── 개별 아이콘 버튼 ────────────────────────────────────────
 const IconGridItem = memo(function IconGridItem({
@@ -71,11 +59,10 @@ export default memo(function IconPicker({ value, onSelect }: IconPickerProps) {
   const deferred = useDeferredValue(query);
 
   // 검색어 변경 시 showAll을 초기화해 재검색 결과를 처음부터 보여준다.
-  const prevDeferred = useRef(deferred);
-  if (prevDeferred.current !== deferred) {
-    prevDeferred.current = deferred;
-    if (showAll) setShowAll(false);
-  }
+  // 렌더 중 setState는 React 18 concurrent에서 경고를 유발하므로 effect로 처리.
+  useEffect(() => {
+    setShowAll(false);
+  }, [deferred]);
 
   const filtered = useMemo(
     () =>

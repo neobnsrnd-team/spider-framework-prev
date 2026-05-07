@@ -12,9 +12,8 @@
 // 연결하는 브릿지 파일이므로 `as any` 캐스팅이 불가피하다.
 import { useContext } from "react";
 import type { BlockDefinition } from "@cms-core";
-import { resolveIcon } from "@cms-core";
+import { resolveIcon, kebabToPascal } from "@cms-core";
 import { PortalHostContext } from "@cms-core/context";
-import { MoreVertical } from "lucide-react";
 import {
   // ── Core ──────────────────────────────────────────────────────────────────
   Badge,
@@ -100,11 +99,12 @@ import {
 } from "@cl";
 
 // codegenProps 안에서 JSX expression 마커를 만들기 위한 헬퍼
-function _kebabToPascal(name: string): string {
-  return name.split("-").map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join("");
-}
 function _iconJsx(name: string, cls: string): { __jsx: string } {
-  return { __jsx: `<${_kebabToPascal(name)} className="${cls}" />` };
+  return { __jsx: `<${kebabToPascal(name)} className="${cls}" />` };
+}
+/** 사용자 입력 문자열을 JSX attribute/text expression으로 안전하게 직렬화 (예: foo={"bar"}) */
+function _attr(value: string): string {
+  return `{${JSON.stringify(value)}}`;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -745,9 +745,10 @@ const CardVisualDefinition: BlockDefinition = {
     const brand = (p.brand as string) ?? "VISA";
     const cardName = (p.cardName as string) ?? "";
     const [from, to] = CARD_BRAND_GRADIENTS[brand] ?? ['#555', '#888'];
+    // cardName은 사용자 입력이므로 expression으로 안전 직렬화 (따옴표·중괄호 이스케이프)
     const cardImageJsx =
       `<div style={{ background: "linear-gradient(135deg, ${from}, ${to})", width: "100%", height: "100%" }} className="flex items-end p-md">` +
-      `<span className="text-white font-bold text-lg">${cardName}</span>` +
+      `<span className="text-white font-bold text-lg">${_attr(cardName)}</span>` +
       `</div>`;
     return { ...p, cardImage: { __jsx: cardImageJsx } };
   },
@@ -1171,11 +1172,11 @@ const CardDefinition: BlockDefinition = {
     const rows   = ((p as any).rows ?? []) as RowField[];
     const parts: string[] = [];
     if (header?.title) {
-      const iconStr = header.icon ? ` icon={<${_kebabToPascal(header.icon)} className="size-5" />}` : "";
-      const subStr  = header.subtitle ? ` subtitle="${header.subtitle}"` : "";
-      parts.push(`<CardHeader title="${header.title}"${subStr}${iconStr} />`);
+      const iconStr = header.icon ? ` icon={<${kebabToPascal(header.icon)} className="size-5" />}` : "";
+      const subStr  = header.subtitle ? ` subtitle=${_attr(header.subtitle)}` : "";
+      parts.push(`<CardHeader title=${_attr(header.title)}${subStr}${iconStr} />`);
     }
-    rows.forEach((row) => parts.push(`<CardRow label="${row.label}" value="${row.value}" />`));
+    rows.forEach((row) => parts.push(`<CardRow label=${_attr(row.label)} value=${_attr(row.value)} />`));
     return {
       interactive: (p as any).interactive,
       noPadding:   (p as any).noPadding,
@@ -1226,11 +1227,12 @@ const CollapsibleSectionDefinition: BlockDefinition = {
     </CollapsibleSection>
   ),
   // header는 ReactNode이므로 span으로 감싸고, content는 children(<p>)으로 변환한다.
+  // 사용자 입력 문자열은 _attr()로 expression 직렬화해 JSX 이스케이프 안전성 확보
   codegenProps: (p) => ({
     defaultExpanded: (p as any).defaultExpanded,
     headerAlign:     (p as any).headerAlign,
-    header:   { __jsx: `<span className="font-semibold">${(p as any).header ?? ""}</span>` },
-    children: { __jsx: `<p className="text-sm text-text-secondary px-1">${(p as any).content ?? ""}</p>` },
+    header:   { __jsx: `<span className="font-semibold">${_attr(((p as any).header ?? "") as string)}</span>` },
+    children: { __jsx: `<p className="text-sm text-text-secondary px-1">${_attr(((p as any).content ?? "") as string)}</p>` },
   }),
 };
 
@@ -1441,12 +1443,17 @@ const NoticeItemDefinition: BlockDefinition = {
       onClick:     { type: "event",       label: "클릭" },
     },
   },
+  // ?? 는 빈 문자열에서 fallback 안 함 — || 사용해 사용자가 비웠을 때도 기본 아이콘 표시
   component: (p) => (
     <NoticeItem
       {...(p as any)}
-      icon={resolveIcon((p as any).icon ?? "bell", "size-5")}
+      icon={resolveIcon(((p as any).icon as string) || "bell", "size-5")}
     />
   ),
+  codegenProps: (p) => ({
+    ...p,
+    icon: _iconJsx(((p as any).icon as string) || "bell", "size-5"),
+  }),
 };
 
 const RecentRecipientItemDefinition: BlockDefinition = {
@@ -1505,12 +1512,17 @@ const SelectableItemDefinition: BlockDefinition = {
       onClick:  { type: "event",       label: "클릭" },
     },
   },
+  // ?? 는 빈 문자열에서 fallback 안 함 — || 사용해 사용자가 비웠을 때도 기본 아이콘 표시
   component: (p) => (
     <SelectableItem
       {...(p as any)}
-      icon={resolveIcon((p as any).icon ?? "check", "size-5")}
+      icon={resolveIcon(((p as any).icon as string) || "check", "size-5")}
     />
   ),
+  codegenProps: (p) => ({
+    ...p,
+    icon: _iconJsx(((p as any).icon as string) || "check", "size-5"),
+  }),
 };
 
 const SelectableListItemDefinition: BlockDefinition = {
