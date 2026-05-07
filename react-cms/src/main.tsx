@@ -40,6 +40,17 @@ document.documentElement.setAttribute(
   import.meta.env.VITE_CMS_BRAND ?? "hana",
 );
 
+// portal 전용 호스트 div — document.body 직하에 위치해 transform 조상이 없으므로
+// position: fixed가 뷰포트 기준으로 작동한다.
+// data-cms-user-scope: @scope CSS 적용 / data-brand·domain: 브랜드 토큰 적용
+const cmsPortalHost = document.createElement("div");
+cmsPortalHost.id = "cms-portal-host";
+cmsPortalHost.setAttribute("data-cms-user-scope", "");
+cmsPortalHost.setAttribute("data-brand", import.meta.env.VITE_CMS_BRAND ?? "hana");
+cmsPortalHost.setAttribute("data-domain", "card");
+document.body.appendChild(cmsPortalHost);
+
+
 /** localStorage key prefix: pageName → pageId 매핑 (savePage.ts와 동일) */
 const PAGE_ID_KEY_PREFIX = "cms_page_id_";
 

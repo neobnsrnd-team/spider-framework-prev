@@ -21,8 +21,24 @@ export interface DropdownMenuItem {
 }
 
 export interface DropdownMenuProps {
-  /** 드롭다운을 열고 닫는 트리거 요소 */
-  children: React.ReactNode;
+  /**
+   * 내장 트리거 버튼에 표시할 아이콘.
+   * 이 prop이 제공되면 children 대신 내장 버튼을 렌더링한다.
+   */
+  triggerIcon?: React.ReactNode;
+  /**
+   * 내장 트리거 버튼 스타일. 기본: 'default'
+   * - 'default' : 간단한 사각형 아이콘 버튼
+   * - 'rounded' : 원형 배경 버튼 (UserProfile 설정 버튼 등)
+   */
+  triggerVariant?: 'default' | 'rounded';
+  /** 내장 트리거 버튼의 접근성 레이블 */
+  triggerAriaLabel?: string;
+  /**
+   * 완전히 커스텀한 트리거가 필요할 때 사용하는 fallback.
+   * triggerIcon이 없을 때만 렌더링된다.
+   */
+  children?: React.ReactNode;
   /** 드롭다운에 표시할 항목 목록 */
   items: DropdownMenuItem[];
   /**

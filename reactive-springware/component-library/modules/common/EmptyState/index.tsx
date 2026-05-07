@@ -22,10 +22,14 @@ import React from 'react';
 import { cn } from '@lib/cn';
 import type { EmptyStateProps } from './types';
 
+export type { EmptyStateProps } from './types';
+
 export function EmptyState({
   illustration,
   title,
   description,
+  actionLabel,
+  onAction,
   action,
   className,
 }: EmptyStateProps) {
@@ -51,7 +55,18 @@ export function EmptyState({
         )}
       </div>
 
-      {action && <div className="mt-sm">{action}</div>}
+      {/* actionLabel 우선 — 없으면 커스텀 action 슬롯 */}
+      {actionLabel ? (
+        <button
+          type="button"
+          onClick={onAction}
+          className="mt-sm px-lg py-sm text-sm font-medium rounded-xl border border-border text-text-base hover:bg-surface-subtle transition-colors"
+        >
+          {actionLabel}
+        </button>
+      ) : (
+        action && <div className="mt-sm">{action}</div>
+      )}
     </div>
   );
 }

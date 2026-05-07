@@ -95,6 +95,8 @@ import {
   BalanceToggle,
   BankSelectGrid,
   Card,
+  CardHeader,
+  CardRow,
   Checkbox,
   CollapsibleSection,
   DatePicker,
@@ -957,17 +959,21 @@ const ActionLinkItemDefinition: BlockDefinition = {
     name: "ActionLinkItem",
     category: "modules",
     domain: "common",
-    defaultProps: { label: "링크 항목", size: "md", showBorder: false, iconBgClassName: "bg-primary-light", icon: "ChevronRight" },
+    defaultProps: { label: "링크 항목", size: "md", showBorder: false, icon: "share2" },
     propSchema: {
-      label:           { type: "string",      label: "레이블",         default: "링크 항목" },
-      size:            { type: "select",      label: "크기",           default: "md", options: ["sm", "md"] },
-      showBorder:      { type: "boolean",     label: "하단 구분선",     default: false },
-      iconBgClassName: { type: "string",      label: "아이콘 배경 클래스", default: "" },
-      icon:            { type: "icon-picker", label: "아이콘",         default: "ChevronRight" },
-      onClick:         { type: "event",       label: "클릭" },
+      label:      { type: "string",      label: "레이블", default: "링크 항목" },
+      size:       { type: "select",      label: "크기",   default: "md", options: ["sm", "md"] },
+      showBorder: { type: "boolean",     label: "하단 구분선", default: false },
+      icon:       { type: "icon-picker", label: "아이콘", default: "share2" },
+      onClick:    { type: "event",       label: "클릭" },
     },
   },
-  component: (p) => <ActionLinkItem {...(p as any)} />,
+  component: (p) => (
+    <ActionLinkItem
+      {...(p as any)}
+      icon={resolveIcon((p as any).icon)}
+    />
+  ),
 };
 
 const AlertBannerDefinition: BlockDefinition = {
@@ -975,14 +981,20 @@ const AlertBannerDefinition: BlockDefinition = {
     name: "AlertBanner",
     category: "modules",
     domain: "common",
-    defaultProps: { children: "알림 내용을 입력하세요.", intent: "info", icon: "Info" },
+    defaultProps: { children: "알림 내용을 입력하세요.", intent: "info", icon: "" },
     propSchema: {
       children: { type: "string",      label: "내용",   default: "알림 내용" },
-      intent:   { type: "select",      label: "의도",   default: "info", options: ["warning", "danger", "success", "info"] },
-      icon:     { type: "icon-picker", label: "아이콘", default: "Info" },
+      intent:   { type: "select",      label: "타입",   default: "info", options: ["warning", "danger", "success", "info"] },
+      // 비워두면 intent별 기본 아이콘(warning→TriangleAlert, danger→AlertCircle, success→CheckCircle, info→Info) 자동 사용
+      icon:     { type: "icon-picker", label: "아이콘 (비우면 타입 기본값)", default: "" },
     },
   },
-  component: (p) => <AlertBanner {...(p as any)} />,
+  component: (p) => (
+    <AlertBanner
+      {...(p as any)}
+      icon={(p as any).icon ? resolveIcon((p as any).icon, "size-4") : undefined}
+    />
+  ),
 };
 
 const BalanceToggleDefinition: BlockDefinition = {
@@ -1004,13 +1016,41 @@ const BankSelectGridDefinition: BlockDefinition = {
     name: "BankSelectGrid",
     category: "modules",
     domain: "common",
-    defaultProps: { selectedCode: "", banks: [] },
+    defaultProps: {
+      selectedCode: "",
+      columns: "4",
+      banks: [
+        { code: "hana",    name: "하나은행" },
+        { code: "kb",      name: "국민은행" },
+        { code: "shinhan", name: "신한은행" },
+        { code: "woori",   name: "우리은행" },
+      ],
+    },
     propSchema: {
       selectedCode: { type: "string", label: "선택된 은행 코드", default: "" },
-      onSelect:     { type: "event",  label: "은행 선택" },
+      columns:      { type: "select", label: "열 수", default: "4", options: ["3", "4"] },
+      banks: {
+        type: "array", label: "은행 목록",
+        default: [
+          { code: "hana",    name: "하나은행" },
+          { code: "kb",      name: "국민은행" },
+          { code: "shinhan", name: "신한은행" },
+          { code: "woori",   name: "우리은행" },
+        ],
+        itemFields: {
+          code: { type: "string", label: "은행 코드", default: "" },
+          name: { type: "string", label: "은행명",   default: "" },
+        },
+      },
+      onSelect: { type: "event", label: "은행 선택" },
     },
   },
-  component: (p) => <BankSelectGrid {...(p as any)} />,
+  component: (p) => (
+    <BankSelectGrid
+      {...(p as any)}
+      columns={Number((p as any).columns) as 3 | 4}
+    />
+  ),
 };
 
 const CardDefinition: BlockDefinition = {
@@ -1018,14 +1058,61 @@ const CardDefinition: BlockDefinition = {
     name: "Card",
     category: "modules",
     domain: "common",
-    defaultProps: { interactive: false, noPadding: false },
+    defaultProps: {
+      interactive: false,
+      noPadding: false,
+      header: { title: "카드 제목", subtitle: "", icon: "" },
+      rows: [
+        { label: "레이블", value: "값" },
+      ],
+    },
     propSchema: {
       interactive: { type: "boolean", label: "클릭 인터랙션", default: false },
       noPadding:   { type: "boolean", label: "패딩 없음",     default: false },
-      onClick:     { type: "event",   label: "클릭" },
+      header: {
+        type: "group", label: "헤더",
+        default: { title: "카드 제목", subtitle: "", icon: "" },
+        fields: {
+          title:    { type: "string",      label: "제목",                    default: "카드 제목" },
+          subtitle: { type: "string",      label: "부제목 (비우면 미노출)",   default: "" },
+          icon:     { type: "icon-picker", label: "아이콘 (비우면 미노출)",   default: "" },
+        },
+      },
+      rows: {
+        type: "array", label: "행 목록",
+        default: [{ label: "레이블", value: "값" }],
+        itemFields: {
+          label: { type: "string", label: "레이블", default: "" },
+          value: { type: "string", label: "값",     default: "" },
+        },
+      },
+      onClick: { type: "event", label: "클릭" },
     },
   },
-  component: (p) => <Card {...(p as any)} />,
+  component: (p) => {
+    type HeaderField = { title: string; subtitle: string; icon: string };
+    type RowField    = { label: string; value: string };
+    const header = (p as any).header as HeaderField;
+    const rows   = ((p as any).rows ?? []) as RowField[];
+    return (
+      <Card interactive={(p as any).interactive} noPadding={(p as any).noPadding}>
+        {header?.title && (
+          <CardHeader
+            title={header.title}
+            subtitle={header.subtitle || undefined}
+            icon={header.icon ? resolveIcon(header.icon) : undefined}
+          />
+        )}
+        {rows.map((row, i) => (
+          <CardRow
+            key={i}
+            label={row.label}
+            value={row.value}
+          />
+        ))}
+      </Card>
+    );
+  },
 };
 
 const CheckboxDefinition: BlockDefinition = {
@@ -1033,12 +1120,11 @@ const CheckboxDefinition: BlockDefinition = {
     name: "Checkbox",
     category: "modules",
     domain: "common",
-    defaultProps: { checked: false, label: "체크박스", ariaLabel: "", disabled: false, shape: "square" },
+    defaultProps: { checked: false, label: "체크박스", disabled: false, shape: "square" },
     propSchema: {
-      checked:   { type: "boolean", label: "체크 여부",      default: false },
-      label:     { type: "string",  label: "레이블",         default: "체크박스" },
-      ariaLabel: { type: "string",  label: "접근성 레이블",  default: "" },
-      shape:     { type: "select",  label: "체크박스 모양",  default: "square", options: ["square", "circle"] },
+      checked:  { type: "boolean", label: "체크 여부",     default: false },
+      label:    { type: "string",  label: "레이블",        default: "체크박스" },
+      shape:    { type: "select",  label: "체크박스 모양", default: "square", options: ["square", "circle"] },
       disabled:  { type: "boolean", label: "비활성화",       default: false },
       onChange:  { type: "event",   label: "체크 상태 변경" },
     },
@@ -1051,13 +1137,24 @@ const CollapsibleSectionDefinition: BlockDefinition = {
     name: "CollapsibleSection",
     category: "modules",
     domain: "common",
-    defaultProps: { defaultExpanded: false, headerAlign: "left" },
+    defaultProps: { header: "섹션 제목", content: "내용을 입력하세요.", defaultExpanded: true, headerAlign: "left" },
     propSchema: {
-      defaultExpanded: { type: "boolean", label: "기본 펼침 여부", default: false },
-      headerAlign:     { type: "select",  label: "헤더 정렬",      default: "left", options: ["left", "center"] },
+      header:          { type: "string",  label: "헤더 텍스트",   default: "섹션 제목" },
+      // TODO: children 슬롯을 블록 중첩으로 교체 — CMS 블록 중첩 지원 후 개선 필요
+      content:         { type: "string",  label: "내용 (텍스트)", default: "내용을 입력하세요." },
+      defaultExpanded: { type: "boolean", label: "기본 펼침 여부", default: true },
+      headerAlign:     { type: "select",  label: "헤더 정렬",     default: "left", options: ["left", "center"] },
     },
   },
-  component: (p) => <CollapsibleSection {...(p as any)} />,
+  component: (p) => (
+    <CollapsibleSection
+      header={<span className="font-semibold">{(p as any).header}</span>}
+      defaultExpanded={(p as any).defaultExpanded}
+      headerAlign={(p as any).headerAlign}
+    >
+      <p className="text-sm text-text-secondary px-1">{(p as any).content}</p>
+    </CollapsibleSection>
+  ),
 };
 
 const DatePickerDefinition: BlockDefinition = {
@@ -1075,7 +1172,12 @@ const DatePickerDefinition: BlockDefinition = {
       onRangeChange: { type: "event", label: "날짜 범위 변경 (range)" },
     },
   },
-  component: (p) => <DatePicker {...(p as any)} />,
+  component: (p) => (
+    <DatePicker
+      {...(p as any)}
+      portalContainer={document.getElementById("cms-portal-host") ?? document.body}
+    />
+  ),
 };
 
 const DividerDefinition: BlockDefinition = {
@@ -1107,28 +1209,42 @@ const DropdownMenuDefinition: BlockDefinition = {
     name: "DropdownMenu",
     category: "modules",
     domain: "common",
-    defaultProps: { align: "right", items: [{ label: "메뉴 항목 1" }, { label: "삭제", variant: "danger" }] },
+    defaultProps: {
+      align: "right",
+      triggerIcon: "more-vertical",
+      triggerVariant: "default",
+      items: [{ label: "메뉴 항목 1" }, { label: "삭제", variant: "danger" }],
+    },
     propSchema: {
-      align: { type: "select", label: "패널 정렬", default: "right", options: ["left", "right"] },
+      triggerIcon:    { type: "icon-picker", label: "트리거 아이콘",  default: "more-vertical" },
+      triggerVariant: { type: "select",      label: "트리거 스타일",  default: "default", options: ["default", "rounded"] },
+      align:          { type: "select",      label: "패널 정렬",     default: "right",   options: ["left", "right"] },
       items: {
         type: "array", label: "메뉴 항목",
         default: [{ label: "메뉴 항목 1" }, { label: "삭제", variant: "danger" }],
         itemFields: {
-          label:   { type: "string",      label: "레이블",    default: "" },
-          icon:    { type: "icon-picker", label: "아이콘",    default: "" },
+          label:   { type: "string",      label: "레이블",     default: "" },
+          icon:    { type: "icon-picker", label: "아이콘",     default: "" },
           variant: { type: "select",      label: "스타일 변형", default: "default", options: ["default", "danger"] },
         },
       },
     },
   },
-  // DropdownMenu는 children(트리거 요소)이 필수이므로 CMS 미리보기용 기본 버튼을 주입한다.
-  component: (p) => (
-    <DropdownMenu {...(p as any)}>
-      <button type="button" className="p-2 rounded hover:bg-surface-subtle">
-        <MoreVertical className="size-5" />
-      </button>
-    </DropdownMenu>
-  ),
+  component: (p) => {
+    const items = ((p as any).items ?? []).map((item: any) => ({
+      ...item,
+      icon: item.icon ? resolveIcon(item.icon, "size-4") : undefined,
+      onClick: () => {},
+    }));
+    return (
+      <DropdownMenu
+        {...(p as any)}
+        items={items}
+        triggerIcon={resolveIcon((p as any).triggerIcon ?? "more-vertical", "size-5")}
+        triggerVariant={(p as any).triggerVariant ?? "default"}
+      />
+    );
+  },
 };
 
 const EmptyStateDefinition: BlockDefinition = {
@@ -1136,13 +1252,27 @@ const EmptyStateDefinition: BlockDefinition = {
     name: "EmptyState",
     category: "modules",
     domain: "common",
-    defaultProps: { title: "데이터가 없습니다", description: "" },
+    defaultProps: {
+      icon: "inbox",
+      title: "데이터가 없습니다",
+      description: "",
+      actionLabel: "",
+    },
     propSchema: {
-      title:       { type: "string", label: "제목", default: "데이터가 없습니다" },
-      description: { type: "string", label: "설명", default: "" },
+      icon:        { type: "icon-picker", label: "아이콘",    default: "inbox" },
+      title:       { type: "string",      label: "제목",      default: "데이터가 없습니다" },
+      description: { type: "string",      label: "설명",      default: "" },
+      actionLabel: { type: "string",      label: "버튼 레이블", default: "" },
     },
   },
-  component: (p) => <EmptyState {...(p as any)} />,
+  component: (p) => (
+    <EmptyState
+      {...(p as any)}
+      illustration={(p as any).icon ? resolveIcon((p as any).icon, "size-14 text-text-muted") : undefined}
+      actionLabel={(p as any).actionLabel || undefined}
+      onAction={() => {}}
+    />
+  ),
 };
 
 const ErrorStateDefinition: BlockDefinition = {
@@ -1152,13 +1282,19 @@ const ErrorStateDefinition: BlockDefinition = {
     domain: "common",
     defaultProps: { title: "오류가 발생했습니다", description: "", retryLabel: "다시 시도" },
     propSchema: {
-      title:       { type: "string", label: "제목",       default: "오류가 발생했습니다" },
-      description: { type: "string", label: "설명",       default: "" },
+      title:       { type: "string", label: "제목",        default: "오류가 발생했습니다" },
+      description: { type: "string", label: "설명",        default: "" },
       retryLabel:  { type: "string", label: "재시도 레이블", default: "다시 시도" },
-      onRetry:     { type: "event",  label: "재시도 클릭" },
     },
   },
-  component: (p) => <ErrorState {...(p as any)} />,
+  // retryLabel이 있으면 onRetry noop을 주입해 버튼을 노출한다.
+  // ErrorState는 onRetry 존재 여부로 버튼 렌더링을 결정하므로 CMS에서 함수를 직접 주입해야 한다.
+  component: (p) => (
+    <ErrorState
+      {...(p as any)}
+      onRetry={(p as any).retryLabel ? () => {} : undefined}
+    />
+  ),
 };
 
 const InfoRowDefinition: BlockDefinition = {
@@ -1168,10 +1304,9 @@ const InfoRowDefinition: BlockDefinition = {
     domain: "common",
     defaultProps: { label: "레이블", value: "값", showBorder: true },
     propSchema: {
-      label:          { type: "string",  label: "레이블",          default: "레이블" },
-      value:          { type: "string",  label: "값",              default: "값" },
-      valueClassName: { type: "string",  label: "값 추가 클래스",   default: "" },
-      showBorder:     { type: "boolean", label: "하단 구분선 표시", default: true },
+      label:      { type: "string",  label: "레이블",          default: "레이블" },
+      value:      { type: "string",  label: "값",              default: "값" },
+      showBorder: { type: "boolean", label: "하단 구분선 표시", default: true },
     },
   },
   component: (p) => <InfoRow {...(p as any)} />,
@@ -1196,17 +1331,21 @@ const NoticeItemDefinition: BlockDefinition = {
     name: "NoticeItem",
     category: "modules",
     domain: "common",
-    defaultProps: { title: "공지사항", description: "", showDivider: true, icon: "Bell", iconBgClassName: "" },
+    defaultProps: { title: "공지사항", description: "", showDivider: true, icon: "bell" },
     propSchema: {
-      icon:           { type: "icon-picker", label: "아이콘",         default: "Bell" },
-      iconBgClassName: { type: "string",     label: "아이콘 배경 클래스", default: "" },
-      title:          { type: "string",      label: "제목",           default: "공지사항" },
-      description:    { type: "string",      label: "설명",           default: "" },
-      showDivider:    { type: "boolean",     label: "구분선 표시",     default: true },
-      onClick:        { type: "event",       label: "클릭" },
+      icon:        { type: "icon-picker", label: "아이콘",    default: "bell" },
+      title:       { type: "string",      label: "제목",      default: "공지사항" },
+      description: { type: "string",      label: "설명",      default: "" },
+      showDivider: { type: "boolean",     label: "구분선 표시", default: true },
+      onClick:     { type: "event",       label: "클릭" },
     },
   },
-  component: (p) => <NoticeItem {...(p as any)} />,
+  component: (p) => (
+    <NoticeItem
+      {...(p as any)}
+      icon={resolveIcon((p as any).icon ?? "bell", "size-5")}
+    />
+  ),
 };
 
 const RecentRecipientItemDefinition: BlockDefinition = {
@@ -1230,15 +1369,21 @@ const SectionHeaderDefinition: BlockDefinition = {
     name: "SectionHeader",
     category: "modules",
     domain: "common",
-    defaultProps: { title: "섹션 제목", badge: 0, actionLabel: "" },
+    defaultProps: { title: "섹션 제목", actionLabel: "" },
     propSchema: {
-      title:       { type: "string", label: "제목",         default: "섹션 제목" },
-      badge:       { type: "number", label: "배지 숫자",     default: 0 },
-      actionLabel: { type: "string", label: "액션 레이블",   default: "" },
+      title:       { type: "string", label: "제목",       default: "섹션 제목" },
+      badge:       { type: "number", label: "배지 숫자",   default: "" },
+      actionLabel: { type: "string", label: "액션 레이블", default: "" },
       onAction:    { type: "event",  label: "액션 클릭" },
     },
   },
-  component: (p) => <SectionHeader {...(p as any)} />,
+  component: (p) => {
+    const badgeRaw = (p as any).badge;
+    // 빈 문자열·null·undefined이면 undefined로 처리해 배지를 미노출한다.
+    // 0은 유효한 값이므로 그대로 전달한다.
+    const badge = badgeRaw === '' || badgeRaw == null ? undefined : Number(badgeRaw);
+    return <SectionHeader {...(p as any)} badge={badge} />;
+  },
 };
 
 const SelectableItemDefinition: BlockDefinition = {
@@ -1246,15 +1391,20 @@ const SelectableItemDefinition: BlockDefinition = {
     name: "SelectableItem",
     category: "modules",
     domain: "common",
-    defaultProps: { label: "선택 항목", selected: false, icon: "Check" },
+    defaultProps: { label: "선택 항목", selected: false, icon: "check" },
     propSchema: {
-      icon:     { type: "icon-picker", label: "아이콘",   default: "Check" },
+      icon:     { type: "icon-picker", label: "아이콘",   default: "check" },
       label:    { type: "string",      label: "레이블",   default: "선택 항목" },
       selected: { type: "boolean",     label: "선택 여부", default: false },
       onClick:  { type: "event",       label: "클릭" },
     },
   },
-  component: (p) => <SelectableItem {...(p as any)} />,
+  component: (p) => (
+    <SelectableItem
+      {...(p as any)}
+      icon={resolveIcon((p as any).icon ?? "check", "size-5")}
+    />
+  ),
 };
 
 const SelectableListItemDefinition: BlockDefinition = {
@@ -1277,12 +1427,23 @@ const SidebarNavDefinition: BlockDefinition = {
     name: "SidebarNav",
     category: "modules",
     domain: "common",
-    defaultProps: { activeId: "home", items: [{ id: "home", label: "홈" }] },
+    defaultProps: {
+      activeId: "home",
+      items: [
+        { id: "home",     label: "홈" },
+        { id: "account",  label: "계좌" },
+        { id: "transfer", label: "이체" },
+      ],
+    },
     propSchema: {
       activeId: { type: "string", label: "활성 탭 ID", default: "home" },
       items: {
         type: "array", label: "탭 항목",
-        default: [{ id: "home", label: "홈" }],
+        default: [
+          { id: "home",     label: "홈" },
+          { id: "account",  label: "계좌" },
+          { id: "transfer", label: "이체" },
+        ],
         itemFields: {
           id:    { type: "string", label: "ID",     default: "" },
           label: { type: "string", label: "레이블", default: "" },
@@ -1320,7 +1481,13 @@ const SuccessHeroDefinition: BlockDefinition = {
       subtitle:      { type: "string", label: "부제목",      default: "이체가 완료되었습니다." },
     },
   },
-  component: (p) => <SuccessHero {...(p as any)} />,
+  // subtitle이 빈 문자열이면 undefined로 변환해 컴포넌트 내부 기본값이 적용되도록 한다.
+  component: (p) => (
+    <SuccessHero
+      {...(p as any)}
+      subtitle={(p as any).subtitle || undefined}
+    />
+  ),
 };
 
 const TabNavDefinition: BlockDefinition = {
@@ -1328,14 +1495,17 @@ const TabNavDefinition: BlockDefinition = {
     name: "TabNav",
     category: "modules",
     domain: "common",
-    defaultProps: { activeId: "all", variant: "underline", fullWidth: false, items: [{ id: "all", label: "전체" }] },
+    defaultProps: {
+      activeId: "all", variant: "underline", fullWidth: false,
+      items: [{ id: "all", label: "전체" }, { id: "income", label: "입금" }, { id: "outcome", label: "출금" }],
+    },
     propSchema: {
       activeId:  { type: "string",  label: "활성 탭 ID", default: "all" },
       variant:   { type: "select",  label: "변형",        default: "underline", options: ["underline", "pill"] },
       fullWidth: { type: "boolean", label: "전체 너비",   default: false },
       items: {
         type: "array", label: "탭 항목",
-        default: [{ id: "all", label: "전체" }],
+        default: [{ id: "all", label: "전체" }, { id: "income", label: "입금" }, { id: "outcome", label: "출금" }],
         itemFields: {
           id:    { type: "string", label: "ID",     default: "" },
           label: { type: "string", label: "레이블", default: "" },
@@ -1371,17 +1541,22 @@ const AccountSelectItemDefinition: BlockDefinition = {
     name: "AccountSelectItem",
     category: "modules",
     domain: "banking",
-    defaultProps: { accountName: "하나 자유입출금", accountNumber: "123-456789-01011", balance: "1,234,567원", selected: false, icon: "Landmark" },
+    defaultProps: { accountName: "하나 자유입출금", accountNumber: "123-456789-01011", balance: "1,234,567원", selected: false, icon: "landmark" },
     propSchema: {
       accountName:   { type: "string",      label: "계좌명",    default: "하나 자유입출금" },
       accountNumber: { type: "string",      label: "계좌번호",   default: "123-456789-01011" },
       balance:       { type: "string",      label: "잔액",      default: "0원" },
       selected:      { type: "boolean",     label: "선택 여부", default: false },
-      icon:          { type: "icon-picker", label: "아이콘",    default: "Landmark" },
+      icon:          { type: "icon-picker", label: "아이콘",    default: "landmark" },
       onClick:       { type: "event",       label: "클릭" },
     },
   },
-  component: (p) => <AccountSelectItem {...(p as any)} />,
+  component: (p) => (
+    <AccountSelectItem
+      {...(p as any)}
+      icon={resolveIcon((p as any).icon ?? "landmark", "size-5")}
+    />
+  ),
 };
 
 const AmountInputDefinition: BlockDefinition = {
@@ -1389,19 +1564,47 @@ const AmountInputDefinition: BlockDefinition = {
     name: "AmountInput",
     category: "modules",
     domain: "banking",
-    defaultProps: { label: "이체 금액", placeholder: "금액을 입력하세요", helperText: "", hasError: false, maxAmount: 0, transferLimitText: "", disabled: false },
+    defaultProps: {
+      label: "이체 금액", placeholder: "금액을 입력하세요",
+      helperText: "", hasError: false, transferLimitText: "1회 5,000,000원 / 1일 10,000,000원", disabled: false,
+      quickAmounts: [10000, 50000, 100000],
+    },
     propSchema: {
       label:             { type: "string",  label: "레이블",           default: "이체 금액" },
       placeholder:       { type: "string",  label: "플레이스홀더",     default: "금액을 입력하세요" },
-      helperText:        { type: "string",  label: "도움말 텍스트",     default: "" },
-      hasError:          { type: "boolean", label: "오류 상태",         default: false },
-      maxAmount:         { type: "number",  label: "최대 금액 (원)",    default: 0 },
+      helperText:        { type: "string",  label: "도움말 텍스트",    default: "" },
+      hasError:          { type: "boolean", label: "오류 상태",        default: false },
+      quickAmounts: {
+        type: "array", label: "빠른 금액 버튼",
+        default: [10000, 50000, 100000],
+        itemFields: {
+          amount: { type: "number", label: "금액 (원)", default: 10000 },
+        },
+      },
+      maxAmount:         { type: "number",  label: "최대 금액 (원) — 초과 시 오류 처리", default: "" },
       transferLimitText: { type: "string",  label: "이체 한도 텍스트", default: "" },
-      disabled:          { type: "boolean", label: "비활성화",          default: false },
+      disabled:          { type: "boolean", label: "비활성화",         default: false },
       onChange:          { type: "event",   label: "값 변경" },
     },
   },
-  component: (p) => <AmountInput {...(p as any)} />,
+  component: (p) => {
+    const raw = (p as any).quickAmounts ?? [10000, 50000, 100000];
+    // itemFields 구조({ amount: number })로 저장된 경우와 숫자 배열 모두 처리한다.
+    const quickAmounts = raw.map((item: any) =>
+      typeof item === 'object' && item !== null ? Number(item.amount) : Number(item)
+    );
+    const maxAmountRaw = (p as any).maxAmount;
+    const maxAmount = maxAmountRaw === '' || maxAmountRaw == null ? undefined : Number(maxAmountRaw);
+    return (
+      <AmountInput
+        {...(p as any)}
+        quickAmounts={quickAmounts}
+        maxAmount={maxAmount}
+        value={null}
+        onChange={() => {}}
+      />
+    );
+  },
 };
 
 // NumberKeypad의 digits는 외부에서 셔플된 숫자 배열을 필수로 받는 구조.
@@ -1468,15 +1671,41 @@ const TransactionListDefinition: BlockDefinition = {
     name: "TransactionList",
     category: "modules",
     domain: "banking",
-    defaultProps: { items: [], loading: false, emptyMessage: "거래 내역이 없습니다.", dateHeaderFormat: "month-day" },
+    defaultProps: {
+      items: [
+        { id: "1", date: "2026-05-07T10:30:00", title: "카페 결제",   amount: 4500,    type: "withdrawal", balance: 1234500 },
+        { id: "2", date: "2026-05-07T09:15:00", title: "급여 입금",   amount: 2500000, type: "deposit",    balance: 1239000 },
+        { id: "3", date: "2026-05-06T16:20:00", title: "편의점 결제", amount: 2300,    type: "withdrawal", balance: 850000  },
+      ],
+      loading: false,
+      emptyMessage: "거래 내역이 없습니다.",
+      dateHeaderFormat: "month-day",
+    },
     propSchema: {
+      items: {
+        type: "array", label: "거래 항목",
+        default: [{ id: "1", date: "2026-05-07T10:30:00", title: "카페 결제", amount: 4500, type: "withdrawal", balance: 1234500 }],
+        itemFields: {
+          id:      { type: "string", label: "ID",       default: "" },
+          date:    { type: "string", label: "날짜 (ISO 8601)", default: "2026-05-07T10:00:00" },
+          title:   { type: "string", label: "거래명",   default: "" },
+          amount:  { type: "number", label: "금액",     default: 0 },
+          balance: { type: "number", label: "잔액",     default: 0 },
+          type:    { type: "select", label: "거래 유형", default: "withdrawal", options: ["deposit", "withdrawal", "transfer"] },
+        },
+      },
       loading:          { type: "boolean", label: "로딩 중",       default: false },
-      emptyMessage:     { type: "string",  label: "빈 목록 메시지", default: "거래 내역이 없습니다." },
+      emptyMessage:     { type: "string",  label: "빈 목록 메시지 (비우면 '거래 내역이 없어요' 표시)", default: "거래 내역이 없습니다." },
       dateHeaderFormat: { type: "select",  label: "날짜 헤더 형식", default: "month-day", options: ["month-day", "year-month-day"] },
       onItemClick:      { type: "event",   label: "항목 클릭" },
     },
   },
-  component: (p) => <TransactionList {...(p as any)} />,
+  component: (p) => (
+    <TransactionList
+      {...(p as any)}
+      emptyMessage={(p as any).emptyMessage || undefined}
+    />
+  ),
 };
 
 // TransactionSearchFilter는 controlled 컴포넌트로 value가 필수.

@@ -1488,6 +1488,9 @@
   .p-1 {
     padding: calc(var(--spacing) * 1);
   }
+  .p-2 {
+    padding: calc(var(--spacing) * 2);
+  }
   .p-2xl {
     padding: var(--spacing-2xl);
   }
@@ -2105,6 +2108,13 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-danger-dark);
+      }
+    }
+  }
+  .hover\:bg-danger-surface {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-danger-surface);
       }
     }
   }

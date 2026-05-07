@@ -28,7 +28,15 @@ import React, { useRef, useState, useEffect } from 'react';
 import { cn } from '@lib/cn';
 import type { DropdownMenuProps } from './types';
 
-export function DropdownMenu({ children, items, align = 'right', className }: DropdownMenuProps) {
+export function DropdownMenu({
+  triggerIcon,
+  triggerVariant = 'default',
+  triggerAriaLabel,
+  children,
+  items,
+  align = 'right',
+  className,
+}: DropdownMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -53,17 +61,35 @@ export function DropdownMenu({ children, items, align = 'right', className }: Dr
 
   return (
     <div ref={containerRef} className={cn('relative inline-block', className)}>
-      {/* 트리거 — 클릭 시 패널 토글 */}
-      <div
-        role="button"
-        tabIndex={0}
-        aria-expanded={isOpen}
-        aria-haspopup="menu"
-        onClick={() => setIsOpen((prev) => !prev)}
-        onKeyDown={(e) => e.key === 'Enter' && setIsOpen((prev) => !prev)}
-      >
-        {children}
-      </div>
+      {/* 트리거 — triggerIcon 제공 시 내장 버튼, 없으면 children 사용 */}
+      {triggerIcon ? (
+        <button
+          type="button"
+          aria-label={triggerAriaLabel}
+          aria-expanded={isOpen}
+          aria-haspopup="menu"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className={cn(
+            'transition-colors duration-150',
+            triggerVariant === 'rounded'
+              ? 'flex items-center justify-center size-10 rounded-full shrink-0 bg-surface-raised border border-border hover:bg-surface'
+              : 'p-2 rounded text-text-muted hover:bg-surface-subtle',
+          )}
+        >
+          {triggerIcon}
+        </button>
+      ) : (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-expanded={isOpen}
+          aria-haspopup="menu"
+          onClick={() => setIsOpen((prev) => !prev)}
+          onKeyDown={(e) => e.key === 'Enter' && setIsOpen((prev) => !prev)}
+        >
+          {children}
+        </div>
+      )}
 
       {/* 플로팅 패널 — isOpen일 때만 렌더링 */}
       {isOpen && (
@@ -90,8 +116,8 @@ export function DropdownMenu({ children, items, align = 'right', className }: Dr
                 index === items.length - 1 && 'rounded-b-md',
                 /* variant에 따라 텍스트 색상 분기 */
                 item.variant === 'danger'
-                  ? 'text-semantic-danger hover:bg-semantic-danger/10'
-                  : 'text-text-primary hover:bg-surface-raised',
+                  ? 'text-danger hover:bg-danger-surface'
+                  : 'text-text-base hover:bg-surface-raised',
               )}
             >
               {item.icon && (

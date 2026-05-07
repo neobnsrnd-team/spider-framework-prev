@@ -151,14 +151,19 @@ function UsageHistoryFilterSheetRenderer({ open, onClose, container, props }: Ov
  */
 function PinConfirmSheetRenderer({ open, onClose, container, props }: OverlayRendererProps) {
   if (!open) return null;
-  const title     = typeof props?.title === 'string' ? props.title : '비밀번호 입력';
-  const pinLength = typeof props?.pinLength === 'number' ? props.pinLength : 4;
+  const title        = typeof props?.title        === 'string' ? props.title        : '비밀번호 입력';
+  const subtitle     = typeof props?.subtitle     === 'string' ? props.subtitle     : undefined;
+  const errorMessage = typeof props?.errorMessage === 'string' ? props.errorMessage : undefined;
+  // select 옵션이 문자열로 저장되므로 Number()로 변환한다.
+  const pinLength = Number(props?.pinLength) || 4;
   return (
     <PinConfirmSheet
       open={open}
       onClose={onClose}
       onConfirm={() => { onClose(); }}
       title={title}
+      subtitle={subtitle}
+      errorMessage={errorMessage}
       pinLength={pinLength}
       container={container ?? undefined}
     />
@@ -342,11 +347,14 @@ export const overlays: OverlayTemplate[] = [
     blocks:        [],
     props: {
       title:     "비밀번호 입력",
-      pinLength: 4,
+      subtitle:  "비밀번호를 입력하세요",
+      pinLength: "4",
     },
     propSchema: {
-      title:     { type: "string", label: "타이틀",    default: "비밀번호 입력" },
-      pinLength: { type: "select", label: "PIN 자릿수", options: ["4", "6"],         default: 4 },
+      title:        { type: "string", label: "타이틀",    default: "비밀번호 입력" },
+      subtitle:     { type: "string", label: "안내 문구", default: "비밀번호를 입력하세요" },
+      errorMessage: { type: "string", label: "에러 메시지", default: "" },
+      pinLength:    { type: "select", label: "PIN 자릿수", options: ["4", "6"], default: "4" },
     },
     renderer: PinConfirmSheetRenderer,
   },

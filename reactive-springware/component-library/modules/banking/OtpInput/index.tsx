@@ -23,7 +23,7 @@
  *   error={isOtpError}
  * />
  */
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from '@lib/cn';
 import type { OtpInputProps } from './types';
 
@@ -40,6 +40,12 @@ export function OtpInput({
   const [values, setValues] = useState<string[]>(Array(length).fill(''));
   /* 각 input 참조 배열 — 포커스 이동에 사용 */
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  /* length 변경 시 입력값 초기화 — 자릿수가 바뀌면 기존 values 크기가 달라져 렌더링 불일치 발생 */
+  useEffect(() => {
+    setValues(Array(length).fill(''));
+    onChange?.('');
+  }, [length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** 특정 인덱스의 값을 갱신하고 onChange/onComplete 호출 */
   const updateValues = useCallback(
