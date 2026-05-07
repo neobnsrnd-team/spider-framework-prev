@@ -23,7 +23,7 @@ import type { SelectProps } from './types';
 export type { SelectProps, SelectOption } from './types';
 
 export function Select({
-  options,
+  options = [],
   value,
   onChange,
   className,

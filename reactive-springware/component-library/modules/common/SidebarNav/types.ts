@@ -18,8 +18,8 @@ export interface SidebarNavItem {
 }
 
 export interface SidebarNavProps {
-  /** 네비게이션 항목 목록 */
-  items: SidebarNavItem[];
+  /** 네비게이션 항목 목록. 미전달 시 빈 사이드바 렌더링 */
+  items?: SidebarNavItem[];
   /** 현재 활성화된 항목 id */
   activeId: string;
   /**

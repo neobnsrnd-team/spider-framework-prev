@@ -29,7 +29,7 @@ import type { SidebarNavProps } from './types';
 export type { SidebarNavProps, SidebarNavItem } from './types';
 
 export function SidebarNav({
-  items,
+  items = [],
   activeId,
   onItemChange,
   className,

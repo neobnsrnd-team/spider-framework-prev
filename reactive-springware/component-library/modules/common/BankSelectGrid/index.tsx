@@ -20,7 +20,7 @@ import type { BankSelectGridProps } from './types';
 
 export type { BankSelectGridProps, BankItem } from './types';
 
-export function BankSelectGrid({ banks, selectedCode, onSelect, columns = 4 }: BankSelectGridProps) {
+export function BankSelectGrid({ banks = [], selectedCode, onSelect, columns = 4 }: BankSelectGridProps) {
   return (
     <div
       className={cn(

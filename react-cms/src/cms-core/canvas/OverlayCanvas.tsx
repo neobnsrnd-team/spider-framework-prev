@@ -7,47 +7,55 @@
  * - pt-7 스페이서 불필요 → 빌더/런타임 간 WYSIWYG 일치
  * transform: translateZ(0) — fixed 포지셔닝도 프레임 안에 포함.
  */
-import { useContext, useLayoutEffect, useRef, useState } from "react";
+import { useContext, useState } from "react";
 import type { CMSOverlay } from "../types";
 import { OverlayTemplatesContext } from "../context";
 import { UserScopeWrapper } from "../UserScopeWrapper";
 
 const PHONE_FRAME_W = 390;
+/** 편집 모드에서 오버레이를 닫는 동작은 없으므로 no-op 고정 콜백 사용 — 매 렌더 새 참조 방지 */
+const NOOP = () => {};
 /** CSS 변수로 툴바 높이·패딩 참조 — cms-theme.css의 --cms-toolbar-h, --cms-canvas-pad 값 사용 */
-const CANVAS_MIN_H = "calc(100dvh - var(--cms-toolbar-h, 3rem) - var(--cms-canvas-pad, 1.5rem) * 2)";
+const CANVAS_MIN_H =
+  "calc(100dvh - var(--cms-toolbar-h, 3rem) - var(--cms-canvas-pad, 1.5rem) * 2)";
 
 /**
  * @description 오버레이 편집 모드용 캔버스 프레임.
  * @param overlay 편집 중인 오버레이
  * @param children 오버레이 내부에 렌더링할 블록 목록
  */
-export function OverlayCanvas({ overlay, children }: { overlay: CMSOverlay; children?: React.ReactNode }) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [containerReady, setContainerReady] = useState(false);
+export function OverlayCanvas({
+  overlay,
+  children,
+}: {
+  overlay: CMSOverlay;
+  children?: React.ReactNode;
+}) {
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const overlayTemplates = useContext(OverlayTemplatesContext);
   const template = overlayTemplates.find((t) => t.type === overlay.type);
   const Renderer = template?.renderer;
-
-  // useLayoutEffect: 브라우저 페인트 전 동기 실행 → 첫 렌더에서도 프레임만 보이는 현상 방지
-  useLayoutEffect(() => {
-    setContainerReady(true);
-  }, []);
 
   if (!Renderer) {
     return (
       <div className="p-6 flex justify-center items-start">
         {/*
+         * UserScopeWrapper로 감싸 fallback 상태에서도 children의 CSS 스코핑을 유지한다.
          * overflow-hidden 제거 → 컨트롤 바(-top-6)가 프레임 밖으로 노출.
          * 시각 크롬(border·shadow)은 DOM 마지막의 absolute 오버레이로 표현.
          */}
-        <div
-          className="relative bg-gray-100/80"
-          style={{ width: PHONE_FRAME_W, minHeight: CANVAS_MIN_H }}
-        >
-          <p className="text-xs text-gray-400 mb-2 px-4 pt-4">오버레이: {overlay.type}</p>
-          <div className="bg-white rounded-xl shadow p-4">{children}</div>
-          <div className="absolute inset-0 rounded-xl shadow-lg border border-gray-200 pointer-events-none" />
-        </div>
+        <UserScopeWrapper style={{ display: "contents" }}>
+          <div
+            className="relative bg-gray-100/80"
+            style={{ width: PHONE_FRAME_W, minHeight: CANVAS_MIN_H }}
+          >
+            <p className="text-xs text-gray-400 mb-2 px-4 pt-4">
+              오버레이: {overlay.type}
+            </p>
+            <div className="bg-white rounded-xl shadow p-4">{children}</div>
+            <div className="absolute inset-0 rounded-xl shadow-lg border border-gray-200 pointer-events-none" />
+          </div>
+        </UserScopeWrapper>
       </div>
     );
   }
@@ -65,12 +73,21 @@ export function OverlayCanvas({ overlay, children }: { overlay: CMSOverlay; chil
        */}
       <UserScopeWrapper style={{ display: "contents" }}>
         <div
-          ref={containerRef}
+          ref={setContainer}
           className="relative bg-gray-100/80"
-          style={{ width: PHONE_FRAME_W, minHeight: CANVAS_MIN_H, transform: "translateZ(0)" }}
+          style={{
+            width: PHONE_FRAME_W,
+            minHeight: CANVAS_MIN_H,
+            transform: "translateZ(0)",
+          }}
         >
-          {containerReady && containerRef.current && (
-            <Renderer open onClose={() => {}} container={containerRef.current} props={overlay.props}>
+          {container && (
+            <Renderer
+              open
+              onClose={NOOP}
+              container={container}
+              props={overlay.props}
+            >
               {/* pt-7: Renderer body 안에 overflow가 있을 경우 첫 번째 블록 컨트롤 바(-top-6)가 잘리지 않도록 공간 확보 */}
               <div className="pt-7">{children}</div>
             </Renderer>

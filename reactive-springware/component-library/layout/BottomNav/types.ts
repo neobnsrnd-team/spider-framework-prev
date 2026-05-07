@@ -19,8 +19,8 @@ export interface BottomNavItem {
 }
 
 export interface BottomNavProps {
-  /** 탭 항목 목록 */
-  items:      BottomNavItem[];
+  /** 탭 항목 목록. 미전달 시 빈 탭바 렌더링 */
+  items?:     BottomNavItem[];
   /** 현재 활성 탭 id */
   activeId:   string;
   className?: string;

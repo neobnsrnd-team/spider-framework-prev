@@ -19,8 +19,8 @@ export interface TabNavItem {
 export type TabNavVariant = 'underline' | 'pill';
 
 export interface TabNavProps {
-  /** 탭 목록 */
-  items:        TabNavItem[];
+  /** 탭 목록. 미전달 시 빈 탭바 렌더링 */
+  items?:       TabNavItem[];
   /** 현재 활성 탭 id */
   activeId:     string;
   /**

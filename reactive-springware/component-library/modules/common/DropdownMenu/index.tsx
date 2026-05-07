@@ -28,7 +28,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { cn } from '@lib/cn';
 import type { DropdownMenuProps } from './types';
 
-export function DropdownMenu({ children, items, align = 'right', className }: DropdownMenuProps) {
+export function DropdownMenu({ children, items = [], align = 'right', className }: DropdownMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 

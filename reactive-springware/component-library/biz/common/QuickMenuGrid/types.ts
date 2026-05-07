@@ -21,7 +21,8 @@ export interface QuickMenuItem {
 }
 
 export interface QuickMenuGridProps {
-  items:      QuickMenuItem[];
+  /** 메뉴 항목 목록. 미전달 시 빈 그리드 렌더링 */
+  items?:     QuickMenuItem[];
   /**
    * 열 수. 기본: 4.
    * 아이템 수에 따라 4열(기본) 또는 3열 권장.
