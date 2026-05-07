@@ -10,8 +10,8 @@
                 <th class="col-w-80 sortable" data-sort="viewMode">뷰모드</th>
                 <th class="col-w-90 sortable" data-sort="createUserName">작성자</th>
                 <th class="col-w-100 sortable" data-sort="approveState">승인상태</th>
-                <!-- #308: 공개여부 컬럼 재노출 (읽기 전용 배지) — 변경 액션은 [긴급차단/복구] 버튼으로 일원화 -->
-                <th class="col-w-80 sortable" data-sort="isPublic">공개여부</th>
+                <!-- #308: 공개여부 — display:none (데이터는 유지, 향후 정책 변경 시 복원 가능) -->
+                <th class="col-w-80 sortable" data-sort="isPublic" style="display:none">공개여부</th>
                 <th class="col-w-100 sortable" data-sort="beginningDate">노출시작일</th>
                 <th class="col-w-100 sortable" data-sort="expiredDate">노출종료일</th>
                 <th class="col-w-150 sortable" data-sort="lastModifiedDtime">최종수정일시</th>
