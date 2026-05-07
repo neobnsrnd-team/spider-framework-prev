@@ -55,6 +55,12 @@ public class RedisDistributedLockService implements DistributedLockService {
             Thread.currentThread().interrupt();
             log.warn("[분산 락] 획득 인터럽트: batchAppId={}", batchAppId);
             return false;
+        } catch (Exception e) {
+            // Redis 연결 실패 시 락 없이 실행 허용 — 단일 인스턴스 POC 환경 대응
+            // 멀티 인스턴스 운영 환경에서는 Redis를 반드시 복구해야 중복 실행 제어가 보장된다
+            log.warn("[분산 락] Redis 연결 실패, 락 없이 실행 허용: batchAppId={}, error={}",
+                    batchAppId, e.getMessage());
+            return true;
         }
     }
 

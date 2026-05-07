@@ -5,6 +5,14 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      redisson:
+        # lazyInitialization: true — 기동 시 Redis 연결을 시도하지 않고, 첫 락 획득 요청 시점으로 연결을 미룬다.
+        # Redis가 없는 환경에서도 WAS가 정상 기동되며, 실제 배치 실행 시 연결을 시도한다.
+        # 멀티 인스턴스 운영 환경에서는 Redis가 반드시 기동 상태여야 한다.
+        config: |
+          lazyInitialization: true
+          singleServerConfig:
+            address: "redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}"
   quartz:
     # RAMJobStore: in-memory 저장 — WAS 재기동 시 등록된 Job이 초기화됨
     # TODO: 운영 환경에서는 job-store-type: jdbc 로 전환하여 재기동 후에도 스케줄 복구 가능하게 할 것
