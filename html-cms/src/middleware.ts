@@ -54,9 +54,7 @@ async function checkEmergencyBlock(req: NextRequest): Promise<NextResponse | nul
             const data = (await res.json()) as { data?: { isPublic?: string } };
             if (data.data?.isPublic === 'N') {
                 // 점검 페이지로 리다이렉트 — basePath 포함
-                return NextResponse.redirect(
-                    new URL(`${CMS_BASE_PATH}/maintenance`, req.nextUrl.origin),
-                );
+                return NextResponse.redirect(new URL(`${CMS_BASE_PATH}/maintenance`, req.nextUrl.origin));
             }
         }
     } catch {

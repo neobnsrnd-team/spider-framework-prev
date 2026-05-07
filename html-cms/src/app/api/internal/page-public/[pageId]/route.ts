@@ -14,10 +14,7 @@ import { errorResponse, successResponse } from '@/lib/api-response';
 
 const INTERNAL_SECRET = process.env.INTERNAL_API_SECRET ?? '';
 
-export async function GET(
-    req: NextRequest,
-    { params }: { params: Promise<{ pageId: string }> },
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ pageId: string }> }) {
     // 내부 호출 전용 — 시크릿 헤더 불일치 시 404로 위장하여 엔드포인트 존재 자체를 숨김
     const secret = req.headers.get('x-internal-secret') ?? '';
     if (!INTERNAL_SECRET || secret !== INTERNAL_SECRET) {
