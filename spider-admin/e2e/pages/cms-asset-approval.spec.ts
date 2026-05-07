@@ -47,8 +47,11 @@ test.describe('CMS 이미지 승인 관리 화면', () => {
     });
 
     test('반려 모달이 열리고 닫혀야 한다', async ({ page }) => {
-        await page.goto(PAGE_URL);
-        await page.waitForResponse(r => r.url().includes(LIST_API));
+        // waitForResponse를 goto와 동시에 시작해야 응답을 놓치지 않음
+        await Promise.all([
+            page.waitForResponse(r => r.url().includes(LIST_API)),
+            page.goto(PAGE_URL),
+        ]);
 
         const rejectBtn = page.locator('#assetApprovalTableBody button:has-text("반려")').first();
         const hasPending = await rejectBtn.count();

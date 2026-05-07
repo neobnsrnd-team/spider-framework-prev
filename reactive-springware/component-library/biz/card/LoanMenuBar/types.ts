@@ -15,7 +15,7 @@ export interface LoanMenuBarItem {
 }
 
 export interface LoanMenuBarProps {
-  /** 메뉴 항목 목록. 보통 단기카드대출 / 장기카드대출 / 리볼빙 3종 */
-  items: LoanMenuBarItem[]
+  /** 메뉴 항목 목록. 보통 단기카드대출 / 장기카드대출 / 리볼빙 3종. 미전달 시 빈 바 렌더링 */
+  items?: LoanMenuBarItem[]
   className?: string
 }

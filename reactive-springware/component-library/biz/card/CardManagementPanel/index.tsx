@@ -50,7 +50,7 @@ function NavRow({ label, subText, onClick }: CardManagementNavRow) {
   );
 }
 
-export function CardManagementPanel({ rows, className }: CardManagementPanelProps) {
+export function CardManagementPanel({ rows = [], className }: CardManagementPanelProps) {
   return (
     <div className={cn('flex flex-col', className)}>
       {/* SectionHeader — "카드 관리" 섹션 제목 */}
