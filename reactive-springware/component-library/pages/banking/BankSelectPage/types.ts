@@ -40,8 +40,8 @@ export interface BankSelectPageProps {
   onTabChange: (tab: BankSelectTab) => void;
 
   // ── 은행 탭 ──────────────────────────────────────────────────
-  /** 은행 목록 */
-  banks: FinancialItem[];
+  /** 은행 목록. 미전달 시 빈 그리드 렌더링 */
+  banks?: FinancialItem[];
   /** 선택된 은행 id */
   selectedBankId?: string;
   /** 은행 선택 핸들러 */
@@ -50,9 +50,9 @@ export interface BankSelectPageProps {
   // ── 증권사 탭 ─────────────────────────────────────────────────
   /**
    * 증권사 목록.
-   * 빈 배열이면 EmptyState("등록된 증권사가 없습니다.")를 표시한다.
+   * 빈 배열 또는 미전달이면 EmptyState("등록된 증권사가 없습니다.")를 표시한다.
    */
-  securities: FinancialItem[];
+  securities?: FinancialItem[];
   /** 선택된 증권사 id */
   selectedSecuritiesId?: string;
   /** 증권사 선택 핸들러 */

@@ -109,14 +109,25 @@ function isoToDate(iso: string): Date {
 
 export function TransactionSearchFilter({
   value,
-  onSearch,
+  onSearch = () => {},
   defaultExpanded = false,
   className,
 }: TransactionSearchFilterProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
+  /* value 미전달 시 기본값. 빈 deps로 마운트 시 1회만 계산해 참조를 안정화한다.
+     인라인 객체 기본값은 매 렌더마다 새 참조를 생성해 useEffect 무한 루프를 유발하므로 금지 */
+  const fallbackValue = useMemo<TransactionSearchParams>(() => ({
+    startDate: calcStartDate('1m'),
+    endDate: toLocalDateISO(new Date()),
+    sortOrder: 'recent',
+    transactionType: 'all',
+  }), []);
+
+  const resolvedValue = value ?? fallbackValue;
+
   /* 폼 내부 상태 — 조회 버튼 클릭 전까지 외부 value에 반영되지 않음 */
-  const [localParams, setLocalParams] = useState<TransactionSearchParams>(value);
+  const [localParams, setLocalParams] = useState<TransactionSearchParams>(resolvedValue);
 
   /* 종료일 DatePicker의 maxDate로 사용. 렌더마다 new Date()를 생성하지 않도록 메모이제이션 */
   const today = useMemo(() => new Date(), []);
@@ -126,8 +137,11 @@ export function TransactionSearchFilter({
    * 부모에서 필터 초기화(예: '전체 기간으로 리셋') 시 내부 폼 상태가 함께 갱신된다.
    */
   useEffect(() => {
-    setLocalParams(value);
-  }, [value]);
+    setLocalParams(resolvedValue);
+    /* 객체 참조 대신 개별 프로퍼티에 의존 — 부모가 비메모 객체를 전달해도 실제 값이
+       같으면 React가 bailout하여 무한 루프가 발생하지 않는다 */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedValue.startDate, resolvedValue.endDate, resolvedValue.sortOrder, resolvedValue.transactionType]);
 
   /* 퀵 기간 탭 선택 상태 (직접 날짜를 바꾸면 null로 초기화됨).
    * 기본값 '1m': 필터를 처음 펼쳤을 때 1개월 탭이 활성 상태로 표시된다. */
@@ -178,7 +192,7 @@ export function TransactionSearchFilter({
   }, [localParams, onSearch]);
 
   /* 접힌 상태에서 헤더 하단에 표시할 기간 요약 */
-  const periodSummary = `${toDisplayDate(value.startDate)} ~ ${toDisplayDate(value.endDate)}`;
+  const periodSummary = `${toDisplayDate(resolvedValue.startDate)} ~ ${toDisplayDate(resolvedValue.endDate)}`;
 
   return (
     <div

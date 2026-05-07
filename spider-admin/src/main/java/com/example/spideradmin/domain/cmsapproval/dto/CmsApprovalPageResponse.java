@@ -53,4 +53,7 @@ public class CmsApprovalPageResponse {
      * 그 외                                 → APPROVE_STATE 값
      */
     private String displayState;
+
+    /** 배포 여부 (0: 미배포, 1: 배포완료) — FILE_CRC_VALUE IS NOT NULL (#308) */
+    private int isDeployed;
 }

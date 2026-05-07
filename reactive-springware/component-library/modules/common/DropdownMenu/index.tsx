@@ -33,7 +33,7 @@ export function DropdownMenu({
   triggerVariant = 'default',
   triggerAriaLabel,
   children,
-  items,
+  items = [],
   align = 'right',
   className,
 }: DropdownMenuProps) {

@@ -91,9 +91,10 @@ export function DatePicker({
   const [calendarStyle, setCalendarStyle] = useState<React.CSSProperties>({});
 
   /**
-   * isOpen이 true로 바뀔 때 달력 위치를 계산한다.
-   * 제어 모드: anchorRefProp(외부 트리거 버튼)를 기준으로 위치를 잡는다.
-   * 비제어 모드: 내장 triggerRef를 기준으로 위치를 잡는다.
+   * [effect 1] 달력 패널 위치 계산 — isOpen / anchorRefProp 변경 시에만 실행.
+   * setCalendarStyle은 매번 새 객체를 생성하므로, value·rangeValue처럼 렌더마다
+   * 새 참조가 만들어지는 deps와 함께 두면 무한 루프가 발생한다.
+   * anchorRefProp은 RefObject(안정적 참조), isOpen은 boolean이므로 루프 위험 없음.
    */
   useEffect(() => {
     if (!isOpen) return;
@@ -113,15 +114,21 @@ export function DatePicker({
       width:    CALENDAR_WIDTH,
       zIndex:   9999,
     });
+  }, [isOpen, anchorRefProp]);
 
-    /* 달력 뷰를 현재 선택된 value의 연/월로 맞춘다.
-       value가 없으면 오늘 기준으로 유지 */
+  /**
+   * [effect 2] 달력 뷰 연/월 동기화 — 달력이 열릴 때 선택된 날짜의 월로 이동.
+   * setViewYear / setViewMonth는 primitive(number)를 쓰므로, value·rangeValue가
+   * 새 참조여도 실제 값이 같으면 React가 bailout → 리렌더 없음 → 루프 없음.
+   */
+  useEffect(() => {
+    if (!isOpen) return;
     const base = mode === 'single' ? value : (rangeValue[0] ?? null);
     if (base) {
       setViewYear(base.getFullYear());
       setViewMonth(base.getMonth());
     }
-  }, [isOpen, mode, value, rangeValue, anchorRefProp]);
+  }, [isOpen, mode, value, rangeValue]);
 
   /** 달력을 닫는 공통 함수 */
   const closeCalendar = useCallback(() => {

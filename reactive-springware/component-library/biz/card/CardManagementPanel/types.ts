@@ -14,7 +14,7 @@ export interface CardManagementNavRow {
 }
 
 export interface CardManagementPanelProps {
-  /** 네비게이션 행 목록. 순서대로 렌더링되며 개수 제한 없음 */
-  rows:       CardManagementNavRow[];
+  /** 네비게이션 행 목록. 순서대로 렌더링되며 개수 제한 없음. 미전달 시 빈 패널 렌더링 */
+  rows?:      CardManagementNavRow[];
   className?: string;
 }

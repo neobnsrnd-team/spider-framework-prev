@@ -44,8 +44,8 @@ export interface TransactionListItemProps {
 }
 
 export interface TransactionListProps {
-  /** API 응답 flat 배열. 컴포넌트 내부에서 날짜별로 그룹핑 */
-  items:      TransactionItem[];
+  /** API 응답 flat 배열. 컴포넌트 내부에서 날짜별로 그룹핑. 미전달 시 emptyMessage 표시 */
+  items?:     TransactionItem[];
   /** 로딩 상태 */
   loading?:   boolean;
   /** 빈 목록 표시 메시지. 기본: '거래 내역이 없어요' */

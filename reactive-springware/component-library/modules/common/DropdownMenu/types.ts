@@ -39,8 +39,8 @@ export interface DropdownMenuProps {
    * triggerIcon이 없을 때만 렌더링된다.
    */
   children?: React.ReactNode;
-  /** 드롭다운에 표시할 항목 목록 */
-  items: DropdownMenuItem[];
+  /** 드롭다운에 표시할 항목 목록. 미전달 시 빈 패널 렌더링 */
+  items?: DropdownMenuItem[];
   /**
    * 패널 정렬 방향. 기본: 'right'
    * - 'right' : 트리거 우측 기준 좌측으로 패널 정렬 (우측 끝 버튼에 적합)

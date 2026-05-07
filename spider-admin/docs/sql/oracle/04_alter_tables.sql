@@ -766,3 +766,29 @@ UPDATE FWK_MESSAGE_FIELD
    AND MESSAGE_FIELD_ID = 'userGrade';
 
 COMMIT;
+
+-- =============================================================
+-- cardName 필드 타입/길이 수정 (C,20 → K,60)
+-- mock-core FixedMessageWriter.writeK(cardName, 60) 와 일치시킴
+-- 적용 후 biz-transfer 메타 리로드 필요
+-- =============================================================
+UPDATE FWK_MESSAGE_FIELD
+   SET DATA_TYPE = 'K', DATA_LENGTH = 60, LAST_UPDATE_DTIME = TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+ WHERE ORG_ID = 'DEMO'
+   AND MESSAGE_ID IN ('CORE_TRANSACTIONS_RES', 'CORE_PAYMENT_STMT_RES')
+   AND MESSAGE_FIELD_ID = 'cardName';
+
+COMMIT;
+
+-- =============================================================
+-- CORE_CARD_LIST_RES.name 길이 수정 (K,40 → K,60)
+-- mock-core CoreCardListHandler.writeK(name, 60) 와 일치시킴
+-- 적용 후 biz-transfer 메타 리로드 필요
+-- =============================================================
+UPDATE FWK_MESSAGE_FIELD
+   SET DATA_LENGTH = 60, LAST_UPDATE_DTIME = TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+ WHERE ORG_ID = 'DEMO'
+   AND MESSAGE_ID = 'CORE_CARD_LIST_RES'
+   AND MESSAGE_FIELD_ID = 'name';
+
+COMMIT;

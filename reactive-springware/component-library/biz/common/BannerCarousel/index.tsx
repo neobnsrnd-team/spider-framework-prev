@@ -76,7 +76,7 @@ function SingleBanner({ item, showClose }: SingleBannerProps) {
 }
 
 export function BannerCarousel({
-  items,
+  items = [],
   autoPlayInterval = 3000,
   className,
 }: BannerCarouselProps) {
@@ -131,6 +131,9 @@ export function BannerCarousel({
     },
     [items.length, startAutoPlay],
   );
+
+  /* 배너 없음: 아무것도 렌더링하지 않음 */
+  if (items.length === 0) return null;
 
   /* 배너 1개: 슬라이더 기능 없이 단순 렌더링 */
   if (!isMulti) {

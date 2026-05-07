@@ -270,7 +270,9 @@ export function cmsBankPlugin(options: CmsBankPluginOptions = {}): Plugin {
               if (existing) {
                 await repo.updatePage({ pageId, pageName: body.pageName, pageJson: body.pageJson, pageCode: body.pageCode, user });
               } else {
-                // 클라이언트가 보낸 pageId가 DB에 없으면 신규 생성
+                // pageId가 DB에 없으면 소프트 삭제된 행이거나 무효 ID — 새 UUID로 신규 생성.
+                // 기존 pageId로 INSERT하면 USE_YN='N' 행과 PK 충돌(ORA-00001)이 발생한다.
+                pageId = uuidv4();
                 await repo.createPage({ pageId, pageName: body.pageName, pageJson: body.pageJson, pageCode: body.pageCode, user });
               }
             } else {
