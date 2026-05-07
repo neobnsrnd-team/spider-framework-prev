@@ -93,7 +93,7 @@
             const $tbody = $('#approvalTableBody');
             if (!rows || rows.length === 0) {
                 this.rowsByPageId = {};
-                $tbody.html('<tr><td colspan="9" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>');
+                $tbody.html('<tr><td colspan="11" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>');
                 return;
             }
 
@@ -107,14 +107,27 @@
                 const expiredCls = this._isExpired(row.expiredDate) ? 'text-danger fw-bold' : '';
                 const pid        = HtmlUtils.escape(row.pageId);
 
-                // 공개여부 — 현재 상태 라벨 + 클릭 시 토글
-                const isPublicBtn = HAS_CMS_WRITE
-                    ? `<button class="btn btn-xs ${row.isPublic === 'Y' ? 'btn-primary' : 'btn-outline-secondary'}"
-                               title="${row.isPublic === 'Y' ? '클릭하여 비공개 전환' : '클릭하여 공개 전환'}"
-                               onclick="CmsApprovalPage.togglePublicState('${pid}', '${HtmlUtils.escape(row.isPublic)}')">
-                               ${row.isPublic === 'Y' ? '공개' : '비공개'}
-                       </button>`
-                    : `<span class="badge ${row.isPublic === 'Y' ? 'bg-primary' : 'bg-secondary'}">${row.isPublic === 'Y' ? '공개' : '비공개'}</span>`;
+                // 공개여부 — 읽기 전용 배지 (#308: 변경 액션은 [긴급차단/복구] 버튼으로 일원화)
+                const isPublicBtn = `<span class="badge ${row.isPublic === 'Y' ? 'bg-primary' : 'bg-secondary'}">${row.isPublic === 'Y' ? '공개' : '비공개'}</span>`;
+
+                // 긴급차단/복구 컬럼 — APPROVED + 배포완료 + CMS:W 권한일 때만 노출 (#308)
+                // isDeployed=1: FILE_CRC_VALUE IS NOT NULL (배포 이력 존재)
+                // [긴급차단]: 노출 기간(beginningDate~expiredDate) 내에 있는 경우에만 노출 — 만료 상태 제외
+                // [복구]: displayState='비공개'(IS_PUBLIC=N + 미만료)인 경우에만 노출 — 만료 상태 제외
+                const isWithinPeriod = CmsApprovalPage._isWithinDisplayPeriod(row.beginningDate, row.expiredDate);
+                let tdEmergency = '-';
+                if (HAS_CMS_WRITE && row.approveState === 'APPROVED' && row.isDeployed === 1) {
+                    if (row.isPublic === 'Y' && isWithinPeriod) {
+                        tdEmergency = `<button class="btn btn-danger btn-xs"
+                               data-page-id="${pid}"
+                               onclick="CmsApprovalPage.emergencyBlock('${pid}')">긴급차단</button>`;
+                    } else if (row.displayState === '비공개') {
+                        // IS_PUBLIC='N' + 미만료 — 복구 버튼 노출
+                        tdEmergency = `<button class="btn btn-success btn-xs"
+                               data-page-id="${pid}"
+                               onclick="CmsApprovalPage.restorePublic('${pid}')">복구</button>`;
+                    }
+                }
 
                 // 결재 컬럼 — PENDING 상태 + CMS:W 권한일 때만 노출
                 const tdApproval = (HAS_CMS_WRITE && row.approveState === 'PENDING')
@@ -137,13 +150,14 @@
                     <td class="text-center">${HtmlUtils.escape(row.viewMode || '')}</td>
                     <td>${HtmlUtils.escape(row.createUserName || '')}</td>
                     <td class="text-center">${badge}</td>
-                    <!-- 공개여부 컬럼 UI 숨김 (#132) — 정책 확정 시 주석 해제 + 두 곳의 colspan 9→10 복원 (approval-table.html:23, 이 파일 96행) -->
-                    <!-- <td class="text-center">${isPublicBtn}</td> -->
+                    <!-- #308: 공개여부 — display:none (데이터는 유지, 향후 정책 변경 시 복원 가능) -->
+                    <td class="text-center" style="display:none">${isPublicBtn}</td>
                     <td class="text-center">${HtmlUtils.escape(row.beginningDate || '-')}</td>
                     <td class="text-center ${expiredCls}">${HtmlUtils.escape(row.expiredDate || '-')}</td>
                     <td class="text-center small">${HtmlUtils.escape(row.lastModifiedDtime || '-')}</td>
                     <td class="text-center">${tdApproval}</td>
                     <td class="text-center">${tdHistory}</td>
+                    <td class="text-center">${tdEmergency}</td>
                 </tr>`;
             }).join('');
 
@@ -280,12 +294,40 @@
                 .catch(() => Toast.error('반려 처리 중 오류가 발생했습니다.'));
         },
 
-        // ── 공개 상태 토글 ──
-        togglePublicState: function(pageId, currentState) {
-            const isPublic = currentState === 'Y' ? 'N' : 'Y';
-            const label    = isPublic === 'Y' ? '공개' : '비공개';
-            if (!confirm(`해당 페이지를 ${label} 처리하시겠습니까?`)) return;
+        // ── 공개 상태 토글 (#308: 읽기 전용 배지로 전환 — 변경 액션은 긴급차단/복구 버튼으로 일원화) ──
+        // togglePublicState: function(pageId, currentState) {
+        //     const isPublic = currentState === 'Y' ? 'N' : 'Y';
+        //     const label    = isPublic === 'Y' ? '공개' : '비공개';
+        //     if (!confirm(`해당 페이지를 ${label} 처리하시겠습니까?`)) return;
+        //     fetch(`/api/cms-admin/pages/${pageId}/public-state`, {
+        //         method: 'PATCH',
+        //         headers: { 'Content-Type': 'application/json' },
+        //         body: JSON.stringify({ isPublic }),
+        //     })
+        //         .then(r => r.json())
+        //         .then(res => {
+        //             if (res.success) { Toast.success(res.message); this.load(); }
+        //             else             { Toast.error(res.message); }
+        //         })
+        //         .catch(() => Toast.error('공개 상태 변경 중 오류가 발생했습니다.'));
+        // },
 
+        // ── 긴급차단 (#308) ──
+        // 조건: APPROVED + 배포완료(isDeployed=1) + isPublic='Y' + CMS:W 권한
+        emergencyBlock: function(pageId) {
+            if (!confirm('이 콘텐츠를 즉시 차단하시겠습니까?\n(차단 시 대고객 서비스에서 즉시 사라집니다)')) return;
+            CmsApprovalPage._updatePublicState(pageId, 'N', '긴급차단');
+        },
+
+        // ── 복구 (#308) ──
+        // 조건: APPROVED + 배포완료(isDeployed=1) + isPublic='N' + CMS:W 권한
+        restorePublic: function(pageId) {
+            if (!confirm('서비스를 복구하시겠습니까?\n즉시 대고객 서비스에 노출됩니다.')) return;
+            CmsApprovalPage._updatePublicState(pageId, 'Y', '복구');
+        },
+
+        // IS_PUBLIC 변경 공통 처리 — emergencyBlock / restorePublic 에서 호출
+        _updatePublicState: function(pageId, isPublic, label) {
             fetch(`/api/cms-admin/pages/${pageId}/public-state`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -293,10 +335,10 @@
             })
                 .then(r => r.json())
                 .then(res => {
-                    if (res.success) { Toast.success(res.message); this.load(); }
+                    if (res.success) { Toast.success(`${label} 처리가 완료되었습니다.`); this.load(); }
                     else             { Toast.error(res.message); }
                 })
-                .catch(() => Toast.error('공개 상태 변경 중 오류가 발생했습니다.'));
+                .catch(() => Toast.error(`${label} 처리 중 오류가 발생했습니다.`));
         },
 
         // ── 이력 / 롤백 모달 ──
@@ -370,6 +412,25 @@
             const expiredDate = new Date(dateStr);
             expiredDate.setHours(23, 59, 59, 999);
             return expiredDate < new Date();
+        },
+
+        /**
+         * 노출 기간 내 여부 확인 — [긴급차단] 버튼 노출 조건 (#308)
+         * 현재날짜 >= 노출시작일 AND 현재날짜 <= 노출종료일
+         * beginningDate / expiredDate 가 없으면 해당 조건을 만족한 것으로 간주
+         */
+        _isWithinDisplayPeriod: function(beginningDate, expiredDate) {
+            const now = new Date();
+            if (beginningDate) {
+                const start = new Date(beginningDate);
+                if (now < start) return false; // 아직 노출 시작 전
+            }
+            if (expiredDate) {
+                const end = new Date(expiredDate);
+                end.setHours(23, 59, 59, 999); // 종료일 당일 말까지 포함
+                if (now > end) return false;    // 만료됨
+            }
+            return true;
         },
     };
 
