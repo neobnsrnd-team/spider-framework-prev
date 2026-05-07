@@ -109,7 +109,7 @@
             if (!rows || rows.length === 0) {
               this.rowsByPageId = {};
               $tbody.html(
-                '<tr><td colspan="11" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>',
+                `<tr><td colspan="11" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>`,
               );
               return;
             }
@@ -372,16 +372,16 @@
           openHistoryModal: function (pageId) {
             $("#historyPageId").val(pageId);
             $("#reactCmsAdminHistoryTableBody").html(
-              '<tr><td colspan="5" class="text-center">불러오는 중...</td></tr>',
+              `<tr><td colspan="5" class="text-center">불러오는 중...</td></tr>`,
             );
             new bootstrap.Modal("#reactCmsAdminHistoryModal").show();
 
-            fetch(`/api/react-cms-admin/pages/${pageId}/approval-history`)
+            fetch(`/api/react-cms-admin/pages/${encodeURIComponent(pageId)}/approval-history`)
               .then((r) => r.json())
               .then((res) => {
                 if (!res.success || !res.data || res.data.length === 0) {
                   $("#reactCmsAdminHistoryTableBody").html(
-                    '<tr><td colspan="5" class="text-center text-body-secondary">이력이 없습니다.</td></tr>',
+                    `<tr><td colspan="5" class="text-center text-body-secondary">이력이 없습니다.</td></tr>`,
                   );
                   return;
                 }
@@ -409,10 +409,11 @@
                     const isRollbackableState =
                       h.approveState === "APPROVED" ||
                       h.approveState === "WORK";
+                    // XSS 방지: pageId·version을 data-* 속성에만 저장, 인라인 onclick 제거
                     const rollbackBtn =
                       canRollback && !isLatest && isRollbackableState
-                        ? `<button class="btn btn-outline-warning btn-sm"
-                                   onclick="ReactCmsAdminApprovalPage.submitRollback('${pageId}', ${h.version})">롤백</button>`
+                        ? `<button class="btn btn-outline-warning btn-sm js-approval-rollback"
+                                   data-page-id="${HtmlUtils.escape(pageId)}" data-version="${h.version}">롤백</button>`
                         : "";
                     return `<tr>
                             <td class="text-center">${h.version}</td>
@@ -427,7 +428,7 @@
               })
               .catch(() => {
                 $("#reactCmsAdminHistoryTableBody").html(
-                  '<tr><td colspan="5" class="text-center text-danger">이력 조회 실패</td></tr>',
+                  `<tr><td colspan="5" class="text-center text-danger">이력 조회 실패</td></tr>`,
                 );
               });
           },
@@ -440,7 +441,7 @@
             )
               return;
 
-            fetch(`/api/react-cms-admin/pages/${pageId}/rollback`, {
+            fetch(`/api/react-cms-admin/pages/${encodeURIComponent(pageId)}/rollback`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ version }),
@@ -510,6 +511,13 @@
 
           $(document).on("click", ".js-approval-reject", function () {
             ReactCmsAdminApprovalPage.openRejectModal($(this).data("page-id"));
+          });
+
+          $(document).on("click", ".js-approval-rollback", function () {
+            ReactCmsAdminApprovalPage.submitRollback(
+              $(this).data("page-id"),
+              $(this).data("version"),
+            );
           });
 
           $("#btnRefresh")
