@@ -10,18 +10,20 @@
                 <th class="col-w-80 sortable" data-sort="viewMode">뷰모드</th>
                 <th class="col-w-90 sortable" data-sort="createUserName">작성자</th>
                 <th class="col-w-100 sortable" data-sort="approveState">승인상태</th>
-                <!-- 공개여부 컬럼: 정책 확정 전까지 UI 숨김 (#132). 복원 시 주석 해제 + 아래 colspan="9" → "10" -->
-                <!-- <th class="col-w-80 sortable" data-sort="isPublic">공개여부</th> -->
+                <!-- #308: 공개여부 — display:none (데이터는 유지, 향후 정책 변경 시 복원 가능) -->
+                <th class="col-w-80 sortable" data-sort="isPublic" style="display:none">공개여부</th>
                 <th class="col-w-100 sortable" data-sort="beginningDate">노출시작일</th>
                 <th class="col-w-100 sortable" data-sort="expiredDate">노출종료일</th>
                 <th class="col-w-150 sortable" data-sort="lastModifiedDtime">최종수정일시</th>
                 <th class="col-w-70">결재</th>
                 <th class="col-w-60">이력</th>
+                <!-- #308: 긴급차단 컬럼 — 현재 display:none (nginx 미들웨어 우회 문제로 임시 비활성화) -->
+                <th class="col-w-80" style="display:none">긴급차단</th>
             </tr>
         </thead>
         <tbody id="approvalTableBody">
             <tr>
-                <td colspan="9" class="text-center py-4 text-body-secondary">
+                <td colspan="11" class="text-center py-4 text-body-secondary">
                     조회 버튼을 클릭하여 데이터를 불러오세요.
                 </td>
             </tr>

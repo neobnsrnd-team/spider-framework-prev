@@ -173,12 +173,6 @@
             this.load();
           },
 
-          reset: function () {
-            $("#filterSearch").val("");
-            this.itemsPerPage = parseInt($("#limitRows").val()) || 10;
-            this.load(1);
-          },
-
           // ── 배포 실행 ──
 
           confirmPush: function (pageId, pageName) {

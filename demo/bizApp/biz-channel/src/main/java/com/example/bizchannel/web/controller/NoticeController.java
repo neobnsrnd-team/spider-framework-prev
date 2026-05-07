@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -140,7 +141,14 @@ public class NoticeController {
     public ResponseEntity<Map<String, Object>> previewNotice() {
         Map<String, Object> currentNotice = noticeManager.getCurrentNotice();
         if (currentNotice == null) {
-            return ResponseEntity.ok(Map.of());
+            // 빈 Map 대신 프론트엔드 NoticePayload 구조에 맞는 기본값을 반환한다.
+            // 빈 Map을 반환하면 notices 필드가 undefined가 되어 EmergencyNoticeBanner에서 TypeError 발생
+            return ResponseEntity.ok(Map.of(
+                    "notices", List.of(),
+                    "displayType", "N",
+                    "closeableYn", "Y",
+                    "hideTodayYn", "Y"
+            ));
         }
         return ResponseEntity.ok(currentNotice);
     }

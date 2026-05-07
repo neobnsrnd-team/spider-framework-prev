@@ -229,16 +229,6 @@
             this.load();
           },
 
-          reset: function () {
-            $("#filterApproveState").val("");
-            $("#filterSearch").val("");
-            this.sortBy = null;
-            this.sortDirection = null;
-            this.updateSortIndicators();
-            this.itemsPerPage = parseInt($("#limitRows").val()) || 10;
-            this.load(1);
-          },
-
           // ── React CMS 에디터 — 팝업 창으로 열기 ──
           openEditor: function (pageId) {
             window.open(
@@ -360,6 +350,10 @@
               .then((r) => r.json())
               .then((res) => {
                 if (res.success) {
+                  // react-cms 빌더가 저장한 pageName → pageId 캐시 제거.
+                  // 삭제 후 동일 페이지명으로 새 페이지를 만들 때 소프트 삭제된 행을
+                  // UPDATE하는 버그를 방지한다.
+                  localStorage.removeItem("cms_page_id_" + (row.pageName || ""));
                   Toast.success(res.message);
                   this.load();
                 } else {
