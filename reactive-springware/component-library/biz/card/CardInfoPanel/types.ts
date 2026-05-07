@@ -22,6 +22,7 @@ export interface CardInfoSection {
 }
 
 export interface CardInfoPanelProps {
-  sections: CardInfoSection[];
+  /** 섹션 목록. 미전달 시 빈 패널 렌더링 */
+  sections?: CardInfoSection[];
   className?: string;
 }

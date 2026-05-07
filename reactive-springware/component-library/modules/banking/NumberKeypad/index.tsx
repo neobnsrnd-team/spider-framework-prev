@@ -39,7 +39,16 @@ const BTN_BASE =
   'h-14 flex items-center justify-center rounded-xl ' +
   'transition-colors duration-100 active:bg-surface-raised select-none';
 
-export function NumberKeypad({ digits, onDigitPress, onDelete, onShuffle, className }: NumberKeypadProps) {
+/** 미전달 시 사용하는 기본 순서 배열 */
+const DEFAULT_DIGITS: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+export function NumberKeypad({
+  digits = DEFAULT_DIGITS,
+  onDigitPress = () => {},
+  onDelete = () => {},
+  onShuffle = () => {},
+  className,
+}: NumberKeypadProps) {
   /* digits[0..8]: 3×3 숫자 영역, digits[9]: 하단 행 중앙 숫자 */
   const topNineDigits = digits.slice(0, 9);
   const bottomMiddleDigit = digits[9];

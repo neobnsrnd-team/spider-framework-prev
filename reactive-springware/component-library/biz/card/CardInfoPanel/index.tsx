@@ -51,7 +51,7 @@ function InfoRow({ label, value }: CardInfoRow) {
   );
 }
 
-export function CardInfoPanel({ sections, className }: CardInfoPanelProps) {
+export function CardInfoPanel({ sections = [], className }: CardInfoPanelProps) {
   return (
     <div className={cn('flex flex-col', className)}>
       {sections.map((section, sectionIdx) => (

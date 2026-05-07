@@ -24,7 +24,7 @@ const numFmt = new Intl.NumberFormat('ko-KR');
 
 export function CardBenefitSummary({
   points,
-  benefits,
+  benefits = [],
   onPointDetail,
   onBenefitDetail,
 }: CardBenefitSummaryProps) {

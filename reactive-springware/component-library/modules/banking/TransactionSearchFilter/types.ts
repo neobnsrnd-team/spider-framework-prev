@@ -37,14 +37,15 @@ export interface TransactionSearchParams {
 }
 
 export interface TransactionSearchFilterProps {
-  /** 현재 적용된 검색 조건. 초기값 및 외부 동기화에 사용 */
-  value: TransactionSearchParams;
+  /** 현재 적용된 검색 조건. 미전달 시 최근 1개월·최근순·전체가 기본값 */
+  value?: TransactionSearchParams;
   /**
    * 조회 버튼 클릭 시 호출.
    * 폼 내부 상태(localParams)를 기준으로 호출되므로
    * 조회 전까지는 외부 value에 영향을 주지 않는다.
+   * 미전달 시 no-op.
    */
-  onSearch: (params: TransactionSearchParams) => void;
+  onSearch?: (params: TransactionSearchParams) => void;
   /** 초기 펼침 여부. 기본: false (접힌 상태) */
   defaultExpanded?: boolean;
   className?: string;

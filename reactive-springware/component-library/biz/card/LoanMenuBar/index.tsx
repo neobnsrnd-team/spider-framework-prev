@@ -29,7 +29,7 @@ import React, { useRef } from 'react';
 import { cn } from '@lib/cn';
 import type { LoanMenuBarProps } from './types';
 
-export function LoanMenuBar({ items, className }: LoanMenuBarProps) {
+export function LoanMenuBar({ items = [], className }: LoanMenuBarProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   /* 드래그 패닝 상태 — ref로 관리해 리렌더 없이 처리 */
   const isDragging = useRef(false);
