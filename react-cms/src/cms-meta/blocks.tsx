@@ -10,41 +10,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // CMS 일반 prop 시스템(Record<string, unknown>)과 각 컴포넌트의 구체적인 Props 타입을
 // 연결하는 브릿지 파일이므로 `as any` 캐스팅이 불가피하다.
+import { useContext } from "react";
 import type { BlockDefinition } from "@cms-core";
-import * as LucideIcons from "lucide-react";
+import { resolveIcon } from "@cms-core";
+import { PortalHostContext } from "@cms-core/context";
 import { MoreVertical } from "lucide-react";
-
-/**
- * kebab-case 이름 → Lucide 컴포넌트 역방향 조회 맵.
- * PascalCase → kebab 변환 시 연속 대문자("AArrowDown" → "aarrow-down")가 손실되어
- * 역변환으로는 원본을 복원할 수 없으므로, 모듈 초기화 시 맵을 직접 빌드한다.
- * IconPicker와 동일한 변환식을 사용해 저장 키와 조회 키를 일치시킨다.
- */
-// lucide-react 아이콘은 React.forwardRef() 반환값이므로 typeof가 "object"다.
-// IconPicker와 동일한 조건(대문자 시작 + object + $$typeof 보유)으로 필터링한다.
-const lucideIconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = Object.fromEntries(
-  (Object.entries(LucideIcons) as [string, unknown][])
-    .filter(([name, val]) =>
-      /^[A-Z]/.test(name) &&
-      typeof val === "object" &&
-      val !== null &&
-      "$$typeof" in (val as object)
-    )
-    .map(([name, val]) => [
-      name.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase(),
-      val,
-    ])
-);
-
-/**
- * icon-picker가 반환하는 kebab-case 이름을 lucide-react 엘리먼트로 변환한다.
- * 이름이 비어있거나 존재하지 않으면 null을 반환한다.
- */
-function resolveIcon(name: string, className = "size-5"): React.ReactNode {
-  if (!name) return null;
-  const Icon = lucideIconMap[name];
-  return Icon ? <Icon className={className} /> : null;
-}
 import {
   // ── Core ──────────────────────────────────────────────────────────────────
   Badge,
@@ -1157,6 +1127,18 @@ const CollapsibleSectionDefinition: BlockDefinition = {
   ),
 };
 
+// PortalHostContext에서 portal container를 읽어 DatePicker에 전달.
+// CMSApp이 stylesheetScope와 동기화된 호스트를 생성·관리하므로 DOM 직접 쿼리 불필요.
+function DatePickerBlock(p: Record<string, unknown>) {
+  const portalContainer = useContext(PortalHostContext);
+  return (
+    <DatePicker
+      {...(p as any)}
+      portalContainer={portalContainer ?? document.body}
+    />
+  );
+}
+
 const DatePickerDefinition: BlockDefinition = {
   meta: {
     name: "DatePicker",
@@ -1172,12 +1154,7 @@ const DatePickerDefinition: BlockDefinition = {
       onRangeChange: { type: "event", label: "날짜 범위 변경 (range)" },
     },
   },
-  component: (p) => (
-    <DatePicker
-      {...(p as any)}
-      portalContainer={document.getElementById("cms-portal-host") ?? document.body}
-    />
-  ),
+  component: DatePickerBlock,
 };
 
 const DividerDefinition: BlockDefinition = {

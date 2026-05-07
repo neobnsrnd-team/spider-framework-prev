@@ -51,3 +51,10 @@ export const LayoutTemplatesContext = createContext<LayoutTemplate[]>([]);
 
 /** generateJSX 코드 생성 설정 */
 export const CodegenConfigContext = createContext<CMSCodegenConfig>({});
+
+/**
+ * CMSApp이 관리하는 portal 전용 호스트 엘리먼트.
+ * document.body 직하에 위치해 transform 조상이 없으므로 position:fixed가 뷰포트 기준으로 작동.
+ * stylesheetScope data-* 속성이 자동으로 동기화되어 브랜드·도메인 토큰이 portal에도 적용됨.
+ */
+export const PortalHostContext = createContext<HTMLElement | null>(null);

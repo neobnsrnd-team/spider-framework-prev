@@ -8,7 +8,8 @@ import { useContext, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { LeafPropField } from "../types";
 import { LayoutTemplatesContext } from "../context";
-import IconPicker, { renderLucideIcon } from "./IconPicker";
+import IconPicker from "./IconPicker";
+import { resolveIcon } from "../utils/icon";
 
 // ─── 블록 간격 옵션 ──────────────────────────────────────────
 const GAP_OPTIONS = [
@@ -193,7 +194,7 @@ function LayoutFieldControl({
           className="flex items-center gap-2 h-8 px-3 rounded-lg border border-gray-200 bg-white text-xs text-gray-700 hover:border-gray-300 transition-colors w-full"
         >
           {value
-            ? renderLucideIcon(value as string, "w-4 h-4 text-primary shrink-0")
+            ? resolveIcon(value as string, "w-4 h-4 text-primary shrink-0")
             : <span className="w-4 h-4 rounded bg-gray-200 shrink-0" />}
           <span className={`flex-1 text-left ${value ? "text-gray-700" : "text-gray-400"}`}>
             {value ? (value as string) : "아이콘 선택..."}

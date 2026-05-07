@@ -5,9 +5,6 @@
  * 선택 값은 kebab-case 정규화 이름으로 반환됩니다 (예: "ChevronRight" → "chevron-right").
  * useDeferredValue로 검색 입력을 디퍼드 처리해 타이핑 중 렌더링 부하를 줄입니다.
  *
- * 부가 유틸:
- * - renderLucideIcon: kebab-case 이름을 받아 Lucide 아이콘 ReactNode를 반환합니다.
- *
  * @param value 현재 선택된 아이콘 이름 (kebab-case)
  * @param onSelect 아이콘 선택 콜백
  */
@@ -118,14 +115,3 @@ export default memo(function IconPicker({ value, onSelect }: IconPickerProps) {
   );
 });
 
-// ─── 유틸: 아이콘 이름으로 lucide-react 아이콘 렌더링 ───────────────────
-export function renderLucideIcon(name: string, className = "w-5 h-5"): React.ReactNode {
-  // kebab-case("chevron-right") → PascalCase("ChevronRight") 역변환 후 LucideIcons에서 조회
-  const pascalName = name
-    .split("-")
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>>)[pascalName];
-  if (!Icon) return null;
-  return <Icon className={className} />;
-}

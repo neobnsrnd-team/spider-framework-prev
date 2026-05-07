@@ -5,7 +5,7 @@
  * Router는 이 컴포넌트 밖(main.tsx)에서 소유합니다.
  * RouterProvider를 children으로 전달하면 CMS 컨텍스트 안에서 라우팅이 동작합니다.
  */
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import type { BlockDefinition, LayoutTemplate, OverlayTemplate, CMSCodegenConfig } from "./types";
 import {
@@ -17,6 +17,7 @@ import {
   OverlayTemplatesContext,
   StylesheetContext,
   CodegenConfigContext,
+  PortalHostContext,
 } from "./context";
 import { useCMSContextValues } from "./useCMSContextValues";
 
@@ -66,23 +67,50 @@ export function CMSApp({ blocks, overlays = [], layouts = [], stylesheetContent,
     [stylesheetContent, stylesheet, stylesheetScope],
   );
 
+  // portal host: 렌더 중 동기 생성해 첫 렌더부터 context가 non-null이 되도록 함
+  const portalHostRef = useRef<HTMLElement | null>(null);
+  if (!portalHostRef.current) {
+    portalHostRef.current = document.createElement("div");
+    portalHostRef.current.id = "cms-portal-host";
+  }
+
+  // mount 시 body에 추가, unmount 시 제거
+  useEffect(() => {
+    const host = portalHostRef.current!;
+    document.body.appendChild(host);
+    return () => { document.body.removeChild(host); };
+  }, []);
+
+  // stylesheetScope 변경 시 portal host의 data-* attributes 동기화
+  useEffect(() => {
+    const host = portalHostRef.current!;
+    host.setAttribute("data-cms-user-scope", "");
+    // 이전 scope 속성 제거 후 재적용
+    Array.from(host.attributes)
+      .filter((a) => a.name.startsWith("data-") && a.name !== "data-cms-user-scope")
+      .forEach((a) => host.removeAttribute(a.name));
+    Object.entries(stylesheetScope ?? {}).forEach(([k, v]) => host.setAttribute(k, v));
+  }, [stylesheetScope]);
+
   return (
-    <StylesheetContext.Provider value={stylesheetConfig}>
-      <BlockDefinitionsContext.Provider value={blocks}>
-        <BlockMetaContext.Provider value={blockMeta}>
-          <BlockRegistryContext.Provider value={blockRegistry}>
-            <OverlayTemplatesContext.Provider value={overlays}>
-              <LayoutTemplatesContext.Provider value={layouts}>
-                <LayoutRendererContext.Provider value={derivedRenderer}>
-                  <CodegenConfigContext.Provider value={codegenConfig}>
-                    {children}
-                  </CodegenConfigContext.Provider>
-                </LayoutRendererContext.Provider>
-              </LayoutTemplatesContext.Provider>
-            </OverlayTemplatesContext.Provider>
-          </BlockRegistryContext.Provider>
-        </BlockMetaContext.Provider>
-      </BlockDefinitionsContext.Provider>
-    </StylesheetContext.Provider>
+    <PortalHostContext.Provider value={portalHostRef.current}>
+      <StylesheetContext.Provider value={stylesheetConfig}>
+        <BlockDefinitionsContext.Provider value={blocks}>
+          <BlockMetaContext.Provider value={blockMeta}>
+            <BlockRegistryContext.Provider value={blockRegistry}>
+              <OverlayTemplatesContext.Provider value={overlays}>
+                <LayoutTemplatesContext.Provider value={layouts}>
+                  <LayoutRendererContext.Provider value={derivedRenderer}>
+                    <CodegenConfigContext.Provider value={codegenConfig}>
+                      {children}
+                    </CodegenConfigContext.Provider>
+                  </LayoutRendererContext.Provider>
+                </LayoutTemplatesContext.Provider>
+              </OverlayTemplatesContext.Provider>
+            </BlockRegistryContext.Provider>
+          </BlockMetaContext.Provider>
+        </BlockDefinitionsContext.Provider>
+      </StylesheetContext.Provider>
+    </PortalHostContext.Provider>
   );
 }

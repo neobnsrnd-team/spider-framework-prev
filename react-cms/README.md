@@ -317,9 +317,9 @@ interface OverlayTemplate {
 | `"number"` | 숫자 입력 | 숫자 값 |
 | `"boolean"` | 토글 | 참/거짓 |
 | `"select"` | 드롭다운 | `options` 배열 중 선택 |
-| `"icon-picker"` | 아이콘 선택기 | lucide-react 아이콘명 |
+| `"icon-picker"` | 아이콘 선택기 | lucide-react 아이콘명 (kebab-case 문자열 반환) |
 | `"group"` | 섹션 그룹 | 중첩 객체, `fields`로 하위 정의 |
-| `"array"` | 동적 목록 | `itemFields`로 항목 구조 정의 |
+| `"array"` | 동적 목록 | `itemFields`로 항목 구조 정의. 항목 내 `"array"` 필드로 2단계 중첩 가능 |
 | `"event"` | 액션 선택기 | 클릭 이벤트에 Action 바인딩 |
 
 ```typescript
@@ -348,7 +348,51 @@ propSchema: {
     },
   },
 }
+
+// array 2단계 중첩 예시 — itemFields 안에 다시 array 정의 가능
+propSchema: {
+  menus: {
+    type: "array",
+    label: "메뉴",
+    default: [{ title: "메뉴 1", items: [] }],
+    itemFields: {
+      title: { type: "string", label: "메뉴명", default: "" },
+      items: {
+        type: "array",
+        label: "하위 항목",
+        default: [],
+        itemFields: {
+          label: { type: "string", label: "레이블", default: "" },
+          path:  { type: "string", label: "경로",   default: "" },
+        },
+      },
+    },
+  },
+}
 ```
+
+#### icon-picker 사용 방법
+
+`icon-picker` 필드는 CMS 인스펙터에서 kebab-case 아이콘명(예: `"bell"`)을 반환한다.
+`blocks.tsx`에서 이를 실제 Lucide 컴포넌트 ReactNode로 변환할 때는 파일 상단의 `resolveIcon()` 유틸을 사용한다.
+
+```typescript
+// blocks.tsx 상단에 정의된 resolveIcon 유틸 사용
+// resolveIcon(iconName, className?) → ReactNode | undefined
+component: (p) => (
+  <MyComponent
+    icon={resolveIcon((p as any).icon, "size-5 text-text-muted")}
+  />
+),
+
+// propSchema 정의
+propSchema: {
+  icon: { type: "icon-picker", label: "아이콘", default: "bell" },
+}
+```
+
+> `resolveIcon`은 `lucideIconMap`(kebab-case → Lucide 컴포넌트 역방향 맵)을 참조하므로
+> `default` 값은 반드시 kebab-case(`"bell"`, `"arrow-right"`)로 지정해야 한다.
 
 ---
 
@@ -572,7 +616,22 @@ interface StylesheetConfig {
 
 - `stylesheetContent`가 있으면 URL fetch 없이 인라인으로 주입한다.
 - CSS 내 `:root`는 자동으로 `:scope`로 변환된다.
+- 줄 시작의 `[data-brand="*"]` / `[data-domain="*"]` 선택자는 `:scope[data-brand="*"]` / `:scope[data-domain="*"]`으로 변환된다. `stylesheetScope`로 스코프 루트에 `data-brand` / `data-domain` 속성이 설정되므로, 브랜드·도메인 CSS 변수가 스코프 루트 자신을 올바르게 타겟하기 위해 필요하다.
 - `@import url(...)` 구문은 `<style>` 최상단으로 분리하여 브라우저 파싱 오류를 방지한다.
+
+**portal 컴포넌트 스타일 적용**
+
+DatePicker 달력처럼 `document.body`에 portal로 렌더링되는 컴포넌트는 `@scope` 범위 밖에 렌더링되어 스타일이 적용되지 않는다.
+이를 해결하려면 `main.tsx`에서 `data-cms-user-scope` 속성을 가진 portal 전용 호스트 div를 `document.body` 직하에 생성하고, 해당 요소를 `portalContainer` prop으로 전달한다.
+
+```typescript
+// main.tsx — portal 호스트 생성
+const cmsPortalHost = document.createElement("div");
+cmsPortalHost.id = "cms-portal-host";
+cmsPortalHost.setAttribute("data-cms-user-scope", "");
+cmsPortalHost.setAttribute("data-brand", import.meta.env.VITE_CMS_BRAND ?? "hana");
+document.body.appendChild(cmsPortalHost);
+```
 
 ---
 
