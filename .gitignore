@@ -75,6 +75,18 @@ e2e/.auth/session-readonly.json
 */.DS_Store
 logs/
 nul
+
+### Runtime logs ###
+*.log
+admin/admin-run.log
+
+### Build artifacts ###
+com/
+out/
+spider-link/com/
+
+### Temp files ###
+sheet_check.txt
 docs/plan
 # Claude Code internal files
 .claude/*

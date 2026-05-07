@@ -84,10 +84,12 @@
 
             const html = rows.map(row => {
                 const pid = HtmlUtils.escape(row.pageId || '');
-                const escapedName = HtmlUtils.escape(row.pageName || '').replace(/'/g, '&#39;');
+                const escapedName = HtmlUtils.escape(row.pageName || '').replace(/'/g, "\\'");
+                const escapedDeployedUrl = HtmlUtils.escape(row.deployedUrl || '').replace(/'/g, "\\'");
+                const escapedViewMode = HtmlUtils.escape(row.viewMode || '').replace(/'/g, "\\'");
                 const detailBtn = row.clickCount > 0
                     ? `<button class="btn btn-outline-primary btn-xs"
-                           onclick="CmsStatisticsPage.openDetailModal('${pid}', '${escapedName}', '${HtmlUtils.escape(startDate)}', '${HtmlUtils.escape(endDate)}')">상세</button>`
+                           onclick="CmsStatisticsPage.openDetailModal('${pid}', '${escapedName}', '${HtmlUtils.escape(startDate)}', '${HtmlUtils.escape(endDate)}', '${escapedDeployedUrl}', '${escapedViewMode}')">상세</button>`
                     : '-';
                 const previewBtn = row.deployedUrl
                     ? `<button type="button" class="btn btn-info btn-xs js-stat-preview"
@@ -183,7 +185,7 @@
             );
         },
 
-        openDetailModal: function(pageId, pageName, startDate, endDate) {
+        openDetailModal: function(pageId, pageName, startDate, endDate, deployedUrl, viewMode) {
             $('#detailPageName').text(pageName);
 
             // 모달 재오픈 시 기존 차트 인스턴스 해제 (캔버스 재사용 시 오류 방지)
@@ -192,10 +194,20 @@
                 this._detailChart = null;
             }
 
+            // 미리보기 버튼 — deployedUrl이 있을 때만 표시, js-stat-preview 전역 리스너가 처리
+            const $previewBtn = $('#detailPreviewBtn');
+            if (deployedUrl) {
+                $previewBtn.removeClass('d-none')
+                    .data('deployed-url', deployedUrl)
+                    .data('view-mode', viewMode || '');
+            } else {
+                $previewBtn.addClass('d-none');
+            }
+
             // 로딩 상태로 초기화
             $('#detailLoading').show();
             $('#detailChartWrapper').addClass('d-none');
-            $('#detailSummaryTable').addClass('d-none');
+            $('#detailTotalClicks').addClass('d-none').text('');
             $('#detailNoData').addClass('d-none').removeClass('text-danger').text('');
 
             // getOrCreateInstance — 매 호출마다 새 인스턴스를 생성하지 않아 메모리 누수 방지
@@ -221,7 +233,7 @@
         },
 
         /**
-         * 컴포넌트별 클릭 수를 가로형 막대 차트 + 요약 테이블로 렌더링한다.
+         * 컴포넌트별 클릭 수를 가로형 막대 차트로 렌더링한다.
          * - 최대 클릭 컴포넌트: 강조색(#0d6efd), 나머지: 무채색(#adb5bd)
          * - 막대 끝 afterDraw 플러그인으로 "클릭수 (비율%)" 레이블 표시
          * - 레이블 길이에 따라 오른쪽 패딩을 동적 계산하여 잘림 방지
@@ -249,6 +261,7 @@
             $('#detailBarChart').css('height', canvasHeight + 'px');
 
             const canvas = document.getElementById('detailBarChart');
+            $('#detailTotalClicks').text(`총 ${total.toLocaleString()}회 클릭`).removeClass('d-none');
             $('#detailChartWrapper').removeClass('d-none');
 
             this._detailChart = new Chart(canvas.getContext('2d'), {
@@ -286,38 +299,6 @@
                 }
             });
 
-            // 요약 테이블 렌더링
-            this._renderSummaryTable(data, total, maxClick);
-        },
-
-        /**
-         * 차트 하단 요약 테이블을 렌더링한다.
-         * - 최다 클릭 행에 강조 배지 표시
-         * - 합계 행(tfoot) 추가
-         */
-        _renderSummaryTable: function(data, total, maxClick) {
-            const rows = data.map(d => {
-                const count = d.clickCount || 0;
-                const pct = this._pct(count, total);
-                const badge = count === maxClick
-                    ? ' <span class="badge bg-primary ms-1" style="font-size:10px;">최다</span>'
-                    : '';
-                return `<tr>
-                    <td class="text-monospace small">${HtmlUtils.escape(d.componentId || '')}${badge}</td>
-                    <td class="text-end">${count.toLocaleString()}</td>
-                    <td class="text-end text-body-secondary">${pct}%</td>
-                </tr>`;
-            }).join('');
-
-            $('#detailSummaryBody').html(rows);
-            $('#detailSummaryFoot').html(`
-                <tr>
-                    <td>합계</td>
-                    <td class="text-end">${total.toLocaleString()}</td>
-                    <td class="text-end">100.0%</td>
-                </tr>
-            `);
-            $('#detailSummaryTable').removeClass('d-none');
         },
 
         _today: function() {
