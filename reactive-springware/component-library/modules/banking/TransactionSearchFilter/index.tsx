@@ -138,8 +138,10 @@ export function TransactionSearchFilter({
    */
   useEffect(() => {
     setLocalParams(resolvedValue);
+    /* 객체 참조 대신 개별 프로퍼티에 의존 — 부모가 비메모 객체를 전달해도 실제 값이
+       같으면 React가 bailout하여 무한 루프가 발생하지 않는다 */
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolvedValue]);
+  }, [resolvedValue.startDate, resolvedValue.endDate, resolvedValue.sortOrder, resolvedValue.transactionType]);
 
   /* 퀵 기간 탭 선택 상태 (직접 날짜를 바꾸면 null로 초기화됨).
    * 기본값 '1m': 필터를 처음 펼쳤을 때 1개월 탭이 활성 상태로 표시된다. */
