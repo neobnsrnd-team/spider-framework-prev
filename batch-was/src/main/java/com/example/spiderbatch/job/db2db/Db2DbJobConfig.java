@@ -4,6 +4,7 @@ import com.example.spiderbatch.job.AbstractDb2DbJob;
 import com.example.spiderbatch.job.common.BatchJobParametersValidator;
 import com.example.spiderbatch.job.common.CardUsage;
 import com.example.spiderbatch.job.common.CardUsageQuery;
+import com.example.spiderbatch.job.db2db.DateRangePartitioner;
 import com.example.spiderbatch.job.listener.BatchNotificationListener;
 import java.util.Map;
 import javax.sql.DataSource;
@@ -73,7 +74,7 @@ public class Db2DbJobConfig extends AbstractDb2DbJob<CardUsage> {
     }
 
     /**
-     * 매니저 Step: ColumnRangePartitioner로 이용일자 범위를 분할하고 병렬 실행.
+     * 매니저 Step: DateRangePartitioner로 이용일자 범위를 분할하고 병렬 실행.
      * TaskExecutor를 @Bean으로 주입받아 Spring이 lifecycle(initialize/destroy)을 관리한다.
      */
     @Bean
@@ -82,7 +83,8 @@ public class Db2DbJobConfig extends AbstractDb2DbJob<CardUsage> {
                                    JdbcTemplate jdbcTemplate,
                                    TaskExecutor db2DbTaskExecutor) {
         return buildPartitionStep(jobRepository, "db2DbWorkerStep",
-                new ColumnRangePartitioner(jdbcTemplate), db2DbWorkerStep, db2DbTaskExecutor);
+                new DateRangePartitioner(jdbcTemplate, "POC_카드사용내역", "이용일자"),
+                db2DbWorkerStep, db2DbTaskExecutor);
     }
 
     /**
@@ -109,7 +111,7 @@ public class Db2DbJobConfig extends AbstractDb2DbJob<CardUsage> {
      * alias 없이 원본 한글 컬럼명 그대로 SELECT — JdbcPagingItemReader 내부 PagingRowMapper가
      * sort key(이용일자)를 rs.getObject("이용일자")로 추출하므로 alias하면 ORA-17006 발생.
      *
-     * @param minValue 파티션 시작 이용일자(숫자, ColumnRangePartitioner 주입)
+     * @param minValue 파티션 시작 이용일자(숫자, DateRangePartitioner 주입)
      * @param maxValue 파티션 종료 이용일자(숫자)
      */
     @Bean

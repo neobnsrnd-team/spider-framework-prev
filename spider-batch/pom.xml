@@ -108,6 +108,21 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Quartz 스케줄러: optional 처리 — 내장 프로젝트가 포함해야 Cron 자동 실행 가능 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-quartz</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Redisson 분산 락: optional 처리 — 내장 프로젝트가 포함해야 Redis 락 사용 가능, 미포함 시 NoOp으로 동작 -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+            <version>3.27.2</version>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

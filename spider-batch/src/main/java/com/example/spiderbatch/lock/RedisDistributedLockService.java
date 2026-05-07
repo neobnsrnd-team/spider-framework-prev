@@ -1,11 +1,11 @@
 package com.example.spiderbatch.lock;
 
+import com.example.spiderbatch.spi.DistributedLockService;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.stereotype.Service;
 
 /**
  * Redis 분산 락 서비스.
@@ -15,17 +15,17 @@ import org.springframework.stereotype.Service;
  *
  * <p>락 키: {@code batch:lock:{batchAppId}}<br>
  * leaseTime을 지정하지 않아 Redisson Watchdog이 활성화된다.
- * Watchdog은 배치 실행 중 락을 30초마다 자동 갱신하며, 배치 완료/실패 시 {@link #unlock}에서 명시적으로 해제한다.
+ * Watchdog은 배치 실행 중 락을 30초마다 자동 갱신하며, 완료/실패 시 {@link #unlock}에서 명시적으로 해제한다.
  * 프로세스가 비정상 종료되면 Watchdog이 멈추고 기본 TTL(30초) 후 락이 자동 해제된다.</p>
  *
- * <p>TODO: 운영 환경에서는 RedissonClient를 Sentinel 또는 Cluster 모드로 구성해야 한다.
- * application.yml의 {@code spring.data.redis} 설정을
- * {@code spring.redis.sentinel} 또는 {@code spring.redis.cluster} 블록으로 전환할 것.</p>
+ * <p>이 빈은 {@code redisson-spring-boot-starter}가 클래스패스에 있을 때
+ * {@link com.example.spiderbatch.config.RedisLockConfig}에 의해 자동 등록된다.</p>
+ *
+ * <p>TODO: 운영 환경에서는 RedissonClient를 Sentinel 또는 Cluster 모드로 구성해야 한다.</p>
  */
 @Slf4j
-@Service
 @RequiredArgsConstructor
-public class RedisDistributedLockService {
+public class RedisDistributedLockService implements DistributedLockService {
 
     private final RedissonClient redissonClient;
 
@@ -39,6 +39,7 @@ public class RedisDistributedLockService {
      * @param batchAppId 배치 APP ID
      * @return 락 획득 성공 시 true, 이미 다른 인스턴스가 실행 중이면 false
      */
+    @Override
     public boolean tryLock(String batchAppId) {
         RLock lock = redissonClient.getLock(LOCK_PREFIX + batchAppId);
         try {
@@ -63,6 +64,7 @@ public class RedisDistributedLockService {
      *
      * @param batchAppId 배치 APP ID
      */
+    @Override
     public void unlock(String batchAppId) {
         RLock lock = redissonClient.getLock(LOCK_PREFIX + batchAppId);
         // isHeldByCurrentThread: 현재 스레드가 락을 보유한 경우에만 해제

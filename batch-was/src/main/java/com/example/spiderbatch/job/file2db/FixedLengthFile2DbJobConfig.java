@@ -1,36 +1,27 @@
 package com.example.spiderbatch.job.file2db;
 
+import com.example.spiderbatch.job.AbstractFixedLengthFile2DbJob;
 import com.example.spiderbatch.job.common.BatchJobParametersValidator;
 import com.example.spiderbatch.job.common.FixedLengthRecord;
 import com.example.spiderbatch.job.listener.BatchNotificationListener;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.TaskletStep;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
-import org.springframework.batch.item.file.BufferedReaderFactory;
 import org.springframework.batch.item.file.FlatFileItemReader;
-import org.springframework.batch.item.file.LineCallbackHandler;
-import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
-import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.transform.FixedLengthTokenizer;
 import org.springframework.batch.item.file.transform.Range;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
@@ -39,9 +30,8 @@ import org.springframework.transaction.PlatformTransactionManager;
  * <p>금융 거래내역 전문(61자 고정 길이)을 읽어 {@code POC_고정길이거래} 테이블에 MERGE(중복 skip)한다.</p>
  *
  * <ul>
- *   <li>헤더(HDR) 1줄 skip</li>
- *   <li>트레일러(TLR) {@link LineCallbackHandler}로 감지 후 로그만 기록</li>
- *   <li>BOM(EF BB BF) 자동 제거 — {@link BomStrippingBufferedReaderFactory}</li>
+ *   <li>헤더(HDR) 1줄 skip, 트레일러(TLR) 감지·로그: {@link AbstractFixedLengthFile2DbJob#buildReader}</li>
+ *   <li>BOM(EF BB BF) 자동 제거: {@link AbstractFixedLengthFile2DbJob.BomStrippingBufferedReaderFactory}</li>
  *   <li>faultTolerant: skip(Exception), skipLimit(10)</li>
  *   <li>처리 완료 후 파일 아카이브 Step 실행 (성공/실패 분기)</li>
  * </ul>
@@ -53,15 +43,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class FixedLengthFile2DbJobConfig {
-
-    /** Chunk 크기: 100건씩 읽어서 DB에 배치 INSERT */
-    private static final int CHUNK_SIZE = 100;
-
-    /** UTF-8 BOM 시퀀스 (EF BB BF) */
-    private static final int BOM_BYTE_1 = 0xEF;
-    private static final int BOM_BYTE_2 = 0xBB;
-    private static final int BOM_BYTE_3 = 0xBF;
+public class FixedLengthFile2DbJobConfig extends AbstractFixedLengthFile2DbJob<FixedLengthRecord> {
 
     /** 아카이브 루트 디렉터리 (application.yml: batch.file.archive-dir) */
     @Value("${batch.file.archive-dir}")
@@ -73,6 +55,35 @@ public class FixedLengthFile2DbJobConfig {
 
     private final DataSource dataSource;
     private final BatchNotificationListener batchNotificationListener;
+
+    @Override
+    protected String getJobName() {
+        return "fixedFile2db";
+    }
+
+    @Override
+    protected Class<FixedLengthRecord> getTargetType() {
+        return FixedLengthRecord.class;
+    }
+
+    /**
+     * 컬럼별 Range 설정 (1-based index).
+     * 레코드 포맷: ACCOUNT_NO(10) + TRX_DT(8) + TRX_TM(6) + AMOUNT(15) + TRX_TYPE_CODE(2) + MEMO(20) = 61자
+     */
+    @Override
+    protected FixedLengthTokenizer buildTokenizer() {
+        FixedLengthTokenizer tokenizer = new FixedLengthTokenizer();
+        tokenizer.setNames("accountNo", "trxDt", "trxTm", "amount", "trxTypeCode", "memo");
+        tokenizer.setColumns(
+                new Range(1, 10),   // ACCOUNT_NO
+                new Range(11, 18),  // TRX_DT
+                new Range(19, 24),  // TRX_TM
+                new Range(25, 39),  // AMOUNT
+                new Range(40, 41),  // TRX_TYPE_CODE
+                new Range(42, 61)   // MEMO
+        );
+        return tokenizer;
+    }
 
     // -------------------------------------------------------------------------
     // Job
@@ -89,7 +100,8 @@ public class FixedLengthFile2DbJobConfig {
             Step fileArchiveSuccessStep,
             Step fileArchiveErrorStep) {
 
-        return new JobBuilder("fixedFile2db", jobRepository)
+        return buildJobBuilder(jobRepository)
+                // inputFilePath 파라미터 필수 검증
                 .validator(new BatchJobParametersValidator(true))
                 .listener(batchNotificationListener)
                 .start(fixedLengthFile2DbStep)
@@ -105,9 +117,7 @@ public class FixedLengthFile2DbJobConfig {
     // Steps
     // -------------------------------------------------------------------------
 
-    /**
-     * 고정 길이 파일 읽기 → Processor → DB 적재 Step.
-     */
+    /** 고정 길이 파일 읽기 → Processor → DB 적재 Step */
     @Bean
     public TaskletStep fixedLengthFile2DbStep(
             JobRepository jobRepository,
@@ -116,19 +126,9 @@ public class FixedLengthFile2DbJobConfig {
             ItemProcessor<FixedLengthRecord, FixedLengthRecord> fixedLengthRecordProcessor,
             JdbcBatchItemWriter<FixedLengthRecord> fixedLengthRecordWriter) {
 
-        return new StepBuilder("fixedLengthFile2DbStep", jobRepository)
-                .<FixedLengthRecord, FixedLengthRecord>chunk(CHUNK_SIZE, transactionManager)
-                .reader(fixedLengthFileReader)
-                .processor(fixedLengthRecordProcessor)
-                .writer(fixedLengthRecordWriter)
-                // 개별 아이템 오류 시 해당 건만 건너뛰고 계속 처리
-                .faultTolerant()
-                .skip(Exception.class)
-                .skipLimit(10)
-                // 완료된 Step은 재시작 시 skip — RETRYABLE_YN='N'이면 Job에 preventRestart() 추가 권장
-                // TODO: FWK_BATCH_APP.RETRYABLE_YN 값에 따라 JobBuilder.preventRestart() 연동 필요
-                .allowStartIfComplete(false)
-                .build();
+        return (TaskletStep) buildChunkStep(jobRepository, transactionManager,
+                "fixedLengthFile2DbStep",
+                fixedLengthFileReader, fixedLengthRecordProcessor, fixedLengthRecordWriter);
     }
 
     /** 성공 아카이브 Step */
@@ -161,63 +161,15 @@ public class FixedLengthFile2DbJobConfig {
 
     /**
      * 고정 길이 전문 FlatFileItemReader.
+     * BOM 제거·헤더 skip·트레일러 감지는 {@link AbstractFixedLengthFile2DbJob#buildReader}가 처리한다.
      *
-     * <ul>
-     *   <li>파일 경로: Job Parameter {@code inputFilePath}에서 주입</li>
-     *   <li>BOM(EF BB BF) 제거: {@link BomStrippingBufferedReaderFactory}</li>
-     *   <li>헤더 1줄 skip: {@code linesToSkip(1)}</li>
-     *   <li>트레일러 감지: "TLR"로 시작하는 줄 → 로그 기록 후 무시</li>
-     *   <li>컬럼 분리: {@link FixedLengthTokenizer} + {@link Range}</li>
-     * </ul>
+     * @param inputFilePath Job Parameter {@code inputFilePath}에서 주입
      */
     @Bean
-    @org.springframework.batch.core.configuration.annotation.StepScope
+    @StepScope
     public FlatFileItemReader<FixedLengthRecord> fixedLengthFileReader(
             @Value("#{jobParameters['inputFilePath']}") String inputFilePath) {
-
-        // FixedLengthTokenizer: 컬럼별 Range 설정 (1-based index)
-        FixedLengthTokenizer tokenizer = new FixedLengthTokenizer();
-        tokenizer.setNames("accountNo", "trxDt", "trxTm", "amount", "trxTypeCode", "memo");
-        tokenizer.setColumns(
-                new Range(1, 10),   // ACCOUNT_NO
-                new Range(11, 18),  // TRX_DT
-                new Range(19, 24),  // TRX_TM
-                new Range(25, 39),  // AMOUNT
-                new Range(40, 41),  // TRX_TYPE_CODE
-                new Range(42, 61)   // MEMO
-        );
-        // 레코드 길이 불일치 시 오류 발생 — 트레일러(TLR) 처리를 위해 strict 모드 해제
-        tokenizer.setStrict(false);
-
-        BeanWrapperFieldSetMapper<FixedLengthRecord> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
-        fieldSetMapper.setTargetType(FixedLengthRecord.class);
-
-        return new FlatFileItemReaderBuilder<FixedLengthRecord>()
-                .name("fixedLengthFileReader")
-                .resource(new FileSystemResource(inputFilePath))
-                // BOM(EF BB BF) 제거: 커스텀 BufferedReaderFactory 적용
-                .bufferedReaderFactory(new BomStrippingBufferedReaderFactory())
-                // HDR 헤더 1줄 skip
-                .linesToSkip(1)
-                // TLR 트레일러: "TLR"로 시작하는 줄 감지 후 레코드 수 로그만 기록
-                .skippedLinesCallback(trailerLineCallbackHandler())
-                .lineTokenizer(tokenizer)
-                .fieldSetMapper(fieldSetMapper)
-                .build();
-    }
-
-    /**
-     * 트레일러 라인 콜백 핸들러.
-     * "TLR"로 시작하는 줄을 감지하여 레코드 수 정보를 로그로 기록한다.
-     * 실제 데이터로 처리되지 않도록 Reader의 {@code skippedLinesCallback}에 등록.
-     */
-    @Bean
-    public LineCallbackHandler trailerLineCallbackHandler() {
-        return line -> {
-            if (line.startsWith("TLR")) {
-                log.info("[FixedLengthFile2Db] 트레일러 감지 — 내용: {}", line.trim());
-            }
-        };
+        return buildReader(inputFilePath);
     }
 
     // -------------------------------------------------------------------------
@@ -227,8 +179,10 @@ public class FixedLengthFile2DbJobConfig {
     /**
      * 레코드 전처리 Processor.
      * <ul>
-     *   <li>amount 필드 앞뒤 공백 및 선두 0패딩 trim</li>
      *   <li>accountNo가 공백인 빈 레코드 skip (null 반환)</li>
+     *   <li>트레일러(TLR) 레코드 skip</li>
+     *   <li>amount 필드 앞뒤 공백 및 선두 0패딩 trim</li>
+     *   <li>memo 필드 우측 공백패딩 제거</li>
      * </ul>
      */
     @Bean
@@ -298,68 +252,23 @@ public class FixedLengthFile2DbJobConfig {
 
     /**
      * 성공 아카이브 Tasklet Bean.
-     * jobExecution.getStatus()는 Step 실행 중 STARTED이므로 판단 불가 —
-     * 성공 여부를 생성자에서 고정값(true)으로 주입한다.
+     * jobExecution.getStatus()는 Step 실행 중 STARTED이므로 성공 여부를 생성자에서 고정값(true)으로 주입.
      */
     @Bean
-    @org.springframework.batch.core.configuration.annotation.StepScope
+    @StepScope
     public FileArchiveTasklet fileArchiveSuccessTasklet(
             @Value("#{jobParameters['inputFilePath']}") String inputFilePath) {
-        return new FileArchiveTasklet(inputFilePath, archiveDir, errorDir, true);
+        return buildSuccessTasklet(inputFilePath, archiveDir, errorDir);
     }
 
     /**
      * 오류 아카이브 Tasklet Bean.
-     * jobExecution.getStatus()는 Step 실행 중 STARTED이므로 판단 불가 —
-     * 성공 여부를 생성자에서 고정값(false)으로 주입한다.
+     * jobExecution.getStatus()는 Step 실행 중 STARTED이므로 성공 여부를 생성자에서 고정값(false)으로 주입.
      */
     @Bean
-    @org.springframework.batch.core.configuration.annotation.StepScope
+    @StepScope
     public FileArchiveTasklet fileArchiveErrorTasklet(
             @Value("#{jobParameters['inputFilePath']}") String inputFilePath) {
-        return new FileArchiveTasklet(inputFilePath, archiveDir, errorDir, false);
-    }
-
-    // -------------------------------------------------------------------------
-    // Inner class: BOM 제거 BufferedReaderFactory
-    // -------------------------------------------------------------------------
-
-    /**
-     * UTF-8 BOM(EF BB BF)을 제거하는 {@link BufferedReaderFactory} 구현.
-     *
-     * <p>Spring의 FlatFileItemReader는 BOM을 자동 제거하지 않으므로
-     * InputStream의 첫 3바이트를 검사하여 BOM이면 건너뛰고
-     * 그렇지 않으면 스트림을 되돌려 정상적으로 읽는다.</p>
-     */
-    private static class BomStrippingBufferedReaderFactory implements BufferedReaderFactory {
-
-        @Override
-        public BufferedReader create(org.springframework.core.io.Resource resource, String encoding)
-                throws IOException {
-
-            InputStream rawStream = resource.getInputStream();
-
-            // BOM 여부 확인을 위해 첫 3바이트 선행 읽기
-            // read()는 3바이트 미만을 반환할 수 있으므로 readNBytes()로 정확히 읽는다 (Java 9+)
-            byte[] bom = new byte[3];
-            int bytesRead = rawStream.readNBytes(bom, 0, 3);
-
-            InputStream finalStream;
-            if (bytesRead == 3
-                    && (bom[0] & 0xFF) == BOM_BYTE_1
-                    && (bom[1] & 0xFF) == BOM_BYTE_2
-                    && (bom[2] & 0xFF) == BOM_BYTE_3) {
-                // BOM 확인됨 — 이미 3바이트를 소비했으므로 나머지 스트림만 사용
-                finalStream = rawStream;
-                log.debug("[BomStrippingBufferedReaderFactory] UTF-8 BOM 감지 및 제거");
-            } else {
-                // BOM 없음 — 읽은 바이트를 스트림 앞에 되돌려 전체 내용을 정상 처리
-                byte[] prefix = (bytesRead > 0) ? java.util.Arrays.copyOf(bom, bytesRead) : new byte[0];
-                finalStream = new java.io.SequenceInputStream(
-                        new java.io.ByteArrayInputStream(prefix), rawStream);
-            }
-
-            return new BufferedReader(new InputStreamReader(finalStream, StandardCharsets.UTF_8));
-        }
+        return buildErrorTasklet(inputFilePath, archiveDir, errorDir);
     }
 }

@@ -5,7 +5,6 @@ import com.example.spidercommon.infra.tcp.handler.CommandHandler;
 import com.example.spidercommon.infra.tcp.model.ManagementContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 /**
  * SCHEDULE_TRIGGER / SCHEDULE_CRON_UPDATE 커맨드 핸들러.
@@ -18,9 +17,11 @@ import org.springframework.stereotype.Component;
  *   <li>{@code SCHEDULE_TRIGGER}: 특정 배치 Job을 즉시 실행</li>
  *   <li>{@code SCHEDULE_CRON_UPDATE}: 특정 배치의 Cron 표현식 변경 (ManagementContext.cronText 사용)</li>
  * </ul>
+ *
+ * <p>{@code spring-boot-starter-quartz}가 클래스패스에 있을 때
+ * {@link com.example.spiderbatch.config.QuartzSchedulerConfig}에 의해 자동 등록된다.</p>
  */
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class ScheduleCommandHandler implements CommandHandler<ManagementContext, ManagementContext> {
 

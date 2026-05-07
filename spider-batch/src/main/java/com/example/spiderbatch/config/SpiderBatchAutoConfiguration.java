@@ -11,7 +11,10 @@ import com.example.spiderbatch.global.notification.EmailNotificationService;
 import com.example.spiderbatch.global.notification.SlackNotificationService;
 import com.example.spiderbatch.global.security.ApiKeyAuthFilter;
 import com.example.spiderbatch.global.security.BatchWasSecurityConfig;
+import com.example.spiderbatch.job.listener.BatchNotificationListener;
 import com.example.spiderbatch.spi.BatchHistoryRecorder;
+import com.example.spiderbatch.spi.DistributedLockService;
+import com.example.spiderbatch.spi.NoOpDistributedLockService;
 import com.example.spiderbatch.tcp.BatchExecCommandHandler;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -57,6 +60,12 @@ import org.springframework.context.annotation.Import;
         // 알림 서비스 — 환경변수 미설정 시 no-op (Slack: SLACK_WEBHOOK_URL, Email: SMTP_HOST)
         SlackNotificationService.class,
         EmailNotificationService.class,
+        // 배치 알림 리스너 — Job 완료·실패 시 Slack/Email 알림 발송
+        BatchNotificationListener.class,
+        // Redis 분산 락 (@ConditionalOnClass: RedissonClient)
+        RedisLockConfig.class,
+        // Quartz 스케줄러 (@ConditionalOnClass: Scheduler)
+        QuartzSchedulerConfig.class,
 })
 public class SpiderBatchAutoConfiguration {
 
@@ -68,5 +77,16 @@ public class SpiderBatchAutoConfiguration {
     @ConditionalOnMissingBean(BatchHistoryRecorder.class)
     public BatchHistoryRecorder batchHistoryRecorder(BatchHisMapper batchHisMapper) {
         return new DefaultBatchHistoryRecorder(batchHisMapper);
+    }
+
+    /**
+     * {@link DistributedLockService} 기본 구현체(No-Op)를 등록한다.
+     * {@link RedisLockConfig}가 Redis 구현체를 먼저 등록하면 이 Bean은 생성되지 않는다.
+     * 내장 프로젝트에서 커스텀 {@link DistributedLockService} Bean을 등록해도 대체된다.
+     */
+    @Bean
+    @ConditionalOnMissingBean(DistributedLockService.class)
+    public DistributedLockService noOpDistributedLockService() {
+        return new NoOpDistributedLockService();
     }
 }

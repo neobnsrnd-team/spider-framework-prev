@@ -12,9 +12,9 @@ import org.springframework.batch.item.ExecutionContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * 이용일자(YYYYMMDD) 범위 기반 Partitioner.
+ * YYYYMMDD 형식의 날짜 컬럼을 기준으로 파티션을 균등 분할하는 범용 Partitioner.
  *
- * <p>POC_카드사용내역 테이블을 이용일자 범위로 균등 분할하여 병렬 처리한다.
+ * <p>대상 테이블의 MIN/MAX 날짜를 조회하여 gridSize 수만큼 파티션을 생성한다.
  * YYYYMMDD 정수 단순 산술은 월/연도 경계에서 공백이 생기므로(예: 20251231 → 20260101 사이
  * 정수 공백 8870) {@link LocalDate} 달력 산술로 실제 날짜 기반 분할한다.</p>
  *
@@ -25,17 +25,25 @@ import org.springframework.jdbc.core.JdbcTemplate;
  *   partition2: 20260127 ~ 20260220 (약 57일)
  *   partition3: 20260221 ~ 20260414 (나머지)
  * </pre>
+ *
+ * <p>각 파티션의 ExecutionContext에 {@code minValue}, {@code maxValue}(YYYYMMDD 숫자)를 저장한다.
+ * Worker Step의 ItemReader는 이 값을 {@code stepExecutionContext}에서 주입받아 범위 쿼리에 사용한다.</p>
+ *
+ * @see AbstractDb2DbJob#buildPartitionStep
  */
 @Slf4j
 @RequiredArgsConstructor
-public class ColumnRangePartitioner implements Partitioner {
+public class DateRangePartitioner implements Partitioner {
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final JdbcTemplate jdbcTemplate;
 
     /** 파티션 분할 대상 테이블 */
-    private static final String TABLE = "POC_카드사용내역";
+    private final String tableName;
+
+    /** 날짜 기준 컬럼명 (YYYYMMDD 형식의 문자열 컬럼) */
+    private final String columnName;
 
     /**
      * gridSize 수만큼 파티션을 생성한다.
@@ -47,12 +55,12 @@ public class ColumnRangePartitioner implements Partitioner {
     @Override
     public Map<String, ExecutionContext> partition(int gridSize) {
         String minStr = jdbcTemplate.queryForObject(
-                "SELECT MIN(이용일자) FROM " + TABLE, String.class);
+                "SELECT MIN(" + columnName + ") FROM " + tableName, String.class);
         String maxStr = jdbcTemplate.queryForObject(
-                "SELECT MAX(이용일자) FROM " + TABLE, String.class);
+                "SELECT MAX(" + columnName + ") FROM " + tableName, String.class);
 
         if (minStr == null || maxStr == null) {
-            log.warn("파티셔닝 대상 데이터 없음: table={}", TABLE);
+            log.warn("파티셔닝 대상 데이터 없음: table={}, column={}", tableName, columnName);
             Map<String, ExecutionContext> empty = new HashMap<>();
             ExecutionContext ctx = new ExecutionContext();
             ctx.putLong("minValue", 0L);
@@ -88,7 +96,8 @@ public class ColumnRangePartitioner implements Partitioner {
             start = end.plusDays(1);
         }
 
-        log.info("파티션 생성 완료: table={}, gridSize={}, 이용일자={}~{}", TABLE, gridSize, minStr, maxStr);
+        log.info("파티션 생성 완료: table={}, column={}, gridSize={}, 범위={}~{}",
+                tableName, columnName, gridSize, minStr, maxStr);
         return result;
     }
 }

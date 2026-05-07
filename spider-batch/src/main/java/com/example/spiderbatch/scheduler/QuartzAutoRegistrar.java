@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.stereotype.Component;
 
 /**
  * WAS 기동 시 Quartz 스케줄 자동 등록.
@@ -18,9 +17,11 @@ import org.springframework.stereotype.Component;
  *
  * <p>RAMJobStore를 사용하므로 WAS 재기동 시마다 재등록이 필요하다.
  * ApplicationRunner를 통해 기동 완료 후 자동으로 실행된다.</p>
+ *
+ * <p>{@code spring-boot-starter-quartz}가 클래스패스에 있을 때
+ * {@link com.example.spiderbatch.config.QuartzSchedulerConfig}에 의해 자동 등록된다.</p>
  */
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class QuartzAutoRegistrar implements ApplicationRunner {
 

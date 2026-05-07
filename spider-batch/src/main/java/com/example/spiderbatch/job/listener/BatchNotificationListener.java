@@ -13,10 +13,14 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.stereotype.Component;
 
 /**
- * @file BatchNotificationListener.java
- * @description 배치 Job 완료·실패 시 Slack·Email 알림을 발송하는 JobExecutionListener.
- *              알림 로직을 Job과 분리하여 4개 샘플 Job에 공통 적용한다.
- *              batchAppName은 JobParameters의 batchAppId를 그대로 사용한다.
+ * 배치 Job 완료·실패 시 Slack·Email 알림을 발송하는 {@link JobExecutionListener}.
+ *
+ * <p>알림 로직을 Job과 분리하여 여러 Job 설정 클래스에서 공통으로 재사용한다.
+ * {@link com.example.spiderbatch.config.SpiderBatchAutoConfiguration}에 의해 자동 등록되며,
+ * Job 설정 클래스에서 의존성으로 주입받아 {@code .listener(batchNotificationListener)}로 연결한다.</p>
+ *
+ * <p>batchAppName은 {@link com.example.spiderbatch.domain.batch.service.BatchExecuteService}가
+ * JobParameter에 포함시켜 전달한다. 없으면 batchAppId로 대체한다.</p>
  */
 @Slf4j
 @Component
