@@ -150,7 +150,9 @@ public class CardController {
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId);
-        if (yearMonth != null)  payload.put("yearMonth", yearMonth);
+        // 프론트엔드가 "YYYY-MM" 형식으로 전달하는 경우 하이픈 제거
+        // mock-core 고정길이 프로토콜의 yearMonth 필드가 C(6, YYYYMM)이라 7자 이상이면 잘림
+        if (yearMonth != null)  payload.put("yearMonth", yearMonth.replace("-", ""));
         if (paymentDay != null) payload.put("paymentDay", paymentDay);
 
         try {
@@ -237,8 +239,17 @@ public class CardController {
         try {
             JsonCommandResponse resp = bizClient.sendToTransfer(BizCommands.TRANSFER_IMMEDIATE_PAY, payload, requestId);
             if (!resp.isSuccess()) {
+                String errorMsg = resp.getError() != null ? resp.getError()
+                        : resp.getMessage() != null ? resp.getMessage()
+                        : "즉시결제 실패";
+                // payload가 있으면 PIN 오류 계열(attemptsLeft 포함) — 403으로 전달
+                if (resp.getPayload() != null && !resp.getPayload().isEmpty()) {
+                    Map<String, Object> errorBody = new HashMap<>(resp.getPayload());
+                    errorBody.put("error", errorMsg);
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorBody);
+                }
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Map.of("error", resp.getMessage() != null ? resp.getMessage() : "즉시결제 실패"));
+                        .body(Map.of("error", errorMsg));
             }
             return ResponseEntity.ok(resp.getPayload());
         } catch (IOException e) {
@@ -269,10 +280,24 @@ public class CardController {
             @PathVariable String cardId) {
 
         String userId = (String) request.getAttribute("userId");
+        String requestId = (String) request.getAttribute("requestId");
         log.info("[CardController] Reset PIN attempts: userId={}, cardId={}", userId, cardId);
 
-        // PIN 시도 횟수는 이체AP(biz-transfer) 내부에서 관리
-        // 채널AP 는 현재 단순 OK 응답만 반환 (이체AP 연동은 추후 확장)
-        return ResponseEntity.ok(Map.of("ok", true));
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("userId", userId);
+        payload.put("cardId", cardId);
+
+        try {
+            JsonCommandResponse resp = bizClient.sendToTransfer(BizCommands.TRANSFER_RESET_PIN_ATTEMPTS, payload, requestId);
+            if (!resp.isSuccess()) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("error", resp.getError() != null ? resp.getError() : "PIN 초기화 실패"));
+            }
+            return ResponseEntity.ok(Map.of("ok", true));
+        } catch (IOException e) {
+            log.error("[CardController] biz-transfer TCP error (reset-pin-attempts): {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "이체 서버 통신 오류"));
+        }
     }
 }
