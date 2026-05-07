@@ -50,6 +50,24 @@ const SSE_URL = "/api/notices/sse";
 export function useEmergencyNotice(): { notice: NoticePayload | null } {
   const [notice, setNotice] = useState<NoticePayload | null>(null);
 
+  // 마운트 시 현재 공지 상태를 즉시 조회한다.
+  // SSE 연결과 별개로 페이지 진입 시점의 배포 상태를 반영하여
+  // SSE 초기 이벤트 미수신으로 공지가 표시되지 않는 것을 방지한다.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/notices/preview")
+      .then((r) => r.json() as Promise<NoticePayload>)
+      .then((data) => {
+        if (!cancelled && data?.notices?.length > 0 && data.displayType !== "N") {
+          setNotice(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     const es = new EventSource(SSE_URL);
 
