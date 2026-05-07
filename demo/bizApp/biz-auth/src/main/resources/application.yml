@@ -46,3 +46,12 @@ logging:
   level:
     com.example.bizauth: DEBUG
     com.example.spiderlink: DEBUG
+
+# FWK_GATEWAY 동적 생성 설정
+# true: GatewayLoader가 FWK_GATEWAY DB에서 포트/코덱을 읽어 TCP 서버 동적 생성
+# false(기본): BizAuthConfig @Bean 정적 선언 방식 유지
+spider:
+  gateway:
+    dynamic:
+      enabled: false
+    id: BIZ_AUTH_GW
