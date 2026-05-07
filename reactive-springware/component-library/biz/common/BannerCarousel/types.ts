@@ -20,7 +20,8 @@ export interface BannerCarouselItem {
 }
 
 export interface BannerCarouselProps {
-  items:               BannerCarouselItem[];
+  /** 배너 목록. 미전달 또는 빈 배열이면 아무것도 렌더링하지 않음 */
+  items?:              BannerCarouselItem[];
   /**
    * 자동 재생 간격(ms). 기본: 3000.
    * items.length < 2이면 자동 재생 비활성화.

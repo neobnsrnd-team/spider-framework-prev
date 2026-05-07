@@ -122,7 +122,7 @@ function TransactionListItem({
 }
 
 export function TransactionList({
-  items,
+  items = [],
   loading = false,
   emptyMessage = '거래 내역이 없어요',
   onItemClick,

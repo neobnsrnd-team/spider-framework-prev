@@ -23,7 +23,7 @@ import React from 'react';
 import { cn } from '@lib/cn';
 import type { BottomNavProps } from './types';
 
-export function BottomNav({ items, activeId, className }: BottomNavProps) {
+export function BottomNav({ items = [], activeId, className }: BottomNavProps) {
   return (
     <nav
       aria-label="하단 메뉴"

@@ -9,8 +9,8 @@ export interface SelectOption {
 }
 
 export interface SelectProps {
-  /** 드롭다운 선택지 목록 */
-  options:    SelectOption[];
+  /** 드롭다운 선택지 목록. 미전달 시 빈 드롭다운 렌더링 */
+  options?:   SelectOption[];
   /** 현재 선택된 값 */
   value:      string;
   /** 선택 변경 핸들러 */

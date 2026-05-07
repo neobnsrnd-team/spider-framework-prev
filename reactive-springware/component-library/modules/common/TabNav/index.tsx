@@ -19,7 +19,7 @@ import React from 'react';
 import { cn } from '@lib/cn';
 import type { TabNavProps } from './types';
 
-export function TabNav({ items, activeId, onTabChange, variant = 'underline', fullWidth = false, className }: TabNavProps) {
+export function TabNav({ items = [], activeId, onTabChange, variant = 'underline', fullWidth = false, className }: TabNavProps) {
   /* ── underline 변형: 하단 인디케이터 라인 방식 (기본) ────────────── */
   if (variant === 'underline') {
     return (

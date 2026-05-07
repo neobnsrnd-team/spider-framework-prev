@@ -16,8 +16,8 @@ export interface BenefitItem {
 export interface CardBenefitSummaryProps {
   /** 보유 포인트 잔액 */
   points: number;
-  /** 이번달 혜택 항목 목록 (할인·캐시백 등) */
-  benefits: BenefitItem[];
+  /** 이번달 혜택 항목 목록 (할인·캐시백 등). 미전달 시 빈 혜택 영역 렌더링 */
+  benefits?: BenefitItem[];
   /** 포인트 상세 클릭 핸들러 */
   onPointDetail?: () => void;
   /** 혜택 상세 클릭 핸들러 */

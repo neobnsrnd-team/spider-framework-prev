@@ -14,8 +14,8 @@ export interface BankItem {
 }
 
 export interface BankSelectGridProps {
-  /** 선택 가능한 은행 목록 */
-  banks: BankItem[];
+  /** 선택 가능한 은행 목록. 미전달 시 빈 그리드 렌더링 */
+  banks?: BankItem[];
   /** 현재 선택된 은행 코드 */
   selectedCode?: string;
   /** 은행 선택 핸들러 */
