@@ -107,10 +107,16 @@ public class BizChannelConfig implements WebMvcConfigurer {
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // 크리티컬 긴급공지 시 API 전면 차단 — SSE·미리보기는 공지 상태 전달에 필요하므로 허용
+        // 크리티컬 긴급공지 시 API 전면 차단
+        // sync·end는 X-Admin-Secret으로 보호되며, 차단 중 공지 해제에 필요하므로 허용
         registry.addInterceptor(emergencyNoticeInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/notices/sse", "/api/notices/preview");
+                .excludePathPatterns(
+                        "/api/notices/sse",
+                        "/api/notices/preview",
+                        "/api/notices/sync",
+                        "/api/notices/end"
+                );
 
         registry.addInterceptor(httpLoggingInterceptor).addPathPatterns("/api/**");
     }

@@ -25,6 +25,8 @@ import java.util.Map;
  * <ul>
  *   <li>{@code /api/notices/sse} — SSE 연결 유지 (공지 해제 이벤트 수신)</li>
  *   <li>{@code /api/notices/preview} — 브라우저 초기 로드 시 공지 상태 조회</li>
+ *   <li>{@code /api/notices/sync} — Admin 공지 배포 (X-Admin-Secret 보호)</li>
+ *   <li>{@code /api/notices/end} — Admin 공지 종료 (X-Admin-Secret 보호)</li>
  * </ul>
  * </p>
  */
@@ -51,8 +53,13 @@ public class EmergencyNoticeInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        String closeableYn = (String) notice.get("closeableYn");
-        if (!"N".equals(closeableYn)) {
+        Object rawCloseable = notice.get("closeableYn");
+        Object rawDisplay   = notice.get("displayType");
+        String closeableYn  = rawCloseable instanceof String s ? s : null;
+        String displayType  = rawDisplay   instanceof String s ? s : null;
+
+        // displayType=N(사용안함)이면 공지 비활성 상태 — 차단하지 않음
+        if (!"N".equals(closeableYn) || "N".equals(displayType)) {
             return true;
         }
 
