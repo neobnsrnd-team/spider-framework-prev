@@ -242,8 +242,8 @@ public class CardController {
                 String errorMsg = resp.getError() != null ? resp.getError()
                         : resp.getMessage() != null ? resp.getMessage()
                         : "즉시결제 실패";
-                // payload가 있으면 PIN 오류 계열(attemptsLeft 포함) — 403으로 전달
-                if (resp.getPayload() != null && !resp.getPayload().isEmpty()) {
+                // attemptsLeft 키가 있는 경우만 PIN 오류 계열로 판별 — 403으로 전달
+                if (resp.getPayload() != null && resp.getPayload().containsKey("attemptsLeft")) {
                     Map<String, Object> errorBody = new HashMap<>(resp.getPayload());
                     errorBody.put("error", errorMsg);
                     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorBody);
@@ -291,7 +291,9 @@ public class CardController {
             JsonCommandResponse resp = bizClient.sendToTransfer(BizCommands.TRANSFER_RESET_PIN_ATTEMPTS, payload, requestId);
             if (!resp.isSuccess()) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Map.of("error", resp.getError() != null ? resp.getError() : "PIN 초기화 실패"));
+                        .body(Map.of("error", resp.getError() != null ? resp.getError()
+                                : resp.getMessage() != null ? resp.getMessage()
+                                : "PIN 초기화 실패"));
             }
             return ResponseEntity.ok(Map.of("ok", true));
         } catch (IOException e) {
