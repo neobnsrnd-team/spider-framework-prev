@@ -17,8 +17,8 @@
                 <th class="col-w-150 sortable" data-sort="lastModifiedDtime">최종수정일시</th>
                 <th class="col-w-70">결재</th>
                 <th class="col-w-60">이력</th>
-                <!-- #308: 긴급차단 컬럼 추가 — APPROVED + 배포완료 행에만 버튼 노출 -->
-                <th class="col-w-80">긴급차단</th>
+                <!-- #308: 긴급차단 컬럼 — 현재 display:none (nginx 미들웨어 우회 문제로 임시 비활성화) -->
+                <th class="col-w-80" style="display:none">긴급차단</th>
             </tr>
         </thead>
         <tbody id="approvalTableBody">
