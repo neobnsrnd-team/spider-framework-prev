@@ -73,6 +73,8 @@ public class EmergencyNoticeInterceptor implements HandlerInterceptor {
                 "error", "긴급 점검 중입니다.",
                 "closeableYn", "N"
         )));
+        // preHandle에서 직접 응답을 작성할 때 버퍼를 즉시 클라이언트로 전송
+        response.getWriter().flush();
         return false;
     }
 }

@@ -242,7 +242,8 @@
             var iframe = document.getElementById('noticePreviewIframe');
             // 타임스탬프로 캐시 우회 + 행의 언어 코드를 전달하여 해당 언어 공지를 표시
             var langParam = lang ? '&lang=' + encodeURIComponent(lang) : '';
-            var modal = new bootstrap.Modal(document.getElementById('noticePreviewModal'));
+            // getOrCreateInstance: 동일 DOM에 중복 인스턴스 생성 방지 (이벤트 리스너 중복·backdrop 겹침 방지)
+            var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('noticePreviewModal'));
             // iframe 로드 완료 후 모달을 표시한다.
             // src 설정 직후 모달을 열면 iframe이 비어 있는 상태로 표시되므로 onload 이후에 연다.
             iframe.onload = function () {
