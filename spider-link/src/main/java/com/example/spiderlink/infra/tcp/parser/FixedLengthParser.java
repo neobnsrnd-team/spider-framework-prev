@@ -173,12 +173,14 @@ public class FixedLengthParser {
      */
     private String readNumeric(MessageField field, byte[] bytes, int offset, int len) {
         if (field.getScale() == 0) {
-            return new String(bytes, offset, len).trim();
+            // trim()은 공백만 제거 — N 타입은 padLeft('0')으로 직렬화되므로 선행 0도 제거 필요
+            String raw = new String(bytes, offset, len).trim();
+            return raw.replaceFirst("^0+(?!$)", "");
         }
         // 끝에서 scale 자리만큼이 소수부
-        String intPart  = new String(bytes, offset, len - field.getScale());
+        String intPart  = new String(bytes, offset, len - field.getScale()).replaceFirst("^0+(?!$)", "");
         String fracPart = new String(bytes, offset + len - field.getScale(), field.getScale());
-        return (intPart + fracPart).trim(); // 소수점 삽입 없이 원본 보존 (원본 SpiderLink와 동일)
+        return intPart + fracPart; // 소수점 삽입 없이 원본 보존 (원본 SpiderLink와 동일)
     }
 
     /** H 타입: 각 바이트를 2자리 16진수 문자열로 변환 */
