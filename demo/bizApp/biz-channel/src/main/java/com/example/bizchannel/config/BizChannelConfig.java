@@ -1,6 +1,7 @@
 package com.example.bizchannel.config;
 
 import com.example.bizchannel.web.filter.JwtAuthFilter;
+import com.example.bizchannel.web.interceptor.EmergencyNoticeInterceptor;
 import com.example.bizchannel.web.interceptor.HttpLoggingInterceptor;
 import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
 import com.example.spiderlink.infra.tcp.client.TcpClient;
@@ -87,14 +88,30 @@ public class BizChannelConfig implements WebMvcConfigurer {
     private int tcpQueueCapacity;
 
     private final HttpLoggingInterceptor httpLoggingInterceptor;
+    private final EmergencyNoticeInterceptor emergencyNoticeInterceptor;
 
-    public BizChannelConfig(HttpLoggingInterceptor httpLoggingInterceptor) {
+    public BizChannelConfig(HttpLoggingInterceptor httpLoggingInterceptor,
+                            EmergencyNoticeInterceptor emergencyNoticeInterceptor) {
         this.httpLoggingInterceptor = httpLoggingInterceptor;
+        this.emergencyNoticeInterceptor = emergencyNoticeInterceptor;
     }
 
-    /** /api/** 경로 HTTP 거래 로그 인터셉터 등록 */
+    /**
+     * 인터셉터 등록.
+     *
+     * <ul>
+     *   <li>{@link EmergencyNoticeInterceptor}: {@code closeableYn=N} 공지 활성 시 API 전면 차단.
+     *       SSE·미리보기 경로는 공지 상태 수신에 필요하므로 제외한다.</li>
+     *   <li>{@link HttpLoggingInterceptor}: HTTP 거래 로그 기록.</li>
+     * </ul>
+     */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 크리티컬 긴급공지 시 API 전면 차단 — SSE·미리보기는 공지 상태 전달에 필요하므로 허용
+        registry.addInterceptor(emergencyNoticeInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns("/api/notices/sse", "/api/notices/preview");
+
         registry.addInterceptor(httpLoggingInterceptor).addPathPatterns("/api/**");
     }
 
