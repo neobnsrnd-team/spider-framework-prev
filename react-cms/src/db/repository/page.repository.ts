@@ -30,6 +30,7 @@ const SQL_SELECT_BY_ID = `
   FROM   SPW_CMS_PAGE
   WHERE  PAGE_ID = :pageId
     AND  PAGE_TYPE = '${PAGE_TYPE}'
+    AND  USE_YN = 'Y'
 `;
 
 const SQL_SELECT_LIST = `
