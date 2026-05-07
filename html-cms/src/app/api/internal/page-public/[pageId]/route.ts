@@ -7,6 +7,7 @@
  */
 
 import { NextRequest } from 'next/server';
+import oracledb from 'oracledb';
 
 import { getConnection } from '@/db/connection';
 import { errorResponse, successResponse } from '@/lib/api-response';
@@ -35,7 +36,7 @@ export async function GET(
         const result = await conn.execute<{ IS_PUBLIC: string }>(
             `SELECT IS_PUBLIC FROM SPW_CMS_PAGE WHERE PAGE_ID = :pageId AND USE_YN = 'Y'`,
             { pageId },
-            { outFormat: (await import('oracledb')).default.OUT_FORMAT_OBJECT },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT },
         );
         const row = result.rows?.[0];
         // 페이지가 없는 경우 'Y'(정상) 반환 — fail-open: 조회 실패 시 접근 차단하지 않음

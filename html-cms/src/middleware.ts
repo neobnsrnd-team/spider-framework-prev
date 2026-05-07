@@ -37,12 +37,17 @@ async function checkEmergencyBlock(req: NextRequest): Promise<NextResponse | nul
 
     const pageId = match[1];
 
+    // 타임아웃 500ms — 지연 발생 시 TTFB 저하 방지, 초과 시 fail-open으로 정상 서빙
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 500);
+
     try {
         // 내부 API는 같은 서버의 Node.js 런타임에서 실행됨
         // pathname이 /api/internal/... 이므로 이 middleware의 deployed 체크에 재진입하지 않음
         const checkUrl = `${req.nextUrl.origin}${CMS_BASE_PATH}/api/internal/page-public/${pageId}`;
         const res = await fetch(checkUrl, {
             headers: { 'x-internal-secret': INTERNAL_SECRET },
+            signal: controller.signal,
         });
 
         if (res.ok) {
@@ -55,7 +60,9 @@ async function checkEmergencyBlock(req: NextRequest): Promise<NextResponse | nul
             }
         }
     } catch {
-        // DB 장애·네트워크 오류 시 fail-open: 기존 파일을 그대로 서빙
+        // DB 장애·네트워크 오류·타임아웃 시 fail-open: 기존 파일을 그대로 서빙
+    } finally {
+        clearTimeout(timeoutId);
     }
 
     return null;
