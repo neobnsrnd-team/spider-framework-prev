@@ -28,7 +28,9 @@
             WHEN p.IS_PUBLIC = 'N' AND p.EXPIRED_DATE IS NOT NULL AND p.EXPIRED_DATE &lt; SYSDATE THEN '만료'
             WHEN p.IS_PUBLIC = 'N' THEN '비공개'
             ELSE p.APPROVE_STATE
-        END                                                             AS displayState
+        END                                                             AS displayState,
+        -- 배포 여부: FILE_CRC_VALUE 가 설정된 경우 배포 완료로 판단 (#308)
+        CASE WHEN p.FILE_CRC_VALUE IS NOT NULL THEN 1 ELSE 0 END        AS isDeployed
     </sql>
 
     <sql id="searchConditions">
