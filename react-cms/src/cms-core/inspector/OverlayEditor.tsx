@@ -4,6 +4,7 @@
  * OverlayTemplate의 propSchema 또는 기본값 타입 추론으로 동적 폼을 생성합니다.
  * group / event 타입은 미지원이며, array / leaf 타입을 처리합니다.
  */
+import { useCallback, useRef } from "react";
 import type { CMSOverlay, LeafPropField, PropField, OverlayTemplate } from "../types";
 import { FieldControl } from "./FieldControl";
 import { ArrayField } from "./ArrayField";
@@ -22,6 +23,19 @@ interface OverlayEditorProps {
  */
 export default function OverlayEditor({ overlay, template, onChange }: OverlayEditorProps) {
   const current = overlay.props ?? {};
+
+  // ref로 최신 props를 항상 유지 — FieldControl의 React.memo + onChange 비교 제외 패턴 때문에
+  // 한 필드 수정 후 다른 필드 수정 시 옛 값으로 덮어써지는 stale closure 버그를 방지한다.
+  // PropsEditor / LayoutEditor와 동일한 패턴.
+  const propsRef = useRef(current);
+  propsRef.current = current;
+
+  const setField = useCallback(
+    (key: string, val: unknown) => {
+      onChange({ ...propsRef.current, [key]: val });
+    },
+    [onChange],
+  );
 
   // propSchema가 있으면 event/group 제외 후 사용, 없으면 template.props에서 leaf 타입 추론
   const entries: [string, PropField][] = template?.propSchema
@@ -67,7 +81,7 @@ export default function OverlayEditor({ overlay, template, onChange }: OverlayEd
               fieldKey={key}
               field={field}
               value={arrVal}
-              onChange={(next) => onChange({ ...current, [key]: next })}
+              onChange={(next) => setField(key, next)}
               renderLeafField={(subKey, subField, val, handleChange) => (
                 <FieldControl
                   fieldKey={subKey}
@@ -88,7 +102,7 @@ export default function OverlayEditor({ overlay, template, onChange }: OverlayEd
             fieldKey={key}
             field={leafField}
             value={current[key] ?? leafField.default}
-            onChange={(val) => onChange({ ...current, [key]: val })}
+            onChange={(val) => setField(key, val)}
           />
         );
       })}

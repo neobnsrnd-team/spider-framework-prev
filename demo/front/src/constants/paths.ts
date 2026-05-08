@@ -20,7 +20,7 @@ export const PATHS = {
   /** 승인 완료된 React 컴포넌트 뷰어 경로 — 인증 없이 접근 가능 */
   VIEWER: {
     /** 승인된 React 컴포넌트 뷰어. :codeId = FWK_RPS_CODE_HIS.CODE_ID */
-    REACT: "/react/viewer/:codeId",
+    REACT_PLATFORM: "/reactplatform/viewer/:componentName",
     /** React CMS 배포 페이지 뷰어. :pageId = SPW_CMS_PAGE.PAGE_ID */
     REACT_CMS: "/react-cms/viewer/:pageId",
   },

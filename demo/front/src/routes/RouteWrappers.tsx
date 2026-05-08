@@ -1388,25 +1388,25 @@ export function NoticePreviewRoute() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Admin 승인 컴포넌트 뷰어                                              */
+/* React Platform 승인 컴포넌트 뷰어                                              */
 /* ------------------------------------------------------------------ */
 
 /**
- * Admin에서 승인 시 저장된 React 컴포넌트 뷰어 페이지.
+ * React Platform에서 승인 시 저장된 React 컴포넌트 뷰어 페이지.
  *
- * /react/viewer/:codeId 경로로 접근하며, 인증 없이 사용 가능하다.
- * import.meta.glob으로 src/generated/ 디렉토리의 .tsx 파일을 동적으로 탐색하여
- * :codeId에 해당하는 컴포넌트를 렌더링한다.
+ * /reactplatform/viewer/:componentName 경로로 접근하며, 인증 없이 사용 가능하다.
+ * import.meta.glob으로 src/reactplatform/generated/ 디렉토리의 .tsx 파일을 동적으로 탐색하여
+ * :componentName에 해당하는 컴포넌트를 렌더링한다.
  *
- * Vite HMR이 파일 추가를 감지하므로 Admin에서 승인 즉시 새 경로가 활성화된다.
+ * Vite HMR이 파일 추가를 감지하므로 React Platform에서 승인 즉시 새 경로가 활성화된다.
  */
-export function ReactViewerRoute() {
-  const { codeId } = useParams<{ codeId: string }>();
+export function ReactPlatformViewerRoute() {
+  const { componentName } = useParams<{ componentName: string }>();
   const [Component, setComponent] = useState<ComponentType | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    if (!codeId) {
+    if (!componentName) {
       setNotFound(true);
       return;
     }
@@ -1415,9 +1415,9 @@ export function ReactViewerRoute() {
     // import.meta.glob은 Vite가 빌드 타임에 glob 패턴을 해석하므로 동적 경로 조합 불가
     // → 전체 맵을 먼저 만든 뒤 codeId로 키를 선택한다
     const modules = import.meta.glob<{ default: ComponentType }>(
-      "/src/generated/*.tsx",
+      "/src/reactplatform/generated/*.tsx",
     );
-    const key = `/src/generated/${codeId}.tsx`;
+    const key = `/src/reactplatform/generated/${componentName}.tsx`;
 
     if (!modules[key]) {
       setNotFound(true);
@@ -1429,25 +1429,25 @@ export function ReactViewerRoute() {
       .catch((err) => {
         // 네트워크 오류와 파일 미존재를 구분하기 위해 에러를 기록한다
         console.error(
-          `[ReactViewer] 컴포넌트 로드 실패 — codeId=${codeId}`,
+          `[React Platform Viewer] 컴포넌트 로드 실패 — componentName=${componentName}`,
           err,
         );
         setNotFound(true);
       });
-  }, [codeId]);
+  }, [componentName]);
 
   return (
     <div className="min-h-screen bg-bg-base">
       {/* 뷰어 안내 배너 */}
       <div className="flex items-center justify-center py-1 bg-blue-50 border-b border-blue-200">
         <span className="text-xs text-blue-600 font-medium">
-          승인된 React 컴포넌트 뷰어 — {codeId}
+          승인된 React Platform 컴포넌트 뷰어 — {componentName}
         </span>
       </div>
 
       {notFound && (
         <div className="flex items-center justify-center min-h-[80vh] text-sm text-text-muted">
-          승인된 컴포넌트를 찾을 수 없습니다. (codeId: {codeId})
+          승인된 컴포넌트를 찾을 수 없습니다. (componentName: {componentName})
         </div>
       )}
 
@@ -1528,7 +1528,7 @@ export function ReactCmsPageViewerRoute() {
         </div>
       )}
 
-      {Component && <Component />}
+      {Component && <div data-brand="hana" data-domain="card"><Component /></div>}
     </div>
   );
 }

@@ -4,7 +4,7 @@
  * LayoutTemplatesContext에서 레이아웃 목록을 읽어 동적으로 타입 선택 + props 폼을 생성합니다.
  * PropsEditor와 동일한 propSchema 기반 필드 렌더링 패턴(공용 FieldControl·ArrayField)을 사용합니다.
  */
-import { useContext } from "react";
+import { useCallback, useContext, useRef } from "react";
 import type { LeafPropField, PropField } from "../types";
 import { LayoutTemplatesContext } from "../context";
 import { FieldControl } from "./FieldControl";
@@ -45,6 +45,22 @@ export default function LayoutEditor({
   const layouts = useContext(LayoutTemplatesContext);
   const currentTemplate = layouts.find((t) => t.id === layoutType);
 
+  // ref로 최신 layoutProps를 항상 유지 — useCallback deps 없이도 stale closure 방지.
+  // FieldControl이 React.memo + onChange 비교 제외이기 때문에, inline onChange가
+  // layoutProps를 클로저로 캡처하면 다른 필드 변경 시 옛 값 기반으로 덮어써져서
+  // "한 필드 수정 후 다른 필드 수정 시 첫 변경이 사라지는" 버그가 발생한다.
+  // PropsEditor와 동일한 ref 패턴으로 회피한다.
+  const propsRef = useRef(layoutProps);
+  propsRef.current = layoutProps;
+
+  // onLayoutPropsChange가 stable하면 setField/setArrayField도 stable → FieldControl 불필요한 리렌더 방지
+  const setField = useCallback(
+    (key: string, val: unknown) => {
+      onLayoutPropsChange({ ...propsRef.current, [key]: val });
+    },
+    [onLayoutPropsChange],
+  );
+
   // propSchema 우선, 없으면 defaultProps에서 타입 자동 추론
   // group/event는 레이아웃 컨텍스트에서 사용하지 않으므로 제외, array는 ArrayField로 렌더
   const entries: [string, PropField][] = currentTemplate?.propSchema
@@ -74,9 +90,7 @@ export default function LayoutEditor({
         <Field label="블록 사이 간격">
           <select
             value={(layoutProps.blockGap as string | undefined) ?? "none"}
-            onChange={(e) =>
-              onLayoutPropsChange({ ...layoutProps, blockGap: e.target.value })
-            }
+            onChange={(e) => setField("blockGap", e.target.value)}
             className={inputCls}
           >
             {GAP_OPTIONS.map((o) => (
@@ -123,7 +137,7 @@ export default function LayoutEditor({
                   fieldKey={key}
                   field={field}
                   value={arrVal}
-                  onChange={(next) => onLayoutPropsChange({ ...layoutProps, [key]: next })}
+                  onChange={(next) => setField(key, next)}
                   renderLeafField={(subKey, subField, val, handleChange) => (
                     <FieldControl
                       fieldKey={subKey}
@@ -144,7 +158,7 @@ export default function LayoutEditor({
                 fieldKey={key}
                 field={leafField}
                 value={layoutProps[key] ?? leafField.default}
-                onChange={(val) => onLayoutPropsChange({ ...layoutProps, [key]: val })}
+                onChange={(val) => setField(key, val)}
               />
             );
           })}

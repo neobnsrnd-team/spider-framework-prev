@@ -24,10 +24,9 @@ import {
   UserManagementRoute,
   HanaCardMenuModal,
   NoticePreviewRoute,
-  ReactViewerRoute,
+  ReactPlatformViewerRoute,
   ReactCmsPageViewerRoute,
 } from "./RouteWrappers";
-
 export interface RouteConfig {
   path: string;
   element: ReactElement;
@@ -36,7 +35,7 @@ export interface RouteConfig {
 export const pageRoutes: RouteConfig[] = [
   { path: PATHS.LOGIN,                element: <LoginRoute /> },
   { path: PATHS.PREVIEW.NOTICE,       element: <NoticePreviewRoute /> },
-  { path: PATHS.VIEWER.REACT,          element: <ReactViewerRoute /> },
+  { path: PATHS.VIEWER.REACT_PLATFORM, element: <ReactPlatformViewerRoute /> },
   { path: PATHS.VIEWER.REACT_CMS,      element: <ReactCmsPageViewerRoute /> },
   { path: PATHS.CARD.DASHBOARD, element: <CardDashboardRoute /> },
   { path: PATHS.CARD.USAGE_HISTORY, element: <UsageHistoryRoute /> },

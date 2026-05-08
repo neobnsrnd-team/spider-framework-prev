@@ -12,7 +12,7 @@
  * @param onChange       - 배열 전체 교체 핸들러
  * @param renderLeafField - leaf 필드 렌더러 주입 (각 Editor가 자신의 컨트롤을 전달)
  */
-import React from "react";
+import React, { useRef } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import type { ArrayPropField, LeafPropField, NestedArrayPropField } from "../types";
 
@@ -47,6 +47,11 @@ function NestedArrayField({
   onChange: (next: Record<string, unknown>[]) => void;
   renderLeafField: ArrayFieldProps["renderLeafField"];
 }) {
+  // ref로 최신 value를 항상 유지 — FieldControl의 React.memo + onChange 비교 제외 패턴 때문에
+  // 같은 item의 다른 leaf 필드 수정 시 옛 array를 덮어쓰는 stale closure 버그를 방지한다.
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
   const newItem = Object.fromEntries(
     Object.entries(field.itemFields).map(([k, f]) => [k, f.default]),
   );
@@ -91,7 +96,10 @@ function NestedArrayField({
                   leafKey,
                   leafField,
                   item[leafKey] ?? leafField.default,
-                  (val) => onChange(value.map((it, i) => i === idx ? { ...it, [leafKey]: val } : it)),
+                  (val) =>
+                    onChange(
+                      valueRef.current.map((it, i) => (i === idx ? { ...it, [leafKey]: val } : it)),
+                    ),
                 )}
               </React.Fragment>
             ))}
@@ -103,6 +111,10 @@ function NestedArrayField({
 }
 
 export function ArrayField({ fieldKey, field, value, onChange, renderLeafField }: ArrayFieldProps) {
+  // ref로 최신 value를 항상 유지 — NestedArrayField와 동일 사유 (stale closure 방지).
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
   const newItem = Object.fromEntries(
     Object.entries(field.itemFields).map(([k, f]) => [k, f.default]),
   );
@@ -150,7 +162,11 @@ export function ArrayField({ fieldKey, field, value, onChange, renderLeafField }
                     fieldKey={subKey}
                     field={subField as NestedArrayPropField}
                     value={(item[subKey] as Record<string, unknown>[]) ?? subField.default}
-                    onChange={(next) => onChange(value.map((it, i) => i === idx ? { ...it, [subKey]: next } : it))}
+                    onChange={(next) =>
+                      onChange(
+                        valueRef.current.map((it, i) => (i === idx ? { ...it, [subKey]: next } : it)),
+                      )
+                    }
                     renderLeafField={renderLeafField}
                   />
                 );
@@ -161,7 +177,10 @@ export function ArrayField({ fieldKey, field, value, onChange, renderLeafField }
                     subKey,
                     subField as LeafPropField,
                     item[subKey] ?? subField.default,
-                    (val) => onChange(value.map((it, i) => i === idx ? { ...it, [subKey]: val } : it)),
+                    (val) =>
+                      onChange(
+                        valueRef.current.map((it, i) => (i === idx ? { ...it, [subKey]: val } : it)),
+                      ),
                   )}
                 </React.Fragment>
               );
