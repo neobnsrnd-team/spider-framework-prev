@@ -43,6 +43,10 @@ class CmsApprovalServiceTest {
 
     private static final String PAGE_ID = "PAGE-001";
     private static final String MODIFIER_ID = "admin";
+    /** 일반 사용자 역할 — cms_admin/ADMIN 이외의 역할 */
+    private static final String ROLE_NORMAL = "user";
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_CMS_ADMIN = "cms_admin";
 
     // ─── findPageList ─────────────────────────────────────────────────
 
@@ -88,11 +92,13 @@ class CmsApprovalServiceTest {
         req.setExpiredDate("2099-04-18");
 
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        // 지정된 결재자 = MODIFIER_ID → 검증 통과
+        given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn(MODIFIER_ID);
         given(cmsApprovalMapper.approve(PAGE_ID, "2099-04-17", "2099-04-18", MODIFIER_ID))
                 .willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
 
-        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID);
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL);
 
         then(cmsApprovalMapper).should().approve(eq(PAGE_ID), eq("2099-04-17"), eq("2099-04-18"), eq(MODIFIER_ID));
         then(cmsApprovalMapper).should().insertHistory(eq(PAGE_ID), eq(1));
@@ -104,10 +110,11 @@ class CmsApprovalServiceTest {
         // 승인 요청 시 날짜를 지정하지 않을 수 있으므로 null은 허용
         CmsApproveRequest req = new CmsApproveRequest();
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn(MODIFIER_ID);
         given(cmsApprovalMapper.approve(PAGE_ID, null, null, MODIFIER_ID)).willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
 
-        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID);
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL);
 
         then(cmsApprovalMapper).should().approve(eq(PAGE_ID), eq(null), eq(null), eq(MODIFIER_ID));
         then(cmsApprovalMapper).should().insertHistory(eq(PAGE_ID), eq(1));
@@ -123,11 +130,12 @@ class CmsApprovalServiceTest {
         req.setExpiredDate(expiredDate);
 
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn(MODIFIER_ID);
         given(cmsApprovalMapper.approve(PAGE_ID, beginningDate, expiredDate, MODIFIER_ID))
                 .willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
 
-        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID);
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL);
 
         then(cmsApprovalMapper).should().approve(eq(PAGE_ID), eq(beginningDate), eq(expiredDate), eq(MODIFIER_ID));
         then(cmsApprovalMapper).should().insertHistory(eq(PAGE_ID), eq(1));
@@ -139,8 +147,65 @@ class CmsApprovalServiceTest {
         CmsApproveRequest req = new CmsApproveRequest();
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(0);
 
-        assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID))
+        assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    // ─── approve 결재자 검증 ───────────────────────────────────────────
+
+    @Test
+    @DisplayName("[승인][결재자검증] 지정된 결재자가 아니면 InvalidInputException을 던진다")
+    void approve_notAssignedApprover_throwsInvalidInputException() {
+        CmsApproveRequest req = new CmsApproveRequest();
+        given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        // APPROVER_ID = "other-user", 현재 사용자 = MODIFIER_ID → 불일치
+        given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn("other-user");
+
+        assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
+                .isInstanceOf(InvalidInputException.class)
+                .hasMessageContaining("지정된 결재자만");
+    }
+
+    @Test
+    @DisplayName("[승인][결재자검증] ADMIN 역할이면 지정된 결재자가 아니어도 승인할 수 있다")
+    void approve_adminRole_bypassesApproverCheck() {
+        CmsApproveRequest req = new CmsApproveRequest();
+        given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        // ADMIN 역할 → validateApprover 조기 반환, findApproverIdByPageId 호출 안 함
+        given(cmsApprovalMapper.approve(PAGE_ID, null, null, MODIFIER_ID)).willReturn(1);
+        given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
+
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_ADMIN);
+
+        then(cmsApprovalMapper).should().approve(eq(PAGE_ID), any(), any(), eq(MODIFIER_ID));
+    }
+
+    @Test
+    @DisplayName("[승인][결재자검증] cms_admin 역할이면 지정된 결재자가 아니어도 승인할 수 있다")
+    void approve_cmsAdminRole_bypassesApproverCheck() {
+        CmsApproveRequest req = new CmsApproveRequest();
+        given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        given(cmsApprovalMapper.approve(PAGE_ID, null, null, MODIFIER_ID)).willReturn(1);
+        given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
+
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_CMS_ADMIN);
+
+        then(cmsApprovalMapper).should().approve(eq(PAGE_ID), any(), any(), eq(MODIFIER_ID));
+    }
+
+    @Test
+    @DisplayName("[승인][결재자검증] APPROVER_ID가 null이면 검증 없이 승인할 수 있다")
+    void approve_approverIdNull_skipsValidation() {
+        CmsApproveRequest req = new CmsApproveRequest();
+        given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        // APPROVER_ID = null — 레거시 데이터 하위 호환
+        given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn(null);
+        given(cmsApprovalMapper.approve(PAGE_ID, null, null, MODIFIER_ID)).willReturn(1);
+        given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
+
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL);
+
+        then(cmsApprovalMapper).should().approve(eq(PAGE_ID), any(), any(), eq(MODIFIER_ID));
     }
 
     // ─── reject ──────────────────────────────────────────────────────
@@ -152,10 +217,11 @@ class CmsApprovalServiceTest {
         req.setRejectedReason("내용 부적합");
 
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn(MODIFIER_ID);
         given(cmsApprovalMapper.reject(PAGE_ID, "내용 부적합", MODIFIER_ID)).willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(2);
 
-        cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID);
+        cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL);
 
         then(cmsApprovalMapper).should().reject(eq(PAGE_ID), eq("내용 부적합"), eq(MODIFIER_ID));
         then(cmsApprovalMapper).should().insertHistory(eq(PAGE_ID), eq(2));
@@ -168,7 +234,7 @@ class CmsApprovalServiceTest {
         req.setRejectedReason("이유");
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(0);
 
-        assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID))
+        assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -177,9 +243,10 @@ class CmsApprovalServiceTest {
     void approve_notPending_throwsInvalidInputException() {
         CmsApproveRequest req = new CmsApproveRequest();
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn(MODIFIER_ID);
         given(cmsApprovalMapper.approve(PAGE_ID, null, null, MODIFIER_ID)).willReturn(0);
 
-        assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID))
+        assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
                 .isInstanceOf(InvalidInputException.class);
     }
 
@@ -189,10 +256,40 @@ class CmsApprovalServiceTest {
         CmsRejectRequest req = new CmsRejectRequest();
         req.setRejectedReason("이유");
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn(MODIFIER_ID);
         given(cmsApprovalMapper.reject(PAGE_ID, "이유", MODIFIER_ID)).willReturn(0);
 
-        assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID))
+        assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
                 .isInstanceOf(InvalidInputException.class);
+    }
+
+    // ─── reject 결재자 검증 ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("[반려][결재자검증] 지정된 결재자가 아니면 InvalidInputException을 던진다")
+    void reject_notAssignedApprover_throwsInvalidInputException() {
+        CmsRejectRequest req = new CmsRejectRequest();
+        req.setRejectedReason("이유");
+        given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn("other-user");
+
+        assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
+                .isInstanceOf(InvalidInputException.class)
+                .hasMessageContaining("지정된 결재자만");
+    }
+
+    @Test
+    @DisplayName("[반려][결재자검증] ADMIN 역할이면 지정된 결재자가 아니어도 반려할 수 있다")
+    void reject_adminRole_bypassesApproverCheck() {
+        CmsRejectRequest req = new CmsRejectRequest();
+        req.setRejectedReason("이유");
+        given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
+        given(cmsApprovalMapper.reject(PAGE_ID, "이유", MODIFIER_ID)).willReturn(1);
+        given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
+
+        cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, ROLE_ADMIN);
+
+        then(cmsApprovalMapper).should().reject(eq(PAGE_ID), eq("이유"), eq(MODIFIER_ID));
     }
 
     // ─── updatePublicState ────────────────────────────────────────────
