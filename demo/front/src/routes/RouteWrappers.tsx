@@ -340,7 +340,7 @@ export function UsageHistoryRoute() {
       .then((r) => {
         const data = r.data;
         setTransactions(data.transactions ?? []);
-        setTotalCount(data.totalCount ?? 0);
+        setTotalCount(Number(data.totalCount ?? 0));
         setPaymentSummary(data.paymentSummary ?? { date: "", totalAmount: 0 });
       })
       .catch(console.error);
@@ -364,7 +364,7 @@ export function UsageHistoryRoute() {
     ])
       .then(([txData, cardData]) => {
         setTransactions(txData.transactions ?? []);
-        setTotalCount(txData.totalCount ?? 0);
+        setTotalCount(Number(txData.totalCount ?? 0));
         setPaymentSummary(
           txData.paymentSummary ?? { date: "", totalAmount: 0 },
         );
@@ -809,13 +809,13 @@ export function ImmediatePayRequestRoute() {
         { signal: controller.signal },
       )
       .then((r) => {
-        setPayableAmount(r.data.payableAmount);
+        setPayableAmount(Number(r.data.payableAmount));
         // STEP 3 확인 시트에서 결제 후 이용가능한도 계산에 필요한 값을 세션에 저장한다.
         sessionStorage.setItem(
           "immediatePayAmountInfo",
           JSON.stringify({
-            payableAmount: r.data.payableAmount,
-            creditLimit: r.data.creditLimit,
+            payableAmount: Number(r.data.payableAmount),
+            creditLimit: Number(r.data.creditLimit),
           }),
         );
       })
@@ -913,10 +913,10 @@ export function ImmediatePayMethodRoute() {
     ? (JSON.parse(storedRequest) as { usageType: string; payAmount: number })
     : { usageType: "lump", payAmount: 0 };
   const { payableAmount: totalPayable, creditLimit } = storedAmountInfo
-    ? (JSON.parse(storedAmountInfo) as {
-        payableAmount: number;
-        creditLimit: number;
-      })
+    ? (() => {
+        const parsed = JSON.parse(storedAmountInfo) as { payableAmount: unknown; creditLimit: unknown };
+        return { payableAmount: Number(parsed.payableAmount), creditLimit: Number(parsed.creditLimit) };
+      })()
     : { payableAmount: 0, creditLimit: 0 };
 
   // 이용구분 코드 → 표시 문자열
@@ -1106,10 +1106,10 @@ export function ImmediatePayCompleteRoute() {
     ? (JSON.parse(storedAccount) as { bankName: string; maskedAccount: string })
     : { bankName: "", maskedAccount: "" };
   const amountInfo = storedAmountInfo
-    ? (JSON.parse(storedAmountInfo) as {
-        payableAmount: number;
-        creditLimit: number;
-      })
+    ? (() => {
+        const parsed = JSON.parse(storedAmountInfo) as { payableAmount: unknown; creditLimit: unknown };
+        return { payableAmount: Number(parsed.payableAmount), creditLimit: Number(parsed.creditLimit) };
+      })()
     : { payableAmount: 0, creditLimit: 0 };
 
   // 결제 후 이용가능한도 = 한도금액 - (미결제금액 - 결제금액)
