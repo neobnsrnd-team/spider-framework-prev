@@ -57,11 +57,19 @@ export interface CMSBuilderProps {
   approveState?: string;
   /** 반려 사유 — REJECTED 상태일 때 배너에 표시 */
   rejectedReason?: string | null;
+  /**
+   * 저장 모달에서 저장 위치 입력란을 표시할지 여부.
+   * true(기본): 단독 실행 모드 등 파일 시스템 저장 시.
+   * false: admin 연동 모드 등 DB 저장처럼 위치 개념이 없을 때.
+   */
+  requireSavePath?: boolean;
+  /** 저장 위치 입력란의 초기값 (requireSavePath=true일 때만 의미) */
+  defaultSavePath?: string;
 }
 
 // ── CMSBuilder ─────────────────────────────────────────────────────────────────
 
-export function CMSBuilder({ onSave, initialPage, mode = "create", initialPageName, approveState, rejectedReason }: CMSBuilderProps) {
+export function CMSBuilder({ onSave, initialPage, mode = "create", initialPageName, approveState, rejectedReason, requireSavePath, defaultSavePath }: CMSBuilderProps) {
   const blockMeta = useContext(BlockMetaContext);
   const blockRegistry = useContext(BlockRegistryContext);
   const blockDefinitions = useContext(BlockDefinitionsContext);
@@ -352,6 +360,8 @@ export function CMSBuilder({ onSave, initialPage, mode = "create", initialPageNa
             onSave={wrappedOnSave}
             onClose={() => setSaveOpen(false)}
             initialPageName={initialPageName}
+            requireSavePath={requireSavePath}
+            defaultSavePath={defaultSavePath}
           />,
           document.body,
         )}

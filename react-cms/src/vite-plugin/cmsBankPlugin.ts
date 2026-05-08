@@ -2,10 +2,11 @@
  * @file cmsBankPlugin.ts
  * @description CMS 빌더에서 페이지 저장 시 호출되는 Vite 플러그인.
  *
- * 기존 파일 시스템 저장 엔드포인트에 더해 Oracle DB 기반 CRUD API를 제공합니다.
+ * 파일 시스템 저장 엔드포인트와 함께 Oracle DB 기반 CRUD API를 제공합니다.
+ * 라우트 자동 등록은 수행하지 않으며, 클라이언트가 보낸 savePath에 페이지 파일만 작성합니다.
  *
  * 등록 엔드포인트:
- *   - POST /__cms/create-page      — JSX 파일 생성 + 라우터 등록 (기존 유지)
+ *   - POST /__cms/create-page      — 클라이언트 지정 위치(savePath)에 JSX 파일 생성
  *   - POST /__cms/api/save         — 페이지 JSON DB 저장 (신규 UUID 또는 기존 업데이트)
  *   - POST /__cms/api/load         — pageId로 DB 조회 후 JSON 반환
  *   - GET  /__cms/api/pages        — 페이지 목록 (검색·정렬·페이지네이션)
@@ -14,9 +15,7 @@
  * @example
  * // react-cms/vite.config.ts
  * import { cmsBankPlugin } from './src/vite-plugin/cmsBankPlugin'
- * export default defineConfig({
- *   plugins: [cmsBankPlugin({ routerPath: '../demo/front/src/routes/index.tsx', pagesDir: '../demo/front/src/pages/cms' })],
- * })
+ * export default defineConfig({ plugins: [cmsBankPlugin()] })
  */
 import type { Plugin } from "vite";
 import fs from "node:fs";
@@ -93,72 +92,29 @@ function jsonResponse(
   res.end(JSON.stringify(body));
 }
 
-// ── 파일 시스템 저장 (기존 로직) ────────────────────────────────
+// ── 파일 시스템 저장 ────────────────────────────────────────────
 
 interface CreatePagePayload {
-  uri: string;
+  /** Vite 프로젝트 root 기준 상대 경로의 저장 디렉토리. 예: "../demo/front/src/pages/cms" */
+  savePath: string;
+  /** 작성할 JSX 코드 */
   code: string;
+  /** PascalCase 컴포넌트명 (영문/숫자만) */
   pageName: string;
-}
-
-export interface CmsBankPluginOptions {
-  /**
-   * 라우터 파일 경로 (프로젝트 루트 기준).
-   * pageRoutes 배열과 modalRoutes 배열을 export 하는 파일이어야 한다.
-   * @default "src/routes/index.tsx"
-   */
-  routerPath?: string;
-  /**
-   * 생성된 페이지 파일을 저장할 디렉토리 (프로젝트 루트 기준)
-   * @default "src/pages/cms"
-   */
-  pagesDir?: string;
 }
 
 /**
  * 페이지 컴포넌트 파일(.tsx)을 디스크에 생성한다.
+ * 디렉토리가 없으면 자동 생성한다.
  * 코드 내 "NewPage" 함수명을 실제 컴포넌트 이름으로 치환한다.
  */
-function createPageFile(pagesDir: string, pageName: string, code: string) {
-  if (!fs.existsSync(pagesDir)) {
-    fs.mkdirSync(pagesDir, { recursive: true });
+function createPageFile(saveDir: string, pageName: string, code: string) {
+  if (!fs.existsSync(saveDir)) {
+    fs.mkdirSync(saveDir, { recursive: true });
   }
 
   const finalCode = code.replace(/function NewPage\(\)/, `function ${pageName}()`);
-  fs.writeFileSync(path.join(pagesDir, `${pageName}.tsx`), finalCode, "utf-8");
-}
-
-/**
- * routes/index.tsx 에 import 문과 pageRoutes 항목을 삽입한다.
- *
- * 삽입 위치:
- *   - import: `export const pageRoutes` 선언 바로 위
- *   - route:  `pageRoutes` 배열 닫는 `];` 바로 앞 (modalRoutes 선언 직전)
- */
-function addToRouter(
-  routerFile: string,
-  pageName: string,
-  uri: string,
-  pageImportPath: string,
-) {
-  let content = fs.readFileSync(routerFile, "utf-8");
-
-  // 1. pageRoutes 선언 직전에 import 삽입
-  content = content.replace(
-    /\nexport const pageRoutes/,
-    `\nimport ${pageName} from "${pageImportPath}";\nexport const pageRoutes`,
-  );
-
-  // URL 앞 슬래시 제거 (라우트 path에는 슬래시 없이 등록)
-  const routePath = uri.startsWith("/") ? uri.slice(1) : uri;
-
-  // 2. pageRoutes 배열 닫는 `];` 바로 앞, modalRoutes 선언 직전에 route 삽입
-  content = content.replace(
-    /(\n\];)\n+(export const modalRoutes)/,
-    `\n  { path: "${routePath}", element: <${pageName} /> },$1\n\n$2`,
-  );
-
-  fs.writeFileSync(routerFile, content, "utf-8");
+  fs.writeFileSync(path.join(saveDir, `${pageName}.tsx`), finalCode, "utf-8");
 }
 
 // ── 플러그인 ─────────────────────────────────────────────────────
@@ -167,7 +123,7 @@ function addToRouter(
  * CMS 빌더 페이지 저장 요청을 처리하는 Vite 플러그인.
  * Vite dev 서버에서만 동작하며 프로덕션 빌드에는 영향을 주지 않는다.
  */
-export function cmsBankPlugin(options: CmsBankPluginOptions = {}): Plugin {
+export function cmsBankPlugin(): Plugin {
   let root: string;
   let base = "/";
 
@@ -204,12 +160,13 @@ export function cmsBankPlugin(options: CmsBankPluginOptions = {}): Plugin {
         }
 
         // ── POST /__cms/create-page ────────────────────────────
+        // body: { savePath: string, code: string, pageName: string }
+        // 클라이언트가 지정한 savePath에 컴포넌트 파일만 작성한다(라우트 자동 등록 없음).
         if (urlPath === "/__cms/create-page" && req.method === "POST") {
           try {
             // admin 연동 모드(base !== '/')에서만 쓰기 권한 검증
             // 단독 실행 모드(base === '/')에서는 인증 없이 파일 저장 허용
             if (base !== "/") {
-              // admin 연동 모드에서만 쓰기 권한 검증 (단독 실행 모드는 인증 없이 파일 저장 허용)
               await requireCmsWrite(getCookieHeader(req));
             }
             const payload = await readBody(req) as CreatePagePayload;
@@ -221,17 +178,24 @@ export function cmsBankPlugin(options: CmsBankPluginOptions = {}): Plugin {
               return;
             }
 
-            const routerFile = path.join(root, options.routerPath ?? "src/routes/index.tsx");
-            const pagesDir   = path.join(root, options.pagesDir   ?? "src/pages/cms");
+            // savePath 누락/빈 값 차단
+            if (!payload.savePath || typeof payload.savePath !== "string") {
+              jsonResponse(res, 400, { error: "savePath가 필요합니다." });
+              return;
+            }
 
-            // @/ alias는 src/ 를 가리키므로 routerFile 경로에서 /src/ 위치를 찾아 srcDir 추론
-            const srcMatch = routerFile.replace(/\\/g, "/").match(/^(.*\/src)\//);
-            const srcDir = srcMatch ? srcMatch[1] : path.join(root, "src");
-            const relativePath = path.relative(srcDir, pagesDir).replace(/\\/g, "/");
-            const pageImportPath = `@/${relativePath}/${payload.pageName}`;
+            // 절대경로 차단 — 클라이언트가 호스트 파일 시스템 임의 위치에 쓰는 것을 방지
+            // POSIX('/foo'), Windows('C:\foo' 또는 'C:/foo'), UNC('\\\\server') 모두 거부
+            if (path.isAbsolute(payload.savePath) || /^([a-zA-Z]:[\\/]|[\\/])/.test(payload.savePath)) {
+              jsonResponse(res, 400, { error: "savePath는 상대 경로여야 합니다." });
+              return;
+            }
 
-            createPageFile(pagesDir, payload.pageName, payload.code);
-            addToRouter(routerFile, payload.pageName, payload.uri, pageImportPath);
+            // Vite 프로젝트 root 기준 상대 경로로 해석
+            // ('..'는 허용 — react-cms에서 ../demo/front 등 인접 패키지에 쓰는 케이스 지원)
+            const saveDir = path.resolve(root, payload.savePath);
+
+            createPageFile(saveDir, payload.pageName, payload.code);
 
             jsonResponse(res, 200, { success: true });
           } catch (err) {

@@ -41,12 +41,13 @@ document.documentElement.setAttribute(
 );
 
 
-/** localStorage key prefix: pageName → pageId 매핑 (savePage.ts와 동일) */
-const PAGE_ID_KEY_PREFIX = "cms_page_id_";
-
 /**
  * pageId 쿼리 파라미터가 있으면 DB에서 해당 페이지를 조회해 편집 모드로 빌더를 시작합니다.
  * pageId 없이 접근하면 신규 생성 모드로 빌더를 시작합니다.
+ *
+ * 저장 시 UPDATE/INSERT 분기는 URL의 ?pageId 존재 여부로 결정합니다 (savePage.ts).
+ * 신규 저장 직후 응답 pageId는 history.replaceState로 URL에 동기화되어
+ * 이후 재저장·새로고침이 동일 row에 매핑됩니다.
  */
 function BuilderPage() {
   const [searchParams] = useSearchParams();
@@ -95,12 +96,8 @@ function BuilderPage() {
             setError("페이지를 찾을 수 없습니다.");
             return;
           }
-          // 재편집을 위해 pageId를 localStorage에 캐싱 — savePage.ts의 UPDATE 분기를 타도록 함
+          // 모달 초기 컴포넌트명 세팅. 재편집 시 UPDATE 분기는 URL의 ?pageId가 직접 보장한다.
           if (row.PAGE_NAME) {
-            localStorage.setItem(
-              `${PAGE_ID_KEY_PREFIX}${row.PAGE_NAME}`,
-              pageId,
-            );
             setInitialPageName(row.PAGE_NAME);
           }
           if (row.PAGE_HTML) {
@@ -160,6 +157,12 @@ function BuilderPage() {
       initialPageName={initialPageName}
       approveState={approveState}
       rejectedReason={rejectedReason}
+      // admin 연동 모드는 DB 저장이라 저장 위치 개념이 없음 → 입력란 숨김
+      // 단독 실행 모드는 파일 시스템 저장이므로 저장 위치 입력란 노출
+      requireSavePath={!isAdminMode}
+      // demo/front 앱의 페이지 디렉토리를 기본값으로 제공.
+      // 사용자는 모달에서 자유롭게 다른 경로로 변경 가능.
+      defaultSavePath="../demo/front/src/pages/cms"
     />
   );
 }
