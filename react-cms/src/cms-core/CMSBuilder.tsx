@@ -255,7 +255,9 @@ export function CMSBuilder({ onSave, initialPage, mode = "create", initialPageNa
     return (savePage: CMSPage, params: SavePageParams) =>
       onSave(savePage, {
         ...params,
-        code: generateJSX(savePage, layouts, codegenConfig, overlayTemplates, blockDefinitions),
+        // pageName을 generateJSX에 전달하여 함수명을 처음부터 정확한 이름으로 생성.
+        // 이전에는 cmsBankPlugin이 string replace로 함수명을 치환했으나 부분 치환 위험이 있었다.
+        code: generateJSX(savePage, layouts, codegenConfig, overlayTemplates, blockDefinitions, params.pageName),
       });
   }, [onSave, layouts, codegenConfig, overlayTemplates, blockDefinitions]);
 

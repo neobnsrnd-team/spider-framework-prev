@@ -17,6 +17,7 @@
  */
 import { useState } from "react";
 import type { CMSPage } from "./types";
+import { validateRelativeSavePath } from "./utils/savePath";
 
 export interface SavePageParams {
   /** PascalCase 컴포넌트명, 예: "MyPage" */
@@ -57,10 +58,9 @@ function validate(params: SavePageParams, opts: ValidateOptions): string | null 
   if (!/^[A-Z][A-Za-z0-9]*$/.test(params.pageName))
     return "컴포넌트명은 대문자로 시작하는 영문/숫자만 사용할 수 있습니다.";
   if (opts.requireSavePath) {
-    if (!params.savePath) return "저장 위치를 입력하세요.";
-    // 절대경로(POSIX의 '/foo', Windows의 'C:\foo' 등) 차단 — 호스트 프로젝트 외부 침범 방지
-    if (/^([a-zA-Z]:[\\/]|[\\/])/.test(params.savePath))
-      return "저장 위치는 상대 경로여야 합니다.";
+    // 저장 경로 검증은 클라이언트·서버 공통 헬퍼로 위임 (cms-core/utils/savePath)
+    const savePathError = validateRelativeSavePath(params.savePath);
+    if (savePathError) return savePathError;
   }
   return null;
 }

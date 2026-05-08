@@ -29,6 +29,7 @@ import {
   UnauthorizedError,
   type CurrentUser,
 } from "../cms-admin/current-user";
+import { validateRelativeSavePath } from "../cms-core/utils/savePath";
 
 // DB 모듈은 dynamic import로 지연 로드합니다.
 // Vite는 vite.config.ts 평가 단계(서버 초기화 전)에 플러그인을 로드하므로,
@@ -106,15 +107,16 @@ interface CreatePagePayload {
 /**
  * 페이지 컴포넌트 파일(.tsx)을 디스크에 생성한다.
  * 디렉토리가 없으면 자동 생성한다.
- * 코드 내 "NewPage" 함수명을 실제 컴포넌트 이름으로 치환한다.
+ *
+ * 함수명 변경은 generateJSX(pageName)에서 처리하므로 여기서는 별도 후처리를 하지 않는다.
+ * (이전에는 string replace로 "NewPage"를 치환했으나 부분 치환 위험이 있어 codegen으로 이동)
  */
 function createPageFile(saveDir: string, pageName: string, code: string) {
   if (!fs.existsSync(saveDir)) {
     fs.mkdirSync(saveDir, { recursive: true });
   }
 
-  const finalCode = code.replace(/function NewPage\(\)/, `function ${pageName}()`);
-  fs.writeFileSync(path.join(saveDir, `${pageName}.tsx`), finalCode, "utf-8");
+  fs.writeFileSync(path.join(saveDir, `${pageName}.tsx`), code, "utf-8");
 }
 
 // ── 플러그인 ─────────────────────────────────────────────────────
@@ -178,21 +180,20 @@ export function cmsBankPlugin(): Plugin {
               return;
             }
 
-            // savePath 누락/빈 값 차단
-            if (!payload.savePath || typeof payload.savePath !== "string") {
-              jsonResponse(res, 400, { error: "savePath가 필요합니다." });
+            // 클라이언트·서버 공통 헬퍼로 빈 값/절대경로 차단
+            const savePathError =
+              typeof payload.savePath === "string"
+                ? validateRelativeSavePath(payload.savePath)
+                : "savePath가 필요합니다.";
+            if (savePathError) {
+              jsonResponse(res, 400, { error: savePathError });
               return;
             }
 
-            // 절대경로 차단 — 클라이언트가 호스트 파일 시스템 임의 위치에 쓰는 것을 방지
-            // POSIX('/foo'), Windows('C:\foo' 또는 'C:/foo'), UNC('\\\\server') 모두 거부
-            if (path.isAbsolute(payload.savePath) || /^([a-zA-Z]:[\\/]|[\\/])/.test(payload.savePath)) {
-              jsonResponse(res, 400, { error: "savePath는 상대 경로여야 합니다." });
-              return;
-            }
-
-            // Vite 프로젝트 root 기준 상대 경로로 해석
-            // ('..'는 허용 — react-cms에서 ../demo/front 등 인접 패키지에 쓰는 케이스 지원)
+            // Vite 프로젝트 root 기준 상대 경로로 해석.
+            // '..'는 허용 — monorepo 안팎 어디든 저장할 수 있도록 허용한다(자유 입력 정책).
+            // 절대경로 차단(validateRelativeSavePath)으로 명백한 시스템 경로 침범은 막되,
+            // 그 외 위치는 개발자 책임으로 둔다(dev/localhost 전용이라 위험 한정적).
             const saveDir = path.resolve(root, payload.savePath);
 
             createPageFile(saveDir, payload.pageName, payload.code);

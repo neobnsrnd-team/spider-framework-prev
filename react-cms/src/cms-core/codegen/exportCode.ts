@@ -310,6 +310,8 @@ function capitalize(str: string): string {
  * @param codegenConfig 전역 코드 생성 설정 (blockImportFrom, layoutImportFrom 등)
  * @param overlayTemplates 오버레이 템플릿 목록 — componentName으로 import 이름 결정
  * @param blockDefinitions 블록 정의 목록 — codegenProps/propSchema 기반 props 변환에 사용
+ * @param pageName 컴포넌트 함수명. 미지정 시 "NewPage"로 폴백 (코드 보기/임시 호출 등).
+ *                저장 시에는 SavePageModal에서 입력한 PascalCase 이름이 그대로 함수명이 된다.
  * @returns JSX 코드 문자열
  */
 export function generateJSX(
@@ -318,6 +320,7 @@ export function generateJSX(
   codegenConfig?: CMSCodegenConfig,
   overlayTemplates?: OverlayTemplate[],
   blockDefinitions?: BlockDefinition[],
+  pageName?: string,
 ): string {
   const { layoutType, layoutProps, blocks, overlays = [] } = page;
   const defs = blockDefinitions ?? [];
@@ -473,7 +476,7 @@ export function generateJSX(
     ...(hasTopImports ? [""] : []),
     importLine,
     "",
-    "export default function NewPage() {",
+    `export default function ${pageName ?? "NewPage"}() {`,
     ...navigateHook,
     ...overlayStateLines,
     ...(overlayStateLines.length ? [""] : []),

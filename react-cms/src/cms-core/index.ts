@@ -69,3 +69,7 @@ export type { StylesheetConfig } from "./context";
 
 // ── 아이콘 유틸리티 ────────────────────────────────────────────────────────────
 export { resolveIcon, toKebabIcon, kebabToPascal, ALL_ICON_NAMES } from "./utils/icon";
+
+// ── 저장 경로 검증 ─────────────────────────────────────────────────────────────
+// 클라이언트(SavePageModal)와 서버(cmsBankPlugin) 양쪽에서 공용으로 사용
+export { validateRelativeSavePath } from "./utils/savePath";

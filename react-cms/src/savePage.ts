@@ -22,7 +22,8 @@ export async function savePage(page: CMSPage, params: SavePageParams): Promise<v
   const { pageName, savePath } = params
   // CMSBuilder에서 Context 정보를 포함해 사전 생성한 코드 우선 사용.
   // 없으면(직접 호출 시) generateJSX로 폴백 — Context 정보 미포함 주의.
-  const code = params.code ?? generateJSX(page)
+  // pageName을 6번째 인자로 전달하여 함수명도 올바르게 생성한다.
+  const code = params.code ?? generateJSX(page, undefined, undefined, undefined, undefined, pageName)
 
   if (isAdminMode) {
     // ── admin 연동 모드: DB 저장만 수행 ─────────────────────────
@@ -53,7 +54,9 @@ export async function savePage(page: CMSPage, params: SavePageParams): Promise<v
     // 응답 pageId를 URL에 동기화 — 새로고침/재저장 시 동일 row를 UPDATE하도록 보장.
     // pushState가 아닌 replaceState를 사용하는 이유: React Router의 useSearchParams가
     // 재트리거되어 BuilderPage가 재마운트(=DB 재조회 + 작업 중 상태 손실)되는 것을 막기 위함.
-    if (urlPageId !== pageId) {
+    // pageId truthy 가드: 백엔드 응답이 비정상(undefined/null/빈 문자열)일 때
+    // URL에 "undefined" 같은 잘못된 값이 들어가는 것을 방지한다.
+    if (pageId && urlPageId !== pageId) {
       const url = new URL(window.location.href)
       url.searchParams.set("pageId", pageId)
       window.history.replaceState(null, "", url.toString())

@@ -28,7 +28,8 @@ export async function defaultSave(page: CMSPage, params: SavePageParams): Promis
   const { pageName, savePath } = params;
   // CMSBuilder에서 layouts/codegenConfig/overlayTemplates Context를 포함해 사전 생성한 코드 우선 사용.
   // params.code가 없는 경우(직접 호출 시) generateJSX로 폴백 — Context 정보 미포함 주의.
-  const code = params.code ?? generateJSX(page);
+  // pageName을 6번째 인자로 전달하여 함수명도 올바르게 생성한다.
+  const code = params.code ?? generateJSX(page, undefined, undefined, undefined, undefined, pageName);
 
   const res = await fetch(`${cmsBase}/create-page`, {
     method: "POST",
