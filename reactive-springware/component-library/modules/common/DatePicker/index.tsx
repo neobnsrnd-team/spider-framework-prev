@@ -65,9 +65,10 @@ export function DatePicker({
   placeholder = '날짜를 선택하세요',
   label,
   disabled    = false,
-  open:         openProp,
+  open:             openProp,
   onOpenChange,
-  anchorRef:    anchorRefProp,
+  anchorRef:        anchorRefProp,
+  portalContainer,
   className,
 }: DatePickerProps) {
   const today = useMemo(() => new Date(), []);
@@ -252,7 +253,8 @@ export function DatePicker({
         </button>
       )}
 
-      {/* 달력 패널 — overflow:hidden/auto 조상에 잘리지 않도록 document.body에 portal로 렌더링 */}
+      {/* 달력 패널 — overflow:hidden/auto 조상에 잘리지 않도록 portal로 렌더링.
+          portalContainer가 제공되면 해당 요소 안으로 portal (CSS @scope 환경 대응) */}
       {isOpen && typeof document !== 'undefined' && createPortal(
         <div
           ref={calendarRef}
@@ -332,7 +334,7 @@ export function DatePicker({
             })}
           </div>
         </div>,
-        document.body,
+        portalContainer ?? document.body,
       )}
     </div>
   );

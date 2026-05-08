@@ -13,11 +13,11 @@
  * @param overlays 현재 페이지 오버레이 목록 (openOverlay 액션 바인딩에 사용)
  * @param onInteractionChange 이벤트 인터랙션 변경 핸들러
  */
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import React, { useCallback, useEffect, useRef } from "react";
 import type { Action, BlockInteraction, BlockPadding, CMSBlock, CMSOverlay } from "../types";
 import type { BlockMeta, LeafPropField, PropField } from "../types";
-import IconPicker, { renderLucideIcon } from "./IconPicker";
+import { FieldControl } from "./FieldControl";
+import { ArrayField } from "./ArrayField";
 
 interface PropsEditorProps {
   block: CMSBlock;
@@ -30,121 +30,6 @@ interface PropsEditorProps {
 
 const inputCls =
   "w-full h-8 px-3 rounded-lg border border-input-border bg-surface text-xs text-input-text outline-none focus:border-input-border-focus transition-colors";
-
-// ── 단일 리프 필드 컨트롤 ──────────────────────────────────────────────────────
-/**
- * onChange는 매 렌더마다 새 참조가 생성될 수 있으므로 커스텀 비교 함수로 제외.
- * value / field / fieldKey 가 동일하면 리렌더링을 건너뜁니다.
- * set 함수는 항상 최신 props를 propsRef를 통해 읽으므로 stale closure 걱정 없음.
- */
-const FieldControl = React.memo(function FieldControl({
-  fieldKey,
-  field,
-  value,
-  onChange,
-}: {
-  fieldKey: string;
-  field: LeafPropField;
-  value: unknown;
-  onChange: (val: unknown) => void;
-}) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold text-text-secondary">
-        {field.label ?? fieldKey}
-      </label>
-
-      {field.type === "string" && (
-        <input
-          className={inputCls}
-          value={value as string}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )}
-
-      {field.type === "number" && (
-        <input
-          type="number"
-          className={inputCls}
-          value={value as number}
-          onChange={(e) => onChange(Number(e.target.value))}
-        />
-      )}
-
-      {field.type === "boolean" && (
-        <button
-          type="button"
-          onClick={() => onChange(!value)}
-          className={`relative w-9 h-5 rounded-full transition-colors border-none self-start ${
-            value ? "bg-primary" : "bg-border"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-card transition-all ${
-              value ? "left-4" : "left-0.5"
-            }`}
-          />
-        </button>
-      )}
-
-      {field.type === "select" && (
-        <div className="flex flex-wrap gap-1.5">
-          {field.options?.map((opt) => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => onChange(opt)}
-              className={`px-2.5 py-1 rounded-lg text-xs transition-colors border ${
-                value === opt
-                  ? "bg-primary/10 border-primary text-primary font-semibold"
-                  : "bg-surface border-border text-text-secondary hover:bg-surface-hover"
-              }`}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {field.type === "icon-picker" && (
-        <div className="flex flex-col gap-1.5">
-          <button
-            type="button"
-            onClick={() => setPickerOpen((o) => !o)}
-            className="flex items-center gap-2 h-8 px-3 rounded-lg border border-input-border bg-surface text-xs text-input-text hover:border-input-border-focus transition-colors"
-          >
-            {value
-              ? renderLucideIcon(value as string, "w-4 h-4 text-primary shrink-0")
-              : <span className="w-4 h-4 rounded bg-border shrink-0" />}
-            <span className={`flex-1 text-left ${value ? "text-text-primary" : "text-text-muted"}`}>
-              {value ? (value as string) : "아이콘 선택..."}
-            </span>
-            <ChevronDown
-              className={`w-3 h-3 text-text-muted shrink-0 transition-transform ${pickerOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-
-          {pickerOpen && (
-            <IconPicker
-              value={value as string}
-              onSelect={(name) => {
-                onChange(name);
-                setPickerOpen(false);
-              }}
-            />
-          )}
-        </div>
-      )}
-    </div>
-  );
-}, (prev, next) =>
-  // onChange는 stale closure 없이 항상 최신 set을 호출하므로 비교에서 제외
-  prev.fieldKey === next.fieldKey &&
-  prev.value === next.value &&
-  Object.is(prev.field, next.field),
-);
 
 // ── 이벤트 필드 (인터랙션 바인딩) ─────────────────────────────────────────────
 
@@ -282,23 +167,6 @@ export default function PropsEditor({
     onChange({ ...propsRef.current, [groupKey]: { ...latestGroup, [subKey]: value } });
   }, [onChange]);
 
-  // 배열 필드 아이템 수정
-  const setArrayItem = useCallback((arrKey: string, idx: number, subKey: string, value: unknown) => {
-    const latestArr = (propsRef.current[arrKey] as Record<string, unknown>[]) ?? [];
-    onChange({ ...propsRef.current, [arrKey]: latestArr.map((it, i) => i === idx ? { ...it, [subKey]: value } : it) });
-  }, [onChange]);
-
-  // 배열 아이템 추가/삭제
-  const addArrayItem = useCallback((arrKey: string, newItem: Record<string, unknown>) => {
-    const latestArr = (propsRef.current[arrKey] as Record<string, unknown>[]) ?? [];
-    onChange({ ...propsRef.current, [arrKey]: [...latestArr, newItem] });
-  }, [onChange]);
-
-  const removeArrayItem = useCallback((arrKey: string, idx: number) => {
-    const latestArr = (propsRef.current[arrKey] as Record<string, unknown>[]) ?? [];
-    onChange({ ...propsRef.current, [arrKey]: latestArr.filter((_, i) => i !== idx) });
-  }, [onChange]);
-
   const setPadding = useCallback((side: keyof BlockPadding, value: number) => {
     onPaddingChange({ ...paddingRef.current, [side]: Math.max(0, value) });
   }, [onPaddingChange]);
@@ -357,62 +225,23 @@ export default function PropsEditor({
 
             // array
             if (field.type === "array") {
-              const arrVal =
-                (props[key] as Record<string, unknown>[]) ?? field.default;
-              const newItem = Object.fromEntries(
-                Object.entries(field.itemFields).map(([k, f]) => [k, f.default]),
-              );
+              const arrVal = (props[key] as Record<string, unknown>[]) ?? field.default;
               return (
-                <div key={key} className="rounded-xl border border-border overflow-hidden">
-                  <div className="px-3 py-1.5 bg-surface-hover border-b border-divider flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                    <span className="text-xs font-bold text-text-secondary flex-1">
-                      {field.label ?? key}
-                    </span>
-                    <span className="text-xs text-text-muted mr-1">{arrVal.length}개</span>
-                    <button
-                      type="button"
-                      onClick={() => addArrayItem(key, newItem)}
-                      className="flex items-center gap-0.5 text-xs text-primary font-semibold hover:opacity-70 bg-transparent border-none"
-                    >
-                      <Plus className="w-3 h-3" />
-                      추가
-                    </button>
-                  </div>
-                  <div className="flex flex-col">
-                    {arrVal.length === 0 && (
-                      <p className="px-3 py-2.5 text-xs text-text-muted">항목이 없습니다.</p>
-                    )}
-                    {arrVal.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className={`px-3 py-2.5 flex flex-col gap-2 ${idx > 0 ? "border-t border-divider" : ""}`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-text-muted">#{idx + 1}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeArrayItem(key, idx)}
-                            className="flex items-center gap-0.5 text-xs text-error hover:opacity-70 bg-transparent border-none"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            삭제
-                          </button>
-                        </div>
-                        {Object.entries(field.itemFields).map(([subKey, subField]) => (
-                          <FieldControl
-                            key={subKey}
-                            fieldKey={subKey}
-                            field={subField}
-                            value={(item[subKey] ?? subField.default) as unknown}
-                            // setArrayItem은 stable — propsRef로 최신 배열 읽어 stale 방지
-                            onChange={(val) => setArrayItem(key, idx, subKey, val)}
-                          />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <ArrayField
+                  key={key}
+                  fieldKey={key}
+                  field={field}
+                  value={arrVal}
+                  onChange={(next) => set(key, next)}
+                  renderLeafField={(subKey, subField, val, handleChange) => (
+                    <FieldControl
+                      fieldKey={subKey}
+                      field={subField}
+                      value={val}
+                      onChange={handleChange}
+                    />
+                  )}
+                />
               );
             }
 

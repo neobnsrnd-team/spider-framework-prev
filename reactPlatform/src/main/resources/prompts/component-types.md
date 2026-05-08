@@ -832,6 +832,13 @@ export interface DatePickerProps {
    * 미제공 시 내장 triggerRef를 사용한다.
    */
   anchorRef?:     React.RefObject<HTMLElement | null>;
+  /**
+   * 달력 패널 portal 대상 요소.
+   * 기본값: document.body
+   * CSS @scope로 격리된 환경(예: CMS 캔버스)에서는 스코프 루트 요소를 전달하면
+   * 스코프 내 스타일이 달력에도 적용된다.
+   */
+  portalContainer?: HTMLElement | null;
 }
 ```
 
@@ -876,8 +883,24 @@ export interface DropdownMenuItem {
 }
 
 export interface DropdownMenuProps {
-  /** 드롭다운을 열고 닫는 트리거 요소 */
-  children: React.ReactNode;
+  /**
+   * 내장 트리거 버튼에 표시할 아이콘.
+   * 이 prop이 제공되면 children 대신 내장 버튼을 렌더링한다.
+   */
+  triggerIcon?: React.ReactNode;
+  /**
+   * 내장 트리거 버튼 스타일. 기본: 'default'
+   * - 'default' : 간단한 사각형 아이콘 버튼
+   * - 'rounded' : 원형 배경 버튼 (UserProfile 설정 버튼 등)
+   */
+  triggerVariant?: 'default' | 'rounded';
+  /** 내장 트리거 버튼의 접근성 레이블 */
+  triggerAriaLabel?: string;
+  /**
+   * 완전히 커스텀한 트리거가 필요할 때 사용하는 fallback.
+   * triggerIcon이 없을 때만 렌더링된다.
+   */
+  children?: React.ReactNode;
   /** 드롭다운에 표시할 항목 목록 */
   items: DropdownMenuItem[];
   /**
@@ -900,7 +923,14 @@ export interface EmptyStateProps {
   illustration?: React.ReactNode;
   title:         string;
   description?:  string;
-  /** CTA 버튼 등 액션 슬롯 */
+  /**
+   * 액션 버튼 레이블. 전달 시 내장 버튼을 렌더링한다.
+   * action 슬롯보다 우선 적용된다.
+   */
+  actionLabel?:  string;
+  /** actionLabel과 함께 사용하는 버튼 클릭 핸들러 */
+  onAction?:     () => void;
+  /** CTA 버튼 등 완전히 커스텀한 액션이 필요할 때 사용하는 슬롯 */
   action?:       React.ReactNode;
   className?:    string;
 }

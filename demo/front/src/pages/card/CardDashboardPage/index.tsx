@@ -239,7 +239,7 @@ export function CardDashboardPage({
       >
         {/* ── 인사말 ────────────────────────────────────── */}
         {userName && (
-          <div className="px-standard pt-standard">
+          <div className="pt-standard">
             <Typography variant="heading" color="heading">
               안녕하세요, {userName} 님!
             </Typography>
@@ -247,7 +247,7 @@ export function CardDashboardPage({
         )}
 
         {/* ── 이번 달 명세서 히어로 카드 ────────────────── */}
-        <div className="px-standard pt-standard">
+        <div className="pt-standard">
           <StatementHeroCard
             amount={statementAmount ?? 0}
             dueDate={statementDueDate ?? '—'}
@@ -257,7 +257,7 @@ export function CardDashboardPage({
         </div>
 
         {/* ── 대출 메뉴 바 (단기카드대출 / 장기카드대출 / 리볼빙) ── */}
-        <div className="px-standard pt-standard">
+        <div className="pt-standard">
           <LoanMenuBar
             items={[
               {
@@ -283,7 +283,7 @@ export function CardDashboardPage({
         </div>
 
         {/* ── 총 자산 요약 카드 ──────────────────────────── */}
-        <div className="px-standard pt-standard">
+        <div className="pt-standard">
           <SummaryCard
             variant="asset"
             title="총 자산"
@@ -299,7 +299,7 @@ export function CardDashboardPage({
         </div>
 
         {/* ── 이번 달 소비 요약 카드 ─────────────────────── */}
-        <div className="px-standard pt-standard">
+        <div className="pt-standard">
           <SummaryCard
             variant="spending"
             title="이번 달 소비"
@@ -319,12 +319,12 @@ export function CardDashboardPage({
         </div>
 
         {/* ── 퀵메뉴 그리드 4열 (사각형 아이콘) ──────────── */}
-        <div className="px-standard pt-standard">
+        <div className="pt-standard">
           <QuickMenuGrid items={quickMenuItems} cols={4} />
         </div>
 
         {/* ── 바로가기 카드 2열 (카드추천 / 금융·대출 / 보험) ── */}
-        <div className="px-standard pt-standard">
+        <div className="pt-standard">
           <div className="grid grid-cols-2 gap-sm">
             <QuickShortcutCard
               title="카드추천"
@@ -348,7 +348,7 @@ export function CardDashboardPage({
         </div>
 
         {/* ── 이벤트 배너 (3개, 자동 슬라이드) ───────────── */}
-        <div className="px-standard pt-standard pb-standard">
+        <div className="pt-standard pb-standard">
           <BannerCarousel
             items={[
               {

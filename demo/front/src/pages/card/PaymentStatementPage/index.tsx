@@ -153,7 +153,7 @@ export function PaymentStatementPage({
         }
       >
         {/* ── 탭 + 조회 월 선택 버튼 — 스크롤 영역 최상단 ────────── */}
-        <div className="flex flex-col px-standard pt-md pb-sm gap-sm">
+        <div className="flex flex-col pt-md pb-sm gap-sm">
           {/* underline 탭: 두 탭이 균등하게 너비를 나눔 */}
           <TabNav
             items={TAB_ITEMS}
@@ -176,7 +176,7 @@ export function PaymentStatementPage({
 
         {/* ── 결제예정금액 탭 콘텐츠 ─────────────────────────────────── */}
         {activeTab === "payment" && (
-          <div className="flex flex-col gap-lg px-standard pb-xl">
+          <div className="flex flex-col gap-lg pb-xl">
             {/* 총 청구금액 요약 카드 — 날짜 클릭 시 월 선택 BottomSheet 오픈 */}
             <CardPaymentSummary
               dateFull={paymentData.dateFull}
@@ -236,7 +236,7 @@ export function PaymentStatementPage({
 
         {/* ── 이용대금명세서 탭 콘텐츠 ──────────────────────────────── */}
         {activeTab === "statement" && (
-          <div className="flex flex-col gap-lg px-standard pb-xl">
+          <div className="flex flex-col gap-lg pb-xl">
             {/* 총 결제금액 카드 — 분할납부·즉시결제·리볼빙 액션 포함 */}
             <StatementTotalCard
               amount={statementData.totalAmount}

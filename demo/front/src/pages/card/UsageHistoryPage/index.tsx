@@ -146,7 +146,7 @@ export function UsageHistoryPage({
         }
       >
         {/* ── 결제 요약 카드 ─────────────────────────────── */}
-        <div className="px-standard pt-md">
+        <div className="pt-md">
           <div className="flex flex-col gap-md bg-surface rounded-2xl shadow-card px-md">
             <div className="flex flex-col gap-xs">
               <Typography variant="body-sm" color="muted">
@@ -172,7 +172,7 @@ export function UsageHistoryPage({
         </div>
 
         {/* ── 검색 헤더: 총 건수 + 필터 아이콘 ─────────── */}
-        <div className="flex items-center justify-between px-standard py-sm">
+        <div className="flex items-center justify-between py-sm">
           <Typography variant="caption" color="muted">
             총 {totalCount}건
           </Typography>
@@ -190,11 +190,11 @@ export function UsageHistoryPage({
         <BillingPeriodLabel
           startDate={billingPeriod.startDate}
           endDate={billingPeriod.endDate}
-          className="px-standard pb-sm"
+          className="pb-sm"
         />
 
         {/* ── 이용내역 목록 ──────────────────────────────── */}
-        <div className="flex flex-col px-standard">
+        <div className="flex flex-col">
           {visibleTx.length === 0 ? (
             <div className="py-3xl text-center">
               <Typography variant="body-sm" color="muted">

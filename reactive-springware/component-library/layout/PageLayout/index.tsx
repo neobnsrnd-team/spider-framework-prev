@@ -98,7 +98,7 @@ export function PageLayout({
           불필요하므로 hidden으로 명시적으로 차단한다. */}
       {/* px-standard py-md: 좌우 기본 여백 + 상하 여백 — 고객 프로젝트에서 별도 패딩 없이 바로 사용 가능 */}
       {/* flex flex-col: 자식 컴포넌트가 flex-1을 사용해 남은 높이를 채울 수 있도록 flex 컨테이너로 설정 */}
-      <main className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden py-md [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+      <main className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden px-standard py-md [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
         {children}
       </main>
 

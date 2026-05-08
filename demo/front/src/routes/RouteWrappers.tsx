@@ -999,6 +999,8 @@ export function ImmediatePayMethodRoute() {
           // 시트를 닫아도 초과 상태는 유지되어야 페이지의 초기화 버튼이 표시된다
         }}
         onConfirm={async (pin) => {
+          // 횟수 초과 상태에서는 키패드를 잠그지 않고 검증 로직만 차단한다
+          if (pinExceeded) return;
           try {
             const { data } = await axiosInstance.post<{
               paidAmount: number;
@@ -1026,19 +1028,23 @@ export function ImmediatePayMethodRoute() {
             const status = response?.status;
             const data = response?.data;
 
-            if (data?.attemptsLeft === 0) {
-              // 횟수 소진 — 시트에 초과 메시지를 표시한 채로 유지하고,
-              // 페이지에 초기화 버튼을 준비한다 (시트를 닫으면 버튼이 보임)
-              setPinError(
-                "PIN 입력 횟수를 초과하였습니다. 초기화 후 다시 시도해 주세요.",
-              );
-              setPinExceeded(true);
-            } else if (data?.attemptsLeft !== undefined) {
-              setPinError(
-                `PIN이 올바르지 않습니다. (${data.attemptsLeft}회 남음)`,
-              );
+            if (status === 403) {
+              // 403은 항상 PIN 오류 — 완료 화면으로 이동하지 않고 시트 안에서 처리한다
+              if (data?.attemptsLeft === 0) {
+                setPinError(
+                  "PIN 입력 횟수를 초과하였습니다. 초기화 후 다시 시도해 주세요.",
+                );
+                setPinExceeded(true);
+              } else {
+                const remaining = data?.attemptsLeft;
+                setPinError(
+                  remaining !== undefined
+                    ? `PIN이 올바르지 않습니다. (${remaining}회 남음)`
+                    : (data?.error ?? "PIN이 올바르지 않습니다."),
+                );
+              }
             } else {
-              // PIN 오류 외의 예외는 완료 화면으로 이동해 오류 내용을 표시한다.
+              // PIN 검증 통과 후 결제 처리 중 발생한 오류는 완료 화면으로 이동해 표시한다.
               // 4xx(비즈니스 오류): 서버가 보낸 구체적인 사유를 그대로 노출한다.
               // 5xx(시스템 오류): 내부 오류를 사용자에게 노출하지 않고 일반 메시지를 사용한다.
               const isBusinessError =

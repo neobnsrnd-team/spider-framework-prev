@@ -36,8 +36,9 @@ const DOMAIN_LABEL: Record<string, string> = {
   account:  "Account",
 };
 
-/** 카테고리 정렬 우선순위 (목록에 없는 카테고리는 뒤에 순서대로 추가). */
-const PREFERRED_CATEGORY_ORDER = ["base", "core", "composite", "biz", "modules", "page"];
+/** 카테고리 정렬 우선순위 (목록에 없는 카테고리는 뒤에 순서대로 추가).
+ *  주 사용 카테고리(core → modules → biz) 먼저 노출. */
+const PREFERRED_CATEGORY_ORDER = ["core", "modules", "biz", "base", "composite", "page", "pages"];
 
 // ─── 라이브 썸네일 ──────────────────────────────────────────
 
@@ -166,6 +167,9 @@ interface SectionHeaderProps {
 
 /**
  * @description 접기/펼치기 가능한 섹션 헤더.
+ * indent=false는 카테고리(강조 스타일, 좌측 primary 바 + 진한 텍스트),
+ * indent=true는 도메인(미니멀 서브 헤더)으로 시각 위계를 분리한다.
+ *
  * @param label 표시할 레이블
  * @param collapsed 현재 접힌 상태 여부
  * @param onToggle 토글 콜백
@@ -173,16 +177,39 @@ interface SectionHeaderProps {
  * @returns React 컴포넌트
  */
 function SectionHeader({ label, collapsed, onToggle, indent = false }: SectionHeaderProps) {
+  // 도메인(서브) 헤더: 미니멀
+  if (indent) {
+    return (
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between w-full mb-2 group pl-2"
+      >
+        <p className="font-bold uppercase tracking-widest text-[9px] text-gray-400">{label}</p>
+        <svg
+          className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2.5}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+    );
+  }
+
+  // 카테고리(메인) 헤더: 좌측 primary 액센트 바 + 진한 텍스트로 강조
   return (
     <button
       onClick={onToggle}
-      className={`flex items-center justify-between w-full mb-2 group ${indent ? "pl-2" : "px-1"}`}
+      className="flex items-center justify-between w-full mb-3 group"
     >
-      <p className={`font-bold uppercase tracking-widest ${indent ? "text-[9px] text-gray-400" : "text-[10px] text-gray-400"}`}>
-        {label}
-      </p>
+      <div className="flex items-center gap-2">
+        <span className="w-1 h-4 rounded-full bg-primary" aria-hidden="true" />
+        <p className="font-bold uppercase tracking-wider text-xs text-gray-800">{label}</p>
+      </div>
       <svg
-        className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`}
+        className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"

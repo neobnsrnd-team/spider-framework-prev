@@ -12,7 +12,6 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
-import org.springframework.stereotype.Service;
 
 /**
  * Quartz 스케줄러 관리 서비스.
@@ -23,9 +22,11 @@ import org.springframework.stereotype.Service;
  * <p>현재 JobStore는 RAMJobStore(in-memory)를 사용한다.
  * TODO: 운영 환경에서는 JDBC JobStore로 전환하여 WAS 재기동 시 스케줄을 복구할 것.
  *       application.yml: {@code spring.quartz.job-store-type: jdbc}</p>
+ *
+ * <p>{@code spring-boot-starter-quartz}가 클래스패스에 있을 때
+ * {@link com.example.spiderbatch.config.QuartzSchedulerConfig}에 의해 자동 등록된다.</p>
  */
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class SchedulerManagementService {
 

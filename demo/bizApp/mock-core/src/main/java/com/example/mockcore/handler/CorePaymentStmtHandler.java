@@ -18,7 +18,7 @@ import java.util.Map;
  * <p>REQ: COMMAND(C,20) + REQUEST_ID(C,36) + userId(C,20) + yearMonth(C,6) + paymentDay(C,2)
  * RES: SUCCESS(C,1) + ERROR_MSG(K,200) + dueDate(C,8) + totalAmount(N,15)
  *      + paymentBank(K,40) + paymentAccount(C,20) + paymentDay(C,2) + itemCnt(N,4)
- *      + [반복: cardNo(C,20)+cardName(C,20)+amount(N,15)+itemDueDate(C,8)]</p>
+ *      + [반복: cardNo(C,20)+cardName(K,60)+amount(N,15)+itemDueDate(C,8)]</p>
  *
  * <p>루프 내 itemDueDate 는 헤더의 dueDate 와 동일한 값이지만, FWK_MESSAGE_FIELD PK 충돌
  * 방지를 위해 별도 필드명을 사용한다.</p>
@@ -69,7 +69,7 @@ public class CorePaymentStmtHandler implements LegacyCoreHandler {
             writer.writeN(items.size(), 4);
             for (Map<String, Object> item : items) {
                 writer.writeC(str(item, "cardNo"), 20);
-                writer.writeC(str(item, "cardName"), 20);
+                writer.writeK(str(item, "cardName"), 60);
                 writer.writeN(toLong(item.get("amount")), 15);
                 writer.writeC(str(item, "dueDate"), 8); // itemDueDate
             }

@@ -42,6 +42,9 @@ public final class BizCommands {
     /** 즉시결제 처리: {userId, cardId, pin, amount, accountNumber} → {paidAmount, processedCount, completedAt} */
     public static final String TRANSFER_IMMEDIATE_PAY = "TRANSFER_IMMEDIATE_PAY";
 
+    /** PIN 시도 횟수 초기화: {userId, cardId} → {ok: true} */
+    public static final String TRANSFER_RESET_PIN_ATTEMPTS = "TRANSFER_RESET_PIN_ATTEMPTS";
+
     // ──────────────────────────────────────────────────────────────────────────
     // 계정계 Mock (mock-core, port 19300) — 인증AP/이체AP → 계정계
     // ──────────────────────────────────────────────────────────────────────────

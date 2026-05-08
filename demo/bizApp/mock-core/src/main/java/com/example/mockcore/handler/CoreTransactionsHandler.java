@@ -20,7 +20,7 @@ import java.util.Map;
  * RES: SUCCESS(C,1) + ERROR_MSG(K,200) + totalCount(N,4)
  *      + summaryTotalAmount(N,15) + summaryDate(C,15)
  *      + [반복: id(C,40)+merchant(K,100)+amount(N,15)+date(C,20)+type(K,20)
- *              +approvalNumber(C,20)+status(K,10)+cardName(C,20)]</p>
+ *              +approvalNumber(C,20)+status(K,10)+cardName(K,60)]</p>
  *
  * <p>amount 필드: 취소 거래는 DB에서 음수로 저장되지만 N 타입은 부호 없으므로 절댓값 기록.
  * 취소 여부는 status(K,10) 의 '취소' 값으로 구분한다.</p>
@@ -79,7 +79,7 @@ public class CoreTransactionsHandler implements LegacyCoreHandler {
                     writer.writeK(str(tx, "type"), 20);
                     writer.writeC(str(tx, "approvalNumber"), 20);
                     writer.writeK(str(tx, "status"), 10);
-                    writer.writeC(str(tx, "cardName"), 20);
+                    writer.writeK(str(tx, "cardName"), 60);
                 }
             }
         } catch (Exception e) {

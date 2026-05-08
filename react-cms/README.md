@@ -68,14 +68,16 @@ react-cms/
 │   │   │   ├── OverlayCanvas.tsx  # 오버레이 편집 캔버스
 │   │   │   └── BlockControls.tsx  # 블록 선택·이동·삭제 컨트롤
 │   │   ├── codegen/
-│   │   │   ├── exportCode.ts      # CMSPage → JSX 코드 생성
+│   │   │   ├── exportCode.ts      # CMSPage → JSX 코드 생성 (codegenProps/icon-picker 변환 포함)
 │   │   │   └── exportJson.ts      # CMSPage → JSON 직렬화
 │   │   ├── inspector/
 │   │   │   ├── RightSidebar.tsx   # 우측 속성 패널
 │   │   │   ├── PropsEditor.tsx    # 블록 props 편집기
 │   │   │   ├── LayoutEditor.tsx   # 레이아웃 props 편집기
 │   │   │   ├── OverlayEditor.tsx  # 오버레이 편집기
-│   │   │   └── IconPicker.tsx     # 아이콘 선택기
+│   │   │   ├── ArrayField.tsx     # 배열·중첩 배열 필드 공용 컴포넌트
+│   │   │   ├── FieldControl.tsx   # leaf 필드 컨트롤(string/number/boolean/select/icon-picker)
+│   │   │   └── IconPicker.tsx     # 아이콘 선택기 (초기 120개 + "더 보기" 확장)
 │   │   ├── palette/
 │   │   │   ├── LeftSidebar.tsx    # 좌측 팔레트 패널
 │   │   │   ├── BlockPalette.tsx   # 블록 목록
@@ -84,22 +86,42 @@ react-cms/
 │   │   │   └── PreviewPage.tsx    # 전체 화면 미리보기
 │   │   ├── runtime/
 │   │   │   └── renderPage.tsx     # CMSPage 런타임 렌더러
-│   │   └── state/
-│   │       ├── builderStore.ts    # 빌더 상태 (블록 · 레이아웃 · 오버레이)
-│   │       ├── overlayStore.tsx   # 런타임 오버레이 열기/닫기 상태
-│   │       └── useDragSort.ts     # @dnd-kit 기반 드래그 정렬 훅
+│   │   ├── state/
+│   │   │   ├── builderStore.ts    # 빌더 상태 (블록 · 레이아웃 · 오버레이)
+│   │   │   ├── overlayStore.tsx   # 런타임 오버레이 열기/닫기 상태
+│   │   │   └── useDragSort.ts     # @dnd-kit 기반 드래그 정렬 훅
+│   │   └── utils/
+│   │       └── icon.tsx           # resolveIcon: kebab-case → Lucide ReactNode 변환
 │   ├── cms-meta/                  # 프로젝트별 CMS 설정 (커스터마이징 대상)
 │   │   ├── index.ts
-│   │   ├── blocks.tsx             # 사용 가능한 블록 목록
+│   │   ├── blocks.tsx             # 사용 가능한 블록 목록 (codegenProps 정의 포함)
 │   │   ├── layouts.tsx            # 레이아웃 템플릿 + 렌더러
 │   │   └── overlays.tsx           # 오버레이 템플릿
+│   ├── cms-admin/                 # 어드민 모드 권한 가드·인증
+│   │   ├── CmsAuthGuard.tsx       # /__cms/api/me 권한 확인 라우트 가드
+│   │   ├── current-user.ts        # 현재 사용자 컨텍스트
+│   │   ├── NotAuthorizedPage.tsx  # 권한 부족 시 표시 페이지
+│   │   └── __tests__/             # 인증 모듈 테스트
+│   ├── db/                        # Oracle DB 연동 (서버 사이드 전용)
+│   │   ├── connection.ts          # 커넥션 풀 (Thick 모드, CLOB 자동 변환)
+│   │   ├── repository/
+│   │   │   └── page.repository.ts # CMS 페이지 CRUD
+│   │   └── types.ts
+│   ├── lib/                       # 공용 유틸리티
+│   │   ├── env.ts                 # 서버 사이드 환경변수 (fail-fast)
+│   │   └── client-env.ts          # 클라이언트 환경변수 (cmsBase 등)
 │   ├── shared/
 │   │   └── icons/                 # 아이콘 레지스트리
 │   ├── vite-plugin/
 │   │   └── cmsBankPlugin.ts       # 페이지 파일 생성 Vite 플러그인
+│   ├── assets/                    # 정적 자산 (hero·로고)
 │   ├── cms.config.ts              # CMS 앱 설정 진입점
 │   ├── main.tsx                   # Vite dev 앱 진입점
-│   └── savePage.ts                # 외부 사용 가능한 저장 함수
+│   ├── savePage.ts                # 외부 사용 가능한 저장 함수
+│   ├── index.css                  # CMS 셸 전역 스타일 (@theme 색상 토큰)
+│   └── user-scope.css             # @scope 기반 사용자 영역 스타일
+├── docs/
+├── public/
 ├── vite.config.ts
 └── package.json
 ```
@@ -176,7 +198,9 @@ npm install
 npm run dev
 ```
 
-빌더 UI는 `http://localhost:5173/builder` 에서 접근한다. 페이지는 파일시스템(`demo/front`)에 저장된다.
+빌더 UI는 `http://localhost:5273/builder` 에서 접근한다. 페이지는 파일시스템(`demo/front`)에 저장된다.
+
+> Vite dev server 포트는 `vite.config.ts`에서 `5273`으로 고정한다. 다른 Vite 프로젝트(데모 등)와 동시 실행 시 충돌을 피하기 위함이며, spider-admin nginx 프록시 설정도 같은 값을 가리킨다.
 
 > `cmsBankPlugin`이 `react-cms` Vite 서버에 `/__cms/create-page` 엔드포인트를 등록하므로,
 > 저장 기능을 사용하려면 `demo/front`가 실행 중일 필요 없이 `react-cms` dev 서버만 실행하면 된다.
@@ -204,6 +228,16 @@ spider-admin(`:8080`)과 nginx 프록시(`:9000`)가 실행 중이어야 세션 
 interface BlockDefinition {
   meta: BlockMeta;
   component: React.ComponentType<Record<string, unknown>>;
+  /**
+   * 코드 생성 시 props 변환 함수.
+   * component 함수 내부에 props 변환 로직(타입 변환·기본값 주입 등)이 있다면
+   * 동일한 변환을 반환해야 코드 생성 결과가 캔버스 동작과 일치한다.
+   * { __jsx: "..." } 마커를 반환하면 raw JSX expression으로 출력된다.
+   * 미정의 시 propSchema의 icon-picker 필드는 자동으로 JSX로 변환된다.
+   */
+  codegenProps?: (props: Record<string, unknown>) => Record<string, unknown>;
+  /** codegenProps가 생성하는 JSX 안에서 참조하는 추가 컴포넌트명 (import에 자동 포함) */
+  codegenImports?: string[];
 }
 
 interface BlockMeta {
@@ -214,6 +248,74 @@ interface BlockMeta {
   propSchema: Record<string, PropField>;     // 우측 패널 편집 폼 스키마
 }
 ```
+
+#### codegenProps 사용 예시
+
+`component` 함수가 캔버스 미리보기용 변환을 수행하는 경우, 동일한 변환을 코드 생성에도 적용해야 한다.
+
+```typescript
+// OtpInput: select가 반환하는 문자열 → 숫자 변환
+{
+  meta: { propSchema: { length: { type: "select", options: ["4", "6"], default: "6" } } },
+  component:    (p) => <OtpInput {...p} length={Number(p.length) as 4 | 6} />,
+  codegenProps: (p) => ({ ...p, length: Number(p.length) }),
+}
+
+// Card: header/rows를 자식 JSX로 변환 + 추가 컴포넌트 import
+{
+  component: (p) => <Card>...<CardHeader />...<CardRow /></Card>,
+  codegenProps: (p) => ({
+    interactive: p.interactive,
+    children:    { __jsx: `<CardHeader title="${p.title}" /><CardRow ... />` },
+  }),
+  codegenImports: ["CardHeader", "CardRow"],
+}
+
+// NumberKeypad: JSON에 저장되지 않는 필수 props 주입
+{
+  meta: { propSchema: { onDigitPress: { type: "event" } } },
+  codegenProps: () => ({ digits: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] }),
+}
+```
+
+> `propSchema`에 `type: "event"` 필드가 있고 interaction에 바인딩되지 않으면, 코드 생성 시 `() => {}` noop이 자동 주입된다 (필수 콜백 타입 에러 방지).
+
+#### 카테고리별 export 그룹 패턴
+
+`blocks.tsx`는 BlockDefinition을 카테고리별 배열로 묶어 export하는 컨벤션을 따른다.
+CMSApp에는 합쳐서 전달하되, 인스펙터 팔레트는 `BlockMeta.category`로 그룹핑해 표시한다.
+
+```typescript
+// src/cms-meta/blocks.tsx
+export const coreBlocks: BlockDefinition[] = [
+  BadgeDefinition, ButtonDefinition, InputDefinition, /* ... */
+];
+
+export const bizBlocks: BlockDefinition[] = [
+  // biz/common
+  BannerCarouselDefinition, UserProfileDefinition,
+  // biz/banking
+  AccountSummaryCardDefinition,
+  // biz/card
+  CardSummaryCardDefinition, CardVisualDefinition, /* ... */
+  // biz/insurance
+  InsuranceSummaryCardDefinition,
+];
+
+export const moduleBlocks: BlockDefinition[] = [
+  // modules/common
+  CardDefinition, CollapsibleSectionDefinition, DatePickerDefinition, /* ... */
+  // modules/banking
+  AmountInputDefinition, NumberKeypadDefinition, OtpInputDefinition, /* ... */
+];
+
+export const blocks: BlockDefinition[] = [...coreBlocks, ...bizBlocks, ...moduleBlocks];
+```
+
+신규 블록 추가 시:
+1. `meta.category`에 `"core" | "biz" | "modules"` 중 하나 지정
+2. `meta.domain`에 도메인 그룹(`"common" | "banking" | "card" | "insurance"`) 지정 (해당하는 경우)
+3. 해당 카테고리 배열에 BlockDefinition 추가
 
 **예시**
 
@@ -252,6 +354,14 @@ interface LayoutTemplate {
   defaultProps?: Record<string, unknown>;              // 레이아웃 props 초기값
   propSchema?: Record<string, PropField>;              // 우측 패널 레이아웃 편집 폼
   renderer?: (layoutProps: Record<string, unknown>) => LayoutSlots;
+  /**
+   * 코드 생성 시 layoutProps를 실제 컴포넌트 API 형태로 변환.
+   * BlockDefinition.codegenProps와 동일 패턴 — { __jsx: "..." } 마커로 raw JSX 출력 가능.
+   * 미정의 시 propSchema의 icon-picker 필드는 자동으로 JSX로 변환된다.
+   */
+  codegenProps?: (props: Record<string, unknown>) => Record<string, unknown>;
+  /** codegenProps가 생성하는 JSX 안에서 참조하는 추가 컴포넌트명 (import에 자동 포함) */
+  codegenImports?: string[];
 }
 
 interface LayoutSlots {
@@ -259,6 +369,35 @@ interface LayoutSlots {
   footer?: React.ReactNode;
 }
 ```
+
+#### codegenProps 사용 예시 (LayoutTemplate)
+
+레이아웃 헤더 아이콘에 brand 색상을 입히는 등, 캔버스/미리보기 렌더와 코드 생성 결과를 일치시키고 싶을 때 사용한다.
+
+```typescript
+{
+  id: "home",
+  componentName: "HomePageLayout",
+  propSchema: {
+    logo: { type: "icon-picker", label: "로고 아이콘", default: "landmark" },
+  },
+  renderer: (p) => ({
+    header: <HomeHeader title={...} logo={p.logo as string | undefined} />,
+  }),
+  // 코드 생성 시 logo를 brand 컬러 className 포함 JSX로 변환
+  codegenProps: (p) => {
+    const logoName = (p.logo as string | undefined) ?? "";
+    const { logo: _logo, ...rest } = p;
+    return logoName
+      ? { ...rest, logo: { __jsx: `<${kebabToPascal(logoName)} className="size-4 text-brand" />` } }
+      : rest;
+  },
+}
+```
+
+**자동 처리되는 부분 (codegenProps 불필요)**:
+- `propSchema`의 `icon-picker` 필드 → `<IconName className="size-5" />`로 자동 변환
+- 변환된 JSXExpr에서 lucide 아이콘 이름 자동 수집해 `lucide-react` import에 추가
 
 **예시**
 
@@ -317,9 +456,9 @@ interface OverlayTemplate {
 | `"number"` | 숫자 입력 | 숫자 값 |
 | `"boolean"` | 토글 | 참/거짓 |
 | `"select"` | 드롭다운 | `options` 배열 중 선택 |
-| `"icon-picker"` | 아이콘 선택기 | lucide-react 아이콘명 |
+| `"icon-picker"` | 아이콘 선택기 | lucide-react 아이콘명 (kebab-case 문자열 반환) |
 | `"group"` | 섹션 그룹 | 중첩 객체, `fields`로 하위 정의 |
-| `"array"` | 동적 목록 | `itemFields`로 항목 구조 정의 |
+| `"array"` | 동적 목록 | `itemFields`로 항목 구조 정의. 항목 내 `"array"` 필드로 2단계 중첩 가능 |
 | `"event"` | 액션 선택기 | 클릭 이벤트에 Action 바인딩 |
 
 ```typescript
@@ -348,7 +487,68 @@ propSchema: {
     },
   },
 }
+
+// array 2단계 중첩 예시 — itemFields 안에 다시 array 정의 가능
+propSchema: {
+  menus: {
+    type: "array",
+    label: "메뉴",
+    default: [{ title: "메뉴 1", items: [] }],
+    itemFields: {
+      title: { type: "string", label: "메뉴명", default: "" },
+      items: {
+        type: "array",
+        label: "하위 항목",
+        default: [],
+        itemFields: {
+          label: { type: "string", label: "레이블", default: "" },
+          path:  { type: "string", label: "경로",   default: "" },
+        },
+      },
+    },
+  },
+}
 ```
+
+#### icon-picker 사용 방법
+
+`icon-picker` 필드는 CMS 인스펙터에서 kebab-case 아이콘명(예: `"bell"`)을 반환한다.
+`blocks.tsx` / `layouts.tsx`에서 이를 실제 Lucide 컴포넌트 ReactNode로 변환할 때는 `@cms-core`에서 export하는 `resolveIcon()` 유틸을 사용한다 (구현: `cms-core/utils/icon.tsx`).
+
+```typescript
+import { resolveIcon } from "@cms-core";
+
+// resolveIcon(iconName, className?) → ReactNode | null
+component: (p) => (
+  <MyComponent
+    icon={resolveIcon((p as any).icon, "size-5 text-text-muted")}
+  />
+),
+
+// propSchema 정의
+propSchema: {
+  icon: { type: "icon-picker", label: "아이콘", default: "bell" },
+}
+```
+
+> `resolveIcon`은 `lucide-react` 전체 아이콘에서 PascalCase → kebab-case 정방향 맵을 빌드해 조회하므로
+> `default` 값은 반드시 kebab-case(`"bell"`, `"arrow-right"`)로 지정해야 한다.
+> 빈 문자열이면 `null`을 반환하므로 `?? ` 대신 `||` fallback을 권장한다 (`?? `는 빈 문자열에서 작동하지 않음).
+
+코드 생성 시에도 동일하게 동작한다. `propSchema`에 `icon-picker`가 정의되어 있으면 `codegenProps`가 없어도 자동으로 `<IconName className="size-5" />` JSX로 변환되며, 사용된 아이콘은 `lucide-react` import에 자동 포함된다. 빈 문자열은 prop 자체가 생략되어 컴포넌트의 default가 적용된다.
+
+#### 함께 export되는 유틸리티
+
+```typescript
+import { resolveIcon, kebabToPascal, toKebabIcon, ALL_ICON_NAMES } from "@cms-core";
+```
+
+| export | 용도 |
+|---|---|
+| `resolveIcon(name, className?)` | kebab-case → Lucide ReactNode |
+| `kebabToPascal(name)` | `"chevron-right"` → `"ChevronRight"` (codegenProps에서 raw JSX 생성 시 사용) |
+| `toKebabIcon(name)` | `"ChevronRight"` → `"chevron-right"` |
+| `ALL_ICON_NAMES` | 사용 가능한 PascalCase 아이콘 이름 배열 (IconPicker와 동일 source) |
 
 ---
 
@@ -572,7 +772,22 @@ interface StylesheetConfig {
 
 - `stylesheetContent`가 있으면 URL fetch 없이 인라인으로 주입한다.
 - CSS 내 `:root`는 자동으로 `:scope`로 변환된다.
+- 줄 시작의 `[data-brand="*"]` / `[data-domain="*"]` 선택자는 `:scope[data-brand="*"]` / `:scope[data-domain="*"]`으로 변환된다. `stylesheetScope`로 스코프 루트에 `data-brand` / `data-domain` 속성이 설정되므로, 브랜드·도메인 CSS 변수가 스코프 루트 자신을 올바르게 타겟하기 위해 필요하다.
 - `@import url(...)` 구문은 `<style>` 최상단으로 분리하여 브라우저 파싱 오류를 방지한다.
+
+**portal 컴포넌트 스타일 적용**
+
+DatePicker 달력처럼 `document.body`에 portal로 렌더링되는 컴포넌트는 `@scope` 범위 밖에 렌더링되어 스타일이 적용되지 않는다.
+이를 해결하려면 `main.tsx`에서 `data-cms-user-scope` 속성을 가진 portal 전용 호스트 div를 `document.body` 직하에 생성하고, 해당 요소를 `portalContainer` prop으로 전달한다.
+
+```typescript
+// main.tsx — portal 호스트 생성
+const cmsPortalHost = document.createElement("div");
+cmsPortalHost.id = "cms-portal-host";
+cmsPortalHost.setAttribute("data-cms-user-scope", "");
+cmsPortalHost.setAttribute("data-brand", import.meta.env.VITE_CMS_BRAND ?? "hana");
+document.body.appendChild(cmsPortalHost);
+```
 
 ---
 

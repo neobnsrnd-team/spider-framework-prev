@@ -10,7 +10,14 @@ export interface EmptyStateProps {
   illustration?: React.ReactNode;
   title:         string;
   description?:  string;
-  /** CTA 버튼 등 액션 슬롯 */
+  /**
+   * 액션 버튼 레이블. 전달 시 내장 버튼을 렌더링한다.
+   * action 슬롯보다 우선 적용된다.
+   */
+  actionLabel?:  string;
+  /** actionLabel과 함께 사용하는 버튼 클릭 핸들러 */
+  onAction?:     () => void;
+  /** CTA 버튼 등 완전히 커스텀한 액션이 필요할 때 사용하는 슬롯 */
   action?:       React.ReactNode;
   className?:    string;
 }

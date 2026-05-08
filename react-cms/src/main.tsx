@@ -40,6 +40,7 @@ document.documentElement.setAttribute(
   import.meta.env.VITE_CMS_BRAND ?? "hana",
 );
 
+
 /** localStorage key prefix: pageName → pageId 매핑 (savePage.ts와 동일) */
 const PAGE_ID_KEY_PREFIX = "cms_page_id_";
 
@@ -207,6 +208,7 @@ createRoot(document.getElementById("root")!).render(
       layouts={layouts}
       codegenConfig={{ blockImportFrom: "@cl", layoutImportFrom: "@cl" }}
       stylesheetContent={userScopeCSS}
+      stylesheetScope={{ "data-brand": import.meta.env.VITE_CMS_BRAND ?? "hana", "data-domain": "card" }}
     >
       <RouterProvider router={router} />
     </CMSApp>

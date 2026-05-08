@@ -26,6 +26,9 @@ import org.springframework.batch.repeat.RepeatStatus;
  *   <li>성공: {@code {archive-dir}/YYYYMMDD/} 하위로 이동</li>
  *   <li>실패: {@code {error-dir}/YYYYMMDD/} 하위로 이동 + 동명의 {@code .reason} 파일 생성 (오류 사유 최대 200자)</li>
  * </ul>
+ *
+ * <p>{@link AbstractFixedLengthFile2DbJob#buildSuccessTasklet}과
+ * {@link AbstractFixedLengthFile2DbJob#buildErrorTasklet}에서 생성된다.</p>
  */
 @Slf4j
 @RequiredArgsConstructor

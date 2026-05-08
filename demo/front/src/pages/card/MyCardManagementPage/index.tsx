@@ -92,7 +92,7 @@ export function MyCardManagementPage({
         {/* ── 카드 선택 칩 탭 (가로 스크롤) ─────────────
          * 카드가 많아져도 가로 스크롤로 자연스럽게 확장.
          * 선택된 칩만 브랜드 색상 배경으로 강조.*/}
-        <div className="overflow-x-auto px-standard pb-md [&::-webkit-scrollbar]:hidden">
+        <div className="overflow-x-auto pb-md [&::-webkit-scrollbar]:hidden">
           <div className="flex gap-xs w-max">
             {cards.map((card) => {
               const isSelected = card.id === selectedCardId;
@@ -127,7 +127,7 @@ export function MyCardManagementPage({
             cardImage={selectedCard?.image}
             brand={selectedCard?.brand ?? "VISA"}
             cardName={selectedCard?.name ?? ""}
-            className="px-standard pb-lg"
+            className="pb-lg"
           />
         </div>
 
@@ -138,13 +138,13 @@ export function MyCardManagementPage({
           balance={selectedCard?.balance ?? 0}
           hidden={balanceHidden}
           onToggle={() => setBalanceHidden((h) => !h)}
-          className="px-standard py-lg"
+          className="py-lg"
         />
 
         {/* ── 카드 관리 패널 ───────────────────────────── */}
         <CardManagementPanel
           rows={managementRows}
-          className="px-standard pb-standard pt-lg"
+          className="pb-standard pt-lg"
         />
       </div>
     </PageLayout>

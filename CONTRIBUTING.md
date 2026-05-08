@@ -1,4 +1,4 @@
-# POC_HNC 전체 서버 기동 가이드
+# Spider-Framework 전체 서버 기동 가이드
 
 > **사전 요건**  
 > - Java 17 설치 및 `JAVA_HOME` 설정  
@@ -637,7 +637,7 @@ npm run dev          # 개발 서버 기동
 
 ---
 
-### 4-3. react-cms (Vite React CMS) — HTTP :5174
+### 4-3. react-cms (Vite React CMS) — HTTP :5273
 
 **의존성:** Oracle DB, spider-admin (HTTP :8080)
 

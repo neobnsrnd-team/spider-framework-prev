@@ -56,7 +56,7 @@ export function ImmediatePaymentPage({
         />
       }
     >
-      <div className="flex flex-col gap-lg px-standard pt-md pb-xl">
+      <div className="flex flex-col gap-lg pt-md pb-xl">
 
         {/* ── 서비스 설명 텍스트 ───────────────────────────────────── */}
         <Typography variant="subheading" color="secondary">
