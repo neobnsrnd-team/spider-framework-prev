@@ -198,7 +198,9 @@ npm install
 npm run dev
 ```
 
-빌더 UI는 `http://localhost:5173/builder` 에서 접근한다. 페이지는 파일시스템(`demo/front`)에 저장된다.
+빌더 UI는 `http://localhost:5273/builder` 에서 접근한다. 페이지는 파일시스템(`demo/front`)에 저장된다.
+
+> Vite dev server 포트는 `vite.config.ts`에서 `5273`으로 고정한다. 다른 Vite 프로젝트(데모 등)와 동시 실행 시 충돌을 피하기 위함이며, spider-admin nginx 프록시 설정도 같은 값을 가리킨다.
 
 > `cmsBankPlugin`이 `react-cms` Vite 서버에 `/__cms/create-page` 엔드포인트를 등록하므로,
 > 저장 기능을 사용하려면 `demo/front`가 실행 중일 필요 없이 `react-cms` dev 서버만 실행하면 된다.
