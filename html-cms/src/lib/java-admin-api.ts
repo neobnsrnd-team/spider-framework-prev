@@ -58,7 +58,10 @@ export async function fetchJavaAdminApi<T>(path: string, init: RequestInit = {})
 
     const body = (await response.json().catch(() => null)) as SpiderAdminApiResponse<T> | null;
     if (!response.ok || !body?.success || body.data === undefined) {
-        throw new Error(body?.message ?? `spider-admin API request failed. (${response.status})`);
+        const err = new Error(body?.message ?? `spider-admin API request failed. (${response.status})`);
+        // 인증 만료 여부를 호출자가 판별할 수 있도록 HTTP 상태코드를 attach
+        (err as Error & { status?: number }).status = response.status;
+        throw err;
     }
 
     return body.data;
