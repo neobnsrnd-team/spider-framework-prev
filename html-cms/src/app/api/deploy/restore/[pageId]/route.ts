@@ -79,7 +79,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pag
         await setPagePublic(pageId, 'Y', currentUser.userId);
 
         return successResponse(
-            { pageId, historyVersion: history.VERSION, successCount, failCount: results.length - successCount, results },
+            {
+                pageId,
+                historyVersion: history.VERSION,
+                successCount,
+                failCount: results.length - successCount,
+                results,
+            },
             '복구가 완료되었습니다.',
         );
     } catch (err: unknown) {
