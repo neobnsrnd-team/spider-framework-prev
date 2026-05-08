@@ -346,8 +346,8 @@ public class AccountRepository {
         String billingFrom = billingFromDate.format(DATE_FMT);
         String billingTo   = billingToDate.format(DATE_FMT);
 
-        // dueDate: 결제 연월 + 결제일
-        String dueDate = targetYearMonth + effectivePaymentDay;
+        // %02d: 결제일 한 자리(예: 5) 시 7자리 문자열 방지 — 고정길이 전문 8자리 규격 준수
+        String dueDate = targetYearMonth + String.format("%02d", d);
 
         // 카드별 이용금액 집계 (해당 청구 기간 내 승인된 거래)
         List<Map<String, Object>> items = new ArrayList<>();
