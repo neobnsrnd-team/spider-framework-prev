@@ -117,6 +117,14 @@
           AND PAGE_TYPE = 'PAGE'
     </select>
 
+    <!-- 결재자 검증용 — 승인요청 시 저장된 APPROVER_ID 조회 (#329) -->
+    <select id="findApproverIdByPageId" resultType="String">
+        SELECT APPROVER_ID
+        FROM SPW_CMS_PAGE
+        WHERE PAGE_ID   = #{pageId}
+          AND PAGE_TYPE = 'PAGE'
+    </select>
+
     <!-- ==================== 승인 — APPROVED ==================== -->
 
     <update id="approve">

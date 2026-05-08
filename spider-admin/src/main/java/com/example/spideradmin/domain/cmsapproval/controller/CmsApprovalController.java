@@ -71,7 +71,7 @@ public class CmsApprovalController {
             @RequestBody CmsApproveRequest req,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        cmsApprovalService.approve(pageId, req, userDetails.getUserId());
+        cmsApprovalService.approve(pageId, req, userDetails.getUserId(), userDetails.isCmsAdmin());
         return ResponseEntity.ok(ApiResponse.success("승인이 완료되었습니다.", null));
     }
 
@@ -83,7 +83,7 @@ public class CmsApprovalController {
             @RequestBody CmsRejectRequest req,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        cmsApprovalService.reject(pageId, req, userDetails.getUserId());
+        cmsApprovalService.reject(pageId, req, userDetails.getUserId(), userDetails.isCmsAdmin());
         return ResponseEntity.ok(ApiResponse.success("반려가 완료되었습니다.", null));
     }
 

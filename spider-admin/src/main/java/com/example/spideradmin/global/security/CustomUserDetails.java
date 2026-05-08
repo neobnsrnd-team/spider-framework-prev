@@ -11,6 +11,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 @Getter
 public class CustomUserDetails implements UserDetails {
 
+    /** CmsRedirectController.isCmsAdmin() 과 동일한 역할 판별 기준 */
+    private static final String ADMIN_ROLE = "ADMIN";
+
+    private static final String CMS_ADMIN_ROLE = "cms_admin";
+
     private final AuthenticatedUser user;
     private final Set<GrantedAuthority> authorities;
 
@@ -64,5 +69,11 @@ public class CustomUserDetails implements UserDetails {
 
     public String getRoleId() {
         return user.getRoleId();
+    }
+
+    /** ADMIN 또는 cms_admin 역할이면 CMS 관리자로 판별 — CmsRedirectController.isCmsAdmin() 과 동일 기준 */
+    public boolean isCmsAdmin() {
+        String roleId = user.getRoleId();
+        return ADMIN_ROLE.equals(roleId) || CMS_ADMIN_ROLE.equals(roleId);
     }
 }

@@ -24,6 +24,9 @@ public interface CmsApprovalMapper {
     /** 페이지 존재 여부 확인 */
     int existsByPageId(@Param("pageId") String pageId);
 
+    /** 지정된 결재자 ID 조회 — 승인/반려 전 결재자 검증용 (#329) */
+    String findApproverIdByPageId(@Param("pageId") String pageId);
+
     /** 승인 확정 — APPROVE_STATE → APPROVED */
     int approve(
             @Param("pageId") String pageId,
