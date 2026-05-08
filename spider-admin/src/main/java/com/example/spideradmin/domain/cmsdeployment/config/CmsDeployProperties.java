@@ -49,6 +49,11 @@ public class CmsDeployProperties {
     public String getDeployBaseUrl() {
         if (pushUrl == null) return "";
         int idx = pushUrl.lastIndexOf('/');
-        return idx > 0 ? pushUrl.substring(0, idx) : pushUrl;
+        // idx <= 0: "/push"(idx=0) 또는 "push"(idx=-1) 같은 비정상 경로 처리
+        // 스킴(://)이 있으면 전체 URL로 간주해 그대로 반환, 없으면 빈 문자열
+        if (idx <= 0) {
+            return pushUrl.contains("://") ? pushUrl : "";
+        }
+        return pushUrl.substring(0, idx);
     }
 }
