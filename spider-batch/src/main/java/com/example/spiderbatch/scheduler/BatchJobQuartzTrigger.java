@@ -2,7 +2,7 @@ package com.example.spiderbatch.scheduler;
 
 import com.example.spiderbatch.domain.batch.dto.BatchExecuteRequest;
 import com.example.spiderbatch.domain.batch.service.BatchExecuteService;
-import com.example.spiderbatch.lock.RedisDistributedLockService;
+import com.example.spiderbatch.spi.DistributedLockService;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import lombok.extern.slf4j.Slf4j;
@@ -15,13 +15,15 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
  *
  * <p>Quartz Scheduler가 Cron 주기에 맞춰 이 Job을 실행하면:
  * <ol>
- *   <li>Redis 분산 락 획득 시도 — 실패 시(다른 인스턴스가 실행 중) 스킵</li>
+ *   <li>분산 락 획득 시도 — 실패 시(다른 인스턴스가 실행 중) 스킵</li>
  *   <li>{@link BatchExecuteService#execute}로 배치 실행 위임</li>
  *   <li>finally에서 분산 락 반드시 해제</li>
  * </ol>
  * </p>
  *
- * <p>JobDataMap 필수 키: {@code batchAppId}</p>
+ * <p>JobDataMap 필수 키: {@code batchAppId}<br>
+ * Redis 미사용 환경에서는 {@link com.example.spiderbatch.spi.NoOpDistributedLockService}가 주입되어
+ * 락 없이 즉시 실행된다.</p>
  */
 @Slf4j
 public class BatchJobQuartzTrigger extends QuartzJobBean {
@@ -30,8 +32,9 @@ public class BatchJobQuartzTrigger extends QuartzJobBean {
     @Autowired
     private BatchExecuteService batchExecuteService;
 
+    /** Redis 유무에 따라 RedisDistributedLockService 또는 NoOpDistributedLockService가 주입됨 */
     @Autowired
-    private RedisDistributedLockService lockService;
+    private DistributedLockService lockService;
 
     private static final DateTimeFormatter BATCH_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 

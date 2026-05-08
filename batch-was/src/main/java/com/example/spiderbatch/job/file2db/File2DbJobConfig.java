@@ -1,5 +1,6 @@
 package com.example.spiderbatch.job.file2db;
 
+import com.example.spiderbatch.job.AbstractCsvFile2DbJob;
 import com.example.spiderbatch.job.common.BatchJobParametersValidator;
 import com.example.spiderbatch.job.common.PocUser;
 import com.example.spiderbatch.job.listener.BatchNotificationListener;
@@ -8,9 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.file.FlatFileItemReader;
@@ -36,13 +35,15 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class File2DbJobConfig {
-
-    /** Chunk 크기: 5건씩 읽어서 DB에 배치 INSERT */
-    private static final int CHUNK_SIZE = 5;
+public class File2DbJobConfig extends AbstractCsvFile2DbJob<PocUser> {
 
     private final DataSource dataSource;
     private final BatchNotificationListener batchNotificationListener;
+
+    @Override
+    protected String getJobName() {
+        return "file2db";
+    }
 
     /**
      * File2DBJob.
@@ -50,8 +51,7 @@ public class File2DbJobConfig {
      */
     @Bean(name = "file2db")
     public Job file2DbJob(JobRepository jobRepository, Step file2DbStep) {
-        return new JobBuilder("file2db", jobRepository)
-                .validator(new BatchJobParametersValidator())
+        return buildJobBuilder(jobRepository)
                 .listener(batchNotificationListener)
                 .start(file2DbStep)
                 .build();
@@ -60,26 +60,17 @@ public class File2DbJobConfig {
     @Bean
     public Step file2DbStep(JobRepository jobRepository,
                             PlatformTransactionManager transactionManager) {
-        return new StepBuilder("file2DbStep", jobRepository)
-                .<PocUser, PocUser>chunk(CHUNK_SIZE, transactionManager)
-                .reader(file2DbReader())
-                .processor(item -> {
+        return buildStep(jobRepository, transactionManager, "file2DbStep",
+                file2DbReader(),
+                item -> {
                     // 사용자명 없으면 skip
                     if (item.getUserName() == null || item.getUserName().isBlank()) {
                         log.warn("사용자명 없음 — skip: userId={}", item.getUserId());
                         return null;
                     }
                     return item;
-                })
-                .writer(file2DbWriter())
-                // skip: 개별 아이템 오류 시 해당 아이템만 건너뜀
-                .faultTolerant()
-                .skip(Exception.class)
-                .skipLimit(10)
-                // 완료된 Step은 재시작 시 skip — RETRYABLE_YN='N'이면 Job에 preventRestart() 추가 권장
-                // TODO: FWK_BATCH_APP.RETRYABLE_YN 값에 따라 JobBuilder.preventRestart() 연동 필요
-                .allowStartIfComplete(false)
-                .build();
+                },
+                file2DbWriter());
     }
 
     /**

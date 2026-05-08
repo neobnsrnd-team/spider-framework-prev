@@ -75,13 +75,22 @@
             <artifactId>spring-boot-starter-quartz</artifactId>
         </dependency>
 
-        <!-- Redisson: Redis 분산 락 (멀티 인스턴스 중복 실행 방지) -->
-        <!-- TODO: 운영 환경에서는 RedissonClient를 Sentinel/Cluster 모드로 구성 필요 -->
+        <!--
+          분산 락 전략:
+            현재: NoOpDistributedLockService (단일 인스턴스, 락 없이 실행 허용)
+                  → redisson-spring-boot-starter 미포함 시 spider-batch가 자동 적용
+
+            Redis 분산 락 활성화 (멀티 인스턴스 운영 환경):
+              1. 아래 의존성 주석 해제
+              2. application.yml의 spring.data.redis.host/port를 Redis 서버 주소로 설정
+              3. Redis 서버를 항상 기동 상태로 유지 (연결 실패 시 배치 실행 차단됨)
+
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
             <version>3.27.2</version>
         </dependency>
+        -->
 
         <!-- Test -->
         <dependency>
