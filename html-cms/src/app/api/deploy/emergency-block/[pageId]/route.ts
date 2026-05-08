@@ -47,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pag
             }),
         );
 
-        return successResponse({ pageId, results }, '긴급차단이 완료되었습니다.');
+        return successResponse({ pageId, results, message: '긴급차단이 완료되었습니다.' });
     } catch (err: unknown) {
         console.error('긴급차단 처리 실패:', err);
         return errorResponse(getErrorMessage(err));

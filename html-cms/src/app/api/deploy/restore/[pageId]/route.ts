@@ -78,16 +78,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pag
         // 하나 이상 성공 시 IS_PUBLIC='Y' 복원
         await setPagePublic(pageId, 'Y', currentUser.userId);
 
-        return successResponse(
-            {
-                pageId,
-                historyVersion: history.VERSION,
-                successCount,
-                failCount: results.length - successCount,
-                results,
-            },
-            '복구가 완료되었습니다.',
-        );
+        return successResponse({
+            pageId,
+            historyVersion: history.VERSION,
+            successCount,
+            failCount: results.length - successCount,
+            results,
+            message: '복구가 완료되었습니다.',
+        });
     } catch (err: unknown) {
         console.error('복구 처리 실패:', err);
         return errorResponse(getErrorMessage(err));
