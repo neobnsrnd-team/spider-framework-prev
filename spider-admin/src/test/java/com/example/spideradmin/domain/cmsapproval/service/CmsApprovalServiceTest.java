@@ -44,7 +44,6 @@ class CmsApprovalServiceTest {
     private static final String PAGE_ID = "PAGE-001";
     private static final String MODIFIER_ID = "admin";
 
-
     // ─── findPageList ─────────────────────────────────────────────────
 
     @Test
