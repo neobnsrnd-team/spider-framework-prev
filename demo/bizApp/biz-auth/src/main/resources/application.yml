@@ -53,5 +53,5 @@ logging:
 spider:
   gateway:
     dynamic:
-      enabled: false
+      enabled: true
     id: BIZ_AUTH_GW

@@ -16,6 +16,7 @@ import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
 import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -67,6 +68,9 @@ public class GatewayLoader implements ApplicationRunner {
     private final List<CommandHandler<JsonCommandRequest, JsonCommandResponse>> handlers;
     private final Optional<MessageInstanceRecorder> recorder;
 
+    /** shutdown() 에서 종료할 서버 인스턴스 */
+    private SpiderTcpServer<JsonCommandRequest, JsonCommandResponse> server;
+
     @Override
     public void run(ApplicationArguments args) {
         GatewayConfig config = gatewayMapper.selectGateway(gwId);
@@ -85,15 +89,22 @@ public class GatewayLoader implements ApplicationRunner {
         CommandDispatcher<JsonCommandRequest, JsonCommandResponse> dispatcher =
                 new CommandDispatcher<>(handlers);
 
-        SpiderTcpServer<JsonCommandRequest, JsonCommandResponse> server =
-                new SpiderTcpServer<>(port, poolSize, queue, messageCodec, dispatcher,
+        server = new SpiderTcpServer<>(port, poolSize, queue, messageCodec, dispatcher,
                         recorder.orElse(null));
 
-        // ApplicationRunner를 직접 호출하여 서버 기동 (Spring이 자동 실행하지 않으므로 수동 실행)
+        // Spring Bean이 아닌 직접 생성 인스턴스이므로 수동으로 run() 호출
         try {
             server.run(args);
         } catch (Exception e) {
             log.error("[GatewayLoader] gwId={} TCP 서버 기동 실패: {}", gwId, e.getMessage(), e);
+        }
+    }
+
+    /** Spring 종료 시 TCP 서버 소켓·스레드 풀을 정리한다. */
+    @PreDestroy
+    public void shutdown() {
+        if (server != null) {
+            server.shutdown();
         }
     }
 
