@@ -45,6 +45,7 @@ class CmsApprovalServiceTest {
     private static final String MODIFIER_ID = "admin";
     /** 일반 사용자 역할 — cms_admin/ADMIN 이외의 역할 */
     private static final String ROLE_NORMAL = "user";
+
     private static final String ROLE_ADMIN = "ADMIN";
     private static final String ROLE_CMS_ADMIN = "cms_admin";
 
