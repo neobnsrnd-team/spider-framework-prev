@@ -330,7 +330,8 @@ public class AccountRepository {
         YearMonth paymentYM  = YearMonth.parse(targetYearMonth, YEAR_MONTH_FMT);
         YearMonth prevYM     = paymentYM.minusMonths(1);
         YearMonth prevPrevYM = paymentYM.minusMonths(2);
-        int d = Integer.parseInt(effectivePaymentDay);
+        // trim(): DB CHAR 컬럼 등에서 공백이 포함될 경우 NumberFormatException 방지
+        int d = Integer.parseInt(effectivePaymentDay.trim());
         LocalDate billingFromDate, billingToDate;
         if (d <= 12) {
             billingFromDate = prevPrevYM.atDay(Math.min(d + 18, prevPrevYM.lengthOfMonth()));
@@ -395,7 +396,8 @@ public class AccountRepository {
         Map<String, Object> billingPeriodMap = new HashMap<>();
         billingPeriodMap.put("usageStart", billingFromDate.format(displayFmt));
         billingPeriodMap.put("usageEnd",   billingToDate.format(displayFmt));
-        billingPeriodMap.put("dueDate",    LocalDate.parse(dueDate, DATE_FMT).format(displayFmt));
+        // paymentYM.atDay(d): 이미 계산된 변수 재사용 — LocalDate.parse(dueDate) 시 DateTimeParseException 방지
+        billingPeriodMap.put("dueDate",    paymentYM.atDay(Math.min(d, paymentYM.lengthOfMonth())).format(displayFmt));
         result.put("billingPeriod", billingPeriodMap);
         return result;
     }
