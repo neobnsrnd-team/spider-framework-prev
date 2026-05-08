@@ -18,6 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,10 +29,12 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <h4>API 엔드포인트:</h4>
  * <ul>
- *   <li>GET  /api/cms-admin/deployments/pages         — 배포 대상 페이지 목록 (APPROVED)</li>
- *   <li>GET  /api/cms-admin/deployments               — 배포 이력 조회 (모달용)</li>
- *   <li>POST /api/cms-admin/deployments/push          — 배포 실행</li>
- *   <li>POST /api/cms-admin/deployments/push-expired  — 만료수동처리 배포</li>
+ *   <li>GET  /api/cms-admin/deployments/pages                  — 배포 대상 페이지 목록 (APPROVED)</li>
+ *   <li>GET  /api/cms-admin/deployments                        — 배포 이력 조회 (모달용)</li>
+ *   <li>POST /api/cms-admin/deployments/push                   — 배포 실행</li>
+ *   <li>POST /api/cms-admin/deployments/push-expired           — 만료수동처리 배포</li>
+ *   <li>POST /api/cms-admin/deployments/{pageId}/emergency-block — 긴급차단</li>
+ *   <li>POST /api/cms-admin/deployments/{pageId}/restore       — 긴급차단 복구</li>
  * </ul>
  */
 @Slf4j
@@ -87,5 +90,21 @@ public class CmsDeployController {
 
         cmsDeployService.pushExpired(req.getPageId(), userDetails.getUserId());
         return ResponseEntity.ok(ApiResponse.success("만료 배포가 완료되었습니다.", null));
+    }
+
+    /** 긴급차단 — IS_PUBLIC='N' + 배포 파일 삭제 (CMS:W) */
+    @PostMapping("/api/cms-admin/deployments/{pageId}/emergency-block")
+    @PreAuthorize("hasAuthority('CMS:W')")
+    public ResponseEntity<ApiResponse<Void>> emergencyBlock(@PathVariable String pageId) {
+        cmsDeployService.emergencyBlock(pageId);
+        return ResponseEntity.ok(ApiResponse.success("긴급차단이 완료되었습니다.", null));
+    }
+
+    /** 긴급차단 복구 — 마지막 승인 이력 HTML로 파일 재생성 + IS_PUBLIC='Y' (CMS:W) */
+    @PostMapping("/api/cms-admin/deployments/{pageId}/restore")
+    @PreAuthorize("hasAuthority('CMS:W')")
+    public ResponseEntity<ApiResponse<Void>> restorePublic(@PathVariable String pageId) {
+        cmsDeployService.restorePublic(pageId);
+        return ResponseEntity.ok(ApiResponse.success("복구가 완료되었습니다.", null));
     }
 }

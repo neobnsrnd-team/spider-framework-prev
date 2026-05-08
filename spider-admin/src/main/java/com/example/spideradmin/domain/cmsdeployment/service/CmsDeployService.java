@@ -207,6 +207,26 @@ public class CmsDeployService {
         }
     }
 
+    /**
+     * 긴급차단 — IS_PUBLIC='N' 업데이트 + 배포된 HTML 파일 삭제.
+     * CMS 긴급차단 API({baseUrl}/emergency-block/{pageId})를 호출한다.
+     */
+    public void emergencyBlock(String pageId) {
+        String url = deployProperties.getDeployBaseUrl() + "/emergency-block/" + pageId;
+        callCmsApi(url, "긴급차단");
+        log.info("긴급차단 요청 완료: pageId={}", pageId);
+    }
+
+    /**
+     * 긴급차단 복구 — SPW_CMS_PAGE_HISTORY 마지막 버전 HTML로 파일 재생성 + IS_PUBLIC='Y'.
+     * CMS 복구 API({baseUrl}/restore/{pageId})를 호출한다.
+     */
+    public void restorePublic(String pageId) {
+        String url = deployProperties.getDeployBaseUrl() + "/restore/" + pageId;
+        callCmsApi(url, "복구");
+        log.info("복구 요청 완료: pageId={}", pageId);
+    }
+
     /** CMS push API 호출 — x-deploy-token 서버 간 인증 사용 */
     @SuppressWarnings("unchecked")
     private void callCmsPush(String pageId, String userId) {
@@ -237,6 +257,34 @@ public class CmsDeployService {
             throw e;
         } catch (Exception e) {
             throw new InternalException("CMS 배포 서버 오류: " + e.getMessage(), e);
+        }
+    }
+
+    /** CMS API 공통 호출 (긴급차단·복구용) — POST, 빈 바디, x-deploy-token 인증 */
+    private void callCmsApi(String url, String actionName) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("x-deploy-token", deployProperties.getSecret());
+
+        try {
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    new HttpEntity<>(new HashMap<>(), headers),
+                    new ParameterizedTypeReference<Map<String, Object>>() {});
+
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody == null) {
+                throw new InternalException("CMS " + actionName + " 서버에서 빈 응답을 반환했습니다.");
+            }
+            if (!Boolean.TRUE.equals(responseBody.get("ok"))) {
+                Object error = responseBody.get("error");
+                throw new InternalException("CMS " + actionName + " 오류: " + error);
+            }
+        } catch (InternalException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InternalException("CMS " + actionName + " 요청 오류: " + e.getMessage(), e);
         }
     }
 }

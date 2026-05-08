@@ -40,4 +40,15 @@ public class CmsDeployProperties {
      * Admin 내부에 파일을 복사하지 않아 단일 소스를 유지한다.
      */
     private String expiredHtmlUrl;
+
+    /**
+     * CMS 배포 API base URL — pushUrl에서 마지막 경로 세그먼트('/push')를 제거한 값.
+     * 긴급차단·복구 API URL 조립 시 사용한다.
+     * 예: http://localhost:3000/cms/api/deploy/push → http://localhost:3000/cms/api/deploy
+     */
+    public String getDeployBaseUrl() {
+        if (pushUrl == null) return "";
+        int idx = pushUrl.lastIndexOf('/');
+        return idx > 0 ? pushUrl.substring(0, idx) : pushUrl;
+    }
 }

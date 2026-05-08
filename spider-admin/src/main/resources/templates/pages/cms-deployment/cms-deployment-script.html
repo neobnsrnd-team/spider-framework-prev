@@ -104,8 +104,8 @@
 
         renderTable: function(rows) {
             const $tbody = $('#deployPageTableBody');
-            // canWrite: 배포·만료수동처리 2컬럼 + URL 1컬럼 추가 → 9컬럼 / 미권한: 7컬럼
-            const colspan = this.canWrite ? 9 : 7;
+            // canWrite: 배포·만료수동처리·긴급차단/복구 3컬럼 + URL 1컬럼 + 공개여부 1컬럼 → 11컬럼 / 미권한: 8컬럼(공개여부 추가)
+            const colspan = this.canWrite ? 11 : 8;
 
             if (!rows || rows.length === 0) {
                 $tbody.html(`<tr><td colspan="${colspan}" class="text-center py-4 text-body-secondary">조회된 데이터가 없습니다.</td></tr>`);
@@ -131,13 +131,24 @@
                     : '-';
                 const periodCell = `<td class="small">${HtmlUtils.escape(beginStr)} ~ ${endStr}</td>`;
 
-                // 배포 미리보기: 앵커(target=_blank) → 버튼(window.open) 으로 변경
+                // 공개여부 뱃지 — IS_PUBLIC='N'이면 차단 뱃지
+                const isPublicCell = `<td class="text-center">
+                    ${row.isPublic === 'N'
+                        ? '<span class="badge bg-danger">차단</span>'
+                        : '<span class="badge bg-success">공개</span>'}
+                </td>`;
+
+                // 배포 미리보기: IS_PUBLIC='N'이면 비활성화 처리
                 // viewMode 에 맞춘 창 크기로 노출되도록 openDeployedPreview() 위임 (#278)
                 const previewBtn = row.deployedUrl
-                    ? `<button type="button" class="btn btn-info btn-xs"
-                               onclick="CmsDeployPage.openDeployedPreview('${jsDeployedUrl}', '${jsViewMode}')">
-                           <i class="bi bi-box-arrow-up-right"></i> 보기
-                       </button>`
+                    ? (row.isPublic === 'N'
+                        ? `<button type="button" class="btn btn-info btn-xs" disabled title="긴급차단된 페이지입니다.">
+                               <i class="bi bi-box-arrow-up-right"></i> 보기
+                           </button>`
+                        : `<button type="button" class="btn btn-info btn-xs"
+                                   onclick="CmsDeployPage.openDeployedPreview('${jsDeployedUrl}', '${jsViewMode}')">
+                               <i class="bi bi-box-arrow-up-right"></i> 보기
+                           </button>`)
                     : '<span class="text-body-secondary small">-</span>';
                 const deployedUrlCell = row.deployedUrl
                     ? `<td class="small">
@@ -172,15 +183,35 @@
                        </td>`
                     : '';
 
+                // 긴급차단/복구 버튼 — 배포된 페이지(deployedUrl 있음)에만 표시
+                // IS_PUBLIC='Y': 긴급차단 버튼 / IS_PUBLIC='N': 복구 버튼
+                const emergencyBtn = this.canWrite
+                    ? `<td class="text-center">
+                           ${!row.deployedUrl
+                               ? '<span class="text-body-secondary small">-</span>'
+                               : row.isPublic === 'N'
+                                   ? `<button class="btn btn-success btn-xs"
+                                               onclick="CmsDeployPage.confirmRestore('${pid}', '${jsPageName}')">
+                                          <i class="bi bi-arrow-counterclockwise"></i> 복구
+                                      </button>`
+                                   : `<button class="btn btn-danger btn-xs"
+                                               onclick="CmsDeployPage.confirmEmergencyBlock('${pid}', '${jsPageName}')">
+                                          <i class="bi bi-shield-exclamation"></i> 긴급차단
+                                      </button>`}
+                       </td>`
+                    : '';
+
                 return `<tr>
                     <td class="small">${pid}</td>
                     <td>${HtmlUtils.escape(row.pageName || '')}</td>
                     <td>${HtmlUtils.escape(row.createUserName || '')}</td>
                     ${periodCell}
+                    ${isPublicCell}
                     ${deployBtn}
                     <td class="text-center">${previewBtn}</td>
                     ${deployedUrlCell}
                     ${expireBtn}
+                    ${emergencyBtn}
                     <td class="text-center">
                         <button class="btn btn-outline-secondary btn-xs"
                                 onclick="CmsDeployPage.openHistoryModal('${pid}', '${jsPageName}')">
@@ -294,6 +325,46 @@
                     }
                 })
                 .catch(() => Toast.error('만료 배포 중 오류가 발생했습니다.'));
+        },
+
+        // ── 긴급차단 / 복구 ──
+
+        confirmEmergencyBlock: function(pageId, pageName) {
+            if (!confirm(`[${pageName}] 페이지를 긴급차단하시겠습니까?\n차단 즉시 대고객 페이지 접근이 불가합니다.`)) return;
+
+            fetch(`/api/cms-admin/deployments/${encodeURIComponent(pageId)}/emergency-block`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        Toast.success(res.message);
+                        this.load();
+                    } else {
+                        Toast.error(res.message);
+                    }
+                })
+                .catch(() => Toast.error('긴급차단 중 오류가 발생했습니다.'));
+        },
+
+        confirmRestore: function(pageId, pageName) {
+            if (!confirm(`[${pageName}] 페이지를 복구하시겠습니까?\n마지막 승인 버전으로 즉시 복구됩니다.`)) return;
+
+            fetch(`/api/cms-admin/deployments/${encodeURIComponent(pageId)}/restore`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        Toast.success(res.message);
+                        this.load();
+                    } else {
+                        Toast.error(res.message);
+                    }
+                })
+                .catch(() => Toast.error('복구 중 오류가 발생했습니다.'));
         },
 
         // ── 배포이력 상세 모달 ──
