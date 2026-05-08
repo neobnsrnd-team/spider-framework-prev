@@ -17,7 +17,7 @@
  */
 import { useState } from "react";
 import type { CMSPage } from "./types";
-import { validateRelativeSavePath } from "./utils/savePath";
+import { validatePageName, validateRelativeSavePath } from "./utils/validation";
 
 export interface SavePageParams {
   /** PascalCase 컴포넌트명, 예: "MyPage" */
@@ -54,11 +54,10 @@ interface ValidateOptions {
 }
 
 function validate(params: SavePageParams, opts: ValidateOptions): string | null {
-  if (!params.pageName) return "컴포넌트명을 입력하세요.";
-  if (!/^[A-Z][A-Za-z0-9]*$/.test(params.pageName))
-    return "컴포넌트명은 대문자로 시작하는 영문/숫자만 사용할 수 있습니다.";
+  // 컴포넌트명·저장 경로 검증 모두 클라이언트·서버 공통 헬퍼로 위임 (cms-core/utils/validation)
+  const pageNameError = validatePageName(params.pageName);
+  if (pageNameError) return pageNameError;
   if (opts.requireSavePath) {
-    // 저장 경로 검증은 클라이언트·서버 공통 헬퍼로 위임 (cms-core/utils/savePath)
     const savePathError = validateRelativeSavePath(params.savePath);
     if (savePathError) return savePathError;
   }

@@ -29,7 +29,7 @@ import {
   UnauthorizedError,
   type CurrentUser,
 } from "../cms-admin/current-user";
-import { validateRelativeSavePath } from "../cms-core/utils/savePath";
+import { validatePageName, validateRelativeSavePath } from "../cms-core/utils/validation";
 
 // DB 모듈은 dynamic import로 지연 로드합니다.
 // Vite는 vite.config.ts 평가 단계(서버 초기화 전)에 플러그인을 로드하므로,
@@ -173,14 +173,14 @@ export function cmsBankPlugin(): Plugin {
             }
             const payload = await readBody(req) as CreatePagePayload;
 
-            // PascalCase 영숫자만 허용 — 경로 조작(../ 등) 방지
-            const NAME_REGEX = /^[A-Z][a-zA-Z0-9]*$/;
-            if (!NAME_REGEX.test(payload.pageName)) {
-              jsonResponse(res, 400, { error: "pageName은 PascalCase 영숫자만 허용됩니다." });
+            // 클라이언트·서버 공통 헬퍼로 컴포넌트명·저장 경로 검증 통일
+            // PascalCase 영숫자 강제로 경로 조작(../ 등) 시도도 함께 차단된다.
+            const pageNameError = validatePageName(payload.pageName);
+            if (pageNameError) {
+              jsonResponse(res, 400, { error: pageNameError });
               return;
             }
 
-            // 클라이언트·서버 공통 헬퍼로 빈 값/절대경로 차단
             const savePathError =
               typeof payload.savePath === "string"
                 ? validateRelativeSavePath(payload.savePath)
