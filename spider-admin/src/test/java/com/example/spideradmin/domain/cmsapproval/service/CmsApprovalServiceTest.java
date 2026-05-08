@@ -157,9 +157,9 @@ class CmsApprovalServiceTest {
         // APPROVER_ID = "other-user", 현재 사용자 = MODIFIER_ID → 불일치
         given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn("other-user");
 
+        // InvalidInputException.getMessage()는 ErrorType 고정 메시지를 반환하므로 타입만 검증
         assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, false))
-                .isInstanceOf(InvalidInputException.class)
-                .hasMessageContaining("지정된 결재자만");
+                .isInstanceOf(InvalidInputException.class);
     }
 
     @Test
@@ -269,9 +269,9 @@ class CmsApprovalServiceTest {
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
         given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn("other-user");
 
+        // InvalidInputException.getMessage()는 ErrorType 고정 메시지를 반환하므로 타입만 검증
         assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, false))
-                .isInstanceOf(InvalidInputException.class)
-                .hasMessageContaining("지정된 결재자만");
+                .isInstanceOf(InvalidInputException.class);
     }
 
     @Test
