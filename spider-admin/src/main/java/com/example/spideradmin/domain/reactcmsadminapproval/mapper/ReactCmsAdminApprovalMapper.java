@@ -32,15 +32,25 @@ public interface ReactCmsAdminApprovalMapper {
 
     // ── 승인 / 반려 / 공개 상태 ───────────────────────────────────────────────
 
-    /** 승인 확정 — APPROVE_STATE: PENDING → APPROVED */
-    void approve(
+    /**
+     * 승인 확정 — APPROVE_STATE: PENDING → APPROVED.
+     * SQL의 WHERE 절에 APPROVE_STATE='PENDING' 가드를 두어 race condition을 방지한다.
+     *
+     * @return affected row count. PENDING이 아닌 페이지에 대한 호출은 0을 반환한다.
+     */
+    int approve(
             @Param("pageId") String pageId,
             @Param("beginningDate") String beginningDate,
             @Param("expiredDate") String expiredDate,
             @Param("modifierId") String modifierId);
 
-    /** 반려 — APPROVE_STATE: PENDING → REJECTED */
-    void reject(
+    /**
+     * 반려 — APPROVE_STATE: PENDING → REJECTED.
+     * SQL의 WHERE 절에 APPROVE_STATE='PENDING' 가드를 두어 race condition을 방지한다.
+     *
+     * @return affected row count. PENDING이 아닌 페이지에 대한 호출은 0을 반환한다.
+     */
+    int reject(
             @Param("pageId") String pageId,
             @Param("rejectedReason") String rejectedReason,
             @Param("modifierId") String modifierId);

@@ -113,6 +113,8 @@
 
     <!-- ==================== 승인 — APPROVED ==================== -->
 
+    <!-- APPROVE_STATE='PENDING' 가드: race condition · 더블 클릭 · 외부 API 직접 호출로 인한
+         이미 처리된 페이지의 재승인을 방어한다. 0 row affected 시 서비스에서 InvalidInputException. -->
     <update id="approve">
         UPDATE SPW_CMS_PAGE
         SET APPROVE_STATE    = 'APPROVED',
@@ -123,20 +125,23 @@
                                     THEN TO_DATE(#{expiredDate}, 'YYYY-MM-DD') ELSE NULL END,
             APPROVE_DATE     = SYSTIMESTAMP,
             LAST_MODIFIER_ID = #{modifierId}
-        WHERE PAGE_ID   = #{pageId}
-          AND PAGE_TYPE = 'REACT'
+        WHERE PAGE_ID       = #{pageId}
+          AND APPROVE_STATE = 'PENDING'
+          AND PAGE_TYPE     = 'REACT'
     </update>
 
     <!-- ==================== 반려 — REJECTED ==================== -->
 
+    <!-- APPROVE_STATE='PENDING' 가드: approve와 동일 사유. -->
     <update id="reject">
         UPDATE SPW_CMS_PAGE
         SET APPROVE_STATE    = 'REJECTED',
             REJECTED_REASON  = #{rejectedReason},
             APPROVE_DATE     = SYSTIMESTAMP,
             LAST_MODIFIER_ID = #{modifierId}
-        WHERE PAGE_ID   = #{pageId}
-          AND PAGE_TYPE = 'REACT'
+        WHERE PAGE_ID       = #{pageId}
+          AND APPROVE_STATE = 'PENDING'
+          AND PAGE_TYPE     = 'REACT'
     </update>
 
     <!-- ==================== 공개 상태 변경 ==================== -->
