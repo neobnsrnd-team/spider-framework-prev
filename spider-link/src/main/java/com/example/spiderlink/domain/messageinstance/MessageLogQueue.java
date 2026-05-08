@@ -1,6 +1,7 @@
 package com.example.spiderlink.domain.messageinstance;
 
 import com.example.spiderlink.domain.messageinstance.dto.MessageInstanceInsertRequest;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public class MessageLogQueue implements SmartLifecycle {
             "  TRX_TRACKING_NO, USER_ID, LOG_DTIME, LAST_LOG_DTIME, LAST_RT_CODE," +
             "  INSTANCE_ID, RETRY_TRX_YN, MESSAGE_DATA, TRX_DTIME, CHANNEL_TYPE, URI, SUCCESS_YN" +
             ") VALUES (" +
-            "  FWK_MESSAGE_INSTANCE_SEQ.NEXTVAL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?" +
+            "  ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?" +
             ")";
 
     private final LinkedBlockingQueue<MessageInstanceInsertRequest> queue =
@@ -123,7 +124,12 @@ public class MessageLogQueue implements SmartLifecycle {
 
     private void insertOne(MessageInstanceInsertRequest r) {
         try {
+            // messageSno가 없으면 UUID 32자 → 30자로 생성 (참고소스 방식 — Oracle 시퀀스 미사용)
+            String sno = (r.getMessageSno() != null && !r.getMessageSno().isBlank())
+                    ? r.getMessageSno()
+                    : UUID.randomUUID().toString().replace("-", "").substring(0, 30);
             jdbcTemplate.update(INSERT_SQL,
+                    sno,
                     r.getTrxId(), r.getOrgId(), r.getIoType(), r.getReqResType(), r.getMessageId(),
                     r.getTrxTrackingNo(), r.getUserId(), r.getLogDtime(), r.getLastLogDtime(),
                     r.getLastRtCode(), r.getInstanceId(), r.getRetryTrxYn(),
