@@ -1,15 +1,11 @@
 spring:
   profiles:
     active: oracle
-  autoconfigure:
-    exclude:
-      # RedissonAutoConfigurationV2는 기동 시 즉시 Redis 연결을 시도하여 Redis 미기동 시 WAS 기동 실패를 유발한다.
-      # RedisLockConfig가 lazyInitialization=true 설정으로 RedissonClient를 직접 생성하므로 제외한다.
-      - org.redisson.spring.starter.RedissonAutoConfigurationV2
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+  # Redis 분산 락 활성화 시: pom.xml의 redisson-spring-boot-starter 주석 해제 후 아래 설정 활성화
+  # data:
+  #   redis:
+  #     host: ${REDIS_HOST:localhost}
+  #     port: ${REDIS_PORT:6379}
   quartz:
     # RAMJobStore: in-memory 저장 — WAS 재기동 시 등록된 Job이 초기화됨
     # TODO: 운영 환경에서는 job-store-type: jdbc 로 전환하여 재기동 후에도 스케줄 복구 가능하게 할 것

@@ -29,7 +29,8 @@ import org.springframework.transaction.PlatformTransactionManager;
  * <p>다음 공통 인프라를 템플릿 메서드로 제공한다:
  * <ul>
  *   <li>UTF-8 BOM 자동 제거 ({@link BomStrippingBufferedReaderFactory})</li>
- *   <li>헤더(HDR) 1줄 skip + 트레일러(TLR) 감지·로그</li>
+ *   <li>헤더(HDR) 1줄 skip + 헤더 내용 로그</li>
+ *   <li>트레일러(TLR) 감지: Processor에서 처리 (skippedLinesCallback은 헤더 전용)</li>
  *   <li>faultTolerant Chunk Step (skip(Exception), skipLimit)</li>
  *   <li>성공/오류 아카이브 Tasklet ({@link FileArchiveTasklet})</li>
  *   <li>배포 단위 Job 빌더 (성공 → 성공 아카이브, 실패 → 오류 아카이브 플로우)</li>
@@ -132,12 +133,9 @@ public abstract class AbstractFixedLengthFile2DbJob<T> {
                 .bufferedReaderFactory(new BomStrippingBufferedReaderFactory())
                 // HDR 헤더 1줄 skip
                 .linesToSkip(1)
-                // TLR 트레일러: "TLR"로 시작하는 줄 감지 후 레코드 수 로그만 기록
-                .skippedLinesCallback(line -> {
-                    if (line.startsWith("TLR")) {
-                        log.info("[{}] 트레일러 감지: {}", getJobName(), line.trim());
-                    }
-                })
+                // skippedLinesCallback은 linesToSkip(1)이 건너뛰는 첫 줄(헤더)에만 호출된다.
+                // 트레일러(TLR)는 파일 끝에 위치하므로 여기서 감지할 수 없다 — Processor에서 처리.
+                .skippedLinesCallback(line -> log.info("[{}] 헤더 감지: {}", getJobName(), line.trim()))
                 .lineTokenizer(tokenizer)
                 .fieldSetMapper(fieldSetMapper)
                 .build();
