@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createPage, getPageById, resetApproveStateToWork, updatePage } from '@/db/repository/page.repository';
 import { contentBuilderErrorResponse, getErrorMessage, successResponse } from '@/lib/api-response';
 import { nextApi } from '@/lib/api-url';
-import { canAccessCmsEdit, canManageCmsPage, getCurrentUser } from '@/lib/current-user';
+import { UnauthorizedError, canAccessCmsEdit, canManageCmsPage, getCurrentUser } from '@/lib/current-user';
 import { isValidBankId, isPageExpired } from '@/lib/validators';
 import { isTemplateCompatibleViewMode } from '@/lib/view-mode';
 
@@ -102,6 +102,10 @@ export async function POST(req: NextRequest) {
     } catch (err: unknown) {
         if (err instanceof PageNotFoundError) {
             return NextResponse.json({ ok: false, error: err.message, errorCode: 'PAGE_NOT_FOUND' });
+        }
+        // 세션 만료 — 클라이언트가 재로그인 유도 처리를 할 수 있도록 HTTP 401 반환
+        if (err instanceof UnauthorizedError) {
+            return NextResponse.json({ ok: false, error: err.message, errorCode: 'SESSION_EXPIRED' }, { status: 401 });
         }
 
         console.error('페이지 저장 실패:', err);

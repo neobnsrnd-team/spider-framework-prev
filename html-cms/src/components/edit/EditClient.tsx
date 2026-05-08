@@ -230,6 +230,15 @@ function applyBrandTheme(html: string, theme: BrandTheme): string {
     );
 }
 
+/** 세션 만료 전용 에러 — save() 에서 throw, handleSave/handlePreview 에서 instanceof 비교
+ *  컴포넌트 외부에 선언하여 리렌더링 시 재선언으로 인한 instanceof 오류 방지 */
+class SessionExpiredError extends Error {
+    constructor() {
+        super('세션이 만료되었습니다. 다시 로그인해 주세요.');
+        this.name = 'SessionExpiredError';
+    }
+}
+
 export default function EditClient({
     bank = 'ibk',
     userId,
@@ -1878,6 +1887,20 @@ export default function EditClient({
                         loadHtmlMs: roundMs(performance.now() - loadHtmlStart),
                         htmlBytes: response._timing?.htmlBytes,
                     });
+
+                    // 세션 만료로 임시저장된 드래프트가 있으면 복원 여부 확인
+                    // 저장 성공 시 localStorage.removeItem()으로 자동 삭제되므로 남아있으면 미저장 상태
+                    const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
+                    if (draft) {
+                        const restore = window.confirm(
+                            '이전 세션에서 저장하지 못한 작업 내용이 있습니다.\n복원하시겠습니까?\n\n(취소를 누르면 임시 저장 데이터가 삭제됩니다)',
+                        );
+                        if (restore) {
+                            builderRef.current.loadHtml(draft);
+                        }
+                        // 복원 여부와 관계없이 임시저장 데이터 삭제
+                        localStorage.removeItem(DRAFT_STORAGE_KEY);
+                    }
                 }
                 // 로드 응답에서 탭 정보 등록 — 최근 접근 순(왼쪽), 최대 10개
                 if (response.pageMissing) {
@@ -2503,6 +2526,9 @@ export default function EditClient({
     }
 
     // ── 저장 / 미리보기 / HTML 보기 ──────────────────────────────────────
+    /** 세션 만료 임시저장 localStorage 키 — pageId별 관리, 파일 내 단일 출처 */
+    const DRAFT_STORAGE_KEY = `cms_draft_${bank}`;
+
     const save = async () => {
         if (!builderRef.current) return;
         const builder = builderRef.current;
@@ -2521,9 +2547,29 @@ export default function EditClient({
                 removeCurrentTabAndRedirect('삭제되었거나 존재하지 않는 페이지입니다.');
                 return;
             }
+            // 세션 만료 — 현재 HTML을 localStorage에 임시저장 후 SessionExpiredError throw
+            // 호출자(handleSave/handlePreview)에서 재로그인 안내 처리
+            if (result.errorCode === 'SESSION_EXPIRED' || response.status === 401) {
+                try {
+                    localStorage.setItem(DRAFT_STORAGE_KEY, html);
+                } catch {
+                    // localStorage 용량 초과 등 실패 시 무시
+                }
+                throw new SessionExpiredError();
+            }
             throw new Error(result.error);
         }
+        // 저장 성공 시 임시저장 데이터 제거
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
     };
+
+    /** 세션 만료 공통 처리 — confirm 후 로그인 페이지로 이동 (작업 내용은 이미 localStorage에 저장된 상태) */
+    function handleSessionExpired() {
+        const goLogin = window.confirm(
+            '세션이 만료되어 저장하지 못했습니다.\n작업 내용은 임시 저장되었습니다.\n\n로그인 페이지로 이동하시겠습니까?\n(취소를 누르면 에디터에 계속 있을 수 있습니다)',
+        );
+        if (goLogin) window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.href)}`;
+    }
 
     async function handleSave() {
         const html = builderRef.current?.html() ?? '';
@@ -2536,6 +2582,10 @@ export default function EditClient({
             alert('저장이 완료되었습니다.');
         } catch (err: unknown) {
             console.error('저장 실패:', err);
+            if (err instanceof SessionExpiredError) {
+                handleSessionExpired();
+                return;
+            }
             alert('저장에 실패했습니다.\n다시 시도해 주세요.');
         }
     }
@@ -2551,6 +2601,10 @@ export default function EditClient({
             window.open(nextApi(`/view?bank=${bank}&preview=1`), '_blank');
         } catch (err: unknown) {
             console.error('저장 실패:', err);
+            if (err instanceof SessionExpiredError) {
+                handleSessionExpired();
+                return;
+            }
             alert('저장에 실패했습니다.\n다시 시도해 주세요.');
         }
     }

@@ -73,7 +73,14 @@ export async function getCurrentUser(): Promise<CurrentUser> {
             roleId: user.roleId,
             authorities: user.authorities ?? [],
         };
-    } catch {
+    } catch (err: unknown) {
+        // Java가 401/403을 반환한 경우 — 세션 만료 또는 인증 오류
+        // 호출자가 세션 만료와 일반 오류를 구분할 수 있도록 UnauthorizedError를 throw
+        const status = (err as Error & { status?: number }).status;
+        if (status === 401 || status === 403) {
+            throw new UnauthorizedError('세션이 만료되었습니다. 다시 로그인해 주세요.');
+        }
+        // 네트워크 오류·서버 장애 등 그 외 에러는 fail-open: GUEST_USER 반환
         return GUEST_USER;
     }
 }
