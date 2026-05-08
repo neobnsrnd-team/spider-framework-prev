@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * 인증AP (biz-auth) 애플리케이션 진입점.
  *
  * <p>SpiderTcpServer 를 통해 TCP port 19100 에서 채널AP(biz-channel) 요청을 수신한다.
- * {@link com.example.spiderlink.infra.tcp.handler.MetaDrivenCommandHandler} 가
+ * {@link com.example.spiderlink.infra.tcp.handler.MetaDrivenServiceOrchestrator} 가
  * FWK 메타테이블을 참조하여 커맨드별 서비스를 동적으로 실행하고,
  * {@link com.example.spiderlink.infra.tcp.biz.TcpCallBiz} 를 통해 mock-core(TCP 19300)로 중계한다.</p>
  *

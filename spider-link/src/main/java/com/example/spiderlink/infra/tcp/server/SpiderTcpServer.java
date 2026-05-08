@@ -149,14 +149,14 @@ public class SpiderTcpServer<REQ extends HasCommand, RES> implements Application
             log.info("[SpiderTcpServer:{}] 수신: command={}", port, request.getCommand());
 
             if (recorder != null) {
-                recorder.recordServerRequest(trxId, request, port);
+                recorder.recordInboundRequest(trxId, request, port);
             }
 
             RES response = dispatcher.dispatch(request);
             codec.encode(socket.getOutputStream(), response);
 
             if (recorder != null) {
-                recorder.recordServerResponse(trxId, request, response, port);
+                recorder.recordOutboundResponse(trxId, request, response, port);
             }
 
             log.info("[SpiderTcpServer:{}] 응답 전송 완료: command={}", port, request.getCommand());

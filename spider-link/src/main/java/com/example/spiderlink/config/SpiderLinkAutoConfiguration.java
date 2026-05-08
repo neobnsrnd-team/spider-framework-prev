@@ -4,9 +4,9 @@ import com.example.spiderlink.domain.management.executor.MessageStructureExecuto
 import com.example.spiderlink.domain.management.executor.RequestAppMappingExecutor;
 import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
 import com.example.spiderlink.domain.messageinstance.MessageLogQueue;
-import com.example.spiderlink.infra.tcp.client.pool.SocketPoolManager;
-import com.example.spiderlink.infra.tcp.handler.MetaDrivenCommandHandler;
-import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
+import com.example.spiderlink.infra.tcp.client.pool.SocketPoolRegistry;
+import com.example.spiderlink.infra.tcp.handler.MetaDrivenServiceOrchestrator;
+import com.example.spiderlink.infra.tcp.parser.MessageStructureCache;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -23,10 +23,10 @@ import org.springframework.lang.Nullable;
  * spider-link 공통 자동 설정.
  *
  * <p>소비 모듈에 {@link JdbcTemplate} 빈이 존재할 때만 활성화되며,
- * {@link SocketPoolManager}, {@link MessageLogQueue}, {@link MessageInstanceRecorder}를
+ * {@link SocketPoolRegistry}, {@link MessageLogQueue}, {@link MessageInstanceRecorder}를
  * 자동으로 빈으로 등록한다.</p>
  *
- * <p>{@code MessageLogQueue}와 {@link SocketPoolManager}는
+ * <p>{@code MessageLogQueue}와 {@link SocketPoolRegistry}는
  * {@link org.springframework.context.SmartLifecycle}을 구현하므로
  * Spring Context 시작 시 자동 기동되고, 종료 시 정상 종료된다.</p>
  *
@@ -39,8 +39,8 @@ import org.springframework.lang.Nullable;
  * <p>등록되는 빈 목록:</p>
  * <ul>
  *   <li>{@link MessageInstanceRecorder} — JdbcTemplate이 존재하는 경우에만 등록</li>
- *   <li>{@link RequestAppMappingExecutor} — MetaDrivenCommandHandler가 존재하는 경우에만 등록</li>
- *   <li>{@link MessageStructureExecutor} — 항상 등록 (MessageStructurePool 없으면 supports=false)</li>
+ *   <li>{@link RequestAppMappingExecutor} — MetaDrivenServiceOrchestrator가 존재하는 경우에만 등록</li>
+ *   <li>{@link MessageStructureExecutor} — 항상 등록 (MessageStructureCache 없으면 supports=false)</li>
  * </ul>
  */
 // JdbcTemplateAutoConfiguration 이후에 실행해야 JdbcTemplate 빈이 이미 등록된 상태에서
@@ -51,16 +51,16 @@ import org.springframework.lang.Nullable;
 public class SpiderLinkAutoConfiguration {
 
     /**
-     * 소켓 커넥션 풀 매니저 빈.
+     * 소켓 커넥션 풀 레지스트리 빈.
      *
      * <p>(host:port) 단위로 소켓을 재사용하여 TCP 연결 오버헤드를 줄인다.
      * SmartLifecycle 구현체로 Context 종료 시 모든 유휴 소켓이 자동 닫힌다.</p>
      *
-     * @return SocketPoolManager 빈
+     * @return SocketPoolRegistry 빈
      */
     @Bean
-    public SocketPoolManager socketPoolManager() {
-        return new SocketPoolManager();
+    public SocketPoolRegistry socketPoolRegistry() {
+        return new SocketPoolRegistry();
     }
 
     /**
@@ -103,25 +103,25 @@ public class SpiderLinkAutoConfiguration {
     /**
      * FWK_LISTENER_TRX_MESSAGE 커맨드 캐시 갱신 실행기.
      *
-     * <p>MetaDrivenCommandHandler 빈이 등록된 WAS에서만 활성화된다.
+     * <p>MetaDrivenServiceOrchestrator 빈이 등록된 WAS에서만 활성화된다.
      * ManagementReloadHttpController(spider-common)가 이 실행기를 자동으로 주입받아
      * {@code gubun=request_app_mapping} 명령을 처리한다.</p>
      */
     @Bean
-    @ConditionalOnBean(MetaDrivenCommandHandler.class)
-    public RequestAppMappingExecutor requestAppMappingExecutor(MetaDrivenCommandHandler handler) {
+    @ConditionalOnBean(MetaDrivenServiceOrchestrator.class)
+    public RequestAppMappingExecutor requestAppMappingExecutor(MetaDrivenServiceOrchestrator handler) {
         return new RequestAppMappingExecutor(handler);
     }
 
     /**
      * FWK_MESSAGE 전문 구조 캐시 초기화 실행기.
      *
-     * <p>MessageStructurePool이 없으면(고정길이 전문 미사용) supports()가 false를 반환하여
+     * <p>MessageStructureCache가 없으면(고정길이 전문 미사용) supports()가 false를 반환하여
      * ManagementReloadHttpController에서 자동으로 건너뛴다.</p>
      */
     @Bean
     public MessageStructureExecutor messageStructureExecutor(
-            @Nullable MessageStructurePool messageStructurePool) {
-        return new MessageStructureExecutor(messageStructurePool);
+            @Nullable MessageStructureCache messageStructureCache) {
+        return new MessageStructureExecutor(messageStructureCache);
     }
 }

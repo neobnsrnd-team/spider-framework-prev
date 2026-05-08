@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.SmartLifecycle;
 
 /**
- * 전체 소켓 풀 레지스트리.
+ * 전체 소켓 풀 팩토리 및 레지스트리.
  *
  * <p>(host:port) 키로 {@link SocketPool}을 지연 생성하고 관리한다.
  * Spring Context 종료 시 {@link SmartLifecycle#stop()}이 자동 호출되어
@@ -16,7 +16,7 @@ import org.springframework.context.SmartLifecycle;
  * 자동으로 빈으로 등록된다.</p>
  */
 @Slf4j
-public class SocketPoolManager implements SmartLifecycle {
+public class SocketPoolRegistry implements SmartLifecycle {
 
     /** (host:port) → SocketPool 맵 */
     private final ConcurrentHashMap<String, SocketPool> pools = new ConcurrentHashMap<>();
@@ -32,7 +32,7 @@ public class SocketPoolManager implements SmartLifecycle {
     public SocketPool getOrCreate(String host, int port) {
         String key = host + ":" + port;
         return pools.computeIfAbsent(key, k -> {
-            log.info("[SocketPoolManager] 소켓 풀 신규 생성: {}", key);
+            log.info("[SocketPoolRegistry] 소켓 풀 신규 생성: {}", key);
             return new SocketPool(host, port);
         });
     }
@@ -48,7 +48,7 @@ public class SocketPoolManager implements SmartLifecycle {
     public PooledSocket borrow(String host, int port) throws IOException {
         // stop() 이후 신규 소켓 생성 차단 — Context 종료 중 연결 시도 방지
         if (!running) {
-            throw new IOException("[SocketPoolManager] 매니저가 중지 상태 — 소켓 대여 불가");
+            throw new IOException("[SocketPoolRegistry] 레지스트리가 중지 상태 — 소켓 대여 불가");
         }
         return getOrCreate(host, port).borrow();
     }
@@ -103,17 +103,17 @@ public class SocketPoolManager implements SmartLifecycle {
     /** 등록된 모든 풀의 상태를 로그에 출력한다 */
     public void logPoolState() {
         if (pools.isEmpty()) {
-            log.info("[SocketPoolManager] 등록된 소켓 풀 없음");
+            log.info("[SocketPoolRegistry] 등록된 소켓 풀 없음");
             return;
         }
-        pools.values().forEach(pool -> log.info("[SocketPoolManager] {}", pool.getInfo()));
+        pools.values().forEach(pool -> log.info("[SocketPoolRegistry] {}", pool.getInfo()));
     }
 
     /** Spring Context 초기화 완료 후 자동 호출 */
     @Override
     public void start() {
         running = true;
-        log.info("[SocketPoolManager] 소켓 풀 매니저 시작");
+        log.info("[SocketPoolRegistry] 소켓 풀 레지스트리 시작");
     }
 
     /** Spring Context 종료 시 자동 호출 — 모든 유휴 소켓 닫기 */
@@ -122,7 +122,7 @@ public class SocketPoolManager implements SmartLifecycle {
         running = false;
         pools.values().forEach(SocketPool::closeAll);
         pools.clear();
-        log.info("[SocketPoolManager] 소켓 풀 매니저 종료 — 모든 풀 닫힘");
+        log.info("[SocketPoolRegistry] 소켓 풀 레지스트리 종료 — 모든 풀 닫힘");
     }
 
     @Override

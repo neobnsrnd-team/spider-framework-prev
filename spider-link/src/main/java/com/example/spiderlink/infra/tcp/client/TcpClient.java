@@ -3,13 +3,13 @@ package com.example.spiderlink.infra.tcp.client;
 import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
 import com.example.spiderlink.infra.tcp.client.pool.PooledSocket;
 import com.example.spiderlink.infra.tcp.client.pool.SocketPool;
-import com.example.spiderlink.infra.tcp.client.pool.SocketPoolManager;
+import com.example.spiderlink.infra.tcp.client.pool.SocketPoolRegistry;
 import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
 import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.example.spidercommon.infra.tcp.model.ManagementContext;
 import com.example.spiderlink.infra.tcp.parser.FixedLengthParser;
 import com.example.spiderlink.infra.tcp.parser.MessageStructure;
-import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
+import com.example.spiderlink.infra.tcp.parser.MessageStructureCache;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -34,7 +34,7 @@ import org.springframework.stereotype.Component;
  * <p>프로토콜: 4바이트 길이 프리픽스(int, big-endian) + UTF-8 JSON 바이트열.
  * Admin의 TcpClient.sendJson()과 동일한 포맷을 사용한다.</p>
  *
- * <p>소켓 관리 방식: {@link SocketPoolManager}를 통해 (host:port) 단위로 소켓을 재사용한다.
+ * <p>소켓 관리 방식: {@link SocketPoolRegistry}를 통해 (host:port) 단위로 소켓을 재사용한다.
  * 풀 매니저가 없는 경우(테스트 등) 요청마다 신규 소켓을 생성한다.</p>
  *
  * <p>재연결 로직: IOException 발생 시 최대 {@value RETRY_COUNT}회 재시도하고,
@@ -63,26 +63,26 @@ public class TcpClient {
 
     /** 전문 구조 캐시 — null이면 고정길이 프로토콜 미사용(JSON 고정) */
     @Nullable
-    private final MessageStructurePool structurePool;
+    private final MessageStructureCache structureCache;
 
-    /** 고정길이 파서/직렬화기 — structurePool이 null이면 미사용 */
+    /** 고정길이 파서/직렬화기 — structureCache가 null이면 미사용 */
     @Nullable
     private final FixedLengthParser fixedLengthParser;
 
-    /** 소켓 커넥션 풀 매니저 — null이면 요청마다 신규 소켓 생성 */
+    /** 소켓 커넥션 풀 레지스트리 — null이면 요청마다 신규 소켓 생성 */
     @Nullable
-    private final SocketPoolManager poolManager;
+    private final SocketPoolRegistry poolRegistry;
 
     public TcpClient(ObjectMapper objectMapper,
                      @Nullable MessageInstanceRecorder recorder,
-                     @Nullable MessageStructurePool structurePool,
+                     @Nullable MessageStructureCache structureCache,
                      @Nullable FixedLengthParser fixedLengthParser,
-                     @Nullable SocketPoolManager poolManager) {
+                     @Nullable SocketPoolRegistry poolRegistry) {
         this.objectMapper     = objectMapper;
         this.recorder         = recorder;
-        this.structurePool    = structurePool;
+        this.structureCache   = structureCache;
         this.fixedLengthParser = fixedLengthParser;
-        this.poolManager      = poolManager;
+        this.poolRegistry     = poolRegistry;
     }
 
     /** 고정길이 미사용 생성자 — 기존 코드 호환용 */
@@ -113,8 +113,8 @@ public class TcpClient {
         String reqMsgId = command + "_REQ";
         String resMsgId = command + "_RES";
 
-        Optional<MessageStructure> reqStructure = structurePool != null
-                ? structurePool.get(orgId, reqMsgId)
+        Optional<MessageStructure> reqStructure = structureCache != null
+                ? structureCache.get(orgId, reqMsgId)
                 : Optional.empty();
 
         boolean useFixed = reqStructure.isPresent()
@@ -125,7 +125,7 @@ public class TcpClient {
 
         String trxId = UUID.randomUUID().toString();
         if (recorder != null) {
-            recorder.recordClientRequest(trxId, req, host, port);
+            recorder.recordOutboundRequest(trxId, req, host, port);
         }
 
         byte[] requestBytes;
@@ -145,7 +145,7 @@ public class TcpClient {
 
         JsonCommandResponse response;
         if (useFixed) {
-            Optional<MessageStructure> resStructure = structurePool.get(orgId, resMsgId);
+            Optional<MessageStructure> resStructure = structureCache.get(orgId, resMsgId);
             if (resStructure.isPresent()) {
                 Map<String, Object> resMap = fixedLengthParser.parse(resStructure.get(), responseBytes);
                 response = toCommandResponse(command, resMap);
@@ -159,7 +159,7 @@ public class TcpClient {
 
         log.debug("[TcpClient] send 응답: success={}", response.isSuccess());
         if (recorder != null) {
-            recorder.recordClientResponse(trxId, req, response, host, port);
+            recorder.recordInboundResponse(trxId, req, response, host, port);
         }
         return response;
     }
@@ -179,7 +179,7 @@ public class TcpClient {
 
         String trxId = UUID.randomUUID().toString();
         if (recorder != null) {
-            recorder.recordClientRequest(trxId, req, host, port);
+            recorder.recordOutboundRequest(trxId, req, host, port);
         }
 
         byte[] requestBytes = objectMapper.writeValueAsBytes(req);
@@ -189,7 +189,7 @@ public class TcpClient {
         log.debug("[TcpClient] JSON 응답 수신: success={}", response.isSuccess());
 
         if (recorder != null) {
-            recorder.recordClientResponse(trxId, req, response, host, port);
+            recorder.recordInboundResponse(trxId, req, response, host, port);
         }
         return response;
     }
@@ -279,17 +279,17 @@ public class TcpClient {
      * @throws IOException 소켓 연결/전송/수신 실패 시
      */
     private byte[] doSend(String host, int port, byte[] requestBytes) throws IOException {
-        if (poolManager != null) {
+        if (poolRegistry != null) {
             PooledSocket pooled = null;
             boolean success = false;
             try {
-                pooled = poolManager.borrow(host, port);
+                pooled = poolRegistry.borrow(host, port);
                 byte[] responseBytes = doSendReceive(pooled.getOut(), pooled.getIn(), requestBytes);
                 success = true;
                 return responseBytes;
             } finally {
                 if (pooled != null) {
-                    poolManager.release(host, port, pooled, success);
+                    poolRegistry.release(host, port, pooled, success);
                 }
             }
         }

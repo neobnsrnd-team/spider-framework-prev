@@ -11,7 +11,7 @@ import org.apache.ibatis.annotations.Param;
 /**
  * FWK 서비스 라우팅 메타데이터 조회 전용 Mapper.
  *
- * <p>MetaDrivenCommandHandler 가 커맨드 수신 시 아래 체인으로 DB를 조회한다.</p>
+ * <p>MetaDrivenServiceOrchestrator 가 커맨드 수신 시 아래 체인으로 DB를 조회한다.</p>
  * <pre>
  *   FWK_LISTENER_TRX_MESSAGE → FWK_SERVICE → FWK_SERVICE_RELATION
  *     → FWK_COMPONENT + (FWK_RELATION_PARAM ⋈ FWK_COMPONENT_PARAM)

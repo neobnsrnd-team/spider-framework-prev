@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.Param;
 /**
  * FWK_MESSAGE / FWK_MESSAGE_FIELD 조회 전용 Mapper.
  *
- * <p>MessageStructurePool이 전문 구조를 DB에서 로드할 때만 사용한다.</p>
+ * <p>MessageStructureCache가 전문 구조를 DB에서 로드할 때만 사용한다.</p>
  */
 @Mapper
 public interface MessageMetaMapper {

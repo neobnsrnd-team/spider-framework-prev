@@ -41,10 +41,10 @@ public class MessageInstanceRecorder {
      * @param request 수신된 요청 객체
      * @param port    서버 포트
      */
-    public void recordServerRequest(String trxId, Object request, int port) {
+    public void recordInboundRequest(String trxId, Object request, int port) {
         String command = command(request);
         String trackingNo = trackingNo(request, trxId);
-        enqueue(trxId, "I", "REQ", command, trackingNo, userId(request), toJson(request), true, appName, port);
+        enqueue(trxId, "I", "REQ", command, trackingNo, userId(request), toJson(request), true, appName, port, "TCP");
     }
 
     /**
@@ -55,11 +55,11 @@ public class MessageInstanceRecorder {
      * @param response 전송할 응답 객체
      * @param port     서버 포트
      */
-    public void recordServerResponse(String trxId, Object request, Object response, int port) {
+    public void recordOutboundResponse(String trxId, Object request, Object response, int port) {
         String command = command(request);
         String trackingNo = trackingNo(request, trxId);
         boolean success = response instanceof JsonCommandResponse r ? r.isSuccess() : true;
-        enqueue(trxId, "O", "RES", command, trackingNo, userId(request), toJson(response), success, appName, port);
+        enqueue(trxId, "O", "RES", command, trackingNo, userId(request), toJson(response), success, appName, port, "TCP");
     }
 
     /**
@@ -76,7 +76,7 @@ public class MessageInstanceRecorder {
      * @param userId    요청 사용자 ID (JWT 미인증 구간은 "GUEST")
      */
     public void recordHttpRequest(String requestId, String uri, String data, int port, String userId) {
-        enqueueHttp(requestId, "I", "REQ", uri, data, true, port, userId);
+        enqueue(requestId, "I", "REQ", uri, requestId, userId, data, true, appName, port, "HTTP");
     }
 
     /**
@@ -92,7 +92,7 @@ public class MessageInstanceRecorder {
      * @param userId     요청 사용자 ID
      */
     public void recordHttpResponse(String requestId, String uri, String data, boolean success, int port, String userId) {
-        enqueueHttp(requestId, "O", "RES", uri, data, success, port, userId);
+        enqueue(requestId, "O", "RES", uri, requestId, userId, data, success, appName, port, "HTTP");
     }
 
     /**
@@ -103,9 +103,9 @@ public class MessageInstanceRecorder {
      * @param host    대상 호스트
      * @param port    대상 포트
      */
-    public void recordClientRequest(String trxId, JsonCommandRequest request, String host, int port) {
+    public void recordOutboundRequest(String trxId, JsonCommandRequest request, String host, int port) {
         enqueue(trxId, "O", "REQ", request.getCommand(), request.getRequestId(),
-                userId(request), toJson(request), true, host, port);
+                userId(request), toJson(request), true, host, port, "TCP");
     }
 
     /**
@@ -117,59 +117,34 @@ public class MessageInstanceRecorder {
      * @param host     대상 호스트
      * @param port     대상 포트
      */
-    public void recordClientResponse(String trxId, JsonCommandRequest request,
-                                     JsonCommandResponse response, String host, int port) {
+    public void recordInboundResponse(String trxId, JsonCommandRequest request,
+                                      JsonCommandResponse response, String host, int port) {
         enqueue(trxId, "I", "RES", request.getCommand(), request.getRequestId(),
-                userId(request), toJson(response), response.isSuccess(), host, port);
+                userId(request), toJson(response), response.isSuccess(), host, port, "TCP");
     }
 
-    /** TCP 전문 이력 DTO 생성 후 큐에 적재 */
+    /** 전문 이력 DTO 생성 후 큐에 적재 — TCP/HTTP 공통 */
     private void enqueue(String trxId, String ioType, String reqResType,
-                         String command, String trackingNo, String userId, String data,
-                         boolean success, String host, int port) {
+                         String messageId, String trackingNo, String userId, String data,
+                         boolean success, String instanceHost, int instancePort, String channelType) {
         String dtime = LocalDateTime.now().format(DTIME_FMT);
         queue.put(MessageInstanceInsertRequest.builder()
                 .trxId(trxId)
                 .orgId(appName)
                 .ioType(ioType)
                 .reqResType(reqResType)
-                .messageId(command)
+                .messageId(messageId)
                 .trxTrackingNo(trackingNo)
                 .userId(userId)
                 .logDtime(dtime)
                 .lastLogDtime(dtime)
                 .lastRtCode(success ? "SUCCESS" : "FAIL")
-                .instanceId(host + ":" + port)
+                .instanceId(instanceHost + ":" + instancePort)
                 .retryTrxYn("N")
                 .messageData(data)
                 .trxDtime(dtime)
-                .channelType("TCP")
-                .uri(command)
-                .successYn(success ? "Y" : "N")
-                .build());
-    }
-
-    /** HTTP 전문 이력 DTO 생성 후 큐에 적재 */
-    private void enqueueHttp(String requestId, String ioType, String reqResType,
-                             String uri, String data, boolean success, int port, String userId) {
-        String dtime = LocalDateTime.now().format(DTIME_FMT);
-        queue.put(MessageInstanceInsertRequest.builder()
-                .trxId(requestId)
-                .orgId(appName)
-                .ioType(ioType)
-                .reqResType(reqResType)
-                .messageId(uri)
-                .trxTrackingNo(requestId)
-                .userId(userId)
-                .logDtime(dtime)
-                .lastLogDtime(dtime)
-                .lastRtCode(success ? "SUCCESS" : "FAIL")
-                .instanceId(appName + ":" + port)
-                .retryTrxYn("N")
-                .messageData(data)
-                .trxDtime(dtime)
-                .channelType("HTTP")
-                .uri(uri)
+                .channelType(channelType)
+                .uri(messageId)
                 .successYn(success ? "Y" : "N")
                 .build());
     }

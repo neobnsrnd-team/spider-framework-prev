@@ -4,7 +4,7 @@ import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
 import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.example.spiderlink.infra.tcp.parser.FixedLengthParser;
 import com.example.spiderlink.infra.tcp.parser.MessageStructure;
-import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
+import com.example.spiderlink.infra.tcp.parser.MessageStructureCache;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
  * <pre>{@code
  * // 사용 예: 고정길이 바이너리를 수신하는 SpiderTcpServer 구성
  * FixedLengthMessageCodec codec = new FixedLengthMessageCodec(
- *     "DEMO", structurePool, fixedLengthParser);
+ *     "DEMO", structureCache, fixedLengthParser);
  * SpiderTcpServer<JsonCommandRequest, JsonCommandResponse> server =
  *     new SpiderTcpServer<>(port, poolSize, queueCapacity, codec, dispatcher, recorder);
  * }</pre>
@@ -66,7 +66,7 @@ public class FixedLengthMessageCodec implements MessageCodec<JsonCommandRequest,
     /** FWK_MESSAGE 조회 기관 ID */
     private final String orgId;
 
-    private final MessageStructurePool structurePool;
+    private final MessageStructureCache structureCache;
     private final FixedLengthParser fixedLengthParser;
 
     /**
@@ -102,7 +102,7 @@ public class FixedLengthMessageCodec implements MessageCodec<JsonCommandRequest,
         log.debug("[FixedLengthMessageCodec] decode: command={}, requestId={}", command, requestId);
 
         // FWK_MESSAGE에서 REQ 전문 구조 조회
-        Optional<MessageStructure> structureOpt = structurePool.get(orgId, command + "_REQ");
+        Optional<MessageStructure> structureOpt = structureCache.get(orgId, command + "_REQ");
         if (structureOpt.isEmpty()) {
             log.warn("[FixedLengthMessageCodec] REQ 전문 구조 미등록: orgId={}, messageId={}_REQ",
                     orgId, command);
@@ -141,7 +141,7 @@ public class FixedLengthMessageCodec implements MessageCodec<JsonCommandRequest,
         log.debug("[FixedLengthMessageCodec] encode: command={}, success={}", command, response.isSuccess());
 
         byte[] bytes;
-        Optional<MessageStructure> structureOpt = structurePool.get(orgId, command + "_RES");
+        Optional<MessageStructure> structureOpt = structureCache.get(orgId, command + "_RES");
 
         if (structureOpt.isPresent()) {
             Map<String, Object> resMap = buildResMap(response);

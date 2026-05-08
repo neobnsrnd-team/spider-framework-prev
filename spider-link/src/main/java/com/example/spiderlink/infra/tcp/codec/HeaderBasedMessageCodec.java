@@ -3,8 +3,8 @@ package com.example.spiderlink.infra.tcp.codec;
 import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
 import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.example.spiderlink.infra.tcp.parser.FixedLengthParser;
-import com.example.spiderlink.infra.tcp.parser.HeaderOffsetParser;
-import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
+import com.example.spiderlink.infra.tcp.parser.HeaderFieldExtractor;
+import com.example.spiderlink.infra.tcp.parser.MessageStructureCache;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataInputStream;
@@ -48,13 +48,13 @@ public class HeaderBasedMessageCodec implements MessageCodec<JsonCommandRequest,
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
     private final ObjectMapper objectMapper;
-    private final HeaderOffsetParser headerOffsetParser;
+    private final HeaderFieldExtractor headerFieldExtractor;
     /** FWK_MESSAGE.ORG_ID — 헤더 전문 구조 조회 키 */
     private final String orgId;
     /** FWK_MESSAGE.MESSAGE_ID (HEADER_YN='Y') — 헤더 필드 오프셋 정의 */
     private final String headerMessageId;
     /** REQ_ID_CODE → FWK_MESSAGE 조회 후 바디 타입 결정에 사용 */
-    private final MessageStructurePool messageStructurePool;
+    private final MessageStructureCache messageStructureCache;
     /** MESSAGE_TYPE='F' 고정길이 바디 파싱 — JSON fallback 시 미사용 */
     private final FixedLengthParser fixedLengthParser;
 
@@ -63,7 +63,7 @@ public class HeaderBasedMessageCodec implements MessageCodec<JsonCommandRequest,
      *
      * <ol>
      *   <li>4byte 바이너리 int → 전체 메시지 길이</li>
-     *   <li>헤더 byte[] → {@link HeaderOffsetParser}로 REQ_ID_CODE, REQUEST_ID 추출</li>
+     *   <li>헤더 byte[] → {@link HeaderFieldExtractor}로 REQ_ID_CODE, REQUEST_ID 추출</li>
      *   <li>REQ_ID_CODE → FWK_MESSAGE 조회 → MESSAGE_TYPE에 따라 바디 파싱</li>
      * </ol>
      */
@@ -79,14 +79,14 @@ public class HeaderBasedMessageCodec implements MessageCodec<JsonCommandRequest,
         dis.readFully(message);
 
         // 헤더 오프셋 파싱 — REQ_ID_CODE: 라우팅 키 및 바디 전문 구조 조회 키
-        String reqIdCode = headerOffsetParser.extractReqIdCode(orgId, headerMessageId, message);
+        String reqIdCode = headerFieldExtractor.extractReqIdCode(orgId, headerMessageId, message);
         if (reqIdCode == null || reqIdCode.isBlank()) {
             throw new IOException("헤더에서 REQ_ID_CODE 추출 실패: orgId=" + orgId + ", headerMsgId=" + headerMessageId);
         }
 
-        String requestId = headerOffsetParser.extractField(orgId, headerMessageId, message, "REQUEST_ID");
+        String requestId = headerFieldExtractor.extractField(orgId, headerMessageId, message, "REQUEST_ID");
 
-        int headerLen = headerOffsetParser.calcHeaderLength(orgId, headerMessageId);
+        int headerLen = headerFieldExtractor.calcHeaderLength(orgId, headerMessageId);
         // REQ_ID_CODE로 FWK_MESSAGE 조회 → MESSAGE_TYPE 기반 바디 파싱
         Map<String, Object> payload = parseBody(message, headerLen, reqIdCode.strip());
 
@@ -127,7 +127,7 @@ public class HeaderBasedMessageCodec implements MessageCodec<JsonCommandRequest,
         byte[] bodyBytes = Arrays.copyOfRange(message, headerLen, message.length);
 
         // REQ_ID_CODE → FWK_MESSAGE 조회 → MESSAGE_TYPE='F'이면 고정길이 파싱
-        return messageStructurePool.get(orgId, reqIdCode)
+        return messageStructureCache.get(orgId, reqIdCode)
                 .filter(structure -> "F".equals(structure.getMessageType()))
                 .map(structure -> {
                     log.debug("[HeaderBasedMessageCodec] 바디 고정길이 파싱: reqIdCode={}", reqIdCode);

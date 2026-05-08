@@ -28,24 +28,32 @@ public class GatewayConfig {
     /** I=Listener(수신), O=Adapter(발신) */
     private String ioType;
 
+    /** parseProperties() 결과 캐시 — gwProperties는 DB 로드 후 불변이므로 lazy init으로 재파싱 방지 */
+    private transient Map<String, String> parsedPropsCache;
+
     /**
      * GW_PROPERTIES 문자열을 Map으로 파싱하여 반환한다.
+     *
+     * <p>첫 호출 시 파싱 후 내부에 캐싱하며, 이후 호출은 캐시를 반환한다.</p>
      *
      * @return key→value Map, gwProperties가 null이면 빈 Map
      */
     public Map<String, String> parseProperties() {
-        Map<String, String> props = new HashMap<>();
-        if (gwProperties == null || gwProperties.isBlank()) {
-            return props;
+        if (parsedPropsCache != null) {
+            return parsedPropsCache;
         }
-        Arrays.stream(gwProperties.split(";"))
-                .map(String::trim)
-                .filter(s -> s.contains("="))
-                .forEach(entry -> {
-                    int idx = entry.indexOf('=');
-                    props.put(entry.substring(0, idx).trim(), entry.substring(idx + 1).trim());
-                });
-        return props;
+        Map<String, String> props = new HashMap<>();
+        if (gwProperties != null && !gwProperties.isBlank()) {
+            Arrays.stream(gwProperties.split(";"))
+                    .map(String::trim)
+                    .filter(s -> s.contains("="))
+                    .forEach(entry -> {
+                        int idx = entry.indexOf('=');
+                        props.put(entry.substring(0, idx).trim(), entry.substring(idx + 1).trim());
+                    });
+        }
+        parsedPropsCache = props;
+        return parsedPropsCache;
     }
 
     /** GW_PROPERTIES에서 포트 값을 반환한다. 미설정이면 defaultPort를 반환한다. */
@@ -103,7 +111,7 @@ public class GatewayConfig {
     /**
      * GW_PROPERTIES에서 헤더 고정 길이(byte)를 반환한다.
      *
-     * <p>값이 존재하면 {@link com.example.spiderlink.infra.tcp.codec.BankingHeaderMessageCodec}을
+     * <p>값이 존재하면 {@link com.example.spiderlink.infra.tcp.codec.BankingProtocolMessageCodec}을
      * 사용하여 실제 뱅킹 프로토콜(헤더 내 ASCII 길이 필드)로 처리한다.
      * null이면 기존 4byte binary prefix 방식으로 동작한다.</p>
      */

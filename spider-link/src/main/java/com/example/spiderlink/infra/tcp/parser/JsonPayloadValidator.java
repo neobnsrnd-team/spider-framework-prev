@@ -8,10 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * JSON 전문 파서 — FWK_MESSAGE_FIELD 메타데이터 기반 로그 마스킹.
+ * JSON 전문 검증·마스킹 처리기.
  *
  * <p>수신 JSON payload를 FWK_MESSAGE_FIELD에 등록된 필드 구조와 대조하여
- * 민감 필드(REMARK 설정)를 마스킹한 로그용 문자열을 생성한다.</p>
+ * 필수 필드를 검증하고, 민감 필드(REMARK 설정)를 마스킹한 로그용 문자열을 생성한다.</p>
  *
  * <p>고정길이 전문과 달리 JSON은 Jackson이 파싱을 담당하므로 이 클래스는 파싱이 아닌
  * 검증·마스킹 역할만 수행한다. FWK_MESSAGE_FIELD에 미등록된 전문은
@@ -20,12 +20,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class JsonMessageParser {
+public class JsonPayloadValidator {
 
-    /** MessageStructurePool 조회 시 사용할 기관 ID */
+    /** MessageStructureCache 조회 시 사용할 기관 ID */
     private static final String ORG_ID = "DEMO";
 
-    private final MessageStructurePool messageStructurePool;
+    private final MessageStructureCache messageStructureCache;
 
     /**
      * JSON payload를 FWK_MESSAGE_FIELD의 REQUIRED_YN 기준으로 필수 필드를 검증한다.
@@ -39,9 +39,9 @@ public class JsonMessageParser {
      * @throws IllegalArgumentException 필수 필드 누락 시
      */
     public void validate(String messageId, Map<String, Object> payload) {
-        Optional<MessageStructure> optStructure = messageStructurePool.get(ORG_ID, messageId);
+        Optional<MessageStructure> optStructure = messageStructureCache.get(ORG_ID, messageId);
         if (optStructure.isEmpty()) {
-            log.debug("[JsonMessageParser] FWK_MESSAGE_FIELD 미등록 전문: messageId={}, 검증 생략", messageId);
+            log.debug("[JsonPayloadValidator] FWK_MESSAGE_FIELD 미등록 전문: messageId={}, 검증 생략", messageId);
             return;
         }
 
@@ -75,9 +75,9 @@ public class JsonMessageParser {
             return "{}";
         }
 
-        Optional<MessageStructure> optStructure = messageStructurePool.get(ORG_ID, messageId);
+        Optional<MessageStructure> optStructure = messageStructureCache.get(ORG_ID, messageId);
         if (optStructure.isEmpty()) {
-            log.debug("[JsonMessageParser] FWK_MESSAGE_FIELD 미등록 전문: messageId={}, 마스킹 생략", messageId);
+            log.debug("[JsonPayloadValidator] FWK_MESSAGE_FIELD 미등록 전문: messageId={}, 마스킹 생략", messageId);
             return payload.toString();
         }
 

@@ -84,7 +84,7 @@ public class MessageEngineContext {
     /**
      * GW_ID에 등록된 커맨드(REQ_ID_CODE) 전체를 반환한다.
      *
-     * <p>{@code MetaDrivenCommandHandler.supports()} 판별용 커맨드 셋 초기화에 사용한다.</p>
+     * <p>{@code MetaDrivenServiceOrchestrator.supports()} 판별용 커맨드 셋 초기화에 사용한다.</p>
      */
     public Set<String> getRegisteredCommands(String gwId) {
         String prefix = gwId + ":";

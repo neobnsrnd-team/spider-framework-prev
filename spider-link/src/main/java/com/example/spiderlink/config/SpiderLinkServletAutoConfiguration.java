@@ -1,7 +1,7 @@
 package com.example.spiderlink.config;
 
 import com.example.spiderlink.infra.http.SocketPoolStatusController;
-import com.example.spiderlink.infra.tcp.client.pool.SocketPoolManager;
+import com.example.spiderlink.infra.tcp.client.pool.SocketPoolRegistry;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -17,7 +17,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * <p>{@link SpiderLinkAutoConfiguration}에서 분리된 설정으로, {@code spring-webmvc}가 클래스패스에 없는
  * TCP 전용 WAS에서 {@code NoClassDefFoundError}가 발생하는 문제를 방지한다.</p>
  *
- * <p>{@link SpiderLinkAutoConfiguration} 이후에 실행되어 {@link SocketPoolManager} 빈이
+ * <p>{@link SpiderLinkAutoConfiguration} 이후에 실행되어 {@link SocketPoolRegistry} 빈이
  * 이미 등록된 상태에서 Servlet 컨트롤러를 안전하게 등록한다.</p>
  *
  * <p>등록되는 빈 목록:</p>
@@ -36,12 +36,12 @@ public class SpiderLinkServletAutoConfiguration {
      * <p>standalone 실행 시 컴포넌트 스캔으로 이미 등록될 수 있으므로
      * {@code @ConditionalOnMissingBean}으로 중복 등록을 방지한다.</p>
      *
-     * @param socketPoolManager 소켓 커넥션 풀 레지스트리
+     * @param socketPoolRegistry 소켓 커넥션 풀 레지스트리
      */
     @Bean
-    @ConditionalOnBean(SocketPoolManager.class)
+    @ConditionalOnBean(SocketPoolRegistry.class)
     @ConditionalOnMissingBean
-    public SocketPoolStatusController socketPoolStatusController(SocketPoolManager socketPoolManager) {
-        return new SocketPoolStatusController(socketPoolManager);
+    public SocketPoolStatusController socketPoolStatusController(SocketPoolRegistry socketPoolRegistry) {
+        return new SocketPoolStatusController(socketPoolRegistry);
     }
 }

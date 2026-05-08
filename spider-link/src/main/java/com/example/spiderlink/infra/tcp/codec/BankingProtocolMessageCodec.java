@@ -3,8 +3,8 @@ package com.example.spiderlink.infra.tcp.codec;
 import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
 import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
 import com.example.spiderlink.infra.tcp.parser.FixedLengthParser;
-import com.example.spiderlink.infra.tcp.parser.HeaderOffsetParser;
-import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
+import com.example.spiderlink.infra.tcp.parser.HeaderFieldExtractor;
+import com.example.spiderlink.infra.tcp.parser.MessageStructureCache;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataInputStream;
@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p>{@link HeaderBasedMessageCodec}과의 차이:</p>
  * <ul>
  *   <li>HeaderBasedMessageCodec: 4byte 바이너리 int 프리픽스 (POC 내부 프로토콜)</li>
- *   <li>BankingHeaderMessageCodec: 헤더 내 ASCII 문자열 길이 필드 (실제 뱅킹 프로토콜)</li>
+ *   <li>BankingProtocolMessageCodec: 헤더 내 ASCII 문자열 길이 필드 (실제 뱅킹 프로토콜)</li>
  * </ul>
  *
  * <p>{@code GatewayLoader}는 {@code GW_PROPERTIES}에 {@code header-length}가 존재하면
@@ -49,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class BankingHeaderMessageCodec implements MessageCodec<JsonCommandRequest, JsonCommandResponse> {
+public class BankingProtocolMessageCodec implements MessageCodec<JsonCommandRequest, JsonCommandResponse> {
 
     /** 바디 최대 허용 크기 (1 MB) */
     private static final int MAX_BODY_LEN = 1024 * 1024;
@@ -57,13 +57,13 @@ public class BankingHeaderMessageCodec implements MessageCodec<JsonCommandReques
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
     private final ObjectMapper objectMapper;
-    private final HeaderOffsetParser headerOffsetParser;
+    private final HeaderFieldExtractor headerFieldExtractor;
     /** FWK_MESSAGE.ORG_ID */
     private final String orgId;
     /** FWK_MESSAGE.MESSAGE_ID (HEADER_YN='Y') — 헤더 필드 오프셋 정의 */
     private final String headerMessageId;
     /** REQ_ID_CODE → FWK_MESSAGE 조회 후 바디 타입 결정 */
-    private final MessageStructurePool messageStructurePool;
+    private final MessageStructureCache messageStructureCache;
     /** MESSAGE_TYPE='F' 고정길이 바디 파싱 */
     private final FixedLengthParser fixedLengthParser;
     /** 헤더 고정 길이 (byte) — GW_PROPERTIES.header-length */
@@ -85,7 +85,7 @@ public class BankingHeaderMessageCodec implements MessageCodec<JsonCommandReques
      *   <li>헤더 고정길이만큼 읽기</li>
      *   <li>헤더 내 ASCII 숫자 문자열 → 바디 길이 계산 (참고소스 OrgMessageReader 방식)</li>
      *   <li>바디 읽기</li>
-     *   <li>HeaderOffsetParser로 REQ_ID_CODE, REQUEST_ID 추출</li>
+     *   <li>HeaderFieldExtractor로 REQ_ID_CODE, REQUEST_ID 추출</li>
      *   <li>REQ_ID_CODE → FWK_MESSAGE.MESSAGE_TYPE 조회 → 바디 파싱 전략 결정</li>
      * </ol>
      */
@@ -122,17 +122,17 @@ public class BankingHeaderMessageCodec implements MessageCodec<JsonCommandReques
         }
 
         // 4. 헤더에서 REQ_ID_CODE, REQUEST_ID 추출 (헤더 부분만 파싱)
-        String reqIdCode = headerOffsetParser.extractReqIdCode(orgId, headerMessageId, headerBuf);
+        String reqIdCode = headerFieldExtractor.extractReqIdCode(orgId, headerMessageId, headerBuf);
         if (reqIdCode == null || reqIdCode.isBlank()) {
             throw new IOException("헤더에서 REQ_ID_CODE 추출 실패: orgId=" + orgId
                     + ", headerMsgId=" + headerMessageId);
         }
-        String requestId = headerOffsetParser.extractField(orgId, headerMessageId, headerBuf, "REQUEST_ID");
+        String requestId = headerFieldExtractor.extractField(orgId, headerMessageId, headerBuf, "REQUEST_ID");
 
         // 5. REQ_ID_CODE → FWK_MESSAGE.MESSAGE_TYPE → 바디 파싱 전략 결정
         Map<String, Object> payload = parseBody(bodyBuf, reqIdCode.strip());
 
-        log.debug("[BankingHeaderMessageCodec] 수신: reqIdCode={}, requestId={}, bodyLength={}",
+        log.debug("[BankingProtocolMessageCodec] 수신: reqIdCode={}, requestId={}, bodyLength={}",
                 reqIdCode, requestId, bodyLength);
 
         return JsonCommandRequest.builder()
@@ -166,10 +166,10 @@ public class BankingHeaderMessageCodec implements MessageCodec<JsonCommandReques
             return Map.of();
         }
 
-        return messageStructurePool.get(orgId, reqIdCode)
+        return messageStructureCache.get(orgId, reqIdCode)
                 .filter(structure -> "F".equals(structure.getMessageType()))
                 .map(structure -> {
-                    log.debug("[BankingHeaderMessageCodec] 바디 고정길이 파싱: reqIdCode={}", reqIdCode);
+                    log.debug("[BankingProtocolMessageCodec] 바디 고정길이 파싱: reqIdCode={}", reqIdCode);
                     return fixedLengthParser.parse(structure, bodyBuf);
                 })
                 .orElseGet(() -> parseJson(reqIdCode, bodyBuf));
@@ -180,7 +180,7 @@ public class BankingHeaderMessageCodec implements MessageCodec<JsonCommandReques
         try {
             return objectMapper.readValue(bodyBuf, MAP_TYPE);
         } catch (IOException e) {
-            log.warn("[BankingHeaderMessageCodec] 바디 JSON 파싱 실패, 빈 payload 반환: reqIdCode={}, error={}",
+            log.warn("[BankingProtocolMessageCodec] 바디 JSON 파싱 실패, 빈 payload 반환: reqIdCode={}, error={}",
                     reqIdCode, e.getMessage());
             return Map.of();
         }

@@ -1,6 +1,6 @@
 package com.example.spiderlink.infra.http;
 
-import com.example.spiderlink.infra.tcp.client.pool.SocketPoolManager;
+import com.example.spiderlink.infra.tcp.client.pool.SocketPoolRegistry;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class SocketPoolStatusController {
 
-    private final SocketPoolManager socketPoolManager;
+    private final SocketPoolRegistry socketPoolRegistry;
 
     /**
      * 전체 소켓 풀 상태 조회.
@@ -47,7 +47,7 @@ public class SocketPoolStatusController {
      */
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getPoolStatus() {
-        Map<String, Map<String, Object>> pools = socketPoolManager.getAllPoolInfo();
+        Map<String, Map<String, Object>> pools = socketPoolRegistry.getAllPoolInfo();
         return ResponseEntity.ok(Map.of("success", true, "pools", pools));
     }
 }

@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 고정길이 헤더 byte[] 에서 특정 필드 값을 오프셋 기반으로 추출하는 파서.
+ * 고정길이 헤더 byte[] 에서 특정 필드 값을 오프셋 기반으로 추출하는 컴포넌트.
  *
  * <p>FWK_MESSAGE_FIELD(HEADER_YN='Y') 의 SORT_ORDER + DATA_LENGTH 누적합으로
  * 바이트 오프셋을 계산하여 필드를 추출한다. JSON/고정길이/XML 등 바디 포맷에 무관하게
@@ -17,12 +17,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class HeaderOffsetParser {
+public class HeaderFieldExtractor {
 
     /** REQ_ID_CODE 추출에 사용하는 FWK_MESSAGE_FIELD.MESSAGE_FIELD_ID 기본값 */
     public static final String DEFAULT_REQ_ID_CODE_FIELD = "REQ_ID_CODE";
 
-    private final MessageStructurePool messageStructurePool;
+    private final MessageStructureCache messageStructureCache;
 
     /**
      * 수신 byte[] 헤더에서 REQ_ID_CODE 값을 추출한다.
@@ -49,9 +49,9 @@ public class HeaderOffsetParser {
      * @return 추출된 문자열 (trailing 공백 제거), 필드 없거나 범위 초과 시 null
      */
     public String extractField(String orgId, String headerMessageId, byte[] message, String fieldId) {
-        var structureOpt = messageStructurePool.get(orgId, headerMessageId);
+        var structureOpt = messageStructureCache.get(orgId, headerMessageId);
         if (structureOpt.isEmpty()) {
-            log.warn("[HeaderOffsetParser] 헤더 전문 구조 미등록: orgId={}, messageId={}", orgId, headerMessageId);
+            log.warn("[HeaderFieldExtractor] 헤더 전문 구조 미등록: orgId={}, messageId={}", orgId, headerMessageId);
             return null;
         }
 
@@ -64,7 +64,7 @@ public class HeaderOffsetParser {
             if (field.getName().equalsIgnoreCase(fieldId)) {
                 int len = Math.min(field.getLength(), message.length - offset);
                 if (len <= 0) {
-                    log.warn("[HeaderOffsetParser] 필드 범위 초과: field={}, offset={}, messageLen={}",
+                    log.warn("[HeaderFieldExtractor] 필드 범위 초과: field={}, offset={}, messageLen={}",
                             fieldId, offset, message.length);
                     return null;
                 }
@@ -73,7 +73,7 @@ public class HeaderOffsetParser {
             offset += field.getLength();
         }
 
-        log.warn("[HeaderOffsetParser] 필드 미발견: orgId={}, messageId={}, fieldId={}", orgId, headerMessageId, fieldId);
+        log.warn("[HeaderFieldExtractor] 필드 미발견: orgId={}, messageId={}, fieldId={}", orgId, headerMessageId, fieldId);
         return null;
     }
 
@@ -88,7 +88,7 @@ public class HeaderOffsetParser {
      * @return 헤더 총 바이트 수, 구조 미등록이면 0
      */
     public int calcHeaderLength(String orgId, String headerMessageId) {
-        return messageStructurePool.get(orgId, headerMessageId)
+        return messageStructureCache.get(orgId, headerMessageId)
                 .map(MessageStructure::getStaticTotalLength)
                 .orElse(0);
     }

@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * 전문 구조 모델 — FWK_MESSAGE + FWK_MESSAGE_FIELD 를 파서가 사용하는 형태로 조합한 객체.
  *
- * <p>MessageStructurePool이 DB에서 로드 후 캐시하며,
+ * <p>MessageStructureCache가 DB에서 로드 후 캐시하며,
  * FixedLengthParser가 파싱 시 참조한다.</p>
  */
 public class MessageStructure {

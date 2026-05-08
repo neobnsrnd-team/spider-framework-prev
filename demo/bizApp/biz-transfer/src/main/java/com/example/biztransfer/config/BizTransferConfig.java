@@ -7,9 +7,9 @@ import com.example.spidercommon.infra.tcp.handler.CommandDispatcher;
 import com.example.spidercommon.infra.tcp.handler.CommandHandler;
 import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
 import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
-import com.example.spiderlink.infra.tcp.client.pool.SocketPoolManager;
+import com.example.spiderlink.infra.tcp.client.pool.SocketPoolRegistry;
 import com.example.spiderlink.infra.tcp.parser.FixedLengthParser;
-import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
+import com.example.spiderlink.infra.tcp.parser.MessageStructureCache;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,24 +53,24 @@ public class BizTransferConfig {
      * <p>{@link TcpClient} 는 {@code com.example.spiderlink} 패키지에 선언되어 있어
      * 컴포넌트 스캔 범위에 포함되지 않으므로 명시적으로 등록한다.
      * {@link MessageInstanceRecorder} 가 존재하면 주입하여 전문 이력을 기록한다.
-     * {@link MessageStructurePool} / {@link FixedLengthParser} 를 주입하면 mock-core 고정길이 프로토콜을 사용한다.</p>
+     * {@link MessageStructureCache} / {@link FixedLengthParser} 를 주입하면 mock-core 고정길이 프로토콜을 사용한다.</p>
      *
-     * @param objectMapper     Jackson ObjectMapper
-     * @param recorder         전문 이력 기록기 (JdbcTemplate 빈이 없으면 empty)
-     * @param structurePool    전문 구조 캐시 (빈 없으면 empty — JSON fallback)
+     * @param objectMapper      Jackson ObjectMapper
+     * @param recorder          전문 이력 기록기 (JdbcTemplate 빈이 없으면 empty)
+     * @param structureCache    전문 구조 캐시 (빈 없으면 empty — JSON fallback)
      * @param fixedLengthParser 고정길이 파서 (빈 없으면 empty — JSON fallback)
-     * @param poolManager      소켓 커넥션 풀 매니저 (빈 없으면 empty — 요청마다 신규 소켓)
+     * @param poolRegistry      소켓 커넥션 풀 레지스트리 (빈 없으면 empty — 요청마다 신규 소켓)
      * @return TcpClient 인스턴스
      */
     @Bean
     public TcpClient tcpClient(ObjectMapper objectMapper,
                                 Optional<MessageInstanceRecorder> recorder,
-                                Optional<MessageStructurePool> structurePool,
+                                Optional<MessageStructureCache> structureCache,
                                 Optional<FixedLengthParser> fixedLengthParser,
-                                Optional<SocketPoolManager> poolManager) {
+                                Optional<SocketPoolRegistry> poolRegistry) {
         return new TcpClient(objectMapper, recorder.orElse(null),
-                structurePool.orElse(null), fixedLengthParser.orElse(null),
-                poolManager.orElse(null));
+                structureCache.orElse(null), fixedLengthParser.orElse(null),
+                poolRegistry.orElse(null));
     }
 
     /**

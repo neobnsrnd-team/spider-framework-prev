@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 전문 구조(MessageStructure) 캐시 풀.
+ * 전문 구조(MessageStructure) 메모리 캐시.
  *
  * <p>최초 요청 시 DB(FWK_MESSAGE + FWK_MESSAGE_FIELD)에서 로드하고,
  * 이후에는 메모리 캐시에서 반환한다.</p>
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class MessageStructurePool {
+public class MessageStructureCache {
 
     private static final String BEGIN_LOOP_PREFIX = "_BeginLoop_";
     private static final String END_LOOP          = "_EndLoop_";
@@ -76,27 +76,27 @@ public class MessageStructurePool {
         String key = cacheKey(orgId, messageId);
         cache.remove(key);
         notFoundKeys.remove(key);
-        log.info("[MessageStructurePool] 캐시 제거: orgId={}, messageId={}", orgId, messageId);
+        log.info("[MessageStructureCache] 캐시 제거: orgId={}, messageId={}", orgId, messageId);
     }
 
     /** 전체 캐시 초기화 */
     public void clear() {
         cache.clear();
         notFoundKeys.clear();
-        log.info("[MessageStructurePool] 전체 캐시 초기화");
+        log.info("[MessageStructureCache] 전체 캐시 초기화");
     }
 
     /** DB에서 전문 구조를 로드하여 빌드 */
     private MessageStructure load(String orgId, String messageId) {
         String messageType = messageMetaMapper.selectMessageType(orgId, messageId);
         if (messageType == null) {
-            log.warn("[MessageStructurePool] FWK_MESSAGE 미등록 전문: orgId={}, messageId={}", orgId, messageId);
+            log.warn("[MessageStructureCache] FWK_MESSAGE 미등록 전문: orgId={}, messageId={}", orgId, messageId);
             return null;
         }
 
         List<MessageFieldMeta> fieldMetas = messageMetaMapper.selectFields(orgId, messageId);
         MessageStructure structure = buildStructure(orgId, messageId, messageType, fieldMetas);
-        log.info("[MessageStructurePool] 전문 구조 로드: orgId={}, messageId={}, type={}, fields={}",
+        log.info("[MessageStructureCache] 전문 구조 로드: orgId={}, messageId={}, type={}, fields={}",
                 orgId, messageId, messageType, fieldMetas.size());
         return structure;
     }

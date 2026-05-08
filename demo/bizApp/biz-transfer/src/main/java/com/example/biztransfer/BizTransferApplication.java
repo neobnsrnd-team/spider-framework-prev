@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * 이체AP(biz-transfer) 메인 진입점.
  *
  * <p>SpiderTcpServer를 포트 19200에서 기동하고, TRANSFER_* 커맨드를 수신한다.
- * {@link com.example.spiderlink.infra.tcp.handler.MetaDrivenCommandHandler} 가
+ * {@link com.example.spiderlink.infra.tcp.handler.MetaDrivenServiceOrchestrator} 가
  * FWK 메타테이블 기반으로 커맨드를 처리하며, PIN 검증이 필요한 TRANSFER_IMMEDIATE_PAY 만
  * {@link com.example.biztransfer.handler.TransferImmediatePayHandler} 가 별도 처리한다.</p>
  *

@@ -9,7 +9,7 @@ import com.example.spiderlink.infra.tcp.biz.Biz;
 import com.example.spidercommon.infra.tcp.handler.CommandHandler;
 import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
 import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
-import com.example.spiderlink.infra.tcp.parser.JsonMessageParser;
+import com.example.spiderlink.infra.tcp.parser.JsonPayloadValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
@@ -27,7 +27,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 /**
- * FWK 메타데이터 기반 범용 커맨드 핸들러.
+ * FWK 메타데이터 기반 범용 서비스 체인 오케스트레이터.
  *
  * <p>FWK_LISTENER_TRX_MESSAGE에 등록된 커맨드를 수신하면
  * FWK_SERVICE → FWK_SERVICE_RELATION → FWK_COMPONENT 체인을 따라
@@ -48,7 +48,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandRequest, JsonCommandResponse> {
+public class MetaDrivenServiceOrchestrator implements CommandHandler<JsonCommandRequest, JsonCommandResponse> {
 
     /**
      * 이 bizApp이 담당하는 게이트웨이 ID.
@@ -61,11 +61,11 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
     private static final String IO_TYPE = "I";
 
     private final MetaRoutingMapper metaRoutingMapper;
-    private final DemoTrxLogger trxLogger;
+    private final TrxRecorder trxRecorder;
     private final SqlSessionFactory sqlSessionFactory;
     private final ObjectMapper objectMapper;
-    /** FWK_MESSAGE_FIELD 기반 민감 필드 마스킹 — 거래 로그 INSERT 전 적용 */
-    private final JsonMessageParser jsonMessageParser;
+    /** FWK_MESSAGE_FIELD 기반 민감 필드 마스킹 — 거래 이력 INSERT 전 적용 */
+    private final JsonPayloadValidator jsonPayloadValidator;
     /** Biz 타입 컴포넌트 리플렉션 호출 시 스프링 빈 조회용 */
     private final ApplicationContext applicationContext;
     /**
@@ -84,7 +84,7 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
     void init() {
         // MessageEngineContext가 먼저 @PostConstruct로 초기화되므로 즉시 사용 가능
         supportedCommands = messageEngineContext.getRegisteredCommands(GW_ID);
-        log.info("[MetaDrivenCommandHandler] 등록된 커맨드 {}개 로드: {}", supportedCommands.size(), supportedCommands);
+        log.info("[MetaDrivenServiceOrchestrator] 등록된 커맨드 {}개 로드: {}", supportedCommands.size(), supportedCommands);
     }
 
     /**
@@ -96,7 +96,7 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
     public void refreshCommands() {
         messageEngineContext.reload();
         supportedCommands = messageEngineContext.getRegisteredCommands(GW_ID);
-        log.info("[MetaDrivenCommandHandler] 커맨드 캐시 갱신 완료: {}개 — {}", supportedCommands.size(), supportedCommands);
+        log.info("[MetaDrivenServiceOrchestrator] 커맨드 캐시 갱신 완료: {}개 — {}", supportedCommands.size(), supportedCommands);
     }
 
     @Override
@@ -113,14 +113,14 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
         String trxId = messageEngineContext.getTrxId(GW_ID, command);
         String orgId = messageEngineContext.getOrgId(GW_ID, command);
 
-        // FWK_MESSAGE_FIELD 기준 마스킹 후 거래 로그 저장 — password 등 민감 필드 보호
+        // FWK_MESSAGE_FIELD 기준 마스킹 후 거래 이력 저장 — password 등 민감 필드 보호
         // maskForLog 키: trxId + "_REQ" (FWK_MESSAGE_FIELD는 TRX_ID 기준으로 필드 정의)
-        trxLogger.logRequest(trxId, request.getRequestId(), userId,
-                jsonMessageParser.maskForLog(trxId + "_REQ", payload));
+        trxRecorder.recordRequest(trxId, request.getRequestId(), userId,
+                jsonPayloadValidator.maskForLog(trxId + "_REQ", payload));
 
         try {
             // FWK_MESSAGE_FIELD REQUIRED_YN='Y' 기준 필수 필드 검증 — 미등록 전문은 통과
-            jsonMessageParser.validate(trxId + "_REQ", payload);
+            jsonPayloadValidator.validate(trxId + "_REQ", payload);
 
             String serviceId = metaRoutingMapper.selectServiceId(trxId, orgId, IO_TYPE);
             if (serviceId == null) {
@@ -144,7 +144,7 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
                         paramMap.put(rp.getParamKey(), context.getOrDefault(rp.getParamValue(), ""));
                     }
 
-                    log.debug("[MetaDrivenCommandHandler] step={} type={} params={}",
+                    log.debug("[MetaDrivenServiceOrchestrator] step={} type={} params={}",
                             step.getServiceSeqNo(), comp.getComponentType(), paramMap.keySet());
 
                     if ("S".equals(comp.getComponentType())) {
@@ -154,7 +154,7 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
                             // SELECT 결과 없음 → 중단, 실패 응답
                             JsonCommandResponse failResp = JsonCommandResponse.builder()
                                     .command(command).success(false).error("조회 결과가 없습니다.").build();
-                            trxLogger.logResponse(trxId, request.getRequestId(), userId, "no result", "N");
+                            trxRecorder.recordResponse(trxId, request.getRequestId(), userId, "no result", "N");
                             return failResp;
                         }
                         // DTO → Map 변환 후 컨텍스트 병합 (다음 스텝에서 참조 가능)
@@ -182,16 +182,16 @@ public class MetaDrivenCommandHandler implements CommandHandler<JsonCommandReque
 
             JsonCommandResponse response = JsonCommandResponse.builder()
                     .command(command).success(true).payload(toCamelCaseKeys(lastSelectResult)).build();
-            // FWK_MESSAGE_FIELD 기준 마스킹 후 응답 거래 로그 저장
-            trxLogger.logResponse(trxId, request.getRequestId(), userId,
-                    jsonMessageParser.maskForLog(trxId + "_RES", lastSelectResult), "Y");
+            // FWK_MESSAGE_FIELD 기준 마스킹 후 응답 거래 이력 저장
+            trxRecorder.recordResponse(trxId, request.getRequestId(), userId,
+                    jsonPayloadValidator.maskForLog(trxId + "_RES", lastSelectResult), "Y");
             return response;
 
         } catch (Exception e) {
-            log.error("[MetaDrivenCommandHandler] 처리 오류: command={}, error={}", command, e.getMessage(), e);
+            log.error("[MetaDrivenServiceOrchestrator] 처리 오류: command={}, error={}", command, e.getMessage(), e);
             JsonCommandResponse errResp = JsonCommandResponse.builder()
                     .command(command).success(false).error("처리 중 오류가 발생했습니다.").build();
-            trxLogger.logResponse(trxId, request.getRequestId(), userId, e.getMessage(), "N");
+            trxRecorder.recordResponse(trxId, request.getRequestId(), userId, e.getMessage(), "N");
             return errResp;
         }
     }

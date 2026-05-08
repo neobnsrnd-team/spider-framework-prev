@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
  * MyBatis Configuration에 MappedStatement로 동적 등록한다.
  *
  * <p>statementId 포맷: {@code SQL_GROUP_ID.QUERY_ID}
- * MetaDrivenCommandHandler의 {@code COMPONENT_CLASS_NAME.COMPONENT_METHOD_NAME}과 일치한다.
+ * MetaDrivenServiceOrchestrator의 {@code COMPONENT_CLASS_NAME.COMPONENT_METHOD_NAME}과 일치한다.
  *
  * <p>이미 등록된 static mapper와 충돌하는 statementId는 건너뛰고 경고 로그를 출력한다.
  * Reload API(Task #6)에서 {@link #reloadAll()} / {@link #reloadById(String)}를 호출해
@@ -230,7 +230,7 @@ public class SqlQueryLoader {
      * SQL 문자열로 MappedStatement를 생성해 Configuration에 등록한다.
      *
      * <p>Language Driver를 통해 SqlSource를 생성하므로 #{} 파라미터와
-     * ${} 변수 치환이 모두 지원된다. 파라미터 타입은 Map (MetaDrivenCommandHandler
+     * ${} 변수 치환이 모두 지원된다. 파라미터 타입은 Map (MetaDrivenServiceOrchestrator
      * 가 paramMap을 Map<String,Object>로 전달하기 때문).
      */
     private void registerStatement(Configuration configuration, String statementId,

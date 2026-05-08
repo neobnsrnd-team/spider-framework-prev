@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 /**
  * FWK_MESSAGE_FIELD 조회 결과 DTO.
  *
- * <p>MessageStructurePool이 DB에서 전문 필드 메타데이터를 로드할 때 사용한다.</p>
+ * <p>MessageStructureCache가 DB에서 전문 필드 메타데이터를 로드할 때 사용한다.</p>
  */
 @Data
 @NoArgsConstructor

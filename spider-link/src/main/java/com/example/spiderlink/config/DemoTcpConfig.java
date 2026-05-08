@@ -4,7 +4,7 @@ import com.example.spiderlink.infra.tcp.codec.JsonMessageCodec;
 import com.example.spidercommon.infra.tcp.handler.CommandDispatcher;
 import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
 import com.example.spidercommon.infra.tcp.model.JsonCommandResponse;
-import com.example.spiderlink.infra.tcp.handler.MetaDrivenCommandHandler;
+import com.example.spiderlink.infra.tcp.handler.MetaDrivenServiceOrchestrator;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
  * AP 서버 전문 처리 TCP 서버 설정 (레거시).
  *
  * <p>spider-link의 {@link SpiderTcpServer}에 {@link JsonMessageCodec}과
- * {@link MetaDrivenCommandHandler}를 주입하여 JSON TCP 서버를 구성한다.</p>
+ * {@link MetaDrivenServiceOrchestrator}를 주입하여 JSON TCP 서버를 구성한다.</p>
  *
  * <p>biz-channel, biz-auth, biz-transfer는 이미 spider-link를 내장하여 직접 TCP 서버를 운영한다.
  * 이 설정은 {@code tcp.demo-server.enabled=true}일 때만 활성화되며 standalone 모드에서만 사용된다.</p>
@@ -37,7 +37,7 @@ public class DemoTcpConfig {
     public SpiderTcpServer<JsonCommandRequest, JsonCommandResponse> demoTcpServer(
             @Value("${tcp.demo-server.port:9995}") int port,
             @Value("${tcp.demo-server.handler-pool-size:20}") int handlerPoolSize,
-            MetaDrivenCommandHandler handler,
+            MetaDrivenServiceOrchestrator handler,
             ObjectMapper objectMapper) {
 
         CommandDispatcher<JsonCommandRequest, JsonCommandResponse> dispatcher =

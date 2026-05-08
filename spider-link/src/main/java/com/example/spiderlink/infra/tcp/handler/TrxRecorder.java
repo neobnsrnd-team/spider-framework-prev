@@ -9,15 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * Demo TCP 전문 거래 로그를 FWK_MESSAGE_INSTANCE에 기록하는 컴포넌트.
+ * Demo TCP 전문 거래 이력을 FWK_MESSAGE_INSTANCE에 기록하는 컴포넌트.
  *
  * <p>요청(REQ)·응답(RES) 각각 1건씩 INSERT하며 TRX_TRACKING_NO로 쌍을 연결한다.
- * 로그 INSERT 실패는 전문 처리 결과에 영향을 주지 않도록 예외를 삼킨다.</p>
+ * INSERT 실패는 전문 처리 결과에 영향을 주지 않도록 예외를 삼킨다.</p>
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DemoTrxLogger {
+public class TrxRecorder {
 
     private static final DateTimeFormatter LOG_FMT  = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
     private static final DateTimeFormatter TRX_FMT  = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
@@ -30,19 +30,19 @@ public class DemoTrxLogger {
     private final MessageLogQueue messageLogQueue;
 
     /**
-     * 요청 전문 로그 INSERT (IO_TYPE=I, REQ_RES_TYPE=Q).
+     * 요청 전문 이력 INSERT (IO_TYPE=I, REQ_RES_TYPE=Q).
      *
      * @param trxId         거래 ID (예: DEMO_AUTH_LOGIN)
      * @param trxTrackingNo 거래 추적 번호 — REQ·RES 연결 키 (requestId 사용)
      * @param userId        사용자 ID
      * @param messageData   전문 요약 데이터
      */
-    public void logRequest(String trxId, String trxTrackingNo, String userId, String messageData) {
-        insertLog(trxId, trxId + "_REQ", trxTrackingNo, userId, "I", "Q", messageData, "Y");
+    public void recordRequest(String trxId, String trxTrackingNo, String userId, String messageData) {
+        insertRecord(trxId, trxId + "_REQ", trxTrackingNo, userId, "I", "Q", messageData, "Y");
     }
 
     /**
-     * 응답 전문 로그 INSERT (IO_TYPE=O, REQ_RES_TYPE=S).
+     * 응답 전문 이력 INSERT (IO_TYPE=O, REQ_RES_TYPE=S).
      *
      * @param trxId         거래 ID
      * @param trxTrackingNo 거래 추적 번호 — REQ와 동일한 값 사용
@@ -50,12 +50,12 @@ public class DemoTrxLogger {
      * @param messageData   응답 데이터 요약
      * @param successYn     성공 여부 (Y/N)
      */
-    public void logResponse(String trxId, String trxTrackingNo, String userId, String messageData, String successYn) {
-        insertLog(trxId, trxId + "_RES", trxTrackingNo, userId, "O", "S", messageData, successYn);
+    public void recordResponse(String trxId, String trxTrackingNo, String userId, String messageData, String successYn) {
+        insertRecord(trxId, trxId + "_RES", trxTrackingNo, userId, "O", "S", messageData, successYn);
     }
 
-    private void insertLog(String trxId, String messageId, String trxTrackingNo, String userId,
-                           String ioType, String reqResType, String messageData, String successYn) {
+    private void insertRecord(String trxId, String messageId, String trxTrackingNo, String userId,
+                              String ioType, String reqResType, String messageData, String successYn) {
         try {
             LocalDateTime now = LocalDateTime.now();
             messageLogQueue.put(MessageInstanceInsertRequest.builder()
@@ -78,7 +78,7 @@ public class DemoTrxLogger {
                     .trxDtime(now.format(TRX_FMT))
                     .build());
         } catch (Exception e) {
-            log.warn("[DemoTrxLogger] 거래 로그 INSERT 실패: trxId={}, error={}", trxId, e.getMessage());
+            log.warn("[TrxRecorder] 거래 이력 INSERT 실패: trxId={}, error={}", trxId, e.getMessage());
         }
     }
 

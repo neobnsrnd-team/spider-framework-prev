@@ -3,13 +3,13 @@ package com.example.spiderlink.config;
 import com.example.spiderlink.domain.gateway.dto.GatewayConfig;
 import com.example.spiderlink.domain.gateway.mapper.GatewayMapper;
 import com.example.spiderlink.domain.messageinstance.MessageInstanceRecorder;
-import com.example.spiderlink.infra.tcp.codec.BankingHeaderMessageCodec;
+import com.example.spiderlink.infra.tcp.codec.BankingProtocolMessageCodec;
 import com.example.spiderlink.infra.tcp.codec.HeaderBasedMessageCodec;
 import com.example.spiderlink.infra.tcp.codec.JsonMessageCodec;
 import com.example.spiderlink.infra.tcp.codec.MessageCodec;
 import com.example.spiderlink.infra.tcp.parser.FixedLengthParser;
-import com.example.spiderlink.infra.tcp.parser.HeaderOffsetParser;
-import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
+import com.example.spiderlink.infra.tcp.parser.HeaderFieldExtractor;
+import com.example.spiderlink.infra.tcp.parser.MessageStructureCache;
 import com.example.spidercommon.infra.tcp.handler.CommandDispatcher;
 import com.example.spidercommon.infra.tcp.handler.CommandHandler;
 import com.example.spidercommon.infra.tcp.model.JsonCommandRequest;
@@ -62,8 +62,8 @@ public class GatewayLoader implements ApplicationRunner {
 
     private final GatewayMapper gatewayMapper;
     private final ObjectMapper objectMapper;
-    private final HeaderOffsetParser headerOffsetParser;
-    private final MessageStructurePool messageStructurePool;
+    private final HeaderFieldExtractor headerFieldExtractor;
+    private final MessageStructureCache messageStructureCache;
     private final FixedLengthParser fixedLengthParser;
     private final List<CommandHandler<JsonCommandRequest, JsonCommandResponse>> handlers;
     private final Optional<MessageInstanceRecorder> recorder;
@@ -113,7 +113,7 @@ public class GatewayLoader implements ApplicationRunner {
      *
      * <p>우선순위:</p>
      * <ol>
-     *   <li>{@code header-length} 설정 → {@link BankingHeaderMessageCodec}
+     *   <li>{@code header-length} 설정 → {@link BankingProtocolMessageCodec}
      *       (실제 뱅킹 프로토콜 — 헤더 내 ASCII 길이 필드)</li>
      *   <li>{@code header-msg-id}만 설정 → {@link HeaderBasedMessageCodec}
      *       (POC 내부 프로토콜 — 4byte binary prefix)</li>
@@ -129,8 +129,8 @@ public class GatewayLoader implements ApplicationRunner {
             // 실제 뱅킹 프로토콜: 헤더 내 ASCII 문자열 길이 필드 방식 (참고소스 OrgMessageReader 방식)
             log.info("[GatewayLoader] gwId={} 뱅킹 헤더 코덱 사용: orgId={}, headerMsgId={}, headerLength={}",
                     config.getGwId(), orgId, headerMessageId, headerLength);
-            return new BankingHeaderMessageCodec(objectMapper, headerOffsetParser, orgId, headerMessageId,
-                    messageStructurePool, fixedLengthParser,
+            return new BankingProtocolMessageCodec(objectMapper, headerFieldExtractor, orgId, headerMessageId,
+                    messageStructureCache, fixedLengthParser,
                     headerLength, config.getLengthFieldOffset(),
                     config.getLengthFieldLength(), config.isTotalLength());
         }
@@ -139,8 +139,8 @@ public class GatewayLoader implements ApplicationRunner {
             // POC 내부 프로토콜: 4byte binary prefix + 고정헤더 + 바디
             log.info("[GatewayLoader] gwId={} 헤더 오프셋 파싱 코덱 사용: orgId={}, headerMsgId={}",
                     config.getGwId(), orgId, headerMessageId);
-            return new HeaderBasedMessageCodec(objectMapper, headerOffsetParser, orgId, headerMessageId,
-                    messageStructurePool, fixedLengthParser);
+            return new HeaderBasedMessageCodec(objectMapper, headerFieldExtractor, orgId, headerMessageId,
+                    messageStructureCache, fixedLengthParser);
         }
 
         log.info("[GatewayLoader] gwId={} JSON 코덱 사용 (header-msg-id 미설정)", config.getGwId());

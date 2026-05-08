@@ -3,7 +3,7 @@ package com.example.spiderlink.infra.tcp.biz;
 import java.util.Map;
 
 /**
- * MetaDrivenCommandHandler 에서 리플렉션으로 호출되는 비즈니스 로직 인터페이스.
+ * MetaDrivenServiceOrchestrator 에서 리플렉션으로 호출되는 비즈니스 로직 인터페이스.
  *
  * <p>원본 {@code spider.common.biz.Biz} 의 POC 경량화 버전.
  * {@code COMPONENT_TYPE != 'S'/'U'} 인 컴포넌트는 {@code COMPONENT_CLASS_NAME} 에
