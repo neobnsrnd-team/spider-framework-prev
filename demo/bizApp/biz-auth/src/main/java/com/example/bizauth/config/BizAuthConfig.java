@@ -13,6 +13,7 @@ import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -85,7 +86,9 @@ public class BizAuthConfig {
      * @param recorder     전문 이력 기록기 (JdbcTemplate 빈이 없으면 empty)
      * @return {@code tcp.server.port} 에서 수신 대기하는 SpiderTcpServer 인스턴스
      */
+    /** GatewayLoader(spider.gateway.dynamic.enabled=true) 활성 시 비활성화 — 포트 중복 방지 */
     @Bean
+    @ConditionalOnProperty(name = "spider.gateway.dynamic.enabled", havingValue = "false", matchIfMissing = true)
     public SpiderTcpServer<JsonCommandRequest, JsonCommandResponse> bizAuthTcpServer(
             ObjectMapper objectMapper,
             List<CommandHandler<JsonCommandRequest, JsonCommandResponse>> handlers,

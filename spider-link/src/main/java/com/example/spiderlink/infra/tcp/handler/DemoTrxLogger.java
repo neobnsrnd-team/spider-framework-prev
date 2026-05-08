@@ -1,10 +1,9 @@
 package com.example.spiderlink.infra.tcp.handler;
 
+import com.example.spiderlink.domain.messageinstance.MessageLogQueue;
 import com.example.spiderlink.domain.messageinstance.dto.MessageInstanceInsertRequest;
-import com.example.spiderlink.domain.messageinstance.mapper.MessageInstanceMapper;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -28,7 +27,7 @@ public class DemoTrxLogger {
     /** Admin 거래추적로그조회에서 인스턴스 필터로 spider-link 처리 건을 구분하는 식별자 */
     private static final String INSTANCE_ID = "MDW";
 
-    private final MessageInstanceMapper messageInstanceMapper;
+    private final MessageLogQueue messageLogQueue;
 
     /**
      * 요청 전문 로그 INSERT (IO_TYPE=I, REQ_RES_TYPE=Q).
@@ -59,9 +58,7 @@ public class DemoTrxLogger {
                            String ioType, String reqResType, String messageData, String successYn) {
         try {
             LocalDateTime now = LocalDateTime.now();
-            messageInstanceMapper.insert(MessageInstanceInsertRequest.builder()
-                    // UUID 32자 → VARCHAR2(30) 제약으로 앞 30자만 사용 (이슈 #1)
-                    .messageSno(UUID.randomUUID().toString().replace("-", "").substring(0, 30))
+            messageLogQueue.put(MessageInstanceInsertRequest.builder()
                     .trxId(trxId)
                     .orgId(ORG_ID)
                     .ioType(ioType)

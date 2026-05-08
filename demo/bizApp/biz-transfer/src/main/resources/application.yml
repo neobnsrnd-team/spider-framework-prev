@@ -46,3 +46,10 @@ logging:
   level:
     com.example.biztransfer: DEBUG
     com.example.spiderlink: DEBUG
+
+# FWK_GATEWAY 동적 생성 설정
+spider:
+  gateway:
+    dynamic:
+      enabled: true
+    id: BIZ_TRANSFER_GW

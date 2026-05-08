@@ -13,6 +13,7 @@ import com.example.spiderlink.infra.tcp.parser.MessageStructurePool;
 import com.example.spiderlink.infra.tcp.server.SpiderTcpServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -89,7 +90,9 @@ public class BizTransferConfig {
         return new CommandDispatcher<>(handlers);
     }
 
+    /** GatewayLoader(spider.gateway.dynamic.enabled=true) 활성 시 비활성화 — 포트 중복 방지 */
     @Bean
+    @ConditionalOnProperty(name = "spider.gateway.dynamic.enabled", havingValue = "false", matchIfMissing = true)
     public SpiderTcpServer<JsonCommandRequest, JsonCommandResponse> bizTransferTcpServer(
             ObjectMapper objectMapper,
             CommandDispatcher<JsonCommandRequest, JsonCommandResponse> dispatcher,
