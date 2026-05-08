@@ -340,7 +340,7 @@ export function UsageHistoryRoute() {
       .then((r) => {
         const data = r.data;
         setTransactions(data.transactions ?? []);
-        setTotalCount(data.totalCount ?? 0);
+        setTotalCount(Number(data.totalCount ?? 0));
         setPaymentSummary(data.paymentSummary ?? { date: "", totalAmount: 0 });
       })
       .catch(console.error);
@@ -364,7 +364,7 @@ export function UsageHistoryRoute() {
     ])
       .then(([txData, cardData]) => {
         setTransactions(txData.transactions ?? []);
-        setTotalCount(txData.totalCount ?? 0);
+        setTotalCount(Number(txData.totalCount ?? 0));
         setPaymentSummary(
           txData.paymentSummary ?? { date: "", totalAmount: 0 },
         );
@@ -407,7 +407,8 @@ interface StmtApiItem {
   cardNo: string;
   cardName: string;
   amount: number;
-  dueDate: string;
+  /** 고정길이 파서가 MESSAGE_FIELD_ID "itemDueDate" 로 반환 (헤더 dueDate 와 충돌 방지) */
+  itemDueDate: string;
 }
 /** /api/payment-statement 응답 billingPeriod 타입 */
 interface StmtBillingPeriod {
@@ -429,7 +430,8 @@ interface StmtApiResponse {
 }
 
 /** YYMMDD or YYYYMMDD → "M월 D일 결제" 레이블 */
-function fmtDueDateLabel(raw: string): string {
+function fmtDueDateLabel(raw: string | undefined): string {
+  if (!raw) return "";
   if (raw.length === 6)
     return `${Number(raw.slice(2, 4))}월 ${Number(raw.slice(4, 6))}일 결제`;
   if (raw.length === 8)
@@ -465,7 +467,8 @@ function isPaymentUpcoming(
 }
 
 /** YYMMDD or YYYYMMDD → { dateFull, dateYM, dateMD } */
-function parseDueDate(raw: string) {
+function parseDueDate(raw: string | undefined) {
+  if (!raw) return { dateFull: "", dateYM: "", dateMD: "" };
   if (raw.length === 6) {
     const y = `20${raw.slice(0, 2)}`,
       m = raw.slice(2, 4),
@@ -592,15 +595,16 @@ export function PaymentStatementRoute() {
     statementData: StatementTabData;
   }>(() => {
     /* 결제예정금액 탭 — 백엔드가 청구월 기준으로 필터링한 allItems 사용 */
-    const paymentTotalAmt = allItems.reduce((s, i) => s + i.amount, 0);
-    const firstDue = allItems[0]?.dueDate ?? "";
+    /* Number() 변환: 고정길이 파서 N 타입이 String으로 반환되므로 숫자 합산 보정 */
+    const paymentTotalAmt = allItems.reduce((s, i) => s + Number(i.amount), 0);
+    const firstDue = allItems[0]?.itemDueDate ?? "";
     const { dateFull, dateYM, dateMD } = parseDueDate(firstDue);
     const paymentItems: CardPaymentEntry[] = allItems.map((item) => ({
-      id: `${item.cardNo}_${item.dueDate}`,
+      id: `${item.cardNo}_${item.itemDueDate}`,
       icon: <CreditCard className="size-5" />,
-      cardEnName: fmtDueDateLabel(item.dueDate),
+      cardEnName: fmtDueDateLabel(item.itemDueDate),
       cardName: item.cardName,
-      amount: item.amount,
+      amount: Number(item.amount),
     }));
 
     /* 이용대금명세서 탭 — 동일 항목 재사용 */
@@ -805,13 +809,13 @@ export function ImmediatePayRequestRoute() {
         { signal: controller.signal },
       )
       .then((r) => {
-        setPayableAmount(r.data.payableAmount);
+        setPayableAmount(Number(r.data.payableAmount));
         // STEP 3 확인 시트에서 결제 후 이용가능한도 계산에 필요한 값을 세션에 저장한다.
         sessionStorage.setItem(
           "immediatePayAmountInfo",
           JSON.stringify({
-            payableAmount: r.data.payableAmount,
-            creditLimit: r.data.creditLimit,
+            payableAmount: Number(r.data.payableAmount),
+            creditLimit: Number(r.data.creditLimit),
           }),
         );
       })
@@ -909,10 +913,10 @@ export function ImmediatePayMethodRoute() {
     ? (JSON.parse(storedRequest) as { usageType: string; payAmount: number })
     : { usageType: "lump", payAmount: 0 };
   const { payableAmount: totalPayable, creditLimit } = storedAmountInfo
-    ? (JSON.parse(storedAmountInfo) as {
-        payableAmount: number;
-        creditLimit: number;
-      })
+    ? (() => {
+        const parsed = JSON.parse(storedAmountInfo) as { payableAmount: unknown; creditLimit: unknown };
+        return { payableAmount: Number(parsed.payableAmount), creditLimit: Number(parsed.creditLimit) };
+      })()
     : { payableAmount: 0, creditLimit: 0 };
 
   // 이용구분 코드 → 표시 문자열
@@ -1102,10 +1106,10 @@ export function ImmediatePayCompleteRoute() {
     ? (JSON.parse(storedAccount) as { bankName: string; maskedAccount: string })
     : { bankName: "", maskedAccount: "" };
   const amountInfo = storedAmountInfo
-    ? (JSON.parse(storedAmountInfo) as {
-        payableAmount: number;
-        creditLimit: number;
-      })
+    ? (() => {
+        const parsed = JSON.parse(storedAmountInfo) as { payableAmount: unknown; creditLimit: unknown };
+        return { payableAmount: Number(parsed.payableAmount), creditLimit: Number(parsed.creditLimit) };
+      })()
     : { payableAmount: 0, creditLimit: 0 };
 
   // 결제 후 이용가능한도 = 한도금액 - (미결제금액 - 결제금액)
