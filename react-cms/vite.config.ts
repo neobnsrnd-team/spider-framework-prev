@@ -35,6 +35,9 @@ export default defineConfig(({ mode }) => {
   server: {
     // 모든 네트워크 인터페이스에 바인딩 — Docker(nginx)에서 host.docker.internal로 접근하기 위해 필요
     host: true,
+    // 다른 dev 도구(Vite default 5173)와 충돌을 피하기 위해 5273을 고정 사용.
+    // spider-admin/nginx/cms-local-proxy.conf의 proxy_pass와 동일 값을 유지해야 함.
+    port: 5273,
   },
   plugins: [
     react(),
