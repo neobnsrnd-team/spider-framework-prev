@@ -6,12 +6,14 @@
  * 이 함수는 별도 코드 생성 없이 params.code를 그대로 사용합니다.
  * params.code가 없는 경우(직접 호출)에는 generateJSX로 기본 코드를 생성합니다.
  *
+ * 라우트 등록은 자동 수행하지 않으므로 개발자가 직접 추가해야 합니다.
+ *
  * ※ admin 연동 모드(npm run dev:proxy)에서는 사용되지 않습니다.
  *    main.tsx에서 onSave={savePage}를 주입하므로 CMSApp의 fallback인 이 함수는 호출되지 않습니다.
  *    admin 연동 모드의 저장 로직은 src/savePage.ts를 참고하세요.
  *
  * @param page 저장할 CMSPage 데이터
- * @param params pageName(PascalCase), uri(라우트 경로), code(JSX 코드 문자열)
+ * @param params pageName(PascalCase), savePath(파일 시스템 저장 위치), code(JSX 코드 문자열)
  */
 import { generateJSX } from "../codegen/exportCode";
 import type { CMSPage } from "../types";
@@ -23,15 +25,16 @@ import type { SavePageParams } from "../SavePageModal";
 const cmsBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/__cms`;
 
 export async function defaultSave(page: CMSPage, params: SavePageParams): Promise<void> {
-  const { pageName, uri } = params;
+  const { pageName, savePath } = params;
   // CMSBuilder에서 layouts/codegenConfig/overlayTemplates Context를 포함해 사전 생성한 코드 우선 사용.
   // params.code가 없는 경우(직접 호출 시) generateJSX로 폴백 — Context 정보 미포함 주의.
-  const code = params.code ?? generateJSX(page);
+  // pageName을 6번째 인자로 전달하여 함수명도 올바르게 생성한다.
+  const code = params.code ?? generateJSX(page, undefined, undefined, undefined, undefined, pageName);
 
   const res = await fetch(`${cmsBase}/create-page`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ uri, code, pageName }),
+    body: JSON.stringify({ savePath, code, pageName }),
   });
 
   if (!res.ok) {

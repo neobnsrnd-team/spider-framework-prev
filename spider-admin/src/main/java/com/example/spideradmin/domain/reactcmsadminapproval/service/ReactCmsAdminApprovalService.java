@@ -46,12 +46,21 @@ public class ReactCmsAdminApprovalService {
     /**
      * 승인 확정 — APPROVE_STATE: PENDING → APPROVED
      * 상태를 먼저 변경한 뒤 변경 후 상태를 이력 스냅샷으로 저장한다.
+     *
+     * <p>매퍼 SQL의 APPROVE_STATE='PENDING' 가드로 인해 PENDING이 아닌 페이지는
+     * affected row 0을 반환하며, 이 경우 InvalidInputException으로 응답한다.
+     * race condition · 더블 클릭 · 외부 API 직접 호출 등에서 이미 처리된 페이지의
+     * 재승인을 방지한다.
      */
     @Transactional
     public void approve(String pageId, ReactCmsAdminApprovalApproveRequest req, String modifierId) {
         checkPageExists(pageId);
         validateDisplayPeriod(req.getBeginningDate(), req.getExpiredDate());
-        reactCmsAdminApprovalMapper.approve(pageId, req.getBeginningDate(), req.getExpiredDate(), modifierId);
+        int updated =
+                reactCmsAdminApprovalMapper.approve(pageId, req.getBeginningDate(), req.getExpiredDate(), modifierId);
+        if (updated == 0) {
+            throw new InvalidInputException("승인 대기 상태의 페이지가 아닙니다. pageId=" + pageId);
+        }
         int version = reactCmsAdminApprovalMapper.getNextVersion(pageId);
         reactCmsAdminApprovalMapper.insertHistory(pageId, version);
         log.info("React CMS Admin 페이지 승인 완료: pageId={}, version={}, modifierId={}", pageId, version, modifierId);
@@ -60,11 +69,16 @@ public class ReactCmsAdminApprovalService {
     /**
      * 반려 — APPROVE_STATE: PENDING → REJECTED
      * 상태를 먼저 변경한 뒤 변경 후 상태를 이력 스냅샷으로 저장한다.
+     *
+     * <p>승인과 동일하게 PENDING 가드로 race condition을 방어한다.
      */
     @Transactional
     public void reject(String pageId, ReactCmsAdminApprovalRejectRequest req, String modifierId) {
         checkPageExists(pageId);
-        reactCmsAdminApprovalMapper.reject(pageId, req.getRejectedReason(), modifierId);
+        int updated = reactCmsAdminApprovalMapper.reject(pageId, req.getRejectedReason(), modifierId);
+        if (updated == 0) {
+            throw new InvalidInputException("승인 대기 상태의 페이지가 아닙니다. pageId=" + pageId);
+        }
         int version = reactCmsAdminApprovalMapper.getNextVersion(pageId);
         reactCmsAdminApprovalMapper.insertHistory(pageId, version);
         log.info("React CMS Admin 페이지 반려 완료: pageId={}, version={}, modifierId={}", pageId, version, modifierId);

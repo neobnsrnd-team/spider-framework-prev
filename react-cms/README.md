@@ -2,7 +2,7 @@
 
 React 기반 비주얼 CMS 빌더 및 런타임 렌더링 엔진.
 
-블록 팔레트에서 컴포넌트를 드래그&드롭하여 페이지를 구성하고, 저장 시 React JSX 코드와 라우트를 자동 생성한다.
+블록 팔레트에서 컴포넌트를 드래그&드롭하여 페이지를 구성하고, 저장 시 사용자가 지정한 위치에 React JSX 코드를 생성한다. 라우트 등록은 호출 측 개발자가 직접 수행한다.
 
 ---
 
@@ -40,7 +40,7 @@ React 기반 비주얼 CMS 빌더 및 런타임 렌더링 엔진.
 | 오버레이 관리 | 바텀시트·모달 등 오버레이를 페이지 단위로 구성 |
 | 상호작용 바인딩 | 블록 이벤트에 `openOverlay` / `navigate` / `closeOverlay` 액션 연결 |
 | JSX 코드 생성 | 편집 결과를 독립 실행 가능한 React 컴포넌트 파일로 자동 생성 |
-| 라우트 자동 등록 | 저장 시 Vite 플러그인이 라우터 파일에 import와 route를 자동 추가 |
+| 페이지 파일 저장 | 저장 시 Vite 플러그인이 사용자가 지정한 위치에 `.tsx` 파일을 생성 (라우트 등록은 직접) |
 | CSS 격리 | `@scope` 기반으로 외부 스타일과 CMS 스타일을 격리 |
 | 런타임 렌더링 | 저장된 CMSPage JSON을 빌더 없이 앱에서 렌더링 |
 
@@ -57,7 +57,7 @@ react-cms/
 │   │   ├── CMSApp.tsx             # 빌더 앱 루트 (Router + Provider 포함)
 │   │   ├── CMSBuilder.tsx         # 에디터 UI (팔레트 · 캔버스 · 속성 패널)
 │   │   ├── CMSRuntimeProvider.tsx # 런타임 전용 경량 Provider
-│   │   ├── SavePageModal.tsx      # 페이지 저장 모달 (pageName · uri 입력)
+│   │   ├── SavePageModal.tsx      # 페이지 저장 모달 (pageName · savePath 입력)
 │   │   ├── UserScopeWrapper.tsx   # @scope 기반 CSS 격리 래퍼
 │   │   ├── context.ts             # React Context 정의
 │   │   ├── useCMSContextValues.ts # Context 값 파생 훅
@@ -120,7 +120,6 @@ react-cms/
 │   ├── savePage.ts                # 외부 사용 가능한 저장 함수
 │   ├── index.css                  # CMS 셸 전역 스타일 (@theme 색상 토큰)
 │   └── user-scope.css             # @scope 기반 사용자 영역 스타일
-├── docs/
 ├── public/
 ├── vite.config.ts
 └── package.json
@@ -141,7 +140,7 @@ react-cms는 **빌더**와 **런타임** 두 가지 모드로 동작한다.
 │                                                     │
 │  저장 → generateJSX → defaultSave → cmsBankPlugin   │
 │                  ↓                       ↓          │
-│            JSX 코드 문자열         demo/front 파일   │
+│            JSX 코드 문자열      savePath에 .tsx 작성 │
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
@@ -156,12 +155,14 @@ react-cms는 **빌더**와 **런타임** 두 가지 모드로 동작한다.
 ### 저장 흐름
 
 ```
-SavePageModal (pageName, uri 입력)
+SavePageModal (pageName, savePath 입력)
   → generateJSX(CMSPage) → JSX 코드 문자열
   → defaultSave → POST /__cms/create-page
   → cmsBankPlugin (Vite dev 미들웨어)
-      ├── demo/front/src/pages/cms/{PageName}.tsx 생성
-      └── demo/front/src/routes/index.tsx 에 import + route 추가
+      └── {savePath}/{PageName}.tsx 생성
+
+※ 라우트 등록은 자동 수행하지 않는다. 생성된 페이지를 라우터에 노출하려면
+   호출 측 프로젝트의 라우터 파일에 import 문과 라우트 항목을 직접 추가한다.
 ```
 
 ---
@@ -726,35 +727,28 @@ interface CMSCodegenConfig {
 
 ## Vite 플러그인 (cmsBankPlugin)
 
-`/__cms/create-page` POST 요청을 Vite dev 서버에서 수신하여 다음 두 작업을 자동으로 수행한다.
-
-1. 생성된 JSX 코드를 `pagesDir` 경로에 `.tsx` 파일로 저장
-2. `routerPath` 파일의 `pageRoutes` 배열에 import 문과 라우트 항목 추가
+`/__cms/create-page` POST 요청을 Vite dev 서버에서 수신하여 클라이언트(`SavePageModal`)가 입력한
+`savePath` 경로에 `.tsx` 파일을 작성한다. **라우트 등록은 자동 수행하지 않는다** — 생성된
+페이지를 라우팅하려면 호출 측 프로젝트의 라우터 파일에 직접 추가해야 한다.
 
 ```typescript
 // react-cms/vite.config.ts
 import { cmsBankPlugin } from './src/vite-plugin/cmsBankPlugin';
 
 export default defineConfig({
-  plugins: [
-    cmsBankPlugin({
-      // 라우터 파일 경로 (react-cms 루트 기준 상대 경로)
-      routerPath: '../demo/front/src/routes/index.tsx',
-      // 생성 페이지를 저장할 디렉토리 (react-cms 루트 기준 상대 경로)
-      pagesDir:   '../demo/front/src/pages/cms',
-    }),
-  ],
+  plugins: [cmsBankPlugin()],
 });
 ```
 
-**`CmsBankPluginOptions`**
+**저장 위치 결정**
 
-| 옵션 | 기본값 | 설명 |
-|---|---|---|
-| `routerPath` | `src/routes/index.tsx` | `pageRoutes`와 `modalRoutes`를 export 하는 파일 |
-| `pagesDir` | `src/pages/cms` | 생성된 페이지 파일 저장 디렉토리 |
+- `SavePageModal`에서 사용자가 입력한 `savePath`(Vite 프로젝트 root 기준 상대 경로)에 컴포넌트 파일이 작성된다.
+- 예) `react-cms/`에서 실행 시 `savePath = "../demo/front/src/pages/cms"`이면
+      `<repo>/demo/front/src/pages/cms/{PageName}.tsx`에 파일이 생성된다.
+- 절대 경로(`/foo`, `C:\foo` 등)는 보안상 차단되며, 디렉토리는 필요 시 자동 생성된다.
 
-> `routerPath`가 가리키는 파일은 반드시 `export const pageRoutes` 배열과 `export const modalRoutes` 선언을 포함해야 한다. 플러그인이 이 패턴을 기준으로 import와 route를 삽입한다.
+> CMSBuilder에 `defaultSavePath` 프롭을 전달해 모달 초기값을 지정할 수 있다(기본 빈 값).
+> admin 연동 모드에서는 DB 저장이므로 모달의 저장 위치 입력란이 숨겨진다(`requireSavePath={false}`).
 
 ---
 
@@ -832,7 +826,7 @@ type CMSOverlay = {
 ```typescript
 interface SavePageParams {
   pageName: string;   // PascalCase 컴포넌트명 (예: "MyDashboardPage")
-  uri: string;        // URL 경로 (예: "/my-dashboard")
+  savePath?: string;  // 파일 저장 위치 (Vite 프로젝트 root 기준 상대 경로). DB 저장 모드에서는 미전송
   code?: string;      // 직접 생성한 코드를 전달할 때 사용 (없으면 generateJSX 호출)
 }
 ```
