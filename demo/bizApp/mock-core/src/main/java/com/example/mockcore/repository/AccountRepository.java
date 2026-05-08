@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -322,9 +323,27 @@ public class AccountRepository {
             effectivePaymentDay = "25"; // 기본 결제일
         }
 
-        // 청구 기간: targetYearMonth 기준 전달 26일 ~ 당월 25일 (결제일 25일 기준 예시)
-        String billingFrom = getPrevMonthDay(targetYearMonth, "26");
-        String billingTo = targetYearMonth + effectivePaymentDay;
+        // 하나카드 결제일별 신용공여기간(일시불·할부) 기준:
+        // D <= 12: 전전월 (D+18)일 ~ 전월 (D+17)일
+        // D == 13: 전월 1일 ~ 전월 말일
+        // D >= 14: 전월 (D-12)일 ~ 당월 (D-13)일
+        YearMonth paymentYM  = YearMonth.parse(targetYearMonth, YEAR_MONTH_FMT);
+        YearMonth prevYM     = paymentYM.minusMonths(1);
+        YearMonth prevPrevYM = paymentYM.minusMonths(2);
+        int d = Integer.parseInt(effectivePaymentDay);
+        LocalDate billingFromDate, billingToDate;
+        if (d <= 12) {
+            billingFromDate = prevPrevYM.atDay(Math.min(d + 18, prevPrevYM.lengthOfMonth()));
+            billingToDate   = prevYM.atDay(Math.min(d + 17, prevYM.lengthOfMonth()));
+        } else if (d == 13) {
+            billingFromDate = prevYM.atDay(1);
+            billingToDate   = prevYM.atEndOfMonth();
+        } else {
+            billingFromDate = prevYM.atDay(d - 12);
+            billingToDate   = paymentYM.atDay(d - 13);
+        }
+        String billingFrom = billingFromDate.format(DATE_FMT);
+        String billingTo   = billingToDate.format(DATE_FMT);
 
         // dueDate: 결제 연월 + 결제일
         String dueDate = targetYearMonth + effectivePaymentDay;
@@ -372,7 +391,12 @@ public class AccountRepository {
         result.put("totalAmount", totalAmount);
         result.put("items", items);
         result.put("cardInfo", cardInfo);
-        result.put("billingPeriod", null); // 필요 시 확장 (현재 billingFrom~billingTo 미노출)
+        DateTimeFormatter displayFmt = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+        Map<String, Object> billingPeriodMap = new HashMap<>();
+        billingPeriodMap.put("usageStart", billingFromDate.format(displayFmt));
+        billingPeriodMap.put("usageEnd",   billingToDate.format(displayFmt));
+        billingPeriodMap.put("dueDate",    LocalDate.parse(dueDate, DATE_FMT).format(displayFmt));
+        result.put("billingPeriod", billingPeriodMap);
         return result;
     }
 
