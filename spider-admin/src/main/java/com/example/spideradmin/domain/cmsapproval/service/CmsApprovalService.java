@@ -46,12 +46,12 @@ public class CmsApprovalService {
     /**
      * 승인 확정 — APPROVE_STATE: PENDING → APPROVED
      * 상태를 먼저 변경한 뒤 변경 후 상태를 이력 스냅샷으로 저장한다.
-     * 결재자 검증: 지정된 결재자(APPROVER_ID) 또는 cms_admin/ADMIN 역할만 처리 가능 (#329)
+     * 결재자 검증: 지정된 결재자(APPROVER_ID) 또는 CMS 관리자(cms_admin/ADMIN)만 처리 가능 (#329)
      */
     @Transactional
-    public void approve(String pageId, CmsApproveRequest req, String modifierId, String roleId) {
+    public void approve(String pageId, CmsApproveRequest req, String modifierId, boolean isCmsAdmin) {
         checkPageExists(pageId);
-        validateApprover(pageId, modifierId, roleId);
+        validateApprover(pageId, modifierId, isCmsAdmin);
         validateDisplayPeriod(req.getBeginningDate(), req.getExpiredDate());
         int updated = cmsApprovalMapper.approve(pageId, req.getBeginningDate(), req.getExpiredDate(), modifierId);
         if (updated == 0) {
@@ -65,12 +65,12 @@ public class CmsApprovalService {
     /**
      * 반려 — APPROVE_STATE: PENDING → REJECTED
      * 상태를 먼저 변경한 뒤 변경 후 상태를 이력 스냅샷으로 저장한다.
-     * 결재자 검증: 지정된 결재자(APPROVER_ID) 또는 cms_admin/ADMIN 역할만 처리 가능 (#329)
+     * 결재자 검증: 지정된 결재자(APPROVER_ID) 또는 CMS 관리자(cms_admin/ADMIN)만 처리 가능 (#329)
      */
     @Transactional
-    public void reject(String pageId, CmsRejectRequest req, String modifierId, String roleId) {
+    public void reject(String pageId, CmsRejectRequest req, String modifierId, boolean isCmsAdmin) {
         checkPageExists(pageId);
-        validateApprover(pageId, modifierId, roleId);
+        validateApprover(pageId, modifierId, isCmsAdmin);
         int updated = cmsApprovalMapper.reject(pageId, req.getRejectedReason(), modifierId);
         if (updated == 0) {
             throw new InvalidInputException("승인 대기 상태의 페이지가 아닙니다. pageId=" + pageId);
@@ -127,13 +127,13 @@ public class CmsApprovalService {
      *
      * <p>다음 조건 중 하나를 만족하면 통과한다:
      * <ul>
-     *   <li>roleId 가 "ADMIN" 또는 "cms_admin" — 관리자 대리 처리 허용</li>
+     *   <li>isCmsAdmin = true — ADMIN/cms_admin 역할, 관리자 대리 처리 허용</li>
      *   <li>APPROVER_ID 가 null — 미지정(레거시) 데이터는 검증 스킵</li>
      *   <li>APPROVER_ID = modifierId — 지정된 결재자 본인</li>
      * </ul>
      */
-    private void validateApprover(String pageId, String modifierId, String roleId) {
-        if ("ADMIN".equals(roleId) || "cms_admin".equals(roleId)) return;
+    private void validateApprover(String pageId, String modifierId, boolean isCmsAdmin) {
+        if (isCmsAdmin) return;
 
         String assignedApproverId = cmsApprovalMapper.findApproverIdByPageId(pageId);
         if (assignedApproverId == null) return;

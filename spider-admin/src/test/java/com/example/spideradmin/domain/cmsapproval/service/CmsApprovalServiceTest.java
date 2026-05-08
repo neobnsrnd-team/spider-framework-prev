@@ -43,11 +43,7 @@ class CmsApprovalServiceTest {
 
     private static final String PAGE_ID = "PAGE-001";
     private static final String MODIFIER_ID = "admin";
-    /** 일반 사용자 역할 — cms_admin/ADMIN 이외의 역할 */
-    private static final String ROLE_NORMAL = "user";
 
-    private static final String ROLE_ADMIN = "ADMIN";
-    private static final String ROLE_CMS_ADMIN = "cms_admin";
 
     // ─── findPageList ─────────────────────────────────────────────────
 
@@ -99,7 +95,7 @@ class CmsApprovalServiceTest {
                 .willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
 
-        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL);
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, false);
 
         then(cmsApprovalMapper).should().approve(eq(PAGE_ID), eq("2099-04-17"), eq("2099-04-18"), eq(MODIFIER_ID));
         then(cmsApprovalMapper).should().insertHistory(eq(PAGE_ID), eq(1));
@@ -115,7 +111,7 @@ class CmsApprovalServiceTest {
         given(cmsApprovalMapper.approve(PAGE_ID, null, null, MODIFIER_ID)).willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
 
-        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL);
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, false);
 
         then(cmsApprovalMapper).should().approve(eq(PAGE_ID), eq(null), eq(null), eq(MODIFIER_ID));
         then(cmsApprovalMapper).should().insertHistory(eq(PAGE_ID), eq(1));
@@ -136,7 +132,7 @@ class CmsApprovalServiceTest {
                 .willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
 
-        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL);
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, false);
 
         then(cmsApprovalMapper).should().approve(eq(PAGE_ID), eq(beginningDate), eq(expiredDate), eq(MODIFIER_ID));
         then(cmsApprovalMapper).should().insertHistory(eq(PAGE_ID), eq(1));
@@ -148,7 +144,7 @@ class CmsApprovalServiceTest {
         CmsApproveRequest req = new CmsApproveRequest();
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(0);
 
-        assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
+        assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, false))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -162,7 +158,7 @@ class CmsApprovalServiceTest {
         // APPROVER_ID = "other-user", 현재 사용자 = MODIFIER_ID → 불일치
         given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn("other-user");
 
-        assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
+        assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, false))
                 .isInstanceOf(InvalidInputException.class)
                 .hasMessageContaining("지정된 결재자만");
     }
@@ -176,7 +172,7 @@ class CmsApprovalServiceTest {
         given(cmsApprovalMapper.approve(PAGE_ID, null, null, MODIFIER_ID)).willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
 
-        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_ADMIN);
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, true);
 
         then(cmsApprovalMapper).should().approve(eq(PAGE_ID), any(), any(), eq(MODIFIER_ID));
     }
@@ -189,7 +185,7 @@ class CmsApprovalServiceTest {
         given(cmsApprovalMapper.approve(PAGE_ID, null, null, MODIFIER_ID)).willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
 
-        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_CMS_ADMIN);
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, true);
 
         then(cmsApprovalMapper).should().approve(eq(PAGE_ID), any(), any(), eq(MODIFIER_ID));
     }
@@ -204,7 +200,7 @@ class CmsApprovalServiceTest {
         given(cmsApprovalMapper.approve(PAGE_ID, null, null, MODIFIER_ID)).willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
 
-        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL);
+        cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, false);
 
         then(cmsApprovalMapper).should().approve(eq(PAGE_ID), any(), any(), eq(MODIFIER_ID));
     }
@@ -222,7 +218,7 @@ class CmsApprovalServiceTest {
         given(cmsApprovalMapper.reject(PAGE_ID, "내용 부적합", MODIFIER_ID)).willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(2);
 
-        cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL);
+        cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, false);
 
         then(cmsApprovalMapper).should().reject(eq(PAGE_ID), eq("내용 부적합"), eq(MODIFIER_ID));
         then(cmsApprovalMapper).should().insertHistory(eq(PAGE_ID), eq(2));
@@ -235,7 +231,7 @@ class CmsApprovalServiceTest {
         req.setRejectedReason("이유");
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(0);
 
-        assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
+        assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, false))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -247,7 +243,7 @@ class CmsApprovalServiceTest {
         given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn(MODIFIER_ID);
         given(cmsApprovalMapper.approve(PAGE_ID, null, null, MODIFIER_ID)).willReturn(0);
 
-        assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
+        assertThatThrownBy(() -> cmsApprovalService.approve(PAGE_ID, req, MODIFIER_ID, false))
                 .isInstanceOf(InvalidInputException.class);
     }
 
@@ -260,7 +256,7 @@ class CmsApprovalServiceTest {
         given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn(MODIFIER_ID);
         given(cmsApprovalMapper.reject(PAGE_ID, "이유", MODIFIER_ID)).willReturn(0);
 
-        assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
+        assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, false))
                 .isInstanceOf(InvalidInputException.class);
     }
 
@@ -274,7 +270,7 @@ class CmsApprovalServiceTest {
         given(cmsApprovalMapper.existsByPageId(PAGE_ID)).willReturn(1);
         given(cmsApprovalMapper.findApproverIdByPageId(PAGE_ID)).willReturn("other-user");
 
-        assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, ROLE_NORMAL))
+        assertThatThrownBy(() -> cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, false))
                 .isInstanceOf(InvalidInputException.class)
                 .hasMessageContaining("지정된 결재자만");
     }
@@ -288,7 +284,7 @@ class CmsApprovalServiceTest {
         given(cmsApprovalMapper.reject(PAGE_ID, "이유", MODIFIER_ID)).willReturn(1);
         given(cmsApprovalMapper.getNextVersion(PAGE_ID)).willReturn(1);
 
-        cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, ROLE_ADMIN);
+        cmsApprovalService.reject(PAGE_ID, req, MODIFIER_ID, true);
 
         then(cmsApprovalMapper).should().reject(eq(PAGE_ID), eq("이유"), eq(MODIFIER_ID));
     }

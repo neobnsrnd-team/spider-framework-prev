@@ -1,6 +1,7 @@
 package com.example.spideradmin.domain.cmsapproval.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
@@ -152,7 +153,7 @@ class CmsApprovalControllerTest {
     @Test
     @DisplayName("[승인] CMS:W 권한으로 승인 시 200을 반환한다")
     void approve_withCmsW_returns200() throws Exception {
-        willDoNothing().given(cmsApprovalService).approve(any(), any(), any());
+        willDoNothing().given(cmsApprovalService).approve(any(), any(), any(), anyBoolean());
 
         mockMvc.perform(post(PAGE_URL + "/approval/approve")
                         .with(csrf())
@@ -169,7 +170,7 @@ class CmsApprovalControllerTest {
     void approve_pageNotFound_returns404() throws Exception {
         willThrow(new NotFoundException("pageId: " + PAGE_ID))
                 .given(cmsApprovalService)
-                .approve(any(), any(), any());
+                .approve(any(), any(), any(), anyBoolean());
 
         mockMvc.perform(post(PAGE_URL + "/approval/approve")
                         .with(csrf())
@@ -207,7 +208,7 @@ class CmsApprovalControllerTest {
     @Test
     @DisplayName("[반려] CMS:W 권한으로 반려 시 200을 반환한다")
     void reject_withCmsW_returns200() throws Exception {
-        willDoNothing().given(cmsApprovalService).reject(any(), any(), any());
+        willDoNothing().given(cmsApprovalService).reject(any(), any(), any(), anyBoolean());
 
         mockMvc.perform(post(PAGE_URL + "/approval/reject")
                         .with(csrf())
@@ -223,7 +224,7 @@ class CmsApprovalControllerTest {
     void reject_pageNotFound_returns404() throws Exception {
         willThrow(new NotFoundException("pageId: " + PAGE_ID))
                 .given(cmsApprovalService)
-                .reject(any(), any(), any());
+                .reject(any(), any(), any(), anyBoolean());
 
         mockMvc.perform(post(PAGE_URL + "/approval/reject")
                         .with(csrf())
