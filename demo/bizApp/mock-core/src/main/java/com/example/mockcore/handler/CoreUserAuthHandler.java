@@ -35,8 +35,9 @@ public class CoreUserAuthHandler implements LegacyCoreHandler {
         FixedMessageReader reader = new FixedMessageReader(requestBytes);
         reader.skip(20); // COMMAND
         reader.skip(36); // REQUEST_ID
-        String userId   = reader.readC(20);
-        String password = reader.readC(20);
+        String userId   = reader.readC(20).trim();
+        // C(20) 고정길이 필드에서 읽은 값에 trailing space가 포함될 수 있어 trim 처리
+        String password = reader.readC(20).trim();
 
         log.debug("[CORE_USER_AUTH] 인증 요청 — userId={}", userId);
 
