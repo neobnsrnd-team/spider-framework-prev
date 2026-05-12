@@ -1,6 +1,6 @@
 // src/app/api/deploy/receive/route.ts
 // 데모 전용 수신 엔드포인트 — 실제 운영 환경에서는 별도 서버로 교체
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, unlink } from 'fs/promises';
 import { timingSafeEqual } from 'crypto';
 import path from 'path';
 
@@ -19,6 +19,37 @@ function isValidToken(token: string | null): boolean {
         return timingSafeEqual(expected, received);
     } catch {
         return false;
+    }
+}
+
+/** 긴급차단 시 배포된 HTML 파일 삭제 */
+export async function DELETE(req: NextRequest) {
+    if (!isValidToken(req.headers.get('x-deploy-token'))) {
+        return errorResponse('인증 토큰이 유효하지 않습니다.', 401);
+    }
+
+    try {
+        const { pageId } = (await req.json()) as { pageId?: string };
+
+        if (!pageId || typeof pageId !== 'string') {
+            return errorResponse('pageId가 필요합니다.', 400);
+        }
+        if (pageId.includes('..') || pageId.includes('/') || pageId.includes('\\')) {
+            return errorResponse('유효하지 않은 pageId입니다.', 400);
+        }
+
+        const filePath = path.join(process.cwd(), 'public', 'deployed', `${pageId}.html`);
+        try {
+            await unlink(filePath);
+        } catch (err: unknown) {
+            // 파일이 이미 없는 경우 — 이미 차단된 상태이므로 정상 처리
+            if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+        }
+
+        return successResponse({ pageId, deleted: true });
+    } catch (err: unknown) {
+        console.error('배포 파일 삭제 실패:', err);
+        return errorResponse(getErrorMessage(err));
     }
 }
 
