@@ -1,21 +1,37 @@
 // src/app/api/deploy/emergency-block/[pageId]/route.ts
 // 긴급차단 API — IS_PUBLIC='N' 업데이트 + 배포된 HTML 파일 삭제
+// 호출 주체: spider-admin (서버간 통신) → x-deploy-token 인증
+
+import { timingSafeEqual } from 'crypto';
 
 import { NextRequest } from 'next/server';
 
 import { getServerList } from '@/db/repository/file-send.repository';
 import { getPageById, setPagePublic } from '@/db/repository/page.repository';
-import { canWriteCms, getCurrentUser } from '@/lib/current-user';
 import { errorResponse, getErrorMessage, successResponse } from '@/lib/api-response';
 import { buildServerUrl, deleteFromServer } from '@/lib/deploy-utils';
+import { DEPLOY_SECRET } from '@/lib/env';
+
+/** 타이밍 공격 방지 토큰 비교 */
+function isValidToken(token: string | null): boolean {
+    if (!DEPLOY_SECRET || !token) return false;
+    try {
+        const expected = Buffer.from(DEPLOY_SECRET, 'utf8');
+        const received = Buffer.from(token, 'utf8');
+        if (expected.length !== received.length) return false;
+        return timingSafeEqual(expected, received);
+    } catch {
+        return false;
+    }
+}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ pageId: string }> }) {
-    try {
-        const currentUser = await getCurrentUser();
-        if (!canWriteCms(currentUser)) {
-            return errorResponse('권한이 없습니다.', 401);
-        }
+    // spider-admin → html-cms 서버간 호출: x-deploy-token으로 인증
+    if (!isValidToken(req.headers.get('x-deploy-token'))) {
+        return errorResponse('인증 토큰이 유효하지 않습니다.', 401);
+    }
 
+    try {
         const { pageId } = await params;
         if (!pageId || typeof pageId !== 'string') {
             return errorResponse('pageId가 필요합니다.', 400);
@@ -29,8 +45,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pag
             return errorResponse('이미 긴급차단된 페이지입니다.', 400);
         }
 
-        // DB IS_PUBLIC='N' 업데이트
-        await setPagePublic(pageId, 'N', currentUser.userId);
+        // DB IS_PUBLIC='N' 업데이트 (호출자 식별: spider-admin 서버간 요청)
+        await setPagePublic(pageId, 'N', 'SYSTEM');
 
         // 활성 서버의 배포 파일 삭제
         const servers = await getServerList('Y');

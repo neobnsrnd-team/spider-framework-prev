@@ -1,25 +1,40 @@
 // src/app/api/deploy/restore/[pageId]/route.ts
 // 긴급차단 복구 API — SPW_CMS_PAGE_HISTORY 마지막 버전 HTML로 파일 재생성 + IS_PUBLIC='Y'
 // 현재 페이지(SPW_CMS_PAGE)의 APPROVE_STATE·PAGE_HTML은 건드리지 않음
+// 호출 주체: spider-admin (서버간 통신) → x-deploy-token 인증
 
 import { readFile } from 'fs/promises';
+import { timingSafeEqual } from 'crypto';
 import path from 'path';
 
 import { NextRequest } from 'next/server';
 
 import { getServerList } from '@/db/repository/file-send.repository';
 import { getPageById, getLatestHistory, setPagePublic } from '@/db/repository/page.repository';
-import { canWriteCms, getCurrentUser } from '@/lib/current-user';
 import { errorResponse, getErrorMessage, successResponse } from '@/lib/api-response';
 import { buildServerUrl, sendToServer, buildDeployHtml } from '@/lib/deploy-utils';
+import { DEPLOY_SECRET } from '@/lib/env';
+
+/** 타이밍 공격 방지 토큰 비교 */
+function isValidToken(token: string | null): boolean {
+    if (!DEPLOY_SECRET || !token) return false;
+    try {
+        const expected = Buffer.from(DEPLOY_SECRET, 'utf8');
+        const received = Buffer.from(token, 'utf8');
+        if (expected.length !== received.length) return false;
+        return timingSafeEqual(expected, received);
+    } catch {
+        return false;
+    }
+}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ pageId: string }> }) {
-    try {
-        const currentUser = await getCurrentUser();
-        if (!canWriteCms(currentUser)) {
-            return errorResponse('권한이 없습니다.', 401);
-        }
+    // spider-admin → html-cms 서버간 호출: x-deploy-token으로 인증
+    if (!isValidToken(req.headers.get('x-deploy-token'))) {
+        return errorResponse('인증 토큰이 유효하지 않습니다.', 401);
+    }
 
+    try {
         const { pageId } = await params;
         if (!pageId || typeof pageId !== 'string') {
             return errorResponse('pageId가 필요합니다.', 400);
@@ -75,8 +90,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pag
             return errorResponse('모든 서버에 복구 파일 전송이 실패했습니다.', 500);
         }
 
-        // 하나 이상 성공 시 IS_PUBLIC='Y' 복원
-        await setPagePublic(pageId, 'Y', currentUser.userId);
+        // 하나 이상 성공 시 IS_PUBLIC='Y' 복원 (호출자 식별: spider-admin 서버간 요청)
+        await setPagePublic(pageId, 'Y', 'SYSTEM');
 
         return successResponse({
             pageId,
