@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1.7
+#
+# @file Dockerfile.frontend
+# @description demo/front (React + Vite) 데모 뱅킹 앱을 Vite Dev 서버로 구동한다.
+#              프로덕션 빌드(tsc -b && vite build)는 reactive-springware 소스의
+#              타입 오류 및 생성 파일 누락 export 로 실패하므로, 운영 가이드와 동일하게
+#              Dev 서버(npm run dev)로 서비스한다.
+#              - @cl/@lib alias 가 ../../reactive-springware 를 참조하므로 해당 소스를 함께 복사한다.
+#              - /api 프록시 대상은 VITE_API_PROXY_TARGET 환경변수로 주입한다(biz-channel 컨테이너).
+#
+# 빌드 컨텍스트는 저장소 루트(demo/docker-compose.yml 의 build.context: ..)이다.
+
+FROM node:20-bookworm-slim AS frontend
+
+# 저장소와 동일한 디렉토리 구조를 유지해 vite alias(../../reactive-springware)가 해석되도록 한다.
+WORKDIR /repo/demo/front
+
+# 컴포넌트 라이브러리 소스(@cl, @lib) — node_modules 는 .dockerignore 로 제외됨
+COPY reactive-springware /repo/reactive-springware
+
+# 프론트 의존성 설치 (package-lock 기반 재현 설치)
+COPY demo/front/package.json demo/front/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+
+# 애플리케이션 소스
+COPY demo/front ./
+
+EXPOSE 5173
+# 컨테이너 외부에서 접근 가능하도록 0.0.0.0 바인딩
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

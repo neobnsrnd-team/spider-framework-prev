@@ -1,0 +1,29 @@
+# Build context = repo root (demo/docker-compose.yml uses build.context: ..).
+# Keep only what the demo backend/frontend images need; exclude everything heavy.
+
+# --- Always exclude ---
+**/node_modules
+**/target
+.git
+.gitignore
+**/.idea
+**/*.iml
+**/.env
+**/*.log
+**/.DS_Store
+
+# Frontend build artifacts (component-library/dist/styles.css is committed and IS needed,
+# so only exclude the app's own dist)
+demo/front/dist
+
+# --- Modules not used by the demo images ---
+spider-admin
+spider-batch
+reactPlatform
+batch-was
+html-cms
+react-cms
+preview-app
+docs
+reactive-springware/figma-plugin
+reactive-springware/storybook-static

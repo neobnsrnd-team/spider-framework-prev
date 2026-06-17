@@ -1,0 +1,178 @@
+# =============================================================================
+# demo 전체 데모 스택 (백엔드 4 + 프론트 1) 단일 기동/종료
+#
+#   docker compose up --build      # 빌드 + 기동
+#   docker compose down            # 종료 + 네트워크 정리
+#
+# 사전 준비:
+#   - Oracle DB(jdbc:oracle:thin:@neobns.com:11521:XE)에 DDL/시드 적용 완료
+#   - demo/.env 생성:  cp demo/.env.example demo/.env  (DB/JWT 값 확인)
+#
+# 기동 순서(헬스체크 기반 의존성):
+#   mock-core → (biz-auth, biz-transfer) → biz-channel → front
+#
+# 빌드 컨텍스트는 저장소 루트(..)이며, 데모에 필요한 모듈만 .dockerignore 로 선별한다.
+# =============================================================================
+
+name: spider-demo
+
+services:
+  # ---------------------------------------------------------------------------
+  # 계정계 Mock — 고정길이 바이너리 TCP (Oracle 직접 연결)
+  # ---------------------------------------------------------------------------
+  mock-core:
+    build:
+      context: ..
+      dockerfile: demo/docker/Dockerfile.backend
+      target: mock-core
+    image: spider-demo/mock-core
+    container_name: spider-demo-mock-core
+    env_file: .env                       # DB_URL/DB_USERNAME/DB_PASSWORD 등 공통값
+    environment:
+      TCP_SERVER_PORT: 19300
+      TCP_SERVER_HANDLER_POOL_SIZE: 10
+    ports:
+      - "19300:19300"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/19300'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 인증 AP — TCP 19100 (수신) / HTTP 19180 (Admin reload) / mock-core 호출
+  # ---------------------------------------------------------------------------
+  biz-auth:
+    build:
+      context: ..
+      dockerfile: demo/docker/Dockerfile.backend
+      target: biz-auth
+    image: spider-demo/biz-auth
+    container_name: spider-demo-biz-auth
+    env_file: .env
+    environment:
+      # 정적 TCP 서버 모드: Admin/FWK_GATEWAY 없이 tcp.server.port 로 즉시 바인딩.
+      # (dynamic=true 는 spider-admin + FWK_GATEWAY 등록을 전제로 하므로 데모 단독 기동에선 false)
+      SPIDER_GATEWAY_DYNAMIC_ENABLED: "false"
+      TCP_SERVER_PORT: 19100
+      TCP_SERVER_HANDLER_POOL_SIZE: 5
+      TCP_SERVER_QUEUE_CAPACITY: 20
+      HTTP_SERVER_PORT: 19180
+      MOCK_CORE_HOST: mock-core          # 컨테이너 서비스명으로 연결
+      MOCK_CORE_PORT: 19300
+      APP_ORG_ID: DEMO
+    ports:
+      - "19100:19100"
+      - "19180:19180"
+    depends_on:
+      mock-core:
+        condition: service_healthy
+    # HTTP 관리 포트(19180)로 헬스체크 — 컨텍스트 기동 완료 시 정적 TCP 서버(19100)도 함께 바인딩됨.
+    # (TCP 19100 직접 프로빙은 빈 연결이 프로토콜 파서 오류 로그를 유발하므로 회피)
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/19180'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 이체 AP — TCP 19200 (수신) / HTTP 19280 (Admin reload) / mock-core 호출
+  # ---------------------------------------------------------------------------
+  biz-transfer:
+    build:
+      context: ..
+      dockerfile: demo/docker/Dockerfile.backend
+      target: biz-transfer
+    image: spider-demo/biz-transfer
+    container_name: spider-demo-biz-transfer
+    env_file: .env
+    environment:
+      # 정적 TCP 서버 모드 (biz-auth 와 동일 사유)
+      SPIDER_GATEWAY_DYNAMIC_ENABLED: "false"
+      TCP_SERVER_PORT: 19200
+      TCP_SERVER_HANDLER_POOL_SIZE: 10
+      TCP_SERVER_QUEUE_CAPACITY: 50
+      HTTP_SERVER_PORT: 19280
+      MOCK_CORE_HOST: mock-core
+      MOCK_CORE_PORT: 19300
+      APP_ORG_ID: DEMO
+    ports:
+      - "19200:19200"
+      - "19280:19280"
+    depends_on:
+      mock-core:
+        condition: service_healthy
+    # HTTP 관리 포트(19280)로 헬스체크 (biz-auth 와 동일 사유)
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/19280'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 채널 게이트웨이 — HTTP 18080 (프론트 요청 수신) / TCP 19400 (Admin 공지 수신)
+  #                  biz-auth/biz-transfer 로 TCP 중계
+  # ---------------------------------------------------------------------------
+  biz-channel:
+    build:
+      context: ..
+      dockerfile: demo/docker/Dockerfile.backend
+      target: biz-channel
+    image: spider-demo/biz-channel
+    container_name: spider-demo-biz-channel
+    env_file: .env                       # JWT_*/ADMIN_SECRET/DB_* 공통값
+    environment:
+      SERVER_PORT: 18080
+      TCP_SERVER_PORT: 19400
+      TCP_SERVER_HANDLER_POOL_SIZE: 5
+      TCP_SERVER_QUEUE_CAPACITY: 20
+      BIZ_AUTH_HOST: biz-auth
+      BIZ_AUTH_PORT: 19100
+      BIZ_TRANSFER_HOST: biz-transfer
+      BIZ_TRANSFER_PORT: 19200
+    ports:
+      - "18080:18080"
+      - "19400:19400"
+    depends_on:
+      biz-auth:
+        condition: service_healthy
+      biz-transfer:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/18080'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 데모 프론트 (React + Vite Dev 서버) — /api 를 biz-channel 로 프록시
+  # ---------------------------------------------------------------------------
+  front:
+    build:
+      context: ..
+      dockerfile: demo/docker/Dockerfile.frontend
+      target: frontend
+    image: spider-demo/front
+    container_name: spider-demo-front
+    environment:
+      VITE_API_PROXY_TARGET: http://biz-channel:18080
+    ports:
+      - "5173:5173"
+    depends_on:
+      biz-channel:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/5173'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped

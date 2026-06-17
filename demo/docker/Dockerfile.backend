@@ -1,0 +1,64 @@
+# syntax=docker/dockerfile:1.7
+#
+# @file Dockerfile.backend
+# @description demo/bizApp 4개 백엔드 서버(mock-core, biz-auth, biz-transfer, biz-channel)를
+#              하나의 멀티스테이지 빌드로 패키징한다.
+#              - build 스테이지: 루트 라이브러리(spider-common -> spider-link)를 로컬 m2에
+#                install 한 뒤 demo/bizApp 리액터를 package 하여 실행 가능한 fat jar 생성.
+#              - 각 서비스 스테이지(target)는 공통 build 스테이지에서 자신의 jar 만 복사한다.
+#                (docker compose 가 service 별로 동일 Dockerfile 의 다른 target 을 빌드하므로
+#                 build 스테이지는 BuildKit 캐시로 1회만 수행된다.)
+#
+# 빌드 컨텍스트는 저장소 루트(demo/docker-compose.yml 의 build.context: ..)이다.
+
+# ---------------------------------------------------------------------------
+# build 스테이지 — 라이브러리 install + 데모 서비스 package
+# ---------------------------------------------------------------------------
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /src
+
+# 데모 빌드에 필요한 모듈만 복사 (루트 aggregator pom 은 사용하지 않는다)
+COPY spider-common ./spider-common
+COPY spider-link   ./spider-link
+COPY demo/bizApp   ./demo/bizApp
+
+# 의존 순서: spider-common -> spider-link 는 m2 로 install,
+# 이후 demo/bizApp 리액터(biz-common -> mock-core/biz-auth/biz-transfer/biz-channel) package.
+# --mount=type=cache 로 ~/.m2 를 재사용해 재빌드 시간을 단축한다.
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -q -f spider-common/pom.xml clean install -DskipTests && \
+    mvn -B -q -f spider-link/pom.xml   clean install -DskipTests && \
+    mvn -B -q -f demo/bizApp/pom.xml   clean package -DskipTests
+
+# ---------------------------------------------------------------------------
+# 런타임 공통 베이스 (bash 포함 — healthcheck 의 /dev/tcp 사용)
+# ---------------------------------------------------------------------------
+FROM eclipse-temurin:17-jre AS runtime-base
+WORKDIR /app
+# 기본 JVM 옵션 (필요 시 JAVA_OPTS 로 덮어쓴다)
+#  - MaxRAMPercentage: 컨테이너 메모리 제한 인지
+#  - user.timezone: 컨테이너 기본 TZ 고정
+#  - oracle.jdbc.timezoneAsRegion=false: TZ를 region명이 아닌 offset으로 전송해
+#    Oracle ORA-01882(timezone region not found) 방지
+ENV TZ=Asia/Seoul
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -Duser.timezone=Asia/Seoul -Doracle.jdbc.timezoneAsRegion=false"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+
+# ---------------------------------------------------------------------------
+# 서비스별 런타임 이미지
+# ---------------------------------------------------------------------------
+FROM runtime-base AS mock-core
+COPY --from=build /src/demo/bizApp/mock-core/target/mock-core-0.0.1-SNAPSHOT.jar /app/app.jar
+EXPOSE 19300
+
+FROM runtime-base AS biz-auth
+COPY --from=build /src/demo/bizApp/biz-auth/target/biz-auth-0.0.1-SNAPSHOT.jar /app/app.jar
+EXPOSE 19100 19180
+
+FROM runtime-base AS biz-transfer
+COPY --from=build /src/demo/bizApp/biz-transfer/target/biz-transfer-0.0.1-SNAPSHOT.jar /app/app.jar
+EXPOSE 19200 19280
+
+FROM runtime-base AS biz-channel
+COPY --from=build /src/demo/bizApp/biz-channel/target/biz-channel-0.0.1-SNAPSHOT.jar /app/app.jar
+EXPOSE 18080 19400
