@@ -149,27 +149,22 @@ spider-common ──► spider-link ──► spider-batch ──► batch-was
      └────────────────┴──────────────────────────► spider-admin
 ```
 
-루트 디렉토리에 `pom.xml`(집계 POM)이 있으므로 **루트에서 한 번에 빌드**할 수 있다.  
-Maven이 의존 그래프를 분석해 `spider-common → spider-link → spider-admin → spider-batch` 순서를 자동으로 보장한다.
+루트 디렉토리의 `pom.xml`(집계 POM)이 **전체 모듈을 단일 reactor로 묶으므로 명령 한 번으로 전부 빌드**된다.
+`spider-admin`·`spider-batch`·`reactPlatform`·`batch-was`·`demo/bizApp`(biz-* 전체)이 모두 포함되며,
+Maven이 의존 그래프를 분석해 빌드 순서(`spider-common → spider-link → 소비 모듈 …`)를 자동으로 보장한다.
+reactor 내부에서 모듈 간 의존성을 직접 해석하므로 사전 `install` 없이 한 번에 빌드된다.
+
+> **JDK 17 필요**: 모든 모듈이 Java 17로 컴파일되므로 Maven을 JDK 17로 실행해야 한다(`JAVA_HOME`을 JDK 17로 지정).
 
 ```bash
-# 루트에서 전체 빌드 (최초 세팅 또는 라이브러리 변경 시)
-mvn install
+# 루트에서 전체 빌드 (모든 모듈을 한 번에)
+mvn clean install
 
-# spider-common·spider-link가 이미 설치된 경우 spider-admin만 재빌드
+# 특정 모듈부터 이어서 빌드 (앞선 모듈이 이미 설치된 경우)
 mvn install -rf :spider-admin
 ```
 
 **IntelliJ 사용 시**: 루트 `pom.xml`을 프로젝트로 열면 IDE가 모듈 간 의존성을 소스에서 직접 해결하므로 `mvn install` 없이도 코드 탐색·빌드가 가능하다. Maven 패널 → **Reload All Maven Projects** 후 사용.
-
-### demo/bizApp 별도 빌드
-
-`demo/bizApp`은 루트 집계 POM에 포함되지 않으므로 별도로 빌드한다.  
-`spider-link`가 로컬 저장소에 설치된 후 실행해야 한다.
-
-```bash
-mvn install -f demo/bizApp/pom.xml
-```
 
 > **CI/CD**: GitHub Actions(`ci.yml`)가 위 순서를 자동으로 보장한다.
 
