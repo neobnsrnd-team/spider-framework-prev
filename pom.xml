@@ -11,18 +11,31 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>poc-hnc</name>
-    <description>POC HNC 루트 집계 POM — 빌드 순서: spider-common → spider-link → spider-admin / spider-batch</description>
+    <description>POC HNC 루트 집계 POM — 전체 모듈을 단일 reactor로 묶어 `mvn clean install` 한 번으로 빌드</description>
 
     <!--
-        집계(aggregator) 전용 POM. 각 자식 모듈은 spring-boot-starter-parent를 직접 상속하므로
+        집계(aggregator) 전용 POM. 각 자식 모듈은 spring-boot-starter-parent(또는 biz-app)를 직접 상속하므로
         이 POM은 빌드 순서 제어와 IntelliJ 멀티모듈 인식만 담당한다.
+
+        선언 순서와 무관하게 Maven reactor가 모듈 간 의존 그래프를 분석해 실제 빌드 순서를 자동 결정한다.
+        (예: spider-common → spider-link → spider-admin/spider-batch/biz-* → batch-was 등)
+        reactor 내부에서 모듈 간 의존성을 직접 해석하므로 사전 `mvn install` 없이 한 번에 빌드된다.
     -->
     <modules>
-        <!-- 의존 순서 보장: common → link → 소비 모듈 -->
+        <!-- 공통 라이브러리 계층: common → link -->
         <module>spider-common</module>
         <module>spider-link</module>
+
+        <!-- spider-link/common 소비 모듈 -->
         <module>spider-admin</module>
         <module>spider-batch</module>
+        <module>reactPlatform</module>
+
+        <!-- spider-batch 내장 실행 WAS -->
+        <module>batch-was</module>
+
+        <!-- 데모 비즈니스 앱(biz-app) 중첩 aggregator: biz-common/mock-core/biz-auth/biz-transfer/biz-channel -->
+        <module>demo/bizApp</module>
     </modules>
 
 </project>
