@@ -28,7 +28,9 @@ export default defineConfig({
          - CORS 헤더 없이 브라우저 → Vite Dev Server → Backend 흐름으로 처리
          - SSE(EventSource) 포함 모든 API 엔드포인트 커버 */
       '/api': {
-        target:      'http://localhost:18080',
+        /* 프록시 대상: 로컬 dev 는 localhost:18080, Docker 구동 시 VITE_API_PROXY_TARGET 으로
+           biz-channel 컨테이너(http://biz-channel:18080)를 주입한다. */
+        target:      process.env.VITE_API_PROXY_TARGET || 'http://localhost:18080',
         changeOrigin: true,
       },
     },
