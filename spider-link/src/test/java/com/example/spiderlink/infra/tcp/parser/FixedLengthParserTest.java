@@ -38,17 +38,17 @@ class FixedLengthParserTest {
         // when
         Map<String, Object> result = parser.parse(structure, bytes);
 
-        // then — trailing 공백 제거됨 (참고소스 FixedLengthMessageParser 동일)
+        // then — CHR은 trailing 공백 제거, NUM은 선행 0 제거 (#317 FIX: N타입 선행0 미제거 수정)
         assertThat(result.get("trxId")).isEqualTo("DEMO_AUTH_LOGIN");
         assertThat(result.get("userId")).isEqualTo("user01");
-        assertThat(result.get("amt")).isEqualTo("0000001000");
+        assertThat(result.get("amt")).isEqualTo("1000");
     }
 
     @Test
     @DisplayName("숫자 필드 scale 처리 — 소수점 2자리")
     void parse_numericWithScale() {
         // given
-        // rate(8) : scale=2 → "00012345" → "000123" + "45" → "0001234" 로 처리
+        // rate(8) : scale=2 → 정수부 "000123"(선행0 제거 → "123") + 소수부 "45" → "12345"
         MessageStructure structure = new MessageStructure("ORG01", "RATE_MSG", "F");
         structure.addField(new MessageField("rate", MessageField.NUM, 8, 2, MessageField.RIGHT, '0', null, true, false));
 
@@ -57,8 +57,8 @@ class FixedLengthParserTest {
         // when
         Map<String, Object> result = parser.parse(structure, bytes);
 
-        // then — 원본 SpiderLink 와 동일하게 소수점 없이 원본 값 보존
-        assertThat(result.get("rate")).isEqualTo("00012345");
+        // then — 정수부 선행 0 제거(#317), 소수부는 소수점 삽입 없이 그대로 결합
+        assertThat(result.get("rate")).isEqualTo("12345");
     }
 
     @Test
@@ -122,9 +122,9 @@ class FixedLengthParserTest {
         List<Map<String, Object>> items = (List<Map<String, Object>>) result.get("items");
         assertThat(items).hasSize(2);
         assertThat(items.get(0).get("itemCode")).isEqualTo("ITEM1");
-        assertThat(items.get(0).get("itemAmt")).isEqualTo("00001000");
+        assertThat(items.get(0).get("itemAmt")).isEqualTo("1000"); // NUM 선행 0 제거 (#317)
         assertThat(items.get(1).get("itemCode")).isEqualTo("ITEM2");
-        assertThat(items.get(1).get("itemAmt")).isEqualTo("00002000");
+        assertThat(items.get(1).get("itemAmt")).isEqualTo("2000"); // NUM 선행 0 제거 (#317)
     }
 
     @Test
